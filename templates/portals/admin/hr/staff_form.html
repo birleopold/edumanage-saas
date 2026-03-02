@@ -1,0 +1,9 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit Staff{% else %}Add Staff{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if mode == 'edit' %}Edit Staff{% else %}Add Staff{% endif %}</h1>
+
+  {% include 'components/ui_form.html' %}
+{% endblock %}

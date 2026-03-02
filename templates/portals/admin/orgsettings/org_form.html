@@ -1,0 +1,28 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Organization Settings{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Organization Settings</h1>
+  <p class="text-gray-600">Configure your school's basic information, branding, and contact details</p>
+</div>
+
+<!-- Toast Notifications -->
+{% include "components/ui_toast.html" %}
+
+<!-- Form Card -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  {% include "components/ui_form.html" %}
+</div>
+
+<!-- Back Link -->
+<div class="mt-6">
+  <a href="{% url 'admin_home' %}" 
+     class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
+    <i class="ph ph-arrow-left"></i>
+    <span>Back to Dashboard</span>
+  </a>
+</div>
+{% endblock %}

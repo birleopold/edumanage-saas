@@ -1,0 +1,27 @@
+{% comment %}
+Empty State Component
+Usage: {% include "components/ui_empty_state.html" with icon="users" title="No students found" description="Get started by adding your first student" action_url="/students/add/" action_text="Add Student" %}
+{% endcomment %}
+
+<div class="text-center py-12 px-4">
+  <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+    <i class="ph ph-{{ icon|default:'folder-open' }} text-3xl text-gray-400"></i>
+  </div>
+  
+  <h3 class="text-lg font-semibold text-gray-900 mb-2">
+    {{ title|default:"No items found" }}
+  </h3>
+  
+  {% if description %}
+    <p class="text-gray-600 mb-6 max-w-md mx-auto">
+      {{ description }}
+    </p>
+  {% endif %}
+  
+  {% if action_url %}
+    <a href="{{ action_url }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md">
+      <i class="ph ph-plus-circle"></i>
+      <span>{{ action_text|default:"Add New" }}</span>
+    </a>
+  {% endif %}
+</div>

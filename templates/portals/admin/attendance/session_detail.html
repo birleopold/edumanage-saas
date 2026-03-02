@@ -1,0 +1,44 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Attendance Session{% endblock %}
+
+{% block content %}
+  <h1>Attendance Session</h1>
+
+  <div>
+    <div><strong>ID:</strong> {{ session.id }}</div>
+    <div><strong>Date:</strong> {{ session.date }}</div>
+    <div><strong>Offering:</strong> {{ session.offering }}</div>
+    <div><strong>Taken by:</strong> {{ session.taken_by }}</div>
+  </div>
+
+  <h2 style="margin-top: 16px;">Entries</h2>
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for e in entries %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.student }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.student.student_id }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.status }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.note }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No entries recorded.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  <p style="margin-top: 12px;">
+    <a href="{% url 'admin_attendance_sessions_list' %}">Back</a>
+  </p>
+{% endblock %}

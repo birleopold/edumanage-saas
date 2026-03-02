@@ -1,0 +1,237 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Bulk Enrollment Management{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Bulk Enrollment Management</h1>
+  <p class="text-gray-600">Manage enrollment status for multiple students at once</p>
+</div>
+
+<!-- Toast Notifications -->
+{% include "components/ui_toast.html" %}
+
+<!-- Search and Filters -->
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="space-y-4">
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+      <!-- Offering Selector -->
+      <div class="flex-1 w-full md:max-w-md">
+        <label for="id_offering" class="block text-sm font-bold text-gray-700 mb-2">Course Offering</label>
+        <select id="id_offering" 
+                name="offering"
+                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
+          <option value="">-- Select Offering --</option>
+          {% for o in offerings %}
+            <option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>
+              {{ o }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="flex-1 w-full md:max-w-md">
+        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search Students</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="ph ph-magnifying-glass text-gray-400"></i>
+          </div>
+          <input id="id_q" 
+                 type="text" 
+                 name="q" 
+                 value="{{ q }}" 
+                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
+                 placeholder="Search by name or student ID..." />
+        </div>
+      </div>
+
+      <!-- Per Page -->
+      <div class="w-full md:w-32">
+        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
+        <input id="id_per_page" 
+               type="number" 
+               name="per_page" 
+               value="{{ per_page }}" 
+               min="1" 
+               max="200"
+               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+      </div>
+
+      <!-- Load Button -->
+      <button type="submit" 
+              class="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-funnel"></i>
+        <span>Load Enrollments</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+{% if selected_offering %}
+  <!-- Selected Offering Info -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="flex items-center gap-2">
+      <i class="ph ph-info text-blue-600 text-xl"></i>
+      <div>
+        <h3 class="font-semibold text-blue-900">Selected Offering</h3>
+        <p class="text-blue-700 text-sm">{{ selected_offering }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Form -->
+  <form method="post" id="bulkForm">
+    {% csrf_token %}
+    <input type="hidden" name="offering" value="{{ selected_offering.id }}" />
+    <input type="hidden" name="q" value="{{ q }}" />
+    <input type="hidden" name="per_page" value="{{ per_page }}" />
+
+    <!-- Enrollments Table -->
+    {% if enrollments %}
+      <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for e in enrollments %}
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <input type="checkbox" 
+                         name="enrollment_ids" 
+                         value="{{ e.id }}" 
+                         class="enrollment-checkbox rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ e.id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ e.student }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ e.student.student_id }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {% if e.status == 'ENROLLED' %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                      <i class="ph ph-check-circle"></i>
+                      Enrolled
+                    </span>
+                  {% elif e.status == 'DROPPED' %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                      <i class="ph ph-x-circle"></i>
+                      Dropped
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
+                      {{ e.status }}
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bulk Action Buttons -->
+      <div class="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <p class="text-sm text-gray-600">
+          <span id="selectedCount">0</span> enrollment(s) selected
+        </p>
+        <div class="flex gap-3">
+          <button type="submit" 
+                  name="action" 
+                  value="drop"
+                  class="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  id="dropBtn"
+                  disabled>
+            <i class="ph ph-x-circle"></i>
+            <span>Drop Selected</span>
+          </button>
+          <button type="submit" 
+                  name="action" 
+                  value="restore"
+                  class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  id="restoreBtn"
+                  disabled>
+            <i class="ph ph-arrow-counter-clockwise"></i>
+            <span>Restore Selected</span>
+          </button>
+        </div>
+      </div>
+    {% else %}
+      <!-- Empty State -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="ph ph-users-three text-gray-300 text-6xl mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Enrollments Found</h3>
+        <p class="text-gray-600">No students are enrolled in this offering or match your search criteria.</p>
+      </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if page_obj %}
+      {% include "components/ui_pagination.html" with page_obj=page_obj %}
+    {% endif %}
+  </form>
+{% else %}
+  <!-- Empty State - No Offering Selected -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+    <i class="ph ph-graduation-cap text-gray-300 text-6xl mb-4"></i>
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">Select an Offering</h3>
+    <p class="text-gray-600">Choose a course offering from the dropdown above and click "Load Enrollments" to manage student enrollments.</p>
+  </div>
+{% endif %}
+
+<!-- Back Link -->
+<div class="mt-6">
+  <a href="{% url 'admin_enrollment_list' %}" 
+     class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
+    <i class="ph ph-arrow-left"></i>
+    <span>Back to Enrollments</span>
+  </a>
+</div>
+
+<script>
+  // Select All functionality
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const enrollmentCheckboxes = document.querySelectorAll('.enrollment-checkbox');
+  const selectedCountSpan = document.getElementById('selectedCount');
+  const dropBtn = document.getElementById('dropBtn');
+  const restoreBtn = document.getElementById('restoreBtn');
+
+  function updateSelectedCount() {
+    const checkedCount = document.querySelectorAll('.enrollment-checkbox:checked').length;
+    selectedCountSpan.textContent = checkedCount;
+    
+    // Enable/disable buttons based on selection
+    if (checkedCount > 0) {
+      dropBtn.disabled = false;
+      restoreBtn.disabled = false;
+    } else {
+      dropBtn.disabled = true;
+      restoreBtn.disabled = true;
+    }
+  }
+
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      enrollmentCheckboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+      updateSelectedCount();
+    });
+  }
+
+  enrollmentCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedCount);
+  });
+
+  // Initial count
+  updateSelectedCount();
+</script>
+{% endblock %}

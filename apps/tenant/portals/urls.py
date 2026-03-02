@@ -1,0 +1,70 @@
+from django.urls import include, path
+from django.contrib.auth import views as auth_views
+
+from apps.tenant.users import auth_views as custom_auth_views
+from . import views
+
+urlpatterns = [
+    # Landing page
+    path("", views.landing_page, name="landing_page"),
+    
+    # Authentication
+    path("login/", custom_auth_views.CustomLoginView.as_view(), name="login"),
+    path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
+    path("password-reset/", custom_auth_views.CustomPasswordResetView.as_view(), name="password_reset"),
+    path("password-reset/done/", auth_views.PasswordResetDoneView.as_view(template_name="auth/password_reset_done.html"), name="password_reset_done"),
+    path("password-reset/<uidb64>/<token>/", custom_auth_views.CustomPasswordResetConfirmView.as_view(), name="password_reset_confirm"),
+    path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(template_name="auth/password_reset_complete.html"), name="password_reset_complete"),
+    path("change-password/", custom_auth_views.change_password, name="change_password"),
+    path("profile/", custom_auth_views.user_profile, name="user_profile"),
+    
+    # Portals
+    path("admin/", views.admin_home, name="admin_home"),
+    path("admin/students/", include("apps.tenant.students.urls")),
+    path("admin/teachers/", include("apps.tenant.teachers.urls")),
+    path("admin/parents/", include("apps.tenant.parents.urls")),
+    path("admin/academics/", include("apps.tenant.academics.urls")),
+    path("admin/users/", include("apps.tenant.users.urls")),
+    path("admin/attendance/", include("apps.tenant.attendance.admin_urls")),
+    path("admin/assessments/", include("apps.tenant.assessments.admin_urls")),
+    path("admin/finance/", include("apps.tenant.finance.admin_urls")),
+    path("admin/announcements/", include("apps.tenant.announcements.admin_urls")),
+    path("admin/timetable/", include("apps.tenant.timetable.admin_urls")),
+    path("admin/discipline/", include("apps.tenant.discipline.admin_urls")),
+    path("admin/documents/", include("apps.tenant.documents.admin_urls")),
+    path("admin/transport/", include("apps.tenant.transport.admin_urls")),
+    path("admin/library/", include("apps.tenant.library.admin_urls")),
+    path("admin/hostels/", include("apps.tenant.hostels.admin_urls")),
+    path("admin/inventory/", include("apps.tenant.inventory.admin_urls")),
+    path("admin/exams/", include("apps.tenant.exams.admin_urls")),
+    path("admin/reports/", include("apps.tenant.reports.admin_urls")),
+    path("admin/settings/", include("apps.tenant.orgsettings.admin_urls")),
+    path("admin/admissions/", include("apps.tenant.admissions.admin_urls")),
+    path("admin/hr/", include("apps.tenant.hr.admin_urls")),
+    path("teacher/", views.teacher_home, name="teacher_home"),
+    path("teacher/attendance/", include("apps.tenant.attendance.teacher_urls")),
+    path("teacher/assessments/", include("apps.tenant.assessments.teacher_urls")),
+    path("teacher/announcements/", include("apps.tenant.announcements.teacher_urls")),
+    path("teacher/timetable/", include("apps.tenant.timetable.teacher_urls")),
+    path("teacher/discipline/", include("apps.tenant.discipline.teacher_urls")),
+    path("teacher/documents/", include("apps.tenant.documents.teacher_urls")),
+    path("teacher/exams/", include("apps.tenant.exams.teacher_urls")),
+    path("student/", views.student_home, name="student_home"),
+    path("student/results/", include("apps.tenant.assessments.student_urls")),
+    path("student/finance/", include("apps.tenant.finance.student_urls")),
+    path("student/announcements/", include("apps.tenant.announcements.student_urls")),
+    path("student/timetable/", include("apps.tenant.timetable.student_urls")),
+    path("student/discipline/", include("apps.tenant.discipline.student_urls")),
+    path("student/documents/", include("apps.tenant.documents.student_urls")),
+    path("student/transport/", include("apps.tenant.transport.student_urls")),
+    path("student/library/", include("apps.tenant.library.student_urls")),
+    path("student/hostels/", include("apps.tenant.hostels.student_urls")),
+    path("student/exams/", include("apps.tenant.exams.student_urls")),
+    path("parent/", views.parent_home, name="parent_home"),
+    path("parent/finance/", include("apps.tenant.finance.parent_urls")),
+    path("parent/announcements/", include("apps.tenant.announcements.parent_urls")),
+    path("parent/discipline/", include("apps.tenant.discipline.parent_urls")),
+    path("parent/documents/", include("apps.tenant.documents.parent_urls")),
+    path("parent/transport/", include("apps.tenant.transport.parent_urls")),
+    path("parent/library/", include("apps.tenant.library.parent_urls")),
+]

@@ -1,0 +1,9 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit Invoice{% else %}Create Invoice{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if mode == 'edit' %}Edit invoice{% else %}Create invoice{% endif %}</h1>
+
+  {% include 'components/ui_form.html' %}
+{% endblock %}

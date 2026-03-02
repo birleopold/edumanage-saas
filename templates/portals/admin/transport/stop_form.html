@@ -1,0 +1,9 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit Stop{% else %}Add Stop{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if mode == 'edit' %}Edit Stop{% else %}Add Stop{% endif %}</h1>
+
+  {% include 'components/ui_form.html' %}
+{% endblock %}

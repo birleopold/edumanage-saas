@@ -1,0 +1,52 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Banner -->
+    <div class="bg-primary-50 rounded-xl p-6 border border-primary-100 flex flex-col md:flex-row md:items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-primary-900 mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}!</h2>
+            <p class="text-sm text-primary-700">Manage your classes, students, and academic responsibilities.</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="{% url 'teacher_timetable' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                <i class="ph ph-calendar mr-2"></i> View Timetable
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Access Grid -->
+    <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="{% url 'teacher_attendance_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
+                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-calendar-check text-2xl"></i>
+                </div>
+                <span class="text-sm font-bold text-gray-700">Attendance</span>
+            </a>
+            <a href="{% url 'teacher_assessments_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
+                <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-exam text-2xl"></i>
+                </div>
+                <span class="text-sm font-bold text-gray-700">Assessments</span>
+            </a>
+            <a href="{% url 'teacher_announcements_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
+                <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-megaphone text-2xl"></i>
+                </div>
+                <span class="text-sm font-bold text-gray-700">Announcements</span>
+            </a>
+            <a href="{% url 'teacher_incidents_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
+                <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-warning-circle text-2xl"></i>
+                </div>
+                <span class="text-sm font-bold text-gray-700">Discipline</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

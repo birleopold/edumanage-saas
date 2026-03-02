@@ -1,0 +1,235 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-primary-600 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
+                <p class="text-primary-100">Here's what's happening in your school today</p>
+            </div>
+            <div class="hidden md:block">
+                <i class="ph ph-graduation-cap text-6xl opacity-20"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Context Banner -->
+    <div class="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <i class="ph ph-calendar-check text-primary-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">Current Academic Context</h2>
+                    <p class="text-sm text-gray-600">Active term and year settings</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="bg-gray-50 px-5 py-3 rounded-lg border border-gray-200">
+                    <span class="block text-xs text-gray-500 uppercase font-semibold mb-1">Academic Year</span>
+                    <span class="block text-base font-bold text-gray-900">{% if current_year %}{{ current_year.name }}{% else %}-{% endif %}</span>
+                </div>
+                <div class="bg-gray-50 px-5 py-3 rounded-lg border border-gray-200">
+                    <span class="block text-xs text-gray-500 uppercase font-semibold mb-1">Current Term</span>
+                    <span class="block text-base font-bold text-gray-900">{% if current_term %}{{ current_term.name }}{% else %}-{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <a href="{% url 'admin_students_create' %}" class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-student text-xl"></i>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Add Student</span>
+            </a>
+            <a href="{% url 'admin_teachers_create' %}" class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-chalkboard-teacher text-xl"></i>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Add Teacher</span>
+            </a>
+            <a href="{% url 'admin_parents_create' %}" class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-users text-xl"></i>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Add Parent</span>
+            </a>
+            <a href="{% url 'admin_offering_create' %}" class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-books text-xl"></i>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Add Offering</span>
+            </a>
+            <a href="{% url 'admin_enrollment_bulk' %}" class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <i class="ph ph-user-plus text-xl"></i>
+                </div>
+                <span class="text-sm font-medium text-gray-700">Bulk Enroll</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Key Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Students Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-1">Total Students</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ students_total|default:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="ph ph-student text-2xl text-blue-600"></i>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <i class="ph ph-check-circle"></i>
+                        {{ students_active|default:0 }} Active
+                    </span>
+                    <a href="{% url 'admin_students_list' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        View <i class="ph ph-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Teachers Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-purple-500">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-1">Total Teachers</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ teachers_total|default:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="ph ph-chalkboard-teacher text-2xl text-purple-600"></i>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <i class="ph ph-check-circle"></i>
+                        {{ teachers_active|default:0 }} Active
+                    </span>
+                    <a href="{% url 'admin_teachers_list' %}" class="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                        View <i class="ph ph-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Offerings Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-1">Course Offerings</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ offerings_total|default:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="ph ph-books text-2xl text-green-600"></i>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <i class="ph ph-check-circle"></i>
+                        {{ offerings_active|default:0 }} Active
+                    </span>
+                    <a href="{% url 'admin_offering_list' %}" class="text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1">
+                        View <i class="ph ph-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Enrollments Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-indigo-500">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-1">Total Enrollments</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ enrollments_total|default:0 }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <i class="ph ph-user-plus text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <i class="ph ph-check-circle"></i>
+                        {{ enrollments_active|default:0 }} Active
+                    </span>
+                    <a href="{% url 'admin_enrollment_list' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                        View <i class="ph ph-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity / Additional Widgets -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Parents Overview -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="ph ph-users text-orange-600 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">Parents</h3>
+                    <p class="text-sm text-gray-600">Registered guardians</p>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Total</span>
+                    <span class="text-2xl font-bold text-gray-900">{{ parents_total|default:0 }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Active</span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                        <i class="ph ph-check"></i>
+                        {{ parents_active|default:0 }}
+                    </span>
+                </div>
+                <a href="{% url 'admin_parents_list' %}" class="block mt-4 text-center py-2 px-4 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    View All Parents
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
+            <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <i class="ph ph-lightning text-yellow-500"></i>
+                Quick Access
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="{% url 'admin_students_list' %}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="ph ph-list text-blue-600 text-xl"></i>
+                    <span class="text-sm font-medium text-gray-700">All Students</span>
+                </a>
+                <a href="{% url 'admin_teachers_list' %}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="ph ph-list text-purple-600 text-xl"></i>
+                    <span class="text-sm font-medium text-gray-700">All Teachers</span>
+                </a>
+                <a href="{% url 'admin_offering_list' %}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="ph ph-book-open text-green-600 text-xl"></i>
+                    <span class="text-sm font-medium text-gray-700">Course List</span>
+                </a>
+                <a href="{% url 'admin_enrollment_list' %}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="ph ph-clipboard-text text-indigo-600 text-xl"></i>
+                    <span class="text-sm font-medium text-gray-700">Enrollments</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

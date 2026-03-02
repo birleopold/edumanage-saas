@@ -1,0 +1,58 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Incident{% endblock %}
+
+{% block content %}
+  <h1>Incident #{{ incident.id }}</h1>
+
+  <div>
+    <div><strong>Student:</strong> {{ incident.student }}</div>
+    <div><strong>Student ID:</strong> {{ incident.student.student_id }}</div>
+    <div><strong>Title:</strong> {{ incident.title }}</div>
+    <div><strong>Category:</strong> {{ incident.category }}</div>
+    <div><strong>Severity:</strong> {{ incident.severity }}</div>
+    <div><strong>Status:</strong> {{ incident.status }}</div>
+    <div><strong>Incident date:</strong> {{ incident.incident_date }}</div>
+    <div><strong>Reported by:</strong> {{ incident.reported_by }}</div>
+    <div><strong>Description:</strong> {{ incident.description }}</div>
+  </div>
+
+  <p style="margin-top: 12px;">
+    <a href="{% url 'admin_incidents_edit' incident.id %}">Edit</a>
+    |
+    <a href="{% url 'admin_incidents_list' %}">Back</a>
+  </p>
+
+  <h2 style="margin-top: 16px;">Actions</h2>
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Action</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>By</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for a in actions %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.action }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.note }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.performed_by_user }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.created_at }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No actions yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top: 12px;">Add action</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ action_form.as_p }}
+    <button type="submit">Add</button>
+  </form>
+{% endblock %}

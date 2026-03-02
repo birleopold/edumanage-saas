@@ -1,0 +1,50 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Applicant {{ applicant.id }}{% endblock %}
+
+{% block content %}
+  <h1>Applicant #{{ applicant.id }}</h1>
+
+  <p><a href="{% url 'admin_admissions_applicant_edit' applicant.id %}">Edit</a></p>
+
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      <tr><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Campus</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.campus }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Name</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.last_name }} {{ applicant.first_name }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Email</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.email }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Phone</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.phone }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Date of birth</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.date_of_birth }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Address</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.address }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Target term</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.target_term }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Target level</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.target_level }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Target program</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.target_program }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Target class group</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.target_class_group }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.status }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created student</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.created_student }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.note }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.created_at }}</td></tr>
+        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Updated</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ applicant.updated_at }}</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 style="margin-top: 16px;">Actions</h2>
+
+  <form method="post" action="{% url 'admin_admissions_applicant_set_status' applicant.id %}">
+    {% csrf_token %}
+    <label for="id_status">Set status</label>
+    <select name="status" id="id_status">
+      <option value="NEW" {% if applicant.status == 'NEW' %}selected{% endif %}>New</option>
+      <option value="IN_REVIEW" {% if applicant.status == 'IN_REVIEW' %}selected{% endif %}>In review</option>
+      <option value="REJECTED" {% if applicant.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+    </select>
+    <button type="submit">Update</button>
+  </form>
+
+  <p style="margin-top: 10px;">
+    <a href="{% url 'admin_admissions_applicant_admit' applicant.id %}">Admit</a>
+    |
+    <a href="{% url 'admin_admissions_applicant_reject' applicant.id %}">Reject</a>
+  </p>
+
+  <p><a href="{% url 'admin_admissions_applicants' %}">Back to list</a></p>
+{% endblock %}

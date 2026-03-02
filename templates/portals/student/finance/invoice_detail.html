@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice</title>
+  </head>
+  <body>
+    <h1>Invoice #{{ invoice.id }}</h1>
+
+    <div>
+      <div><strong>Student:</strong> {{ student }}</div>
+      <div><strong>Year:</strong> {{ invoice.academic_year }}</div>
+      <div><strong>Term:</strong> {{ invoice.academic_term }}</div>
+      <div><strong>Status:</strong> {{ invoice.status }}</div>
+      <div><strong>Due:</strong> {{ invoice.due_date }}</div>
+    </div>
+
+    <h2 style="margin-top: 16px;">Totals</h2>
+    <div>
+      <div><strong>Total:</strong> {{ total_amount }}</div>
+      <div><strong>Paid:</strong> {{ total_paid }}</div>
+      <div><strong>Balance:</strong> {{ balance }}</div>
+    </div>
+
+    <h2 style="margin-top: 16px;">Lines</h2>
+    <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+      <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+        <tr>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Description</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Qty</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Unit</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Total</th>
+        </tr>
+      </thead>
+      <tbody class='bg-white divide-y divide-gray-200'>
+        {% for line in invoice.lines.all %}
+          <tr>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.description }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.quantity }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.unit_amount }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.line_total }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No lines.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+
+    <h2 style="margin-top: 16px;">Payments</h2>
+    <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+      <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+        <tr>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Date</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Amount</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Method</th>
+          <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Reference</th>
+        </tr>
+      </thead>
+      <tbody class='bg-white divide-y divide-gray-200'>
+        {% for p in invoice.payments.all %}
+          <tr>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.received_at }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.amount }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.method }}</td>
+            <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.reference }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No payments.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+
+    <p style="margin-top: 12px;">
+      <a href="{% url 'student_invoices_list' %}">Back</a>
+    </p>
+  </body>
+</html>

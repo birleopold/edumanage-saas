@@ -1,0 +1,126 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Bulk Import Students{% endblock %}
+{% block page_title %}Bulk Import Students{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm">
+    <a href="{% url 'admin_students_list' %}" class="text-primary-600 hover:text-primary-800">Students</a>
+    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
+    <span class="text-gray-500">Bulk Import</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Instructions Card -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+        <div class="flex items-start">
+            <i class="ph ph-info text-blue-500 text-2xl mr-3 mt-1"></i>
+            <div>
+                <h3 class="text-lg font-bold text-blue-900 mb-2">How to Use Bulk Import</h3>
+                <ol class="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                    <li>Download the sample template below to see the required format</li>
+                    <li>Fill in your student data (CSV or Excel format)</li>
+                    <li>Upload the file and choose your options</li>
+                    <li>Review the results and download/email credentials</li>
+                </ol>
+                <div class="mt-4">
+                    <a href="{% url 'admin_students_download_template' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                        <i class="ph ph-download mr-2"></i>
+                        Download Sample Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white shadow-md rounded-xl border border-gray-300 p-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Upload Student Data</h2>
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- File Upload -->
+            <div>
+                <label class="block text-sm font-bold text-gray-800 mb-2">
+                    Select File <span class="text-red-500">*</span>
+                </label>
+                <input 
+                    type="file" 
+                    name="import_file" 
+                    accept=".csv,.xlsx,.xls"
+                    required
+                    class="block w-full text-sm text-gray-900 border-2 border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                />
+                <p class="mt-2 text-sm text-gray-500">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+            </div>
+
+            <!-- Options -->
+            <div class="space-y-4 border-t border-gray-200 pt-6">
+                <h3 class="text-sm font-bold text-gray-800 mb-3">Import Options</h3>
+                
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input 
+                            type="checkbox" 
+                            name="create_users" 
+                            id="create_users"
+                            checked
+                            class="focus:ring-primary-500 h-5 w-5 text-primary-600 border-2 border-gray-400 rounded cursor-pointer"
+                        />
+                    </div>
+                    <div class="ml-3">
+                        <label for="create_users" class="font-bold text-gray-800 cursor-pointer">Create user accounts</label>
+                        <p class="text-sm text-gray-600">Generate login credentials for each student</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input 
+                            type="checkbox" 
+                            name="send_emails" 
+                            id="send_emails"
+                            class="focus:ring-primary-500 h-5 w-5 text-primary-600 border-2 border-gray-400 rounded cursor-pointer"
+                        />
+                    </div>
+                    <div class="ml-3">
+                        <label for="send_emails" class="font-bold text-gray-800 cursor-pointer">Send setup emails</label>
+                        <p class="text-sm text-gray-600">Automatically email password setup links to students with email addresses</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Format Reference -->
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 class="text-sm font-bold text-gray-800 mb-2">Required CSV/Excel Columns:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><code class="bg-gray-200 px-2 py-0.5 rounded">first_name</code> - Student's first name (required)</li>
+                    <li><code class="bg-gray-200 px-2 py-0.5 rounded">last_name</code> - Student's last name (required)</li>
+                    <li><code class="bg-gray-200 px-2 py-0.5 rounded">date_of_birth</code> - Format: YYYY-MM-DD (optional)</li>
+                    <li><code class="bg-gray-200 px-2 py-0.5 rounded">email</code> - Student's email address (optional)</li>
+                    <li><code class="bg-gray-200 px-2 py-0.5 rounded">campus_code</code> - Campus code (optional, uses default if empty)</li>
+                </ul>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-4">
+                <a href="{% url 'admin_students_list' %}" 
+                   class="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50 transition">
+                    Cancel
+                </a>
+                <button 
+                    type="submit"
+                    class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 transition shadow-md"
+                >
+                    <i class="ph ph-upload mr-2"></i>
+                    Import Students
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

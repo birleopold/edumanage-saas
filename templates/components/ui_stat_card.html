@@ -1,0 +1,48 @@
+{% comment %}
+Statistic Card Component
+Usage: {% include "components/ui_stat_card.html" with title="Total Students" value="1,234" icon="users" color="blue" change="+12.5%" trend="up" %}
+Colors: blue, green, purple, red, yellow, indigo
+{% endcomment %}
+
+{% with color=color|default:"blue" %}
+<div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex-1">
+      <p class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-1">{{ title }}</p>
+      <p class="text-3xl font-bold text-gray-900">{{ value }}</p>
+    </div>
+    <div class="w-12 h-12 bg-{{ color }}-100 rounded-lg flex items-center justify-center">
+      <i class="ph ph-{{ icon|default:'chart-bar' }} text-2xl text-{{ color }}-600"></i>
+    </div>
+  </div>
+  
+  {% if change %}
+    <div class="flex items-center gap-2">
+      {% if trend == "up" %}
+        <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+          <i class="ph ph-trend-up"></i>
+          {{ change }}
+        </span>
+      {% elif trend == "down" %}
+        <span class="inline-flex items-center gap-1 text-sm font-semibold text-red-600">
+          <i class="ph ph-trend-down"></i>
+          {{ change }}
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1 text-sm font-semibold text-gray-600">
+          <i class="ph ph-minus"></i>
+          {{ change }}
+        </span>
+      {% endif %}
+      <span class="text-sm text-gray-500">{{ change_label|default:"vs last month" }}</span>
+    </div>
+  {% endif %}
+  
+  {% if link_url %}
+    <a href="{{ link_url }}" class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-{{ color }}-600 hover:text-{{ color }}-700 transition-colors">
+      <span>{{ link_text|default:"View details" }}</span>
+      <i class="ph ph-arrow-right"></i>
+    </a>
+  {% endif %}
+</div>
+{% endwith %}

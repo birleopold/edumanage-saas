@@ -1,0 +1,110 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Invoice{% endblock %}
+
+{% block content %}
+  <h1>Invoice #{{ invoice.id }}</h1>
+
+  <div>
+    <div><strong>Student:</strong> {{ invoice.student }}</div>
+    <div><strong>Student ID:</strong> {{ invoice.student.student_id }}</div>
+    <div><strong>Year:</strong> {{ invoice.academic_year }}</div>
+    <div><strong>Term:</strong> {{ invoice.academic_term }}</div>
+    <div><strong>Reference:</strong> {{ invoice.reference }}</div>
+    <div><strong>Status:</strong> {{ invoice.status }}</div>
+    <div><strong>Due date:</strong> {{ invoice.due_date }}</div>
+  </div>
+
+  <h2 style="margin-top: 16px;">Totals</h2>
+  <div>
+    <div><strong>Total:</strong> {{ total_amount }}</div>
+    <div><strong>Paid:</strong> {{ total_paid }}</div>
+    <div><strong>Balance:</strong> {{ balance }}</div>
+  </div>
+
+  <h2 style="margin-top: 16px;">Lines</h2>
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Description</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Qty</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Unit</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Total</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for line in invoice.lines.all %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.description }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.quantity }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.unit_amount }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.line_total }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+            <form method="post" action="{% url 'admin_invoices_line_remove' invoice.id line.id %}" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No lines yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top: 12px;">Add line</h3>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_line" />
+    {{ line_form.as_p }}
+    <button type="submit">Add line</button>
+  </form>
+
+  <h2 style="margin-top: 16px;">Payments</h2>
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Date</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Amount</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Method</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Reference</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for p in invoice.payments.all %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.received_at }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.amount }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.method }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.reference }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+            <form method="post" action="{% url 'admin_invoices_payment_remove' invoice.id p.id %}" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No payments yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top: 12px;">Record payment</h3>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_payment" />
+    {{ payment_form.as_p }}
+    <button type="submit">Record payment</button>
+  </form>
+
+  <p style="margin-top: 12px;">
+    <a href="{% url 'admin_invoices_list' %}">Back</a>
+  </p>
+{% endblock %}

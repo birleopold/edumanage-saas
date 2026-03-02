@@ -1,0 +1,18 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Edit Document{% endblock %}
+
+{% block content %}
+  <h1>Edit document</h1>
+
+  <p>
+    <a href="{% url 'admin_documents_download' doc.id %}">Download</a>
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+    <a href="{% url 'admin_documents_list' %}">Back</a>
+  </form>
+{% endblock %}

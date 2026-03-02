@@ -1,0 +1,91 @@
+<!doctype html>
+{% load exams_extras %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grade Exam Paper</title>
+  </head>
+  <body>
+    <h1>Grade exam paper</h1>
+
+    <div>
+      <div><strong>Exam:</strong> {{ paper.exam }}</div>
+      <div><strong>Offering:</strong> {{ paper.offering }}</div>
+      <div><strong>Max:</strong> {{ paper.max_score }}</div>
+      <div><strong>Published:</strong> {% if paper.is_published %}Yes{% else %}No{% endif %}</div>
+    </div>
+
+    <form method="post" style="margin-top: 10px;">
+      {% csrf_token %}
+      <button type="submit" name="action" value="toggle_publish">Toggle publish</button>
+    </form>
+
+    <form method="get" style="margin-top: 12px;">
+      <label for="id_q">Search students</label>
+      <input id="id_q" type="text" name="q" value="{{ q }}" />
+
+      <label for="id_per_page">Per page</label>
+      <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
+
+      <button type="submit">Apply</button>
+    </form>
+
+    <form method="post" style="margin-top: 12px;">
+      {% csrf_token %}
+      <input type="hidden" name="q" value="{{ q }}" />
+
+      <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+        <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+          <tr>
+            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
+            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
+            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Score</th>
+            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+          </tr>
+        </thead>
+        <tbody class='bg-white divide-y divide-gray-200'>
+          {% for e in enrollments %}
+            {% with s=existing_scores|get_item:e.student.id %}
+            <tr>
+              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                {{ e.student }}
+                <input type="hidden" name="student_ids" value="{{ e.student.id }}" />
+              </td>
+              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.student.student_id }}</td>
+              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><input type="text" name="score_{{ e.student.id }}" value="{% if s %}{{ s.score }}{% endif %}" /></td>
+              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><input type="text" name="note_{{ e.student.id }}" value="{% if s %}{{ s.note }}{% endif %}" /></td>
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No students found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+
+      <p style="margin-top: 10px;">
+        <button type="submit">Save scores</button>
+      </p>
+    </form>
+
+    {% if page_obj %}
+      <div style="margin-top: 12px;">
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_previous %}
+          <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
+          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
+          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <p style="margin-top: 12px;">
+      <a href="{% url 'teacher_exams_home' %}">Back</a>
+    </p>
+  </body>
+</html>

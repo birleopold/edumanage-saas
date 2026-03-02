@@ -1,0 +1,14 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Upload Document{% endblock %}
+
+{% block content %}
+  <h1>Upload document</h1>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload</button>
+    <a href="{% url 'admin_documents_list' %}">Back</a>
+  </form>
+{% endblock %}

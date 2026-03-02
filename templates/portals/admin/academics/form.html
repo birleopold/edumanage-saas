@@ -1,0 +1,11 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  {% include "components/ui_form.html" %}
+
+  <p><a href="{% url list_url_name %}">Back</a></p>
+{% endblock %}

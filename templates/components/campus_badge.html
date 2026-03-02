@@ -1,0 +1,8 @@
+{% load campus_tags %}
+<span class="campus-badge {{ campus|campus_class }}">
+  {% if campus %}
+    {{ campus.name }}
+  {% else %}
+    {% if show_all_text %}All Campuses{% else %}—{% endif %}
+  {% endif %}
+</span>

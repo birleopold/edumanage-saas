@@ -1,0 +1,14 @@
+<form method="get" class="campus-filter-form" id="{{ form_id }}">
+  <label for="id_campus_{{ form_id }}">Campus:</label>
+  <select id="id_campus_{{ form_id }}" name="campus" onchange="this.form.submit()">
+    <option value="">All Campuses</option>
+    {% for c in campuses %}
+      <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>
+        {{ c.name }}
+      </option>
+    {% endfor %}
+  </select>
+  <noscript>
+    <button type="submit">Apply</button>
+  </noscript>
+</form>

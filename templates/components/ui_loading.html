@@ -1,0 +1,59 @@
+{% comment %}
+Loading Spinner Components
+Usage: 
+  - Inline: {% include "components/ui_loading.html" with size="sm" %}
+  - Full Page Overlay: Add data-loading attribute to forms/buttons
+{% endcomment %}
+
+{% if overlay %}
+<!-- Full Page Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-2xl">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    <p class="text-gray-700 font-medium">{{ loading_text|default:"Loading..." }}</p>
+  </div>
+</div>
+{% else %}
+<!-- Inline Spinner -->
+<div class="inline-flex items-center justify-center">
+  <div class="animate-spin rounded-full border-b-2 border-current
+    {% if size == 'xs' %}h-3 w-3
+    {% elif size == 'sm' %}h-4 w-4
+    {% elif size == 'lg' %}h-8 w-8
+    {% elif size == 'xl' %}h-12 w-12
+    {% else %}h-6 w-6{% endif %}
+    {% if color %}{{ color }}{% else %}text-primary-600{% endif %}">
+  </div>
+  {% if text %}
+    <span class="ml-2 text-sm text-gray-600">{{ text }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if overlay %}
+<script>
+  // Show loading overlay for forms with data-loading attribute
+  document.addEventListener('DOMContentLoads', function() {
+    const forms = document.querySelectorAll('form[data-loading]');
+    const overlay = document.getElementById('loading-overlay');
+    
+    forms.forEach(function(form) {
+      form.addEventListener('submit', function() {
+        if (overlay) {
+          overlay.classList.remove('hidden');
+        }
+      });
+    });
+    
+    // Also support buttons with data-loading
+    const buttons = document.querySelectorAll('button[data-loading], a[data-loading]');
+    buttons.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (overlay) {
+          overlay.classList.remove('hidden');
+        }
+      });
+    });
+  });
+</script>
+{% endif %}

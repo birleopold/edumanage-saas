@@ -1,0 +1,120 @@
+<!doctype html>
+{% load attendance_extras %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Take Attendance</title>
+  </head>
+  <body>
+    <h1>Take attendance</h1>
+
+    <form method="get">
+      <label for="id_campus">Campus</label>
+      <select id="id_campus" name="campus">
+        <option value="">All</option>
+        {% for c in campuses %}
+          <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="id_offering">Offering</label>
+      <select id="id_offering" name="offering">
+        <option value="">-- select --</option>
+        {% for o in offerings %}
+          <option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>
+            {{ o }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <label for="id_date">Date</label>
+      <input id="id_date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" placeholder="YYYY-MM-DD" />
+
+      <label for="id_q">Search</label>
+      <input id="id_q" type="text" name="q" value="{{ q }}" />
+
+      <label for="id_per_page">Per page</label>
+      <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
+
+      <button type="submit">Load</button>
+    </form>
+
+    {% if selected_offering %}
+      <hr />
+      <h2>Selected offering</h2>
+      <p>{{ selected_offering }}</p>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="campus" value="{{ selected_campus_id }}" />
+        <input type="hidden" name="offering" value="{{ selected_offering.id }}" />
+        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}" />
+
+        <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+          <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+            <tr>
+              <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
+              <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
+              <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th>
+              <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+            </tr>
+          </thead>
+          <tbody class='bg-white divide-y divide-gray-200'>
+            {% for e in enrollments %}
+              {% with entry=existing_entries|get_item:e.student.id %}
+              <tr>
+                <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                  {{ e.student }}
+                  <input type="hidden" name="student_ids" value="{{ e.student.id }}" />
+                </td>
+                <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.student.student_id }}</td>
+                <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                  <select name="status_{{ e.student.id }}">
+                    {% for value,label in STATUS_CHOICES %}
+                      <option value="{{ value }}" {% if entry and entry.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                  <input type="text" name="note_{{ e.student.id }}" value="{% if entry %}{{ entry.note }}{% endif %}" />
+                </td>
+              </tr>
+              {% endwith %}
+            {% empty %}
+              <tr>
+                <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No students found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+
+        <p style="margin-top: 10px;">
+          <button type="submit">Save attendance</button>
+        </p>
+      </form>
+
+      {% if page_obj %}
+        <div style="margin-top: 12px;">
+          <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+          {% if page_obj.has_previous %}
+            <a href="?campus={{ selected_campus_id }}&offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}&q={{ q }}&per_page={{ per_page }}&page=1">First</a>
+            <a href="?campus={{ selected_campus_id }}&offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}&q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
+          {% endif %}
+
+          {% if page_obj.has_next %}
+            <a href="?campus={{ selected_campus_id }}&offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}&q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
+            <a href="?campus={{ selected_campus_id }}&offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}&q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p>Select an offering and click Load.</p>
+    {% endif %}
+
+    <p style="margin-top: 12px;">
+      <a href="{% url 'teacher_attendance_home' %}">Back</a>
+    </p>
+  </body>
+</html>

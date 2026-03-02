@@ -1,0 +1,73 @@
+{% extends 'portals/student/base.html' %}
+{% load exams_extras %}
+
+{% block title %}Exam Results{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Exam Results</h1>
+  <p class="text-gray-600">View your published exam scores</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if papers %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exam</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max Score</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Percentage</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for p in papers %}
+          {% with s=score_map|get_item:p.id %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ p.exam }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-primary-600">{{ p.offering }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if s %}
+                <span class="text-2xl font-bold text-indigo-600">{{ s.score }}</span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ p.max_score }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if s and p.max_score > 0 %}
+                {% widthratio s.score p.max_score 100 as percentage %}
+                {% if percentage >= 75 %}
+                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    <i class="ph ph-check-circle"></i> {{ percentage }}%
+                  </span>
+                {% elif percentage >= 50 %}
+                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                    <i class="ph ph-warning"></i> {{ percentage }}%
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                    <i class="ph ph-x-circle"></i> {{ percentage }}%
+                  </span>
+                {% endif %}
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <i class="ph ph-calendar"></i> {{ p.date|date:"M d, Y" }}
+            </td>
+          </tr>
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="exam" title="No exam results" description="No published exam results yet" %}
+{% endif %}
+{% endblock %}

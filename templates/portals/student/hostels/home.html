@@ -1,0 +1,107 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}My Hostel{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Hostel</h1>
+  <p class="text-gray-600">View your hostel accommodation details</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if current %}
+  <div class="bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg shadow-sm border-2 border-primary-200 p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <i class="ph ph-bed text-primary-600"></i>
+      Current Allocation
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-lg p-4 border border-primary-200">
+        <div class="text-sm font-semibold text-gray-500 mb-1">Hostel</div>
+        <div class="text-xl font-bold text-primary-600">{{ current.bed.room.hostel }}</div>
+      </div>
+      <div class="bg-white rounded-lg p-4 border border-primary-200">
+        <div class="text-sm font-semibold text-gray-500 mb-1">Room</div>
+        <div class="text-xl font-bold text-indigo-600">{{ current.bed.room.name }}</div>
+      </div>
+      <div class="bg-white rounded-lg p-4 border border-primary-200">
+        <div class="text-sm font-semibold text-gray-500 mb-1">Bed</div>
+        <div class="text-xl font-bold text-gray-900">{{ current.bed.label }}</div>
+      </div>
+      <div class="bg-white rounded-lg p-4 border border-primary-200">
+        <div class="text-sm font-semibold text-gray-500 mb-1">Period</div>
+        <div class="text-sm text-gray-700">
+          <div><i class="ph ph-calendar"></i> {{ current.start_date|date:"M d, Y" }}</div>
+          {% if current.end_date %}
+            <div class="text-xs">to {{ current.end_date|date:"M d, Y" }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-6">
+    <div class="flex items-center gap-3">
+      <i class="ph ph-warning-circle text-yellow-600 text-3xl"></i>
+      <div>
+        <h3 class="font-bold text-gray-900">No Active Allocation</h3>
+        <p class="text-gray-600">You don't have an active hostel allocation at this time.</p>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+  <i class="ph ph-clock-counter-clockwise text-gray-600"></i>
+  Allocation History
+</h2>
+{% if allocations %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hostel</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Room & Bed</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for a in allocations %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ a.bed.room.hostel }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex flex-col">
+                <span class="font-medium text-gray-900">{{ a.bed.room.name }}</span>
+                <span class="text-xs text-gray-500">Bed: {{ a.bed.label }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <div class="flex flex-col">
+                <span><i class="ph ph-calendar"></i> {{ a.start_date|date:"M d, Y" }}</span>
+                {% if a.end_date %}
+                  <span class="text-xs">to {{ a.end_date|date:"M d, Y" }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if a.status == 'active' or a.status == 'ACTIVE' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle"></i> Active
+                </span>
+              {% else %}
+                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ a.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ a.note|default:"-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="bed" title="No allocation history" description="You don't have any hostel allocation history" %}
+{% endif %}
+{% endblock %}

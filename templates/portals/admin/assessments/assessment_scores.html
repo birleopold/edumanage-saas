@@ -1,0 +1,44 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Assessment Scores{% endblock %}
+
+{% block content %}
+  <h1>Assessment Scores</h1>
+
+  <div>
+    <div><strong>Assessment:</strong> {{ assessment.name }}</div>
+    <div><strong>Offering:</strong> {{ assessment.offering }}</div>
+    <div><strong>Max score:</strong> {{ assessment.max_score }}</div>
+    <div><strong>Published:</strong> {% if assessment.is_published %}Yes{% else %}No{% endif %}</div>
+  </div>
+
+  <h2 style="margin-top: 16px;">Scores</h2>
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Score</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for s in scores %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.student }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.student.student_id }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.score }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.note }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No scores recorded yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  <p style="margin-top: 12px;">
+    <a href="{% url 'admin_assessments_list' %}">Back</a>
+  </p>
+{% endblock %}

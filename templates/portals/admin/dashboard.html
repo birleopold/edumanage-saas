@@ -1,0 +1,184 @@
+{% extends "portals/admin/base.html" %}
+{% load campus_tags %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+
+{% block content %}
+<h1>
+  Admin Dashboard
+  {% if current_campus %}
+    {% campus_indicator current_campus %}
+  {% endif %}
+</h1>
+
+<div style="margin: 20px 0;">
+  {% campus_filter campuses selected_campus_id %}
+</div>
+
+{% if view_mode == 'no_access' %}
+  <div class="campus-info-card" style="background: #fee2e2; border-color: #fca5a5;">
+    <div class="campus-info-card-title" style="color: #991b1b;">Access Denied</div>
+    <div class="campus-info-card-detail" style="color: #7f1d1d;">
+      You do not have access to the selected campus.
+    </div>
+  </div>
+{% elif view_mode == 'select_campus' %}
+  <div class="campus-info-card">
+    <div class="campus-info-card-title">Welcome, Campus Admin</div>
+    <div class="campus-info-card-detail">
+      Please select your campus from the dropdown above to view metrics.
+    </div>
+  </div>
+{% elif view_mode == 'single_campus' and metrics %}
+  <div class="campus-info-card">
+    <div class="campus-info-card-title">{{ metrics.campus_name }} Campus</div>
+    <div class="campus-info-card-detail">
+      Metrics for the last {{ metrics.date_range_end|date:"Y-m-d" }} (30 days)
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px; margin-bottom: 12px;">Students</h2>
+  <div class="campus-stats">
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Total Students</div>
+      <div class="campus-stat-value">{{ metrics.students_total }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Active Students</div>
+      <div class="campus-stat-value">{{ metrics.students_active }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">New Students (30d)</div>
+      <div class="campus-stat-value">{{ metrics.students_created_in_range }}</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px; margin-bottom: 12px;">Teachers</h2>
+  <div class="campus-stats">
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Total Teachers</div>
+      <div class="campus-stat-value">{{ metrics.teachers_total }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Active Teachers</div>
+      <div class="campus-stat-value">{{ metrics.teachers_active }}</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px; margin-bottom: 12px;">Enrollments</h2>
+  <div class="campus-stats">
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Total Enrollments</div>
+      <div class="campus-stat-value">{{ metrics.enrollments_total }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Active Enrollments</div>
+      <div class="campus-stat-value">{{ metrics.enrollments_active }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Dropped Enrollments</div>
+      <div class="campus-stat-value">{{ metrics.enrollments_dropped }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">New Enrollments (30d)</div>
+      <div class="campus-stat-value">{{ metrics.enrollments_created_in_range }}</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px; margin-bottom: 12px;">Attendance (Last 30 Days)</h2>
+  <div class="campus-stats">
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Sessions</div>
+      <div class="campus-stat-value">{{ metrics.attendance_sessions_in_range }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Attendance Rate</div>
+      <div class="campus-stat-value">{{ metrics.attendance_rate }}%</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Present</div>
+      <div class="campus-stat-value">{{ metrics.attendance_present_in_range }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Absent</div>
+      <div class="campus-stat-value">{{ metrics.attendance_absent_in_range }}</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px; margin-bottom: 12px;">Finance</h2>
+  <div class="campus-stats">
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Total Invoices</div>
+      <div class="campus-stat-value">{{ metrics.invoices_total }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Paid</div>
+      <div class="campus-stat-value">{{ metrics.invoices_paid }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Sent</div>
+      <div class="campus-stat-value">{{ metrics.invoices_sent }}</div>
+    </div>
+    <div class="campus-stat-card">
+      <div class="campus-stat-label">Overdue</div>
+      <div class="campus-stat-value">{{ metrics.invoices_overdue }}</div>
+    </div>
+  </div>
+
+{% elif view_mode == 'all_campuses' and metrics %}
+  <div class="campus-info-card">
+    <div class="campus-info-card-title">All Campuses Overview</div>
+    <div class="campus-info-card-detail">
+      Summary across all active campuses in your organization
+    </div>
+  </div>
+
+  <div class="campus-comparison">
+    {% for campus_summary in metrics %}
+      <div class="campus-comparison-card">
+        <div class="campus-comparison-header">
+          {{ campus_summary.campus_name }}
+        </div>
+        
+        <div class="campus-comparison-metric">
+          <span class="campus-comparison-metric-label">Total Students</span>
+          <span class="campus-comparison-metric-value">{{ campus_summary.students_total }}</span>
+        </div>
+        
+        <div class="campus-comparison-metric">
+          <span class="campus-comparison-metric-label">Active Students</span>
+          <span class="campus-comparison-metric-value">{{ campus_summary.students_active }}</span>
+        </div>
+        
+        <div class="campus-comparison-metric">
+          <span class="campus-comparison-metric-label">Total Teachers</span>
+          <span class="campus-comparison-metric-value">{{ campus_summary.teachers_total }}</span>
+        </div>
+        
+        <div class="campus-comparison-metric">
+          <span class="campus-comparison-metric-label">Active Teachers</span>
+          <span class="campus-comparison-metric-value">{{ campus_summary.teachers_active }}</span>
+        </div>
+        
+        <div class="campus-comparison-metric">
+          <span class="campus-comparison-metric-label">Active Enrollments</span>
+          <span class="campus-comparison-metric-value">{{ campus_summary.enrollments_active }}</span>
+        </div>
+        
+        <div style="margin-top: 12px; text-align: center;">
+          <a href="?campus={{ campus_summary.campus_id }}" style="color: #2563eb; font-weight: 600;">
+            View Details →
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="campus-info-card">
+    <div class="campus-info-card-title">Welcome to EduManage</div>
+    <div class="campus-info-card-detail">
+      Select a campus from the dropdown above to view detailed metrics.
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

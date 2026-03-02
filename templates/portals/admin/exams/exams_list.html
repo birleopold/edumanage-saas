@@ -1,0 +1,128 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Final Exams{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Final Exams</h1>
+  <p class="text-gray-600">Manage final examination periods and schedules</p>
+</div>
+
+<!-- Toast Notifications -->
+{% include "components/ui_toast.html" %}
+
+<!-- Search and Filters -->
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="space-y-4">
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+      <!-- Search Bar -->
+      <div class="flex-1 w-full md:max-w-md">
+        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="ph ph-magnifying-glass text-gray-400"></i>
+          </div>
+          <input id="id_q" 
+                 type="text" 
+                 name="q" 
+                 value="{{ q }}" 
+                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
+                 placeholder="Search by exam name or term..." />
+        </div>
+      </div>
+
+      <!-- Per Page -->
+      <div class="w-full md:w-32">
+        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
+        <input id="id_per_page" 
+               type="number" 
+               name="per_page" 
+               value="{{ per_page }}" 
+               min="1" 
+               max="200"
+               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+      </div>
+
+      <!-- Apply Button -->
+      <button type="submit" 
+              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-funnel"></i>
+        <span>Apply Filters</span>
+      </button>
+    </div>
+
+    <!-- Add Exam Button -->
+    <div class="flex justify-end pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_exams_create' %}" 
+         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-plus"></i>
+        <span>Add Exam Period</span>
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Exams Table or Empty State -->
+{% if exams %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Academic Term</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exam Period</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date Range</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for e in exams %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ e.id }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ e.term }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ e.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-900">{{ e.start_date|date:"M d" }}</span>
+                <i class="ph ph-arrow-right text-gray-400"></i>
+                <span class="text-gray-900">{{ e.end_date|date:"M d, Y" }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if e.is_active %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle"></i>
+                  Active
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                  <i class="ph ph-x-circle"></i>
+                  Inactive
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'admin_exams_edit' e.id %}" 
+                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
+                <i class="ph ph-pencil-simple"></i>
+                <span>Edit</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj %}
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
+  {% endif %}
+{% else %}
+  <!-- Empty State -->
+  {% url 'admin_exams_create' as create_exam_url %}
+  {% include "components/ui_empty_state.html" with icon="file-text" title="No exam periods found" description="Get started by creating your first examination period or adjust your search filters" action_url=create_exam_url action_text="Add Exam Period" %}
+{% endif %}
+{% endblock %}

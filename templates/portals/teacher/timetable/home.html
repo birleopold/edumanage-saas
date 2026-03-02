@@ -1,0 +1,54 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}My Timetable{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Timetable</h1>
+  <p class="text-gray-600">View your weekly teaching schedule</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if entries %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Day</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Class</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Room</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for e in entries %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold">
+                <i class="ph ph-calendar-blank"></i>
+                {{ e.get_weekday_display }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">{{ e.period }}</span>
+            </td>
+            <td class="px-6 py-4 text-sm font-semibold text-primary-600">{{ e.offering }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <i class="ph ph-users"></i> {{ e.offering.class_group|default:"-" }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <i class="ph ph-door"></i> {{ e.room|default:"-" }}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{ e.note|default:"-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="calendar-blank" title="No timetable" description="Your teaching timetable hasn't been set up yet" %}
+{% endif %}
+{% endblock %}

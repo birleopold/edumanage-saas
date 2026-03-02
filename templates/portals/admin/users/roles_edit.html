@@ -1,0 +1,34 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Edit Roles{% endblock %}
+
+{% block content %}
+  <h1>Edit roles</h1>
+
+  <div>
+    <div><strong>User:</strong> {{ user_obj.username }}</div>
+    <div><strong>Name:</strong> {{ user_obj.last_name }} {{ user_obj.first_name }}</div>
+    <div><strong>Email:</strong> {{ user_obj.email }}</div>
+  </div>
+
+  <form method="post" style="margin-top: 12px;">
+    {% csrf_token %}
+
+    <fieldset>
+      <legend>Roles</legend>
+      {% for r in roles %}
+        <div>
+          <label>
+            <input type="checkbox" name="role_ids" value="{{ r.id }}" {% if r.id in selected_role_ids %}checked{% endif %} />
+            {{ r.code }} ({{ r.name }})
+          </label>
+        </div>
+      {% endfor %}
+    </fieldset>
+
+    <p style="margin-top: 10px;">
+      <button type="submit">Save</button>
+      <a href="{% url 'admin_users_list' %}">Back</a>
+    </p>
+  </form>
+{% endblock %}

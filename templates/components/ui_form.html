@@ -1,0 +1,80 @@
+{% load widget_tweaks %}
+
+<div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8">
+    <form method="{% block form_method %}post{% endblock %}" {% block form_attributes %}{% endblock %} class="space-y-6">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="rounded-lg bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="ph ph-warning-circle text-red-500 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-bold text-red-800">Please correct the following errors:</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                        <ul class="list-disc pl-5 space-y-1 font-medium">
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 gap-y-6 gap-x-6 {% block grid_cols %}sm:grid-cols-2{% endblock %}">
+            {% for field in form %}
+            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' %}sm:col-span-2{% endif %} group relative">
+                {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="relative flex items-start py-2 border border-transparent rounded-lg hover:border-gray-200 transition-colors p-2 -ml-2">
+                        <div class="flex items-center h-5">
+                            {% render_field field class="focus:ring-primary-500 h-5 w-5 text-primary-600 border-2 border-gray-400 rounded cursor-pointer transition-colors" %}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="{{ field.id_for_label }}" class="font-bold text-gray-800 cursor-pointer">{{ field.label }}</label>
+                            {% if field.help_text %}
+                            <p class="text-gray-500 mt-1 font-medium">{{ field.help_text|safe }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-800 mb-1.5 transition-colors group-focus-within:text-primary-600">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="text-red-500 font-bold ml-1">*</span>{% endif %}
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        {% if field.errors %}
+                            {% render_field field class="block w-full border-2 border-red-300 rounded-lg text-gray-900 focus:ring-0 focus:border-red-500 sm:text-sm px-4 py-2.5 bg-red-50 transition-all shadow-sm placeholder-gray-400" %}
+                        {% else %}
+                            {% render_field field class="block w-full border-2 border-gray-300 rounded-lg text-gray-900 focus:ring-0 focus:border-primary-500 sm:text-sm px-4 py-2.5 bg-white hover:bg-gray-50 transition-all shadow-sm placeholder-gray-400 font-medium" %}
+                        {% endif %}
+                    </div>
+                    {% if field.help_text %}
+                    <p class="mt-2 text-sm text-gray-500 font-medium">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                    <p class="mt-2 text-sm font-bold text-red-600 flex items-center">
+                        <i class="ph ph-warning-circle mr-1"></i>
+                        {% for error in field.errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="pt-6 mt-2 border-t border-gray-200 flex justify-end gap-3">
+            {% block form_actions %}
+            <button type="button" onclick="window.history.back();" class="bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+                Cancel
+            </button>
+            <button type="submit" class="inline-flex justify-center items-center py-2.5 px-6 border-2 border-transparent shadow-md text-sm font-bold rounded-lg text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5">
+                <i class="ph ph-floppy-disk mr-2 text-lg"></i>
+                Save Changes
+            </button>
+            {% endblock %}
+        </div>
+    </form>
+</div>

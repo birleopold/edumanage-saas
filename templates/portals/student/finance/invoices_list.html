@@ -1,0 +1,71 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}My Invoices{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Invoices</h1>
+  <p class="text-gray-600">View your billing statements and payment history</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if invoices %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amounts</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for inv in invoices %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex flex-col">
+                <span class="font-semibold text-gray-900">{{ inv.academic_year }}</span>
+                <span class="text-xs text-gray-500">{{ inv.academic_term }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex flex-col">
+                <span class="text-gray-900 font-semibold">Total: {{ inv.total_amount|floatformat:2 }}</span>
+                <span class="text-xs text-green-600">Paid: {{ inv.total_paid|floatformat:2 }}</span>
+                <span class="text-xs font-medium {% if inv.balance > 0 %}text-red-600{% else %}text-gray-500{% endif %}">Balance: {{ inv.balance|floatformat:2 }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if inv.status == 'paid' or inv.status == 'PAID' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle"></i> Paid
+                </span>
+              {% elif inv.status == 'pending' or inv.status == 'PENDING' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-clock"></i> Pending
+                </span>
+              {% elif inv.status == 'overdue' or inv.status == 'OVERDUE' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-warning"></i> Overdue
+                </span>
+              {% else %}
+                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ inv.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'student_invoices_detail' inv.id %}" 
+                 class="inline-flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="ph ph-file-text"></i> View Details
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="wallet" title="No invoices" description="You don't have any invoices yet" %}
+{% endif %}
+{% endblock %}

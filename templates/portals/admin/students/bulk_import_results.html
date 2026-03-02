@@ -1,0 +1,153 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Import Results{% endblock %}
+{% block page_title %}Bulk Import Results{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm">
+    <a href="{% url 'admin_students_list' %}" class="text-primary-600 hover:text-primary-800">Students</a>
+    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
+    <a href="{% url 'admin_students_bulk_import' %}" class="text-primary-600 hover:text-primary-800">Bulk Import</a>
+    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
+    <span class="text-gray-500">Results</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Success Message -->
+    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
+        <div class="flex items-start">
+            <i class="ph ph-check-circle text-green-500 text-2xl mr-3"></i>
+            <div>
+                <h3 class="text-lg font-bold text-green-900">Import Completed Successfully!</h3>
+                <p class="text-sm text-green-800 mt-1">{{ credentials|length }} student(s) imported with credentials generated.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Options -->
+    <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Download Credentials</h2>
+        <p class="text-gray-600 mb-6">Choose how you want to access the generated credentials:</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{% url 'admin_students_download_credentials_csv' %}" 
+               class="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition group">
+                <div class="flex items-center">
+                    <i class="ph ph-file-csv text-3xl text-gray-400 group-hover:text-primary-600 mr-4"></i>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Download as CSV</h3>
+                        <p class="text-sm text-gray-600">Spreadsheet format for easy management</p>
+                    </div>
+                </div>
+                <i class="ph ph-download text-xl text-gray-400 group-hover:text-primary-600"></i>
+            </a>
+
+            <button 
+                onclick="window.print()"
+                class="flex items-center justify-between p-4 border-2 border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition group">
+                <div class="flex items-center">
+                    <i class="ph ph-printer text-3xl text-gray-400 group-hover:text-primary-600 mr-4"></i>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Print Credentials</h3>
+                        <p class="text-sm text-gray-600">Print all credentials for distribution</p>
+                    </div>
+                </div>
+                <i class="ph ph-printer text-xl text-gray-400 group-hover:text-primary-600"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Credentials Table -->
+    <div class="bg-white shadow-md rounded-xl border border-gray-300 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">Generated Credentials</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Temp Password</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Setup Link</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for cred in credentials %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-mono font-semibold text-gray-900">{{ cred.student_number }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-medium text-gray-900">{{ cred.first_name }} {{ cred.last_name }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if cred.email %}
+                                <span class="text-sm text-gray-700">{{ cred.email }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-400 italic">No email</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <code class="bg-gray-100 px-3 py-1 rounded font-mono text-sm">{{ cred.temp_password }}</code>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if cred.has_setup_token %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                    <i class="ph ph-check-circle mr-1"></i> Sent
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    N/A
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between items-center">
+        <a href="{% url 'admin_students_bulk_import' %}" 
+           class="inline-flex items-center px-4 py-2 text-primary-600 hover:text-primary-800 font-semibold">
+            <i class="ph ph-arrow-left mr-2"></i>
+            Import More Students
+        </a>
+        
+        <a href="{% url 'admin_students_list' %}" 
+           class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 transition shadow-md">
+            <i class="ph ph-list mr-2"></i>
+            View All Students
+        </a>
+    </div>
+</div>
+
+<style>
+@media print {
+    nav, .breadcrumbs, button, a[href*="download"], a[href*="import"] {
+        display: none !important;
+    }
+    
+    .bg-white {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+    }
+    
+    table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+</style>
+{% endblock %}

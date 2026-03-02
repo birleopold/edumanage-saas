@@ -1,0 +1,62 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+  <h1>Departments</h1>
+
+  <form method="get">
+    <label for="id_q">Search</label>
+    <input id="id_q" type="text" name="q" value="{{ q }}" />
+
+    <label for="id_per_page">Per page</label>
+    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
+
+    <button type="submit">Apply</button>
+  </form>
+
+  <p><a href="{% url 'admin_hr_department_create' %}">Add</a></p>
+
+  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
+    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+      <tr>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Campus</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Code</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Name</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Active</th>
+        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
+      </tr>
+    </thead>
+    <tbody class='bg-white divide-y divide-gray-200'>
+      {% for d in departments %}
+        <tr>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ d.id }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ d.campus }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ d.code }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ d.name }}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{% if d.is_active %}Yes{% else %}No{% endif %}</td>
+          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_hr_department_edit' d.id %}">Edit</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No departments.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+
+  {% if page_obj %}
+    <div style="margin-top: 12px;">
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_previous %}
+        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
+        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
+      {% endif %}
+
+      {% if page_obj.has_next %}
+        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
+        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

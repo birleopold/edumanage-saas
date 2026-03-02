@@ -1,0 +1,78 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Documents{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
+  <p class="text-gray-600">Access and download shared documents and resources</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="flex gap-4 items-end">
+    <div class="flex-1">
+      <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+      <div class="relative">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input id="id_q" type="text" name="q" value="{{ q }}" 
+               class="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+               placeholder="Search documents..." />
+      </div>
+    </div>
+    <div class="w-32">
+      <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
+      <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200"
+             class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg" />
+    </div>
+    <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold">
+      <i class="ph ph-funnel"></i> Apply
+    </button>
+  </form>
+</div>
+
+{% if documents %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Document</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for d in documents %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex items-center gap-2">
+                <i class="ph ph-file-text text-primary-600 text-xl"></i>
+                <span class="font-semibold text-gray-900">{{ d.title }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ d.description|default:"-" }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <i class="ph ph-clock"></i> {{ d.created_at|date:"M d, Y" }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'teacher_documents_download' d.id %}" 
+                 class="inline-flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <i class="ph ph-download"></i>
+                <span>Download</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj %}
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
+  {% endif %}
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="file-text" title="No documents" description="There are no documents available at this time" %}
+{% endif %}
+{% endblock %}
