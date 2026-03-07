@@ -1,0 +1,263 @@
+{% extends "portals/student/base.html" %}
+{% load static %}
+
+{% block title %}{{ paper.exam.name }} - {{ paper.offering.course.name }}{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8" x-data="examTimer({{ time_remaining|default:0 }})">
+    <!-- Timer Bar (Fixed Top) -->
+    <div class="fixed top-0 left-0 right-0 bg-white shadow-md z-50 border-b-4" :class="timeLeft > 300 ? 'border-green-500' : timeLeft > 60 ? 'border-yellow-500' : 'border-red-500'">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ paper.exam.name }}</h2>
+                    <p class="text-sm text-gray-500">{{ paper.offering.course.name }}</p>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center space-x-2">
+                        <i class="ph ph-clock text-2xl" :class="timeLeft > 300 ? 'text-green-600' : timeLeft > 60 ? 'text-yellow-600' : 'text-red-600'"></i>
+                        <div>
+                            <div class="text-2xl font-bold" :class="timeLeft > 300 ? 'text-green-600' : timeLeft > 60 ? 'text-yellow-600' : 'text-red-600'" x-text="formatTime(timeLeft)"></div>
+                            <div class="text-xs text-gray-500">Time Remaining</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (with top padding for fixed header) -->
+    <div class="mt-24 max-w-4xl mx-auto">
+        <!-- Exam Instructions -->
+        {% if paper.instructions %}
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="ph ph-info text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">Instructions</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        {{ paper.instructions|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Exam Form -->
+        <form method="post" id="examForm" x-on:submit="handleSubmit">
+            {% csrf_token %}
+            
+            <!-- Questions -->
+            <div class="space-y-6">
+                {% for exam_q in questions %}
+                {% with question=exam_q.question %}
+                <div class="bg-white shadow rounded-lg p-6">
+                    <!-- Question Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                    Question {{ forloop.counter }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ exam_q.marks }} mark{{ exam_q.marks|floatformat:0|pluralize }}</span>
+                                {% if question.difficulty %}
+                                <span class="text-xs px-2 py-0.5 rounded-full {% if question.difficulty == 'EASY' %}bg-green-100 text-green-800{% elif question.difficulty == 'MEDIUM' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ question.get_difficulty_display }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-gray-900 text-base">{{ question.question_text|linebreaks }}</div>
+                            {% if question.question_image %}
+                            <img src="{{ question.question_image.url }}" alt="Question image" class="mt-3 max-w-full h-auto rounded">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Answer Options -->
+                    {% if question.question_type == 'MCQ' %}
+                    <div class="space-y-3 mt-4">
+                        {% for opt_letter, opt_text in 'ABCD' %}
+                            {% if forloop.counter == 1 and question.option_a %}
+                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                                <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
+                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">A.</span> {{ question.option_a }}</span>
+                            </label>
+                            {% elif forloop.counter == 2 and question.option_b %}
+                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                                <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
+                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">B.</span> {{ question.option_b }}</span>
+                            </label>
+                            {% elif forloop.counter == 3 and question.option_c %}
+                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                                <input type="radio" name="question_{{ exam_q.id }}" value="C" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}checked{% endif %}>
+                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">C.</span> {{ question.option_c }}</span>
+                            </label>
+                            {% elif forloop.counter == 4 and question.option_d %}
+                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                                <input type="radio" name="question_{{ exam_q.id }}" value="D" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}checked{% endif %}>
+                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">D.</span> {{ question.option_d }}</span>
+                            </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    {% elif question.question_type == 'TRUE_FALSE' %}
+                    <div class="space-y-3 mt-4">
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                            <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
+                            <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_a|default:"True" }}</span>
+                        </label>
+                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
+                            <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
+                            <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_b|default:"False" }}</span>
+                        </label>
+                    </div>
+
+                    {% else %}
+                    <!-- Text Answer (Short Answer, Essay, Fill in Blank) -->
+                    <div class="mt-4">
+                        {% if question.question_type == 'ESSAY' %}
+                        <textarea name="question_{{ exam_q.id }}" rows="8" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm" placeholder="Type your answer here...">{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}</textarea>
+                        {% else %}
+                        <input type="text" name="question_{{ exam_q.id }}" value="{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm" placeholder="Type your answer here...">
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex items-center justify-between bg-white shadow rounded-lg p-6">
+                <button type="submit" name="action" value="save" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <i class="ph ph-floppy-disk mr-2"></i>
+                    Save Progress
+                </button>
+                <button type="button" @click="confirmSubmit" class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i class="ph ph-check-circle mr-2"></i>
+                    Submit Exam
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Auto-submit Modal -->
+<div x-show="showAutoSubmitWarning" x-cloak class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <i class="ph ph-warning text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Time Running Out!</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">You have less than 1 minute remaining. The exam will be automatically submitted when time expires.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button type="button" @click="showAutoSubmitWarning = false" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function examTimer(initialTime) {
+    return {
+        timeLeft: initialTime,
+        showAutoSubmitWarning: false,
+        warningShown: false,
+        
+        init() {
+            // Start countdown
+            this.startTimer();
+            
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                this.autoSave();
+            }, 30000);
+        },
+        
+        startTimer() {
+            const interval = setInterval(() => {
+                this.timeLeft--;
+                
+                // Show warning at 1 minute
+                if (this.timeLeft === 60 && !this.warningShown) {
+                    this.showAutoSubmitWarning = true;
+                    this.warningShown = true;
+                }
+                
+                // Auto-submit at 0
+                if (this.timeLeft <= 0) {
+                    clearInterval(interval);
+                    this.autoSubmit();
+                }
+            }, 1000);
+        },
+        
+        formatTime(seconds) {
+            if (seconds < 0) return '00:00:00';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        },
+        
+        autoSave() {
+            const form = document.getElementById('examForm');
+            const formData = new FormData(form);
+            formData.set('action', 'save');
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+        },
+        
+        confirmSubmit() {
+            if (confirm('Are you sure you want to submit? You cannot change your answers after submission.')) {
+                const form = document.getElementById('examForm');
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'action';
+                input.value = 'submit';
+                form.appendChild(input);
+                form.submit();
+            }
+        },
+        
+        autoSubmit() {
+            const form = document.getElementById('examForm');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'action';
+            input.value = 'submit';
+            form.appendChild(input);
+            form.submit();
+        },
+        
+        handleSubmit(event) {
+            // Let form submit normally
+        }
+    }
+}
+</script>
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}

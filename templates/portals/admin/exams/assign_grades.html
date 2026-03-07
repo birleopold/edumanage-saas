@@ -1,0 +1,69 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Assign Grades - {{ paper.offering.course.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'admin_exam_paper_detail' paper.id %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
+    <i class="ph ph-arrow-left mr-2"></i>Back to Paper
+  </a>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Assign Grades</h1>
+  <p class="text-gray-600">{{ paper.offering.course.name }} - {{ paper.exam }}</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-3xl">
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+    
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Grading Scale</label>
+      <select name="grading_scale" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+        {% for scale in grading_scales %}
+        <option value="{{ scale.id }}" {% if scale == paper.offering.term.grading_scale %}selected{% endif %}>
+          {{ scale.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-gray-500">Select the grading scale to use for grade assignment</p>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-start gap-2">
+        <i class="ph-fill ph-info text-blue-600 mt-0.5"></i>
+        <div class="text-sm text-blue-900">
+          <p class="font-medium mb-2">Grade Assignment Process</p>
+          <ul class="space-y-1 text-xs list-disc list-inside">
+            <li>Grades will be assigned based on percentage scores</li>
+            <li>Existing grades will be updated</li>
+            <li>Students: {{ scores_count }} with scores</li>
+            <li>This action can be repeated if scores are updated</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {% if preview_grades %}
+    <div>
+      <h3 class="font-medium text-gray-900 mb-3">Grade Distribution Preview</h3>
+      <div class="space-y-2">
+        {% for grade, count in preview_grades.items %}
+        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+          <span class="font-medium text-gray-900">Grade {{ grade }}</span>
+          <span class="text-sm text-gray-600">{{ count }} students</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="flex items-center gap-4 pt-4 border-t">
+      <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+        <i class="ph ph-graduation-cap mr-2"></i>Assign Grades
+      </button>
+      <a href="{% url 'admin_exam_paper_detail' paper.id %}" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

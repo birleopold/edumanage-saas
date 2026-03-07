@@ -1,0 +1,88 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Online Exam Attempts{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Online Exam Attempts</h1>
+  <p class="text-gray-600">Monitor student exam submissions and progress</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search student..." 
+           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg">
+      <option value="">All Status</option>
+      <option value="IN_PROGRESS">In Progress</option>
+      <option value="SUBMITTED">Submitted</option>
+      <option value="GRADED">Graded</option>
+    </select>
+    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+      <i class="ph ph-funnel"></i> Filter
+    </button>
+  </form>
+</div>
+
+{% if attempts %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Exam Paper</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Started</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Completed</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Time Taken</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Score</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for attempt in attempts %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ attempt.student }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ attempt.paper.offering.course.name }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ attempt.started_at|date:"M d, Y H:i" }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ attempt.submitted_at|date:"M d, Y H:i"|default:"-" }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">
+          {% if attempt.time_taken %}
+            {{ attempt.time_taken }} min
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm">
+          {% if attempt.score is not None %}
+            <span class="font-medium text-gray-900">{{ attempt.score }}/{{ attempt.paper.max_score }}</span>
+          {% else %}
+            <span class="text-gray-500">-</span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm">
+          <span class="px-2 py-1 text-xs rounded-full 
+            {% if attempt.status == 'GRADED' %}bg-green-100 text-green-700
+            {% elif attempt.status == 'SUBMITTED' %}bg-blue-100 text-blue-700
+            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+            {{ attempt.get_status_display }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj %}
+  {% include "components/ui_pagination.html" with page_obj=page_obj %}
+{% endif %}
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center">
+  <i class="ph ph-desktop text-5xl text-gray-400 mb-4"></i>
+  <p class="text-lg font-medium text-gray-900 mb-2">No online exam attempts found</p>
+  <p class="text-sm text-gray-600">Attempts will appear here when students take online exams</p>
+</div>
+{% endif %}
+{% endblock %}

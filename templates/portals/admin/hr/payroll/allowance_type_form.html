@@ -1,0 +1,19 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit Allowance Type{% else %}Create Allowance Type{% endif %}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% if mode == 'edit' %}Edit Allowance Type{% else %}Create Allowance Type{% endif %}</h1>
+  <p class="text-gray-600">{% if mode == 'edit' %}Update allowance type details{% else %}Define a new allowance type{% endif %}</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+{% include 'components/ui_form.html' %}
+
+<div class="mt-4">
+  <a href="{% url 'admin_hr_payroll_allowance_types_list' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold">
+    <i class="ph ph-arrow-left"></i>Back to Allowance Types
+  </a>
+</div>
+{% endblock %}

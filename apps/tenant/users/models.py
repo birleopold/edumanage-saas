@@ -28,6 +28,7 @@ class User(AbstractUser):
 class Role(models.Model):
     ADMIN = "ADMIN"
     CAMPUS_ADMIN = "CAMPUS_ADMIN"
+    PRINCIPAL = "PRINCIPAL"
     TEACHER = "TEACHER"
     STUDENT = "STUDENT"
     PARENT = "PARENT"
@@ -35,6 +36,7 @@ class Role(models.Model):
     CODE_CHOICES = (
         (ADMIN, "Admin"),
         (CAMPUS_ADMIN, "Campus Admin"),
+        (PRINCIPAL, "Principal"),
         (TEACHER, "Teacher"),
         (STUDENT, "Student"),
         (PARENT, "Parent"),

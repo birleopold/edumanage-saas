@@ -1,0 +1,138 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}Exam Result - {{ result.paper.offering.course.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'student_exams_home' %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
+    <i class="ph ph-arrow-left mr-2"></i>Back to My Exams
+  </a>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ result.paper.offering.course.name }}</h1>
+  <p class="text-gray-600">{{ result.paper.exam }} • {{ result.paper.date|date:"F d, Y" }}</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Score Card -->
+    <div class="bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl shadow-lg p-8 text-white">
+      <div class="grid grid-cols-3 gap-6">
+        <div class="text-center">
+          <p class="text-sm opacity-90 mb-2">Your Score</p>
+          <p class="text-4xl font-bold">{{ result.score }}</p>
+          <p class="text-sm opacity-75">out of {{ result.paper.max_score }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-sm opacity-90 mb-2">Percentage</p>
+          <p class="text-4xl font-bold">{{ result.percentage|floatformat:1 }}%</p>
+          <p class="text-sm opacity-75">{{ result.grade|default:"Not graded" }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-sm opacity-90 mb-2">Class Rank</p>
+          <p class="text-4xl font-bold">{{ result.rank|default:"-" }}</p>
+          <p class="text-sm opacity-75">{% if result.total_students %}of {{ result.total_students }}{% endif %}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Analysis -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-gray-600">Your Score</span>
+            <span class="font-medium">{{ result.percentage|floatformat:1 }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full" style="width: {{ result.percentage }}%"></div>
+          </div>
+        </div>
+
+        {% if class_average %}
+        <div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-gray-600">Class Average</span>
+            <span class="font-medium">{{ class_average|floatformat:1 }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-blue-400 h-3 rounded-full" style="width: {{ class_average }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if highest_score %}
+        <div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-gray-600">Highest Score</span>
+            <span class="font-medium">{{ highest_score|floatformat:1 }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-green-400 h-3 rounded-full" style="width: {{ highest_score }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Remarks -->
+    {% if result.remarks %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Teacher's Remarks</h2>
+      <p class="text-gray-700">{{ result.remarks }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Exam Details</h3>
+      <dl class="space-y-3">
+        <div>
+          <dt class="text-sm text-gray-500">Subject</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ result.paper.offering.course.name }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Exam Type</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ result.paper.exam }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Date</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ result.paper.date|date:"M d, Y" }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Weight</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ result.paper.weight }}%</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Grade Scale</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600">A</span>
+          <span class="font-medium">90-100%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">B</span>
+          <span class="font-medium">80-89%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">C</span>
+          <span class="font-medium">70-79%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">D</span>
+          <span class="font-medium">60-69%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">F</span>
+          <span class="font-medium">Below 60%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

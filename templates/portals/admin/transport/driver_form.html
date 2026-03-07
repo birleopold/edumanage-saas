@@ -1,0 +1,183 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if mode == 'create' %}Add Driver{% else %}Edit Driver{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2">
+                <li><a href="{% url 'admin_transport_drivers_list' %}" class="text-gray-500 hover:text-gray-700">Drivers</a></li>
+                <li><i class="ph ph-caret-right text-gray-400"></i></li>
+                <li class="text-gray-900">{% if mode == 'create' %}Add Driver{% else %}Edit{% endif %}</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-gray-900">{% if mode == 'create' %}Add New Driver{% else %}Edit Driver{% endif %}</h1>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" class="divide-y divide-gray-200">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div class="col-span-2">
+                        <label for="{{ form.staff.id_for_label }}" class="block text-sm font-medium text-gray-700">Link to Staff (Optional)</label>
+                        {{ form.staff }}
+                        {% if form.staff.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.staff.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Link to existing staff member or leave blank for external driver</p>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">Status</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- License Information -->
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">License Information</h3>
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                        <label for="{{ form.license_number.id_for_label }}" class="block text-sm font-medium text-gray-700">License Number</label>
+                        {{ form.license_number }}
+                        {% if form.license_number.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.license_number.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.license_expiry.id_for_label }}" class="block text-sm font-medium text-gray-700">License Expiry Date</label>
+                        {{ form.license_expiry }}
+                        {% if form.license_expiry.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.license_expiry.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Contact Information</h3>
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                        <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-span-2">
+                        <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700">Address</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Emergency Contact</h3>
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                        <label for="{{ form.emergency_contact.id_for_label }}" class="block text-sm font-medium text-gray-700">Emergency Contact Name</label>
+                        {{ form.emergency_contact }}
+                        {% if form.emergency_contact.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.emergency_contact.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.emergency_phone.id_for_label }}" class="block text-sm font-medium text-gray-700">Emergency Phone</label>
+                        {{ form.emergency_phone }}
+                        {% if form.emergency_phone.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.emergency_phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Additional Information</h3>
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-900">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+            <div class="p-6 bg-red-50">
+                {% for error in form.non_field_errors %}
+                <p class="text-sm text-red-600">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                <a href="{% url 'admin_transport_drivers_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <i class="ph ph-check mr-2"></i>
+                    {% if mode == 'create' %}Create Driver{% else %}Save Changes{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="text"], input[type="email"], input[type="date"], textarea, select {
+        @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm;
+    }
+    textarea {
+        @apply resize-none;
+    }
+    input[type="checkbox"] {
+        @apply rounded border-gray-300 text-primary-600 focus:ring-primary-500;
+    }
+</style>
+{% endblock %}

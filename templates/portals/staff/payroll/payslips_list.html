@@ -1,0 +1,61 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}My Payslips{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Payslips</h1>
+  <p class="text-gray-600">View your salary payslips</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if payslips %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for ps in payslips %}
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">{{ ps.period_year }}/{{ ps.period_month|stringformat:"02d" }}</h3>
+            <p class="text-sm text-gray-600">{{ ps.period_year }}-{{ ps.period_month|stringformat:"02d" }}-01|date:'F Y' }}</p>
+          </div>
+          {% if ps.status == 'APPROVED' or ps.status == 'PAID' %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+              <i class="ph ph-check-circle"></i>{{ ps.get_status_display }}
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+              <i class="ph ph-clock"></i>{{ ps.get_status_display }}
+            </span>
+          {% endif %}
+        </div>
+
+        <div class="space-y-3 mb-4">
+          <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm text-gray-600">Base Salary</span>
+            <span class="text-sm font-semibold text-gray-900">{{ ps.base_salary|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm text-gray-600">Allowances</span>
+            <span class="text-sm font-semibold text-green-700">+{{ ps.total_allowances|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm text-gray-600">Deductions</span>
+            <span class="text-sm font-semibold text-red-700">-{{ ps.total_deductions|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between items-center py-2">
+            <span class="text-sm font-bold text-gray-900">Net Salary</span>
+            <span class="text-lg font-bold text-blue-600">{{ ps.net_salary|floatformat:2 }}</span>
+          </div>
+        </div>
+
+        <a href="{% url 'staff_payslip_detail' ps.id %}" class="block w-full text-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold">
+          <i class="ph ph-eye mr-2"></i>View Details
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="file-text" title="No payslips available" description="Your payslips will appear here once generated" %}
+{% endif %}
+{% endblock %}

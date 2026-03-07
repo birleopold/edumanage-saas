@@ -11,8 +11,23 @@ from apps.tenant.orgsettings.services import get_current_campus, get_or_create_o
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.users.models import Role, User
 
-from .forms import DepartmentForm, PositionForm, StaffProfileForm
-from .models import Department, Position, StaffProfile
+from .forms import DepartmentForm, DepartmentHeadForm, PositionForm, StaffProfileForm
+from .models import Department, DepartmentHead, Position, StaffProfile
+from .payroll_forms import (
+    AllowanceTypeForm,
+    DeductionTypeForm,
+    PayGradeForm,
+    PayslipApprovalForm,
+    PayslipGenerateForm,
+    SalaryStructureForm,
+)
+from .payroll_models import AllowanceType, DeductionType, PayGrade, Payslip, SalaryStructure
+
+
+def _admin_or_principal_required(request):
+    if not request.user.is_authenticated:
+        return False
+    return request.user.has_role(Role.ADMIN) or request.user.has_role(Role.PRINCIPAL)
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -56,6 +71,120 @@ def _create_staff_user(username: str, email: str, role_code: str) -> User:
             user.roles.add(role)
 
     return user
+
+
+@role_required(Role.ADMIN)
+def staff_list(request):
+    q = (request.GET.get("q") or "").strip()
+    per_page = _parse_per_page(request)
+    page_number = request.GET.get("page") or 1
+
+    campuses = _campus_queryset()
+    current = get_current_campus(request)
+
+    if "campus" in request.GET:
+        campus_filter = request.GET.get("campus")
+        if campus_filter == "":
+            campus_id = None
+        else:
+            try:
+                campus_id = int(campus_filter)
+            except (TypeError, ValueError):
+                campus_id = None
+    else:
+        campus_id = current.id if current else None
+
+    qs = StaffProfile.objects.select_related("campus", "department", "position", "user").all()
+
+    if campus_id:
+        qs = qs.filter(campus_id=campus_id)
+
+    if q:
+        qs = qs.filter(
+            Q(staff_id__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(last_name__icontains=q)
+            | Q(phone__icontains=q)
+            | Q(email__icontains=q)
+        )
+
+
+def _department_head_base_queryset():
+    return DepartmentHead.objects.select_related(
+        "department",
+        "department__campus",
+        "staff",
+        "staff__campus",
+    ).all()
+
+
+def department_head_list(request):
+    if not _admin_or_principal_required(request):
+        from django.http import HttpResponseForbidden
+
+        return HttpResponseForbidden("Forbidden")
+
+    q = (request.GET.get("q") or "").strip()
+    per_page = _parse_per_page(request)
+    page_number = request.GET.get("page") or 1
+
+    qs = _department_head_base_queryset()
+    if q:
+        qs = qs.filter(
+            Q(department__name__icontains=q)
+            | Q(staff__first_name__icontains=q)
+            | Q(staff__last_name__icontains=q)
+        )
+
+    paginator = Paginator(qs, per_page)
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "portals/admin/hr/department_heads_list.html",
+        {"heads": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+    )
+
+
+def department_head_create(request):
+    if not _admin_or_principal_required(request):
+        from django.http import HttpResponseForbidden
+
+        return HttpResponseForbidden("Forbidden")
+
+    if request.method == "POST":
+        form = DepartmentHeadForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department head assigned.")
+            return redirect("admin_hr_department_heads_list")
+    else:
+        form = DepartmentHeadForm()
+
+    return render(request, "portals/admin/hr/department_head_form.html", {"form": form, "mode": "create"})
+
+
+def department_head_edit(request, pk: int):
+    if not _admin_or_principal_required(request):
+        from django.http import HttpResponseForbidden
+
+        return HttpResponseForbidden("Forbidden")
+
+    obj = get_object_or_404(DepartmentHead, pk=pk)
+    if request.method == "POST":
+        form = DepartmentHeadForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department head updated.")
+            return redirect("admin_hr_department_heads_list")
+    else:
+        form = DepartmentHeadForm(instance=obj)
+
+    return render(
+        request,
+        "portals/admin/hr/department_head_form.html",
+        {"form": form, "mode": "edit", "head": obj},
+    )
 
 
 @role_required(Role.ADMIN)

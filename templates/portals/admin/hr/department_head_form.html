@@ -1,0 +1,21 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit Department Head{% else %}Assign Department Head{% endif %}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% if mode == 'edit' %}Edit Department Head{% else %}Assign Department Head{% endif %}</h1>
+  <p class="text-gray-600">{% if mode == 'edit' %}Update department head assignment{% else %}Assign a staff member as department head{% endif %}</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% include 'components/ui_form.html' %}
+
+<div class="mt-4">
+  <a href="{% url 'admin_hr_department_heads_list' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold">
+    <i class="ph ph-arrow-left"></i>
+    <span>Back to Department Heads</span>
+  </a>
+</div>
+{% endblock %}

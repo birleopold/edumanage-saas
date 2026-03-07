@@ -83,6 +83,9 @@
                     <a href="{% url 'teacher_timetable' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/teacher/timetable' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-calendar text-lg mr-3 {% if '/teacher/timetable' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Timetable
                     </a>
+                    <a href="{% url 'teacher_coursework_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/teacher/coursework' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-notebook text-lg mr-3 {% if '/teacher/coursework' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Coursework
+                    </a>
                     <a href="{% url 'teacher_attendance_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/teacher/attendance' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-calendar-check text-lg mr-3 {% if '/teacher/attendance' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Attendance
                     </a>
@@ -107,6 +110,9 @@
                     </a>
                     <a href="{% url 'teacher_documents_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/teacher/documents' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-file-doc text-lg mr-3 {% if '/teacher/documents' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Documents
+                    </a>
+                    <a href="{% url 'staff_payslips_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/teacher/payroll' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-wallet text-lg mr-3 {% if '/teacher/payroll' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> My Payslips
                     </a>
                 </div>
             </div>
@@ -144,9 +150,12 @@
                     <a href="{% url 'user_profile' %}" class="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200 hover:bg-primary-200 transition-colors">
                         {{ request.user.username|make_list|first|upper }}
                     </a>
-                    <a href="{% url 'logout' %}" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" title="Logout">
-                        <i class="ph ph-sign-out text-xl"></i>
-                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" title="Logout">
+                            <i class="ph ph-sign-out text-xl"></i>
+                        </button>
+                    </form>
                 </div>
                 {% endif %}
             </div>

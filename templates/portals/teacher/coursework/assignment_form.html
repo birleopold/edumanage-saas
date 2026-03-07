@@ -1,0 +1,10 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Add Assignment{% endblock %}
+{% block page_title %}Add Assignment{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+
+{% include "components/ui_form.html" with form=form %}
+{% endblock %}

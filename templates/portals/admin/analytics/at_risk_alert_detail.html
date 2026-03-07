@@ -1,0 +1,221 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ alert.student }} - At-Risk Alert{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <a href="{% url 'admin_analytics_alerts_list' %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-flex items-center">
+                <i class="ph ph-arrow-left mr-2"></i>Back to Alerts
+            </a>
+            <div class="flex items-start justify-between mt-2">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-3 py-1 text-sm rounded-full font-medium
+                            {% if alert.severity == 'CRITICAL' %}bg-red-100 text-red-700
+                            {% elif alert.severity == 'HIGH' %}bg-orange-100 text-orange-700
+                            {% elif alert.severity == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-blue-100 text-blue-700{% endif %}">
+                            {{ alert.get_severity_display }} Risk
+                        </span>
+                        <span class="px-3 py-1 text-sm rounded-full bg-slate-100 text-slate-700">
+                            {{ alert.get_status_display }}
+                        </span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-slate-900">{{ alert.title }}</h1>
+                    <p class="text-slate-600 mt-1">{{ alert.student }} • Created {{ alert.created_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Alert Details -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Alert Details</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-sm font-medium text-slate-700 mb-2">Description</h3>
+                            <p class="text-slate-600 whitespace-pre-line">{{ alert.description }}</p>
+                        </div>
+
+                        {% if alert.risk_factors %}
+                        <div>
+                            <h3 class="text-sm font-medium text-slate-700 mb-2">Risk Factors</h3>
+                            <div class="flex flex-wrap gap-2">
+                                {% for factor in alert.risk_factors %}
+                                <span class="px-3 py-1 text-sm bg-red-50 text-red-700 rounded-lg border border-red-200">
+                                    {{ factor }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if alert.recommended_actions %}
+                        <div>
+                            <h3 class="text-sm font-medium text-slate-700 mb-2">Recommended Actions</h3>
+                            <p class="text-slate-600 whitespace-pre-line">{{ alert.recommended_actions }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if alert.resolution_notes %}
+                        <div>
+                            <h3 class="text-sm font-medium text-slate-700 mb-2">Resolution Notes</h3>
+                            <p class="text-slate-600 whitespace-pre-line">{{ alert.resolution_notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Manage Alert</h2>
+                    
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            {% if alert.status == 'OPEN' %}
+                            <button type="submit" name="action" value="acknowledge" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="ph ph-check-circle mr-2"></i>Acknowledge
+                            </button>
+                            {% endif %}
+                            
+                            {% if alert.status in 'OPEN,ACKNOWLEDGED' %}
+                            <button type="submit" name="action" value="in_progress" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                                <i class="ph ph-arrow-circle-right mr-2"></i>Mark In Progress
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        {% if alert.status != 'RESOLVED' %}
+                        <div class="border-t border-slate-200 pt-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Resolution Notes</label>
+                            <textarea name="resolution_notes" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Add notes about actions taken...">{{ alert.resolution_notes }}</textarea>
+                            <div class="flex gap-2 mt-3">
+                                <button type="submit" name="action" value="resolve" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="ph ph-check-circle mr-2"></i>Mark as Resolved
+                                </button>
+                                <button type="submit" name="action" value="dismiss" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                                    <i class="ph ph-x-circle mr-2"></i>Dismiss Alert
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Student Info -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Student Information</h2>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <p class="text-slate-500">Name</p>
+                            <p class="font-medium text-slate-900">{{ alert.student }}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Student ID</p>
+                            <p class="font-medium text-slate-900">{{ alert.student.student_id }}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Stream/Class</p>
+                            <p class="font-medium text-slate-900">{{ alert.student.stream|default:"Not Assigned" }}</p>
+                        </div>
+                        {% if alert.snapshot %}
+                        <div>
+                            <p class="text-slate-500">Term</p>
+                            <p class="font-medium text-slate-900">{{ alert.snapshot.term }}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Current GPA</p>
+                            <p class="font-medium text-slate-900">{{ alert.snapshot.gpa|floatformat:2|default:"N/A" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'admin_analytics_student_detail' alert.student.id %}" class="mt-4 block text-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                        View Full Profile
+                    </a>
+                </div>
+
+                <!-- Assignment -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Assignment</h2>
+                    
+                    <form method="post" class="space-y-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Assign To</label>
+                            <select name="teacher_id" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select teacher...</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}" {% if alert.assigned_to == teacher %}selected{% endif %}>
+                                    {{ teacher }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" name="action" value="assign" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Update Assignment
+                        </button>
+                    </form>
+
+                    {% if alert.assigned_to %}
+                    <div class="mt-4 pt-4 border-t border-slate-200 text-sm">
+                        <p class="text-slate-500">Currently assigned to</p>
+                        <p class="font-medium text-slate-900 mt-1">{{ alert.assigned_to }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if alert.acknowledged_by %}
+                    <div class="mt-4 pt-4 border-t border-slate-200 text-sm">
+                        <p class="text-slate-500">Acknowledged by</p>
+                        <p class="font-medium text-slate-900">{{ alert.acknowledged_by }}</p>
+                        <p class="text-slate-500 text-xs mt-1">{{ alert.acknowledged_at|date:"M d, Y g:i A" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Timeline</h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="w-2 h-2 bg-blue-600 rounded-full mt-1.5"></div>
+                            <div>
+                                <p class="font-medium text-slate-900">Alert Created</p>
+                                <p class="text-slate-500 text-xs">{{ alert.created_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                        </div>
+                        {% if alert.acknowledged_at %}
+                        <div class="flex items-start gap-3">
+                            <div class="w-2 h-2 bg-yellow-600 rounded-full mt-1.5"></div>
+                            <div>
+                                <p class="font-medium text-slate-900">Acknowledged</p>
+                                <p class="text-slate-500 text-xs">{{ alert.acknowledged_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if alert.resolved_at %}
+                        <div class="flex items-start gap-3">
+                            <div class="w-2 h-2 bg-green-600 rounded-full mt-1.5"></div>
+                            <div>
+                                <p class="font-medium text-slate-900">Resolved</p>
+                                <p class="text-slate-500 text-xs">{{ alert.resolved_at|date:"M d, Y g:i A" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

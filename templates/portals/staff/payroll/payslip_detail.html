@@ -1,0 +1,116 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Payslip Detail{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Payslip for {{ payslip.period_year }}/{{ payslip.period_month|stringformat:"02d" }}</h1>
+  <p class="text-gray-600">{{ payslip.staff }}</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center gap-3 mb-2">
+      <i class="ph ph-currency-dollar text-2xl text-primary-600"></i>
+      <h3 class="text-sm font-semibold text-gray-600 uppercase">Base Salary</h3>
+    </div>
+    <p class="text-2xl font-bold text-gray-900">{{ payslip.base_salary|floatformat:2 }}</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center gap-3 mb-2">
+      <i class="ph ph-trend-up text-2xl text-green-600"></i>
+      <h3 class="text-sm font-semibold text-gray-600 uppercase">Gross Salary</h3>
+    </div>
+    <p class="text-2xl font-bold text-gray-900">{{ payslip.gross_salary|floatformat:2 }}</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center gap-3 mb-2">
+      <i class="ph ph-check-circle text-2xl text-blue-600"></i>
+      <h3 class="text-sm font-semibold text-gray-600 uppercase">Net Salary</h3>
+    </div>
+    <p class="text-2xl font-bold text-blue-600">{{ payslip.net_salary|floatformat:2 }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <i class="ph ph-plus-circle text-green-600"></i>Allowances
+    </h3>
+    {% if payslip.allowances.all %}
+      <div class="space-y-3">
+        {% for allowance in payslip.allowances.all %}
+          <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm font-medium text-gray-700">{{ allowance.allowance_type.name }}</span>
+            <span class="text-sm font-semibold text-green-700">+{{ allowance.amount|floatformat:2 }}</span>
+          </div>
+        {% endfor %}
+        <div class="flex justify-between items-center py-2 font-bold">
+          <span class="text-sm text-gray-900">Total Allowances</span>
+          <span class="text-sm text-green-700">{{ payslip.total_allowances|floatformat:2 }}</span>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-500 italic">No allowances</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <i class="ph ph-minus-circle text-red-600"></i>Deductions
+    </h3>
+    {% if payslip.deductions.all %}
+      <div class="space-y-3">
+        {% for deduction in payslip.deductions.all %}
+          <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm font-medium text-gray-700">{{ deduction.deduction_type.name }}</span>
+            <span class="text-sm font-semibold text-red-700">-{{ deduction.amount|floatformat:2 }}</span>
+          </div>
+        {% endfor %}
+        <div class="flex justify-between items-center py-2 font-bold">
+          <span class="text-sm text-gray-900">Total Deductions</span>
+          <span class="text-sm text-red-700">{{ payslip.total_deductions|floatformat:2 }}</span>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-500 italic">No deductions</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+  <h3 class="text-lg font-bold text-gray-900 mb-4">Payslip Information</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <span class="text-sm font-semibold text-gray-600">Status:</span>
+      {% if payslip.status == 'APPROVED' or payslip.status == 'PAID' %}
+        <span class="ml-2 inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+          <i class="ph ph-check-circle"></i>{{ payslip.get_status_display }}
+        </span>
+      {% else %}
+        <span class="ml-2 inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">
+          <i class="ph ph-clock"></i>{{ payslip.get_status_display }}
+        </span>
+      {% endif %}
+    </div>
+    <div>
+      <span class="text-sm font-semibold text-gray-600">Generated:</span>
+      <span class="ml-2 text-sm text-gray-900">{{ payslip.generated_at|date:'Y-m-d H:i' }}</span>
+    </div>
+    {% if payslip.approved_at %}
+    <div>
+      <span class="text-sm font-semibold text-gray-600">Approved:</span>
+      <span class="ml-2 text-sm text-gray-900">{{ payslip.approved_at|date:'Y-m-d H:i' }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="flex justify-between items-center">
+  <a href="{% url 'staff_payslips_list' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold">
+    <i class="ph ph-arrow-left"></i>Back to Payslips
+  </a>
+</div>
+{% endblock %}

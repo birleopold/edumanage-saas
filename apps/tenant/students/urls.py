@@ -5,6 +5,7 @@ from . import views, bulk_views
 urlpatterns = [
     path("", views.student_list, name="admin_students_list"),
     path("create/", views.student_create, name="admin_students_create"),
+    path("<int:pk>/", views.student_edit, name="admin_students_detail"),
     path("<int:pk>/credentials/", views.student_credentials, name="admin_students_credentials"),
     path("<int:pk>/edit/", views.student_edit, name="admin_students_edit"),
     path("bulk-import/", bulk_views.bulk_import_students, name="admin_students_bulk_import"),

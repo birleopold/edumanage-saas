@@ -54,7 +54,7 @@
 
     <!-- Add Book Button -->
     <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_library_books_create' %}" 
+      <a href="{% url 'admin_library_book_create' %}" 
          class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
         <i class="ph ph-book-bookmark"></i>
         <span>Add Book</span>
@@ -107,7 +107,7 @@
               {% endif %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'admin_library_books_edit' b.id %}" 
+              <a href="{% url 'admin_library_book_edit' b.id %}" 
                  class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
                 <i class="ph ph-pencil-simple"></i>
                 <span>Edit</span>
@@ -125,7 +125,7 @@
   {% endif %}
 {% else %}
   <!-- Empty State -->
-  {% url 'admin_library_books_create' as create_book_url %}
+  {% url 'admin_library_book_create' as create_book_url %}
   {% include "components/ui_empty_state.html" with icon="book-bookmark" title="No books found" description="Get started by adding your first book to the library catalog or adjust your search filters" action_url=create_book_url action_text="Add Book" %}
 {% endif %}
 {% endblock %}

@@ -2,7 +2,7 @@ from django import forms
 
 from apps.tenant.users.models import Role
 
-from .models import Department, Position, StaffProfile
+from .models import Department, DepartmentHead, Position, StaffProfile
 
 
 class DepartmentForm(forms.ModelForm):
@@ -31,7 +31,19 @@ class StaffProfileForm(forms.ModelForm):
             "last_name",
             "phone",
             "email",
+            "staff_category",
             "department",
             "position",
+            "reports_to",
             "is_active",
         ]
+
+
+class DepartmentHeadForm(forms.ModelForm):
+    class Meta:
+        model = DepartmentHead
+        fields = ["department", "staff", "start_date", "end_date", "is_active"]
+        widgets = {
+            "start_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
+            "end_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
+        }

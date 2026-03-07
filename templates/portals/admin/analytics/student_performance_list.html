@@ -1,0 +1,179 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}Student Performance{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">Student Performance</h1>
+            <p class="text-slate-600">Track and analyze individual student academic performance</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-slate-200">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Term</label>
+                    <select name="term" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                        {% for t in terms %}
+                        <option value="{{ t.id }}" {% if t == term %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Stream/Class</label>
+                    <select name="stream" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                        <option value="">All Streams</option>
+                        {% for stream in streams %}
+                        <option value="{{ stream.id }}" {% if stream.id|stringformat:"s" == selected_stream %}selected{% endif %}>{{ stream }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Risk Level</label>
+                    <select name="risk" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                        <option value="">All Students</option>
+                        <option value="at_risk" {% if risk_filter == "at_risk" %}selected{% endif %}>At Risk</option>
+                        <option value="critical" {% if risk_filter == "critical" %}selected{% endif %}>Critical Risk</option>
+                        <option value="high" {% if risk_filter == "high" %}selected{% endif %}>High Risk</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Name or ID" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="ph ph-magnifying-glass mr-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Rank</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Stream</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">GPA</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Percentage</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Percentile</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Trend</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for snapshot in page_obj %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    {% if snapshot.class_rank <= 3 %}
+                                    <i class="ph-fill ph-trophy text-yellow-500"></i>
+                                    {% endif %}
+                                    <span class="font-medium text-slate-900">#{{ snapshot.class_rank|default:"—" }}</span>
+                                    <span class="text-xs text-slate-500">/{{ snapshot.class_size|default:"—" }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="font-medium text-slate-900">{{ snapshot.student }}</p>
+                                    <p class="text-sm text-slate-500">{{ snapshot.student.student_id }}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ snapshot.stream|default:"—" }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-lg font-bold {% if snapshot.gpa %}{% if snapshot.gpa >= 3.5 %}text-green-600{% elif snapshot.gpa >= 3.0 %}text-blue-600{% elif snapshot.gpa >= 2.5 %}text-yellow-600{% elif snapshot.gpa >= 2.0 %}text-orange-600{% else %}text-red-600{% endif %}{% else %}text-slate-400{% endif %}">
+                                    {{ snapshot.gpa|floatformat:2|default:"N/A" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ snapshot.overall_percentage|floatformat:1|default:"—" }}%
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ snapshot.percentile|floatformat:0|default:"—" }}%
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if snapshot.performance_trend == "IMPROVING" %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                                    <i class="ph ph-trend-up mr-1"></i>Improving
+                                </span>
+                                {% elif snapshot.performance_trend == "DECLINING" %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                                    <i class="ph ph-trend-down mr-1"></i>Declining
+                                </span>
+                                {% elif snapshot.performance_trend == "STABLE" %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                                    <i class="ph ph-minus mr-1"></i>Stable
+                                </span>
+                                {% else %}
+                                <span class="text-slate-400">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if snapshot.is_at_risk %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full
+                                    {% if snapshot.risk_level == 'CRITICAL' %}bg-red-100 text-red-700
+                                    {% elif snapshot.risk_level == 'HIGH' %}bg-orange-100 text-orange-700
+                                    {% elif snapshot.risk_level == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                                    {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                    <i class="ph ph-warning mr-1"></i>{{ snapshot.risk_level }}
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                                    <i class="ph ph-check-circle mr-1"></i>On Track
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <a href="{% url 'admin_analytics_student_detail' snapshot.student.id %}?term={{ term.id }}" class="text-blue-600 hover:text-blue-700 font-medium">
+                                    View Details →
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="px-6 py-12 text-center text-slate-500">
+                                <i class="ph ph-users text-4xl mb-2"></i>
+                                <p>No student performance data found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <div class="text-sm text-slate-600">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} students
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&term={{ term.id }}&stream={{ selected_stream }}&risk={{ risk_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Previous</a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 text-sm text-slate-600">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&term={{ term.id }}&stream={{ selected_stream }}&risk={{ risk_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

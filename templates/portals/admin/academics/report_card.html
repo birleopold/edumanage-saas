@@ -1,0 +1,215 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Report Card - {{ student }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'admin_term_report_cards' term.id %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
+    <i class="ph ph-arrow-left mr-2"></i>Back to Report Cards
+  </a>
+  <div class="flex justify-between items-start">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Report Card</h1>
+      <p class="text-gray-600">{{ student }} • {{ term }}</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <i class="ph ph-printer mr-2"></i>Print
+      </button>
+      <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        <i class="ph ph-file-pdf mr-2"></i>Download PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Print-friendly Report Card -->
+<div id="report-card" class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="text-center mb-8 pb-6 border-b-2 border-gray-200">
+    <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ organization.name }}</h2>
+    <p class="text-gray-600">{{ organization.address }}</p>
+    <h3 class="text-xl font-semibold text-primary-600 mt-4">STUDENT REPORT CARD</h3>
+    <p class="text-sm text-gray-500 mt-2">{{ term.academic_year }} - {{ term.name }}</p>
+  </div>
+
+  <!-- Student Information -->
+  <div class="grid grid-cols-2 gap-6 mb-8">
+    <div>
+      <table class="w-full text-sm">
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Student Name:</td>
+          <td class="py-2 text-gray-900">{{ student.get_full_name }}</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Student ID:</td>
+          <td class="py-2 text-gray-900">{{ student.student_id }}</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Class/Stream:</td>
+          <td class="py-2 text-gray-900">{{ student.stream }}</td>
+        </tr>
+      </table>
+    </div>
+    <div>
+      <table class="w-full text-sm">
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Date of Birth:</td>
+          <td class="py-2 text-gray-900">{{ student.date_of_birth|date:"M d, Y" }}</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Admission No:</td>
+          <td class="py-2 text-gray-900">{{ student.admission_number|default:"-" }}</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 font-medium text-gray-700">Attendance:</td>
+          <td class="py-2 text-gray-900">{{ attendance_percentage|floatformat:1 }}%</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Academic Performance -->
+  <div class="mb-8">
+    <h4 class="text-lg font-semibold text-gray-900 mb-4 bg-gray-50 p-3 rounded">Academic Performance</h4>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="py-2 px-4 text-left font-semibold">Subject</th>
+          <th class="py-2 px-4 text-center font-semibold">Score</th>
+          <th class="py-2 px-4 text-center font-semibold">Grade</th>
+          <th class="py-2 px-4 text-center font-semibold">Remarks</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for result in subject_results %}
+        <tr>
+          <td class="py-3 px-4 text-gray-900">{{ result.course.name }}</td>
+          <td class="py-3 px-4 text-center font-medium">{{ result.total_score }}/{{ result.max_score }}</td>
+          <td class="py-3 px-4 text-center">
+            <span class="px-2 py-1 rounded text-sm font-medium 
+              {% if result.grade == 'A' %}bg-green-100 text-green-700
+              {% elif result.grade == 'B' %}bg-blue-100 text-blue-700
+              {% elif result.grade == 'C' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-red-100 text-red-700{% endif %}">
+              {{ result.grade }}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-center text-gray-600 text-xs">{{ result.remark|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-50 font-semibold">
+        <tr>
+          <td class="py-3 px-4">TOTAL</td>
+          <td class="py-3 px-4 text-center">{{ total_score }}/{{ total_possible }}</td>
+          <td class="py-3 px-4 text-center" colspan="2">Average: {{ average_score|floatformat:1 }}%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Performance Summary -->
+  <div class="grid grid-cols-3 gap-4 mb-8">
+    <div class="bg-blue-50 p-4 rounded-lg">
+      <p class="text-sm text-gray-600 mb-1">Overall GPA</p>
+      <p class="text-2xl font-bold text-blue-600">{{ gpa|floatformat:2 }}</p>
+    </div>
+    <div class="bg-green-50 p-4 rounded-lg">
+      <p class="text-sm text-gray-600 mb-1">Class Rank</p>
+      <p class="text-2xl font-bold text-green-600">{{ rank }}/{{ total_students }}</p>
+    </div>
+    <div class="bg-purple-50 p-4 rounded-lg">
+      <p class="text-sm text-gray-600 mb-1">Performance</p>
+      <p class="text-2xl font-bold text-purple-600">
+        {% if average_score >= 80 %}Excellent
+        {% elif average_score >= 70 %}Good
+        {% elif average_score >= 60 %}Satisfactory
+        {% else %}Needs Improvement{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Remarks -->
+  <div class="mb-8">
+    <h4 class="text-lg font-semibold text-gray-900 mb-3 bg-gray-50 p-3 rounded">Teacher's Remarks</h4>
+    <div class="p-4 bg-gray-50 rounded-lg min-h-24">
+      <p class="text-gray-700 text-sm">{{ class_teacher_remarks|default:"No remarks provided." }}</p>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <h4 class="text-lg font-semibold text-gray-900 mb-3 bg-gray-50 p-3 rounded">Principal's Comments</h4>
+    <div class="p-4 bg-gray-50 rounded-lg min-h-24">
+      <p class="text-gray-700 text-sm">{{ principal_remarks|default:"No comments provided." }}</p>
+    </div>
+  </div>
+
+  <!-- Grading Scale -->
+  <div class="mb-8">
+    <h4 class="text-sm font-semibold text-gray-700 mb-2">Grading Scale:</h4>
+    <div class="flex gap-4 text-xs text-gray-600">
+      <span>A: 80-100 (Excellent)</span>
+      <span>B: 70-79 (Good)</span>
+      <span>C: 60-69 (Satisfactory)</span>
+      <span>D: 50-59 (Pass)</span>
+      <span>F: Below 50 (Fail)</span>
+    </div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="grid grid-cols-3 gap-8 pt-6 border-t-2 border-gray-200">
+    <div class="text-center">
+      <div class="border-t border-gray-400 pt-2 mt-16">
+        <p class="text-sm font-medium">Class Teacher</p>
+        <p class="text-xs text-gray-600">Date: _____________</p>
+      </div>
+    </div>
+    <div class="text-center">
+      <div class="border-t border-gray-400 pt-2 mt-16">
+        <p class="text-sm font-medium">Principal</p>
+        <p class="text-xs text-gray-600">Date: _____________</p>
+      </div>
+    </div>
+    <div class="text-center">
+      <div class="border-t border-gray-400 pt-2 mt-16">
+        <p class="text-sm font-medium">Parent/Guardian</p>
+        <p class="text-xs text-gray-600">Date: _____________</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="text-center mt-8 pt-4 border-t border-gray-200">
+    <p class="text-xs text-gray-500">Generated on {{ now|date:"F d, Y" }}</p>
+  </div>
+</div>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #report-card, #report-card * {
+    visibility: visible;
+  }
+  #report-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none;
+  }
+}
+</style>
+
+<script>
+function downloadPDF() {
+  // Implement PDF generation
+  // Could use jsPDF or send to server for PDF generation
+  alert('PDF download functionality - integrate with PDF generation service');
+}
+</script>
+{% endblock %}

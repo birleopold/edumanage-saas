@@ -1,0 +1,213 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Report Cards - {{ term }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Term Report Cards</h1>
+  <p class="text-gray-600">Generate and manage report cards for {{ term }}</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<!-- Filters & Actions -->
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <div class="flex justify-between items-center">
+    <form method="get" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search student..." 
+             class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+      <select name="stream" class="px-4 py-2 border border-gray-300 rounded-lg">
+        <option value="">All Streams</option>
+        {% for stream in streams %}
+        <option value="{{ stream.id }}" {% if selected_stream == stream.id|stringformat:"s" %}selected{% endif %}>
+          {{ stream.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg">
+        <option value="">All Status</option>
+        <option value="generated">Generated</option>
+        <option value="pending">Pending</option>
+      </select>
+      <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        <i class="ph ph-funnel"></i> Filter
+      </button>
+    </form>
+    <div class="flex gap-2">
+      <form method="post" action="{% url 'admin_generate_report_cards' term.id %}">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          <i class="ph ph-file-plus mr-2"></i>Generate All
+        </button>
+      </form>
+      <button onclick="bulkDownload()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <i class="ph ph-download-simple mr-2"></i>Bulk Download
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-600">Total Students</p>
+        <p class="text-2xl font-bold text-gray-900">{{ total_students }}</p>
+      </div>
+      <i class="ph-fill ph-users text-3xl text-blue-500"></i>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-600">Generated</p>
+        <p class="text-2xl font-bold text-gray-900">{{ generated_count }}</p>
+      </div>
+      <i class="ph-fill ph-check-circle text-3xl text-green-500"></i>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-yellow-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-600">Pending</p>
+        <p class="text-2xl font-bold text-gray-900">{{ pending_count }}</p>
+      </div>
+      <i class="ph-fill ph-clock text-3xl text-yellow-500"></i>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-600">Average GPA</p>
+        <p class="text-2xl font-bold text-gray-900">{{ average_gpa|floatformat:2 }}</p>
+      </div>
+      <i class="ph-fill ph-chart-line text-3xl text-purple-500"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Report Cards List -->
+{% if students %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left">
+          <input type="checkbox" id="select-all" class="rounded">
+        </th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student ID</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Stream</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">GPA</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Rank</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for student in students %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4">
+          <input type="checkbox" class="student-checkbox rounded" value="{{ student.id }}">
+        </td>
+        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ student.get_full_name }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ student.student_id }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ student.stream }}</td>
+        <td class="px-6 py-4 text-sm font-semibold">
+          {% if student.term_gpa %}
+            <span class="{% if student.term_gpa >= 3.5 %}text-green-600{% elif student.term_gpa >= 3.0 %}text-blue-600{% else %}text-gray-600{% endif %}">
+              {{ student.term_gpa|floatformat:2 }}
+            </span>
+          {% else %}
+            <span class="text-gray-400">-</span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-700">
+          {% if student.term_rank %}
+            {{ student.term_rank }}/{{ student.stream_total }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm">
+          {% if student.report_generated %}
+            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+              <i class="ph ph-check mr-1"></i>Generated
+            </span>
+          {% else %}
+            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
+              <i class="ph ph-clock mr-1"></i>Pending
+            </span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm font-medium space-x-2">
+          <a href="{% url 'admin_report_card' term.id student.id %}" 
+             class="text-blue-600 hover:text-blue-900" title="View">
+            <i class="ph ph-eye"></i>
+          </a>
+          <a href="{% url 'admin_report_card' term.id student.id %}?print=1" 
+             target="_blank" class="text-green-600 hover:text-green-900" title="Print">
+            <i class="ph ph-printer"></i>
+          </a>
+          <button onclick="downloadReportCard({{ student.id }})" 
+                  class="text-purple-600 hover:text-purple-900" title="Download PDF">
+            <i class="ph ph-file-pdf"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj %}
+  <div class="mt-6">
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
+  </div>
+{% endif %}
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center">
+  <i class="ph ph-file-text text-5xl text-gray-400 mb-4"></i>
+  <p class="text-lg font-medium text-gray-900 mb-2">No students found</p>
+  <p class="text-sm text-gray-600 mb-4">Adjust your filters or generate report cards</p>
+</div>
+{% endif %}
+
+<script>
+// Select all functionality
+document.getElementById('select-all')?.addEventListener('change', function(e) {
+  document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+    checkbox.checked = e.target.checked;
+  });
+});
+
+function downloadReportCard(studentId) {
+  window.location.href = `/admin/academics/terms/{{ term.id }}/report-cards/${studentId}/download/`;
+}
+
+function bulkDownload() {
+  const selected = Array.from(document.querySelectorAll('.student-checkbox:checked'))
+    .map(cb => cb.value);
+  
+  if (selected.length === 0) {
+    alert('Please select at least one student');
+    return;
+  }
+  
+  // Send to bulk download endpoint
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "admin_bulk_download_report_cards" term.id %}';
+  
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  form.innerHTML = `
+    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+    <input type="hidden" name="students" value="${selected.join(',')}">
+  `;
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+{% endblock %}

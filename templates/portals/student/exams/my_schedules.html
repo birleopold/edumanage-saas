@@ -1,0 +1,207 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}My Exam Schedule{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Exam Schedule</h1>
+  <p class="text-gray-600">View your upcoming exam timetable and seat allocations</p>
+</div>
+
+<!-- Current Term Info -->
+<div class="bg-gradient-to-r from-primary-500 to-primary-700 rounded-xl shadow-lg p-6 text-white mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold mb-1">{{ current_term }}</h2>
+      <p class="text-primary-100">{{ current_term.academic_year }}</p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm opacity-90">Total Exams</p>
+      <p class="text-3xl font-bold">{{ total_exams }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar View Toggle -->
+<div class="flex justify-between items-center mb-6">
+  <div class="flex gap-2">
+    <button onclick="showView('list')" id="btn-list" class="px-4 py-2 bg-white border-2 border-primary-500 text-primary-600 rounded-lg font-medium">
+      <i class="ph ph-list mr-2"></i>List View
+    </button>
+    <button onclick="showView('calendar')" id="btn-calendar" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg">
+      <i class="ph ph-calendar mr-2"></i>Calendar View
+    </button>
+  </div>
+  <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <i class="ph ph-printer mr-2"></i>Print Schedule
+  </button>
+</div>
+
+<!-- List View -->
+<div id="list-view">
+  {% if schedules %}
+  <div class="space-y-4">
+    {% regroup schedules by scheduled_date as schedule_days %}
+    {% for day in schedule_days %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="bg-gray-50 px-6 py-3 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">
+          {{ day.grouper|date:"l, F d, Y" }}
+        </h3>
+      </div>
+      <div class="divide-y divide-gray-200">
+        {% for schedule in day.list %}
+        <div class="p-6 hover:bg-gray-50 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">
+                {{ schedule.paper.offering.course.name }}
+              </h4>
+              <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                  <i class="ph ph-clock text-lg"></i>
+                  <span>{{ schedule.start_time }} - {{ schedule.end_time }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="ph ph-hourglass text-lg"></i>
+                  <span>{{ schedule.duration_minutes }} minutes</span>
+                </div>
+                {% if schedule.room %}
+                <div class="flex items-center gap-2">
+                  <i class="ph ph-map-pin text-lg"></i>
+                  <span>{{ schedule.room }}</span>
+                </div>
+                {% endif %}
+                {% if schedule.seat_number %}
+                <div class="flex items-center gap-2">
+                  <i class="ph ph-chair text-lg"></i>
+                  <span>Seat: {{ schedule.seat_number }}</span>
+                </div>
+                {% endif %}
+              </div>
+              {% if schedule.instructions %}
+              <div class="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
+                <strong class="block mb-1"><i class="ph ph-info mr-1"></i>Instructions:</strong>
+                {{ schedule.instructions }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="ml-4 text-right">
+              <span class="inline-block px-3 py-1 text-sm rounded-full bg-primary-100 text-primary-700 font-medium">
+                {{ schedule.paper.exam }}
+              </span>
+              {% if schedule.is_upcoming %}
+              <p class="text-xs text-gray-500 mt-2">In {{ schedule.days_until }} days</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+    <i class="ph ph-calendar-x text-5xl text-gray-400 mb-4"></i>
+    <p class="text-lg font-medium text-gray-900 mb-2">No Exams Scheduled</p>
+    <p class="text-sm text-gray-600">Your exam schedule will appear here once published</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Calendar View -->
+<div id="calendar-view" class="hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900">{{ current_month }}</h3>
+      <div class="flex gap-2">
+        <button class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <i class="ph ph-caret-left"></i>
+        </button>
+        <button class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Calendar Grid -->
+    <div class="grid grid-cols-7 gap-2">
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Sun</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Mon</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Tue</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Wed</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Thu</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Fri</div>
+      <div class="text-center text-sm font-semibold text-gray-700 py-2">Sat</div>
+      
+      {% for day in calendar_days %}
+      <div class="border border-gray-200 rounded-lg p-2 min-h-24 {% if day.has_exam %}bg-primary-50{% endif %}">
+        <div class="text-sm font-medium text-gray-700">{{ day.day }}</div>
+        {% if day.exams %}
+          {% for exam in day.exams %}
+          <div class="text-xs bg-primary-600 text-white rounded px-1 py-0.5 mt-1 truncate">
+            {{ exam.course_code }}
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Important Reminders -->
+<div class="mt-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+  <div class="flex items-start gap-3">
+    <i class="ph-fill ph-warning text-yellow-600 text-2xl"></i>
+    <div>
+      <h4 class="font-semibold text-yellow-900 mb-2">Exam Day Reminders</h4>
+      <ul class="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+        <li>Arrive 15 minutes before the scheduled start time</li>
+        <li>Bring your student ID card and necessary stationery</li>
+        <li>Check your seat number before the exam</li>
+        <li>Electronic devices are not permitted unless specified</li>
+        <li>Read all instructions carefully before starting</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function showView(view) {
+  const listView = document.getElementById('list-view');
+  const calendarView = document.getElementById('calendar-view');
+  const btnList = document.getElementById('btn-list');
+  const btnCalendar = document.getElementById('btn-calendar');
+  
+  if (view === 'list') {
+    listView.classList.remove('hidden');
+    calendarView.classList.add('hidden');
+    btnList.classList.add('border-primary-500', 'text-primary-600', 'border-2');
+    btnList.classList.remove('border-gray-300', 'text-gray-700');
+    btnCalendar.classList.remove('border-primary-500', 'text-primary-600', 'border-2');
+    btnCalendar.classList.add('border-gray-300', 'text-gray-700');
+  } else {
+    listView.classList.add('hidden');
+    calendarView.classList.remove('hidden');
+    btnCalendar.classList.add('border-primary-500', 'text-primary-600', 'border-2');
+    btnCalendar.classList.remove('border-gray-300', 'text-gray-700');
+    btnList.classList.remove('border-primary-500', 'text-primary-600', 'border-2');
+    btnList.classList.add('border-gray-300', 'text-gray-700');
+  }
+}
+
+// Print styles
+const style = document.createElement('style');
+style.textContent = `
+  @media print {
+    body * { visibility: hidden; }
+    #list-view, #list-view * { visibility: visible; }
+    #list-view { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print { display: none; }
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

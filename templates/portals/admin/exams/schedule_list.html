@@ -1,0 +1,88 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Exam Schedules{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Exam Schedules</h1>
+  <p class="text-gray-600">Manage exam timetables and seat allocations</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <div class="flex justify-between items-center">
+    <div class="flex gap-4">
+      <form method="get" class="flex gap-2">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search schedules..." 
+               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+        <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+          <i class="ph ph-magnifying-glass"></i> Search
+        </button>
+      </form>
+    </div>
+    <a href="{% url 'admin_exam_schedule_create' %}" 
+       class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+      <i class="ph ph-plus mr-2"></i>Create Schedule
+    </a>
+  </div>
+</div>
+
+{% if schedules %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Exam</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Paper</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date & Time</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Duration</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Room</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Seats</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for schedule in schedules %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 text-sm text-gray-900">{{ schedule.paper.exam }}</td>
+        <td class="px-6 py-4 text-sm text-gray-900">{{ schedule.paper.offering.course.name }}</td>
+        <td class="px-6 py-4 text-sm text-gray-700">
+          {{ schedule.scheduled_date|date:"M d, Y" }}<br>
+          <span class="text-xs text-gray-500">{{ schedule.start_time }} - {{ schedule.end_time }}</span>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ schedule.duration_minutes }} mins</td>
+        <td class="px-6 py-4 text-sm text-gray-700">{{ schedule.room|default:"-" }}</td>
+        <td class="px-6 py-4 text-sm">
+          <span class="px-2 py-1 text-xs rounded-full {% if schedule.seats_allocated %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+            {% if schedule.seats_allocated %}Allocated{% else %}Pending{% endif %}
+          </span>
+        </td>
+        <td class="px-6 py-4 text-sm font-medium space-x-2">
+          <a href="{% url 'admin_schedule_detail' schedule.id %}" class="text-primary-600 hover:text-primary-900">View</a>
+          <a href="{% url 'admin_exam_schedule_edit' schedule.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+          {% if not schedule.seats_allocated %}
+          <a href="{% url 'admin_allocate_seats' schedule.id %}" class="text-green-600 hover:text-green-900">Allocate Seats</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj %}
+  {% include "components/ui_pagination.html" with page_obj=page_obj %}
+{% endif %}
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center">
+  <i class="ph ph-calendar-x text-5xl text-gray-400 mb-4"></i>
+  <p class="text-lg font-medium text-gray-900 mb-2">No exam schedules found</p>
+  <p class="text-sm text-gray-600 mb-4">Create your first exam schedule to get started</p>
+  <a href="{% url 'admin_exam_schedule_create' %}" 
+     class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+    <i class="ph ph-plus mr-2"></i>Create Schedule
+  </a>
+</div>
+{% endif %}
+{% endblock %}

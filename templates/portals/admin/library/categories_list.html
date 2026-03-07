@@ -1,0 +1,67 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Book Categories{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Book Categories</h1>
+  <p class="text-gray-600">Organize books by categories</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <div class="flex justify-between items-center">
+    <form method="get" class="flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search categories..." 
+             class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+      <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        <i class="ph ph-magnifying-glass"></i> Search
+      </button>
+    </form>
+    <a href="{% url 'admin_library_category_create' %}" 
+       class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+      <i class="ph ph-plus mr-2"></i>Add Category
+    </a>
+  </div>
+</div>
+
+{% if categories %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for category in categories %}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between mb-3">
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ category.name }}</h3>
+        {% if category.description %}
+        <p class="text-sm text-gray-600 mb-3">{{ category.description|truncatewords:15 }}</p>
+        {% endif %}
+        <div class="flex items-center gap-2 text-sm text-gray-500">
+          <i class="ph ph-books"></i>
+          <span>{{ category.books.count }} books</span>
+        </div>
+      </div>
+      <a href="{% url 'admin_library_category_edit' category.id %}" 
+         class="text-blue-600 hover:text-blue-900">
+        <i class="ph ph-pencil"></i>
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if page_obj %}
+  {% include "components/ui_pagination.html" with page_obj=page_obj %}
+{% endif %}
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center">
+  <i class="ph ph-folder-open text-5xl text-gray-400 mb-4"></i>
+  <p class="text-lg font-medium text-gray-900 mb-2">No categories found</p>
+  <p class="text-sm text-gray-600 mb-4">Create categories to organize your library</p>
+  <a href="{% url 'admin_library_category_create' %}" 
+     class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+    <i class="ph ph-plus mr-2"></i>Add Category
+  </a>
+</div>
+{% endif %}
+{% endblock %}

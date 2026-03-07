@@ -1,0 +1,113 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'student_library_catalog' %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
+    <i class="ph ph-arrow-left mr-2"></i>Back to Catalog
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="flex gap-6 mb-6">
+        <div class="flex-shrink-0">
+          <div class="w-32 h-40 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center text-white">
+            <i class="ph-fill ph-book text-6xl"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ book.title }}</h1>
+          <p class="text-lg text-gray-600 mb-3">by {{ book.authors_display|default:"Unknown Author" }}</p>
+          
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-full">{{ book.category|default:"Uncategorized" }}</span>
+            {% if book.available_copies > 0 %}
+            <span class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full">
+              <i class="ph ph-check-circle mr-1"></i>{{ book.available_copies }} copies available
+            </span>
+            {% else %}
+            <span class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-full">
+              <i class="ph ph-x-circle mr-1"></i>Currently unavailable
+            </span>
+            {% endif %}
+          </div>
+
+          {% if book.available_copies > 0 %}
+          <form method="post" action="{% url 'student_library_reserve_book' book.id %}">
+            {% csrf_token %}
+            <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+              <i class="ph ph-bookmark-simple mr-2"></i>Reserve This Book
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if book.description %}
+      <div class="border-t pt-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Description</h2>
+        <p class="text-gray-700 leading-relaxed">{{ book.description }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Book Details</h3>
+      <dl class="space-y-3">
+        {% if book.isbn %}
+        <div>
+          <dt class="text-sm text-gray-500">ISBN</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.isbn }}</dd>
+        </div>
+        {% endif %}
+        {% if book.publisher %}
+        <div>
+          <dt class="text-sm text-gray-500">Publisher</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.publisher }}</dd>
+        </div>
+        {% endif %}
+        {% if book.publication_year %}
+        <div>
+          <dt class="text-sm text-gray-500">Year</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.publication_year }}</dd>
+        </div>
+        {% endif %}
+        {% if book.edition %}
+        <div>
+          <dt class="text-sm text-gray-500">Edition</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.edition }}</dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt class="text-sm text-gray-500">Total Copies</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.total_copies }}</dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500">Available</dt>
+          <dd class="text-sm font-medium text-gray-900">{{ book.available_copies }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-start gap-2">
+        <i class="ph-fill ph-info text-blue-600 mt-0.5"></i>
+        <div class="text-sm text-blue-900">
+          <p class="font-medium mb-1">Borrowing Policy</p>
+          <ul class="space-y-1 text-xs">
+            <li>• Maximum loan period: 14 days</li>
+            <li>• Renewable once if no reservations</li>
+            <li>• Late return fine: $0.50/day</li>
+            <li>• Maximum 3 books at a time</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

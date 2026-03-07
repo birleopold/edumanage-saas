@@ -5,13 +5,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.users.models import Role
 
+from django.contrib import messages
+
 from .forms import (
+    DriverForm,
+    RouteScheduleForm,
     RouteStopForm,
     StudentTransportAssignmentForm,
     TransportRouteForm,
     VehicleForm,
 )
-from .models import RouteStop, StudentTransportAssignment, TransportRoute, Vehicle
+from .models import Driver, RouteSchedule, RouteStop, StudentTransportAssignment, TransportRoute, Vehicle, VehicleTracking
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -26,14 +30,74 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
 
 
 @role_required(Role.ADMIN)
+def driver_list(request):
+    q = (request.GET.get("q") or "").strip()
+    status_filter = request.GET.get("status", "")
+    per_page = _parse_per_page(request)
+    page_number = request.GET.get("page") or 1
+
+    qs = Driver.objects.select_related("staff").all()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(license_number__icontains=q) | Q(staff__first_name__icontains=q) | Q(staff__last_name__icontains=q))
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    paginator = Paginator(qs, per_page)
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "portals/admin/transport/drivers_list.html",
+        {"drivers": page_obj.object_list, "page_obj": page_obj, "q": q, "status_filter": status_filter, "per_page": per_page},
+    )
+
+
+@role_required(Role.ADMIN)
+def driver_create(request):
+    if request.method == "POST":
+        form = DriverForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Driver created successfully.")
+            return redirect("admin_transport_drivers_list")
+    else:
+        form = DriverForm()
+
+    return render(request, "portals/admin/transport/driver_form.html", {"form": form, "mode": "create"})
+
+
+@role_required(Role.ADMIN)
+def driver_edit(request, pk: int):
+    obj = get_object_or_404(Driver, pk=pk)
+
+    if request.method == "POST":
+        form = DriverForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Driver updated successfully.")
+            return redirect("admin_transport_drivers_list")
+    else:
+        form = DriverForm(instance=obj)
+
+    return render(
+        request,
+        "portals/admin/transport/driver_form.html",
+        {"form": form, "mode": "edit", "driver": obj},
+    )
+
+
+@role_required(Role.ADMIN)
 def vehicle_list(request):
     q = (request.GET.get("q") or "").strip()
+    status_filter = request.GET.get("status", "")
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
     qs = Vehicle.objects.all()
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(plate_number__icontains=q))
+        qs = qs.filter(Q(name__icontains=q) | Q(plate_number__icontains=q) | Q(model__icontains=q))
+    if status_filter:
+        qs = qs.filter(status=status_filter)
 
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
@@ -41,7 +105,7 @@ def vehicle_list(request):
     return render(
         request,
         "portals/admin/transport/vehicles_list.html",
-        {"vehicles": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {"vehicles": page_obj.object_list, "page_obj": page_obj, "q": q, "status_filter": status_filter, "per_page": per_page},
     )
 
 
@@ -51,6 +115,7 @@ def vehicle_create(request):
         form = VehicleForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Vehicle created successfully.")
             return redirect("admin_transport_vehicles_list")
     else:
         form = VehicleForm()
@@ -66,6 +131,7 @@ def vehicle_edit(request, pk: int):
         form = VehicleForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
+            messages.success(request, "Vehicle updated successfully.")
             return redirect("admin_transport_vehicles_list")
     else:
         form = VehicleForm(instance=obj)
@@ -78,14 +144,34 @@ def vehicle_edit(request, pk: int):
 
 
 @role_required(Role.ADMIN)
+def vehicle_tracking(request, pk: int):
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+    
+    # Get latest tracking data
+    latest_tracking = VehicleTracking.objects.filter(vehicle=vehicle).order_by("-timestamp").first()
+    
+    # Get recent tracking history (last 50 records)
+    tracking_history = VehicleTracking.objects.filter(vehicle=vehicle).order_by("-timestamp")[:50]
+
+    return render(
+        request,
+        "portals/admin/transport/vehicle_tracking.html",
+        {"vehicle": vehicle, "latest_tracking": latest_tracking, "tracking_history": tracking_history},
+    )
+
+
+@role_required(Role.ADMIN)
 def route_list(request):
     q = (request.GET.get("q") or "").strip()
+    shift_filter = request.GET.get("shift", "")
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = TransportRoute.objects.select_related("vehicle").all()
+    qs = TransportRoute.objects.select_related("vehicle", "driver").all()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(code__icontains=q) | Q(vehicle__name__icontains=q))
+    if shift_filter:
+        qs = qs.filter(shift=shift_filter)
 
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
@@ -93,7 +179,7 @@ def route_list(request):
     return render(
         request,
         "portals/admin/transport/routes_list.html",
-        {"routes": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {"routes": page_obj.object_list, "page_obj": page_obj, "q": q, "shift_filter": shift_filter, "per_page": per_page},
     )
 
 
@@ -103,6 +189,7 @@ def route_create(request):
         form = TransportRouteForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Route created successfully.")
             return redirect("admin_transport_routes_list")
     else:
         form = TransportRouteForm()
@@ -118,6 +205,7 @@ def route_edit(request, pk: int):
         form = TransportRouteForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
+            messages.success(request, "Route updated successfully.")
             return redirect("admin_transport_routes_list")
     else:
         form = TransportRouteForm(instance=obj)
@@ -126,6 +214,21 @@ def route_edit(request, pk: int):
         request,
         "portals/admin/transport/route_form.html",
         {"form": form, "mode": "edit", "route": obj},
+    )
+
+
+@role_required(Role.ADMIN)
+def route_detail(request, pk: int):
+    route = get_object_or_404(TransportRoute.objects.select_related("vehicle", "driver").prefetch_related("stops", "student_assignments__student"), pk=pk)
+    
+    stops = route.stops.all().order_by("order")
+    assignments = route.student_assignments.filter(is_active=True).select_related("student", "stop")
+    schedules = RouteSchedule.objects.filter(route=route, is_active=True)
+
+    return render(
+        request,
+        "portals/admin/transport/route_detail.html",
+        {"route": route, "stops": stops, "assignments": assignments, "schedules": schedules},
     )
 
 
@@ -151,13 +254,21 @@ def stop_list(request):
 
 @role_required(Role.ADMIN)
 def stop_create(request):
+    route_id = request.GET.get("route")
+    
     if request.method == "POST":
         form = RouteStopForm(request.POST)
         if form.is_valid():
             form.save()
+            messages.success(request, "Stop created successfully.")
+            if route_id:
+                return redirect("admin_transport_route_detail", pk=route_id)
             return redirect("admin_transport_stops_list")
     else:
-        form = RouteStopForm()
+        initial = {}
+        if route_id:
+            initial["route"] = route_id
+        form = RouteStopForm(initial=initial)
 
     return render(request, "portals/admin/transport/stop_form.html", {"form": form, "mode": "create"})
 
@@ -170,7 +281,8 @@ def stop_edit(request, pk: int):
         form = RouteStopForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
-            return redirect("admin_transport_stops_list")
+            messages.success(request, "Stop updated successfully.")
+            return redirect("admin_transport_route_detail", pk=obj.route.pk)
     else:
         form = RouteStopForm(instance=obj)
 
@@ -213,7 +325,8 @@ def assignment_create(request):
     if request.method == "POST":
         form = StudentTransportAssignmentForm(request.POST)
         if form.is_valid():
-            form.save()
+            assignment = form.save()
+            messages.success(request, f"Student {assignment.student.get_full_name()} assigned to route {assignment.route.code} successfully.")
             return redirect("admin_transport_assignments_list")
     else:
         form = StudentTransportAssignmentForm()
@@ -233,6 +346,7 @@ def assignment_edit(request, pk: int):
         form = StudentTransportAssignmentForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
+            messages.success(request, "Assignment updated successfully.")
             return redirect("admin_transport_assignments_list")
     else:
         form = StudentTransportAssignmentForm(instance=obj)

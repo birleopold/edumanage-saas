@@ -2,7 +2,7 @@
 Enhanced authentication views with better UX.
 """
 from django.contrib import messages
-from django.contrib.auth import login, update_session_auth_hash
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     LoginView,
@@ -11,6 +11,7 @@ from django.contrib.auth.views import (
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_http_methods
 
 from .forms import (
     CustomLoginForm,
@@ -140,3 +141,9 @@ def user_profile(request):
     }
     
     return render(request, 'auth/profile.html', context)
+
+
+@require_http_methods(["GET", "POST"])
+def logout_view(request):
+    logout(request)
+    return redirect('login')

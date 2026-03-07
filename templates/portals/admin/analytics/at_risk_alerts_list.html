@@ -1,0 +1,146 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}At-Risk Student Alerts{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">At-Risk Student Alerts</h1>
+            <p class="text-slate-600">Monitor and manage intervention alerts for students requiring support</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-slate-200">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                        <option value="OPEN" {% if status_filter == "OPEN" %}selected{% endif %}>Open</option>
+                        <option value="ACKNOWLEDGED" {% if status_filter == "ACKNOWLEDGED" %}selected{% endif %}>Acknowledged</option>
+                        <option value="IN_PROGRESS" {% if status_filter == "IN_PROGRESS" %}selected{% endif %}>In Progress</option>
+                        <option value="RESOLVED" {% if status_filter == "RESOLVED" %}selected{% endif %}>Resolved</option>
+                        <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>All Statuses</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Severity</label>
+                    <select name="severity" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+                        <option value="">All Severities</option>
+                        <option value="CRITICAL" {% if severity_filter == "CRITICAL" %}selected{% endif %}>Critical</option>
+                        <option value="HIGH" {% if severity_filter == "HIGH" %}selected{% endif %}>High</option>
+                        <option value="MEDIUM" {% if severity_filter == "MEDIUM" %}selected{% endif %}>Medium</option>
+                        <option value="LOW" {% if severity_filter == "LOW" %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Search</label>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Student name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="ph ph-magnifying-glass mr-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Alerts List -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="divide-y divide-slate-200">
+                {% for alert in page_obj %}
+                <div class="p-6 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="px-3 py-1 text-xs rounded-full font-medium
+                                {% if alert.severity == 'CRITICAL' %}bg-red-100 text-red-700
+                                {% elif alert.severity == 'HIGH' %}bg-orange-100 text-orange-700
+                                {% elif alert.severity == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                                {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                {{ alert.get_severity_display }}
+                            </span>
+                            <span class="px-3 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                                {{ alert.get_status_display }}
+                            </span>
+                            {% if alert.snapshot %}
+                            <span class="text-xs text-slate-500">{{ alert.snapshot.term }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="text-xs text-slate-500">{{ alert.created_at|timesince }} ago</span>
+                    </div>
+                    
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                                <i class="ph-fill ph-user text-2xl text-slate-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 text-lg mb-1">{{ alert.student }}</h3>
+                            <p class="text-sm text-slate-600 mb-2">{{ alert.student.student_id }} • {{ alert.student.stream|default:"No Stream" }}</p>
+                            <h4 class="font-medium text-slate-900 mb-2">{{ alert.title }}</h4>
+                            <p class="text-sm text-slate-600 mb-3">{{ alert.description|truncatewords:30 }}</p>
+                            
+                            {% if alert.risk_factors %}
+                            <div class="mb-3">
+                                <p class="text-xs font-medium text-slate-700 mb-1">Risk Factors:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for factor in alert.risk_factors %}
+                                    <span class="px-2 py-1 text-xs bg-red-50 text-red-700 rounded">{{ factor }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex items-center gap-4 text-sm">
+                                {% if alert.assigned_to %}
+                                <span class="text-slate-600">
+                                    <i class="ph ph-user mr-1"></i>Assigned to {{ alert.assigned_to }}
+                                </span>
+                                {% endif %}
+                                <a href="{% url 'admin_analytics_alert_detail' alert.id %}" class="text-blue-600 hover:text-blue-700 font-medium">
+                                    Manage Alert →
+                                </a>
+                                <a href="{% url 'admin_analytics_student_detail' alert.student.id %}" class="text-slate-600 hover:text-slate-700">
+                                    View Student Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-12 text-center text-slate-500">
+                    <i class="ph ph-check-circle text-5xl mb-3"></i>
+                    <p class="text-lg font-medium">No alerts found</p>
+                    <p class="text-sm mt-1">All students are on track</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <div class="text-sm text-slate-600">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} alerts
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Previous</a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 text-sm text-slate-600">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

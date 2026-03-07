@@ -1,0 +1,77 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Submissions{% endblock %}
+{% block page_title %}Submissions{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+
+<div class="mb-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-sm text-gray-500">Assignment</div>
+      <div class="text-lg font-bold text-gray-900">{{ assignment.title }}</div>
+    </div>
+    <a href="{% url 'teacher_coursework_home' %}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700">Back</a>
+  </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="flex flex-col md:flex-row gap-3 md:items-end">
+    <div class="flex-1">
+      <label class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search student name or ID" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+    </div>
+    <div>
+      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-magnifying-glass"></i>Search
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for s in submissions %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ s.student }}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">{% if s.student.student_id %}{{ s.student.student_id }}{% else %}-{% endif %}</td>
+        <td class="px-6 py-4 text-sm">
+          {% if s.submitted_at %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Submitted</span>
+          {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Not Submitted</span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-600">{% if s.score != None %}{{ s.score }}{% else %}-{% endif %}</td>
+        <td class="px-6 py-4 text-right">
+          {% if s.submitted_at %}
+          <a href="{% url 'teacher_coursework_submission_mark' assignment.pk s.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            <i class="ph ph-pencil-simple mr-1"></i>Mark
+          </a>
+          {% else %}
+          <span class="inline-flex items-center px-3 py-1.5 bg-gray-100 border-2 border-gray-200 rounded-lg text-sm font-semibold text-gray-400 cursor-not-allowed">
+            <i class="ph ph-pencil-simple mr-1"></i>Mark
+          </span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="px-6 py-10 text-center text-gray-500">No submissions.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Allowance Types{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Allowance Types</h1>
+  <p class="text-gray-600">Manage allowance categories</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="space-y-4">
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+      <div class="flex-1 w-full md:max-w-md">
+        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+        <input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Search by name or code..." />
+      </div>
+      <div class="w-full md:w-32">
+        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
+        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+      </div>
+      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-funnel"></i>Apply Filters
+      </button>
+    </div>
+    <div class="flex justify-end pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_hr_payroll_allowance_type_create' %}" class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm">
+        <i class="ph ph-plus"></i>Create Allowance Type
+      </a>
+    </div>
+  </form>
+</div>
+
+{% if allowance_types %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Code</th>
+          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Taxable</th>
+          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for at in allowance_types %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ at.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ at.code }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if at.is_taxable %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-warning"></i>Taxable
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle"></i>Non-taxable
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if at.is_active %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle"></i>Active
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                  <i class="ph ph-x-circle"></i>Inactive
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+              <a href="{% url 'admin_hr_payroll_allowance_type_edit' at.id %}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 font-semibold">
+                <i class="ph ph-pencil-simple"></i>Edit
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj %}
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
+  {% endif %}
+{% else %}
+  {% url 'admin_hr_payroll_allowance_type_create' as create_url %}
+  {% include "components/ui_empty_state.html" with icon="plus-circle" title="No allowance types defined" description="Create allowance types for payroll calculations" action_url=create_url action_text="Create Allowance Type" %}
+{% endif %}
+{% endblock %}

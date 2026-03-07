@@ -1,0 +1,302 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ student }} - Performance Detail{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6">
+            <a href="{% url 'admin_analytics_student_list' %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-flex items-center">
+                <i class="ph ph-arrow-left mr-2"></i>Back to List
+            </a>
+            <div class="flex items-center justify-between mt-2">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ student }}</h1>
+                    <p class="text-slate-600">Student ID: {{ student.student_id }} • {{ student.stream|default:"No Stream Assigned" }}</p>
+                </div>
+                <select onchange="window.location.href='?term=' + this.value" class="px-4 py-2 border border-slate-300 rounded-lg">
+                    {% for t in terms %}
+                    <option value="{{ t.id }}" {% if t == term %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="ph-fill ph-chart-line text-2xl text-green-600"></i>
+                    </div>
+                    {% if snapshot.performance_trend == "IMPROVING" %}
+                    <i class="ph ph-trend-up text-green-600 text-xl"></i>
+                    {% elif snapshot.performance_trend == "DECLINING" %}
+                    <i class="ph ph-trend-down text-red-600 text-xl"></i>
+                    {% endif %}
+                </div>
+                <h3 class="text-3xl font-bold text-slate-900">{{ snapshot.gpa|floatformat:2|default:"N/A" }}</h3>
+                <p class="text-sm text-slate-600 mt-1">GPA</p>
+                {% if snapshot.gpa_change %}
+                <p class="text-xs mt-2 {% if snapshot.gpa_change > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ snapshot.gpa_change|floatformat:2|default:"0.00" }} from last term
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="p-3 bg-blue-100 rounded-lg mb-3 inline-block">
+                    <i class="ph-fill ph-trophy text-2xl text-blue-600"></i>
+                </div>
+                <h3 class="text-3xl font-bold text-slate-900">#{{ snapshot.class_rank|default:"—" }}</h3>
+                <p class="text-sm text-slate-600 mt-1">Class Rank</p>
+                <p class="text-xs text-slate-500 mt-2">{{ snapshot.percentile|floatformat:0|default:"—" }}th percentile</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="p-3 bg-purple-100 rounded-lg mb-3 inline-block">
+                    <i class="ph-fill ph-percent text-2xl text-purple-600"></i>
+                </div>
+                <h3 class="text-3xl font-bold text-slate-900">{{ snapshot.overall_percentage|floatformat:1|default:"N/A" }}%</h3>
+                <p class="text-sm text-slate-600 mt-1">Overall Percentage</p>
+                <p class="text-xs text-slate-500 mt-2">{{ snapshot.subjects_passed }}/{{ snapshot.total_subjects }} passed</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="p-3 {% if snapshot.is_at_risk %}bg-red-100{% else %}bg-green-100{% endif %} rounded-lg mb-3 inline-block">
+                    <i class="ph-fill ph-{% if snapshot.is_at_risk %}warning{% else %}check-circle{% endif %} text-2xl {% if snapshot.is_at_risk %}text-red-600{% else %}text-green-600{% endif %}"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900">
+                    {% if snapshot.is_at_risk %}{{ snapshot.risk_level }}{% else %}On Track{% endif %}
+                </h3>
+                <p class="text-sm text-slate-600 mt-1">Risk Status</p>
+                {% if snapshot.attendance_percentage %}
+                <p class="text-xs text-slate-500 mt-2">{{ snapshot.attendance_percentage|floatformat:0 }}% attendance</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Performance Trend Chart -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Performance Trend</h3>
+                <canvas id="performanceTrendChart"></canvas>
+            </div>
+
+            <!-- Subject Performance Chart -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Subject Performance</h3>
+                <canvas id="subjectPerformanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Subject Performance Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
+            <div class="p-6 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Subject Breakdown</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Subject</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Assessment Avg</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Exam Score</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Final</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Grade</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Rank</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for sp in subject_performances %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">{{ sp.course.name }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">{{ sp.assessment_average|floatformat:1|default:"—" }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">{{ sp.exam_score|floatformat:1|default:"—" }}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ sp.final_score|floatformat:1|default:"—" }}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-sm font-medium rounded-full {% if sp.grade == 'A' %}bg-green-100 text-green-700{% elif sp.grade == 'B' %}bg-blue-100 text-blue-700{% elif sp.grade == 'C' %}bg-yellow-100 text-yellow-700{% elif sp.grade == 'D' %}bg-orange-100 text-orange-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ sp.grade|default:"—" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">{{ sp.subject_rank|default:"—" }}/{{ sp.total_students|default:"—" }}</td>
+                            <td class="px-6 py-4">
+                                {% if sp.is_passed %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                                    <i class="ph ph-check mr-1"></i>Pass
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                                    <i class="ph ph-x mr-1"></i>Fail
+                                </span>
+                                {% endif %}
+                                {% if sp.is_weak_area %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700 ml-1">
+                                    Weak
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">No subject performance data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- At-Risk Alerts -->
+        {% if alerts %}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-8">
+            <div class="p-6 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Active Alerts</h3>
+            </div>
+            <div class="divide-y divide-slate-200">
+                {% for alert in alerts %}
+                <div class="p-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 text-xs rounded-full font-medium
+                                {% if alert.severity == 'CRITICAL' %}bg-red-100 text-red-700
+                                {% elif alert.severity == 'HIGH' %}bg-orange-100 text-orange-700
+                                {% elif alert.severity == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                                {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                {{ alert.get_severity_display }}
+                            </span>
+                            <span class="px-3 py-1 text-xs rounded-full bg-slate-100 text-slate-700">{{ alert.get_status_display }}</span>
+                        </div>
+                        <span class="text-xs text-slate-500">{{ alert.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <h4 class="font-semibold text-slate-900 mb-2">{{ alert.title }}</h4>
+                    <p class="text-sm text-slate-600 mb-3">{{ alert.description }}</p>
+                    <a href="{% url 'admin_analytics_alert_detail' alert.id %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        Manage Alert →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Fetch and render performance trend chart
+    fetch(`/admin/analytics/api/trends/{{ student.id }}/`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('performanceTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'GPA',
+                            data: data.gpa,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Percentage',
+                            data: data.percentage,
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'GPA'
+                            },
+                            min: 0,
+                            max: 4
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Percentage'
+                            },
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Fetch and render subject performance chart
+    fetch(`/admin/analytics/api/subject-performance/{{ student.id }}/{{ term.id }}/`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('subjectPerformanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Percentage',
+                        data: data.percentages,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderRadius: 8,
+                        barThickness: 30
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Approve Payslip{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Approve Payslip</h1>
+  <p class="text-gray-600">{{ payslip.staff }} - {{ payslip.period_year }}/{{ payslip.period_month|stringformat:"02d" }}</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="text-sm font-semibold text-gray-600 uppercase mb-1">Base Salary</div>
+    <p class="text-xl font-bold text-gray-900">{{ payslip.base_salary|floatformat:2 }}</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="text-sm font-semibold text-gray-600 uppercase mb-1">Gross Salary</div>
+    <p class="text-xl font-bold text-gray-900">{{ payslip.gross_salary|floatformat:2 }}</p>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="text-sm font-semibold text-gray-600 uppercase mb-1">Net Salary</div>
+    <p class="text-xl font-bold text-blue-600">{{ payslip.net_salary|floatformat:2 }}</p>
+  </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+  <form method="post">
+    {% csrf_token %}
+    <div class="space-y-6">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-3">Action</label>
+        <div class="space-y-3">
+          {% for choice in form.action %}
+            <div class="flex items-center">
+              {{ choice.tag }}
+              <label for="{{ choice.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700">
+                {{ choice.choice_label }}
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+        {% if form.action.errors %}
+          <p class="mt-2 text-sm text-red-600">{{ form.action.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="id_comments" class="block text-sm font-bold text-gray-700 mb-2">Comments (Optional)</label>
+        {{ form.comments }}
+        {% if form.comments.errors %}
+          <p class="mt-2 text-sm text-red-600">{{ form.comments.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <a href="{% url 'admin_hr_payroll_payslip_detail' payslip.id %}" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold">
+          Cancel
+        </a>
+        <button type="submit" class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm">
+          <i class="ph ph-check"></i>Submit Decision
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="mt-4">
+  <a href="{% url 'admin_hr_payroll_payslip_detail' payslip.id %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold">
+    <i class="ph ph-arrow-left"></i>Back to Payslip
+  </a>
+</div>
+{% endblock %}

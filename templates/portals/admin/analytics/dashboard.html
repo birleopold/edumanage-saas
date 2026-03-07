@@ -1,0 +1,298 @@
+{% extends "portals/admin/base.html" %}
+{% load static %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900 mb-2">Performance Analytics</h1>
+                    <p class="text-slate-600">Comprehensive student performance insights and metrics</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select onchange="window.location.href='?term=' + this.value" class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        {% for term in terms %}
+                        <option value="{{ term.id }}" {% if term == current_term %}selected{% endif %}>{{ term }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'admin_analytics_generate_snapshots' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                        <i class="ph ph-arrows-clockwise"></i>
+                        Generate Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <!-- Total Students -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="ph-fill ph-users text-2xl text-blue-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.total_students }}</h3>
+                <p class="text-sm text-slate-600 mt-1">Total Students</p>
+            </div>
+
+            <!-- Average GPA -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="ph-fill ph-chart-line text-2xl text-green-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.average_gpa|floatformat:2|default:"N/A" }}</h3>
+                <p class="text-sm text-slate-600 mt-1">Average GPA</p>
+            </div>
+
+            <!-- Excellent Students -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="ph-fill ph-trophy text-2xl text-yellow-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.excellent_students }}</h3>
+                <p class="text-sm text-slate-600 mt-1">GPA ≥ 3.5</p>
+            </div>
+
+            <!-- At Risk Students -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-orange-100 rounded-lg">
+                        <i class="ph-fill ph-warning text-2xl text-orange-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.at_risk_count }}</h3>
+                <p class="text-sm text-slate-600 mt-1">At-Risk Students</p>
+            </div>
+
+            <!-- Critical Alerts -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-3 bg-red-100 rounded-lg">
+                        <i class="ph-fill ph-warning-circle text-2xl text-red-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.critical_risk_count }}</h3>
+                <p class="text-sm text-slate-600 mt-1">Critical Risk</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Performance Distribution Chart -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Performance Distribution</h3>
+                <canvas id="performanceDistributionChart"></canvas>
+            </div>
+
+            <!-- GPA Distribution Chart -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">GPA Distribution</h3>
+                <canvas id="gpaDistributionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent At-Risk Alerts -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                <div class="p-6 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-900">Recent At-Risk Alerts</h3>
+                        <a href="{% url 'admin_analytics_alerts_list' %}" class="text-sm text-blue-600 hover:text-blue-700">View All →</a>
+                    </div>
+                </div>
+                <div class="divide-y divide-slate-200">
+                    {% for alert in recent_alerts %}
+                    <a href="{% url 'admin_analytics_alert_detail' alert.id %}" class="block p-4 hover:bg-slate-50 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-1 text-xs rounded-full font-medium
+                                        {% if alert.severity == 'CRITICAL' %}bg-red-100 text-red-700
+                                        {% elif alert.severity == 'HIGH' %}bg-orange-100 text-orange-700
+                                        {% elif alert.severity == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                                        {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                        {{ alert.get_severity_display }}
+                                    </span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">{{ alert.get_status_display }}</span>
+                                </div>
+                                <p class="font-medium text-slate-900">{{ alert.student }}</p>
+                                <p class="text-sm text-slate-600 mt-1">{{ alert.title }}</p>
+                            </div>
+                            <div class="text-xs text-slate-500 ml-4">
+                                {{ alert.created_at|timesince }} ago
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-8 text-center text-slate-500">
+                        <i class="ph ph-check-circle text-4xl mb-2"></i>
+                        <p>No active alerts</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Performing Classes -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                <div class="p-6 border-b border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-900">Top Performing Classes</h3>
+                </div>
+                <div class="divide-y divide-slate-200">
+                    {% for report in class_reports %}
+                    <a href="{% url 'admin_analytics_class_report' report.stream.id %}?term={{ current_term.id }}" class="block p-4 hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-900">{{ report.stream }}</p>
+                                <p class="text-sm text-slate-600 mt-1">{{ report.total_students }} students</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-lg font-bold text-green-600">{{ report.average_gpa|floatformat:2 }}</p>
+                                <p class="text-xs text-slate-500">Avg GPA</p>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-8 text-center text-slate-500">
+                        <i class="ph ph-chart-bar text-4xl mb-2"></i>
+                        <p>No class reports available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <a href="{% url 'admin_analytics_student_list' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                    <i class="ph-fill ph-users text-2xl text-blue-600"></i>
+                    <div>
+                        <p class="font-medium text-slate-900">Student Performance</p>
+                        <p class="text-xs text-slate-600">View all students</p>
+                    </div>
+                </a>
+                <a href="{% url 'admin_analytics_alerts_list' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors">
+                    <i class="ph-fill ph-warning text-2xl text-orange-600"></i>
+                    <div>
+                        <p class="font-medium text-slate-900">At-Risk Alerts</p>
+                        <p class="text-xs text-slate-600">Manage alerts</p>
+                    </div>
+                </a>
+                <a href="{% url 'admin_analytics_teacher_metrics' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors">
+                    <i class="ph-fill ph-chalkboard-teacher text-2xl text-green-600"></i>
+                    <div>
+                        <p class="font-medium text-slate-900">Teacher Metrics</p>
+                        <p class="text-xs text-slate-600">Performance data</p>
+                    </div>
+                </a>
+                <a href="{% url 'admin_analytics_generate_snapshots' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors">
+                    <i class="ph-fill ph-arrows-clockwise text-2xl text-purple-600"></i>
+                    <div>
+                        <p class="font-medium text-slate-900">Generate Reports</p>
+                        <p class="text-xs text-slate-600">Bulk operations</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Performance Distribution Chart
+    const distributionCtx = document.getElementById('performanceDistributionChart').getContext('2d');
+    new Chart(distributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Excellent (≥3.5)', 'Good (3.0-3.5)', 'Average (2.5-3.0)', 'Below Average (2.0-2.5)', 'Failing (<2.0)'],
+            datasets: [{
+                data: [
+                    {{ distribution.excellent }},
+                    {{ distribution.good }},
+                    {{ distribution.average }},
+                    {{ distribution.below_average }},
+                    {{ distribution.failing }}
+                ],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(234, 179, 8, 0.8)',
+                    'rgba(249, 115, 22, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // GPA Distribution Chart
+    const gpaCtx = document.getElementById('gpaDistributionChart').getContext('2d');
+    new Chart(gpaCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Excellent', 'Good', 'Average', 'Below Avg', 'Failing'],
+            datasets: [{
+                label: 'Number of Students',
+                data: [
+                    {{ distribution.excellent }},
+                    {{ distribution.good }},
+                    {{ distribution.average }},
+                    {{ distribution.below_average }},
+                    {{ distribution.failing }}
+                ],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(234, 179, 8, 0.8)',
+                    'rgba(249, 115, 22, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ],
+                borderRadius: 8,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

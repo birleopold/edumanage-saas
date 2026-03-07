@@ -1,0 +1,74 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}My Library Fines{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Library Fines</h1>
+  <p class="text-gray-600">View and manage your library fines</p>
+</div>
+
+{% if total_outstanding > 0 %}
+<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+  <div class="flex items-center gap-3">
+    <i class="ph-fill ph-warning-circle text-2xl text-red-600"></i>
+    <div>
+      <p class="font-medium text-red-900">Outstanding Fines</p>
+      <p class="text-sm text-red-700">You have <strong>${{ total_outstanding }}</strong> in unpaid library fines</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if fines %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Book</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Amount</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Reason</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
+        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for fine in fines %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ fine.loan.copy.book.title }}</td>
+        <td class="px-6 py-4 text-sm font-bold text-red-600">${{ fine.amount }}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">{{ fine.reason|default:"Overdue return" }}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">{{ fine.created_at|date:"M d, Y" }}</td>
+        <td class="px-6 py-4 text-sm">
+          <span class="px-2 py-1 text-xs rounded-full 
+            {% if fine.status == 'PAID' %}bg-green-100 text-green-700
+            {% elif fine.status == 'WAIVED' %}bg-blue-100 text-blue-700
+            {% else %}bg-red-100 text-red-700{% endif %}">
+            {{ fine.get_status_display }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if unpaid_fines %}
+<div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+  <div class="flex items-start gap-2">
+    <i class="ph-fill ph-info text-blue-600 mt-0.5"></i>
+    <div class="text-sm text-blue-900">
+      <p class="font-medium mb-1">How to Pay Fines</p>
+      <p class="text-xs">Please visit the library desk or finance office to settle your outstanding fines. Bring your student ID for verification.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center">
+  <i class="ph ph-check-circle text-5xl text-green-400 mb-4"></i>
+  <p class="text-lg font-medium text-gray-900 mb-2">No Fines</p>
+  <p class="text-sm text-gray-600">You don't have any library fines. Keep up the good work!</p>
+</div>
+{% endif %}
+{% endblock %}

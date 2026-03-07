@@ -54,7 +54,7 @@
 
     <!-- Add Route Button -->
     <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_transport_routes_create' %}" 
+      <a href="{% url 'admin_transport_route_create' %}" 
          class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
         <i class="ph ph-plus"></i>
         <span>Add Route</span>
@@ -108,7 +108,7 @@
               {% endif %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'admin_transport_routes_edit' r.id %}" 
+              <a href="{% url 'admin_transport_route_edit' r.id %}" 
                  class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
                 <i class="ph ph-pencil-simple"></i>
                 <span>Edit</span>
@@ -126,7 +126,7 @@
   {% endif %}
 {% else %}
   <!-- Empty State -->
-  {% url 'admin_transport_routes_create' as create_route_url %}
+  {% url 'admin_transport_route_create' as create_route_url %}
   {% include "components/ui_empty_state.html" with icon="bus" title="No routes found" description="Get started by creating your first transport route or adjust your search filters" action_url=create_route_url action_text="Add Route" %}
 {% endif %}
 {% endblock %}

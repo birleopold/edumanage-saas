@@ -1,0 +1,82 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Quick Check-In{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Quick Check-In</h1>
+  <p class="text-gray-600">Scan barcode or enter copy code to check in books</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <form method="post" class="space-y-6" x-data="{ processing: false }">
+      {% csrf_token %}
+      
+      <div>
+        <label class="block text-lg font-medium text-gray-900 mb-3">Scan or Enter Copy Code</label>
+        <input type="text" 
+               name="copy_code" 
+               id="copy_code"
+               autofocus
+               class="w-full px-6 py-4 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+               placeholder="Enter copy code or scan barcode">
+      </div>
+
+      <button type="submit" 
+              @click="processing = true"
+              :disabled="processing"
+              class="w-full px-6 py-4 bg-primary-600 text-white text-lg font-semibold rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+        <span x-show="!processing"><i class="ph ph-check-circle mr-2"></i>Check In</span>
+        <span x-show="processing"><i class="ph ph-circle-notch animate-spin mr-2"></i>Processing...</span>
+      </button>
+    </form>
+
+    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+      <h3 class="font-medium text-blue-900 mb-2">Instructions</h3>
+      <ul class="text-sm text-blue-800 space-y-1 list-disc list-inside">
+        <li>Place cursor in the input field</li>
+        <li>Scan the book's barcode or manually enter the copy code</li>
+        <li>The system will automatically process the check-in</li>
+        <li>If overdue, a fine will be calculated automatically</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Recent Check-ins -->
+  {% if recent_checkins %}
+  <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Check-ins</h2>
+    <div class="space-y-3">
+      {% for checkin in recent_checkins %}
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div>
+          <p class="font-medium text-gray-900">{{ checkin.copy.book.title }}</p>
+          <p class="text-sm text-gray-600">{{ checkin.student }} • {{ checkin.returned_at|timesince }} ago</p>
+        </div>
+        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+          Returned
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  document.getElementById('copy_code').addEventListener('input', function(e) {
+    // Auto-submit after scanning (usually ends with Enter)
+    if (e.target.value.length > 5) {
+      // Optional: add delay for barcode scanner
+      setTimeout(() => {
+        if (e.target.value.length > 5) {
+          e.target.form.submit();
+        }
+      }, 100);
+    }
+  });
+</script>
+{% endblock %}
