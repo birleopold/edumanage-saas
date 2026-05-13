@@ -12,6 +12,7 @@ class OrganizationProfileForm(forms.ModelForm):
             "email",
             "phone",
             "address",
+            "default_currency",
             "logo",
             "primary_color",
             "secondary_color",

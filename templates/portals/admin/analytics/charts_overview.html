@@ -1,0 +1,55 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Charts{% endblock %}
+{% block page_title %}Operational charts{% endblock %}
+{% block breadcrumbs %}
+<span class="text-gray-500">Live counts from your tenant database (respects campus admin scope)</span>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const res = await fetch("{% url 'admin_analytics_api_charts_overview' %}", { credentials: "same-origin" });
+  if (!res.ok) return;
+  const data = await res.json();
+  const card = (title, canvasId) => `
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">${title}</h3>
+      <canvas id="${canvasId}" height="180"></canvas>
+    </div>`;
+  const root = document.getElementById("chart-root");
+  root.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      ${card("Active students by campus", "c1")}
+      ${card("Invoices by status", "c2")}
+    </div>
+    <p class="mt-4 text-sm text-gray-600">Totals: <strong id="sum-stu"></strong> students · <strong id="sum-tea"></strong> teachers · <strong id="sum-inv"></strong> invoices</p>
+  `;
+  document.getElementById("sum-stu").textContent = data.summary.students;
+  document.getElementById("sum-tea").textContent = data.summary.teachers;
+  document.getElementById("sum-inv").textContent = data.summary.invoices;
+
+  new Chart(document.getElementById("c1"), {
+    type: "bar",
+    data: {
+      labels: data.students_by_campus.labels,
+      datasets: [{ label: "Students", data: data.students_by_campus.counts, backgroundColor: "rgba(37, 99, 235, 0.6)" }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } } } },
+  });
+  new Chart(document.getElementById("c2"), {
+    type: "doughnut",
+    data: {
+      labels: data.invoices_by_status.labels,
+      datasets: [{ data: data.invoices_by_status.counts, backgroundColor: ["#22c55e", "#94a3b8", "#f97316", "#6366f1"] }],
+    },
+    options: { plugins: { legend: { position: "bottom" } } },
+  });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div id="chart-root" class="text-sm text-gray-500">Loading charts…</div>
+{% endblock %}

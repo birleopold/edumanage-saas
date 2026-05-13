@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import AssetAssignmentForm, InventoryItemForm, StockMovementForm
@@ -21,7 +21,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def item_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -45,7 +45,7 @@ def item_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def item_create(request):
     if request.method == "POST":
         form = InventoryItemForm(request.POST)
@@ -59,7 +59,7 @@ def item_create(request):
     return render(request, "portals/admin/inventory/item_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def item_edit(request, pk: int):
     obj = get_object_or_404(InventoryItem, pk=pk)
 
@@ -79,7 +79,7 @@ def item_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def movement_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -99,7 +99,7 @@ def movement_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def movement_create(request):
     if request.method == "POST":
         form = StockMovementForm(request.POST)
@@ -115,7 +115,7 @@ def movement_create(request):
     return render(request, "portals/admin/inventory/movement_form.html", {"form": form})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -149,7 +149,7 @@ def assignment_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_create(request):
     if request.method == "POST":
         form = AssetAssignmentForm(request.POST)
@@ -165,7 +165,7 @@ def assignment_create(request):
     return render(request, "portals/admin/inventory/assignment_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_edit(request, pk: int):
     obj = get_object_or_404(AssetAssignment, pk=pk)
 

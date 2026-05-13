@@ -1,0 +1,37 @@
+{% extends "portals/admin/base.html" %}
+{% block title %}System status{% endblock %}
+{% block page_title %}System status{% endblock %}
+{% block breadcrumbs %}What caregivers see is only as reliable as these basics — explained in everyday language.{% endblock %}
+
+{% block content %}
+<div class="space-y-6 -m-6 p-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wide">This portal</h3>
+      <p class="mt-2 text-lg font-semibold text-green-800 flex items-center gap-2"><i class="ph ph-check-circle"></i> Online</p>
+      <p class="text-sm text-gray-600 mt-2">If you can read this page, the school workspace database is responding.</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wide">Last 7 days — messages</h3>
+      <ul class="mt-2 text-sm text-gray-800 space-y-1">
+        <li>{{ activity.total }} logged</li>
+        <li>{{ activity.sent }} marked sent</li>
+        <li>{{ activity.failed }} failed (review phone numbers and provider settings)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h3 class="text-base font-semibold text-gray-900 mb-2">Fee alerts configuration</h3>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">Channel</dt><dd class="font-medium">{{ messaging.channel }}</dd></div>
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">Sending handler ready</dt><dd class="font-medium">{% if messaging.handler_resolved %}Yes{% else %}<span class="text-red-700">No — check your environment</span>{% endif %}</dd></div>
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">Parent portal link in reminders</dt><dd class="font-medium">{% if messaging.portal_base_configured %}Yes{% else %}Optional — not set{% endif %}</dd></div>
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">WhatsApp token set</dt><dd class="font-medium">{% if messaging.whatsapp_token_set %}Yes{% else %}—{% endif %}</dd></div>
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">WhatsApp phone number ID</dt><dd class="font-medium">{% if messaging.whatsapp_phone_number_id_set %}Yes{% else %}—{% endif %}</dd></div>
+      <div class="flex justify-between gap-2 border-b border-gray-100 py-2"><dt class="text-gray-600">Failed rows (all time)</dt><dd class="font-medium">{{ messaging.failed_logs_count }}</dd></div>
+    </dl>
+    <p class="text-xs text-gray-500 mt-4">For setup steps, open the Communication Hub or your deployment guide (<span class="font-mono">docs/WHATSAPP_PHASE1_SETUP.md</span>).</p>
+  </div>
+</div>
+{% endblock %}

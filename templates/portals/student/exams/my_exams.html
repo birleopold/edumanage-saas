@@ -3,6 +3,7 @@
 {% block title %}My Exams{% endblock %}
 
 {% block content %}
+<div class="motion-rich">
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">My Exams</h1>
   <p class="text-gray-600">View your exam schedule and results</p>
@@ -158,6 +159,15 @@ function showTab(tab) {
   document.getElementById('content-' + tab).classList.remove('hidden');
   document.getElementById('tab-' + tab).classList.add('active', 'border-primary-500', 'text-primary-600');
   document.getElementById('tab-' + tab).classList.remove('border-transparent', 'text-gray-500');
+  window.location.hash = tab;
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  const hashTab = window.location.hash.replace('#', '');
+  if (hashTab === 'results' || hashTab === 'upcoming') {
+    showTab(hashTab);
+  }
+});
 </script>
+</div>
 {% endblock %}

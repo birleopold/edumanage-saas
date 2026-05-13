@@ -118,29 +118,8 @@
                 </div>
                 {% endfor %}
             </div>
-
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-            <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-                <div class="text-sm text-slate-600">
-                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} alerts
-                </div>
-                <div class="flex items-center gap-2">
-                    {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Previous</a>
-                    {% endif %}
-                    
-                    <span class="px-3 py-2 text-sm text-slate-600">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-                    
-                    {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&severity={{ severity_filter }}&search={{ search }}" class="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Next</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
+        {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
     </div>
 </div>
 {% endblock %}

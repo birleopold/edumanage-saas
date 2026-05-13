@@ -1,70 +1,52 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Bed Allocations{% endblock %}
+{% block title %}Bed allocations{% endblock %}
 
 {% block content %}
-  <h1>Allocations</h1>
+{% url 'admin_bed_allocations_list' as clear_url %}
+{% url 'admin_bed_allocations_create' as create_url %}
+{% include "components/ui_admin_list_toolbar_get.html" with title="Bed allocations" description="Student placements in hostel beds." clear_url=clear_url create_url=create_url add_label="Add allocation" search_placeholder="Student, hostel, or status…" %}
 
-  <form method="get">
-    <label for="id_q">Search</label>
-    <input id="id_q" type="text" name="q" value="{{ q }}" />
-
-    <label for="id_per_page">Per page</label>
-    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
-
-    <button type="submit">Apply</button>
-  </form>
-
-  <p><a href="{% url 'admin_bed_allocations_create' %}">Add</a></p>
-
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Hostel</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Room</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Bed</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Start</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>End</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for a in allocations %}
+{% if allocations %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
         <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.student }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.student.student_id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.bed.room.hostel }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.bed.room.name }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.bed.label }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.status }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.start_date }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.end_date }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_bed_allocations_edit' a.id %}">Edit</a></td>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hostel</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Room</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Bed</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Start</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">End</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="10" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No allocations yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-
-  {% if page_obj %}
-    <div style="margin-top: 12px;">
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-      {% if page_obj.has_previous %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-      {% endif %}
-
-      {% if page_obj.has_next %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-      {% endif %}
-    </div>
-  {% endif %}
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for a in allocations %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ a.id }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">{{ a.student }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{{ a.student.student_id }}</td>
+            <td class="px-6 py-4 text-sm text-gray-800">{{ a.bed.room.hostel }}</td>
+            <td class="px-6 py-4 text-sm">{{ a.bed.room.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">{{ a.bed.label }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.status }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.start_date|date:"M j, Y" }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{% if a.end_date %}{{ a.end_date|date:"M j, Y" }}{% else %}—{% endif %}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'admin_bed_allocations_edit' a.id %}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold"><i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span></a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+{% else %}
+  {% url 'admin_bed_allocations_create' as add_url %}
+  {% include "components/ui_empty_state.html" with icon="users-three" title="No allocations" description="Place students on beds or adjust your search." action_url=add_url action_text="Add allocation" %}
+{% endif %}
 {% endblock %}

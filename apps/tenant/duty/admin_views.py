@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import TeacherDutyRosterForm
@@ -22,7 +22,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def roster_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -52,7 +52,7 @@ def roster_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def roster_create(request):
     if request.method == "POST":
         form = TeacherDutyRosterForm(request.POST)
@@ -68,7 +68,7 @@ def roster_create(request):
     return render(request, "portals/admin/duty/form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def roster_edit(request, pk: int):
     obj = get_object_or_404(TeacherDutyRoster, pk=pk)
 

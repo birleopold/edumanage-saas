@@ -10,6 +10,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.tenant.academics.models import AcademicTerm, ClassGroup, Course, Stream
+from apps.tenant.finance.models import Invoice
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
 
@@ -37,6 +40,50 @@ def _parse_per_page(request, default=25):
         return default
 
 
+@admin_portal_required
+def charts_overview(request):
+    """Visual charts (Chart.js) for headcount and billing mix."""
+    return render(request, "portals/admin/analytics/charts_overview.html", {})
+
+
+@admin_portal_required
+def charts_overview_data(request):
+    scoped = get_user_campus_scope(request.user)
+
+    students = StudentProfile.objects.filter(is_active=True)
+    if scoped:
+        students = students.filter(campus=scoped)
+    by_campus = list(
+        students.values("campus__name").annotate(c=Count("id")).order_by("-c")[:20]
+    )
+    labels = [(row["campus__name"] or "Unassigned")[:40] for row in by_campus]
+    counts = [row["c"] for row in by_campus]
+
+    inv = Invoice.objects.all()
+    if scoped:
+        inv = inv.filter(student__campus=scoped)
+    status_rows = list(inv.values("status").annotate(c=Count("id")).order_by("-c"))
+    inv_labels = [r["status"] for r in status_rows]
+    inv_counts = [r["c"] for r in status_rows]
+
+    teachers = TeacherProfile.objects.filter(is_active=True)
+    if scoped:
+        teachers = teachers.filter(campus=scoped)
+
+    return JsonResponse(
+        {
+            "students_by_campus": {"labels": labels, "counts": counts},
+            "invoices_by_status": {"labels": inv_labels, "counts": inv_counts},
+            "summary": {
+                "students": students.count(),
+                "teachers": teachers.count(),
+                "invoices": inv.count(),
+            },
+        }
+    )
+
+
+@admin_portal_required
 def analytics_dashboard(request):
     """Main analytics dashboard with overview metrics"""
     current_term = AcademicTerm.objects.filter(is_current=True).first()
@@ -92,6 +139,7 @@ def analytics_dashboard(request):
     return render(request, "portals/admin/analytics/dashboard.html", context)
 
 
+@admin_portal_required
 def student_performance_list(request):
     """List student performance snapshots with filtering"""
     term_id = request.GET.get("term")
@@ -149,6 +197,7 @@ def student_performance_list(request):
     return render(request, "portals/admin/analytics/student_performance_list.html", context)
 
 
+@admin_portal_required
 def student_performance_detail(request, student_id):
     """Detailed performance view for a student"""
     student = get_object_or_404(StudentProfile, id=student_id)
@@ -207,6 +256,7 @@ def student_performance_detail(request, student_id):
     return render(request, "portals/admin/analytics/student_performance_detail.html", context)
 
 
+@admin_portal_required
 def class_performance_report_view(request, stream_id):
     """Class/stream performance report"""
     stream = get_object_or_404(Stream, id=stream_id)
@@ -261,6 +311,7 @@ def class_performance_report_view(request, stream_id):
     return render(request, "portals/admin/analytics/class_performance_report.html", context)
 
 
+@admin_portal_required
 def at_risk_alerts_list(request):
     """List and manage at-risk student alerts"""
     status_filter = request.GET.get("status", "OPEN")
@@ -301,6 +352,7 @@ def at_risk_alerts_list(request):
     return render(request, "portals/admin/analytics/at_risk_alerts_list.html", context)
 
 
+@admin_portal_required
 def at_risk_alert_detail(request, alert_id):
     """View and manage individual at-risk alert"""
     alert = get_object_or_404(AtRiskAlert, id=alert_id)
@@ -353,6 +405,7 @@ def at_risk_alert_detail(request, alert_id):
     return render(request, "portals/admin/analytics/at_risk_alert_detail.html", context)
 
 
+@admin_portal_required
 def teacher_performance_metrics_view(request):
     """View teacher performance metrics"""
     term_id = request.GET.get("term")
@@ -391,6 +444,7 @@ def teacher_performance_metrics_view(request):
     return render(request, "portals/admin/analytics/teacher_performance_metrics.html", context)
 
 
+@admin_portal_required
 def generate_snapshots_bulk(request):
     """Generate performance snapshots for all students in a term"""
     if request.method == "POST":
@@ -430,6 +484,7 @@ def generate_snapshots_bulk(request):
     return render(request, "portals/admin/analytics/generate_snapshots.html", context)
 
 
+@admin_portal_required
 def performance_trends_chart_data(request, student_id):
     """API endpoint for performance trends chart data"""
     student = get_object_or_404(StudentProfile, id=student_id)
@@ -449,6 +504,7 @@ def performance_trends_chart_data(request, student_id):
     return JsonResponse(data)
 
 
+@admin_portal_required
 def subject_performance_chart_data(request, student_id, term_id):
     """API endpoint for subject performance chart data"""
     student = get_object_or_404(StudentProfile, id=student_id)
@@ -475,6 +531,7 @@ def subject_performance_chart_data(request, student_id, term_id):
     return JsonResponse(data)
 
 
+@admin_portal_required
 def class_performance_chart_data(request, stream_id, term_id):
     """API endpoint for class performance distribution chart"""
     stream = get_object_or_404(Stream, id=stream_id)

@@ -1,91 +1,92 @@
-<!doctype html>
+{% extends 'portals/teacher/base.html' %}
 {% load exams_extras %}
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Grade Exam Paper</title>
-  </head>
-  <body>
-    <h1>Grade exam paper</h1>
 
-    <div>
-      <div><strong>Exam:</strong> {{ paper.exam }}</div>
-      <div><strong>Offering:</strong> {{ paper.offering }}</div>
-      <div><strong>Max:</strong> {{ paper.max_score }}</div>
-      <div><strong>Published:</strong> {% if paper.is_published %}Yes{% else %}No{% endif %}</div>
+{% block title %}Grade Exam Paper{% endblock %}
+{% block page_title %}Grade Exam Paper{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="space-y-1 text-sm">
+        <p><span class="font-semibold text-gray-800">Exam:</span> {{ paper.exam }}</p>
+        <p><span class="font-semibold text-gray-800">Offering:</span> {{ paper.offering }}</p>
+        <p><span class="font-semibold text-gray-800">Maximum Score:</span> {{ paper.max_score }}</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="toggle_publish" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold {% if paper.is_published %}bg-amber-100 text-amber-800 hover:bg-amber-200{% else %}bg-green-600 text-white hover:bg-green-700{% endif %}">
+          <i class="ph ph-megaphone"></i>
+          {% if paper.is_published %}Unpublish Results{% else %}Publish Results{% endif %}
+        </button>
+      </form>
     </div>
+  </div>
 
-    <form method="post" style="margin-top: 10px;">
-      {% csrf_token %}
-      <button type="submit" name="action" value="toggle_publish">Toggle publish</button>
+  <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+    <form method="get" class="flex flex-col md:flex-row gap-3 md:items-end">
+      <div class="flex-1">
+        <label for="id_q" class="block text-sm font-semibold text-gray-700 mb-1">Search Students</label>
+        <input id="id_q" type="text" name="q" value="{{ q }}" placeholder="Name or student ID" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" />
+      </div>
+      <div class="w-full md:w-40">
+        <label for="id_per_page" class="block text-sm font-semibold text-gray-700 mb-1">Per page</label>
+        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" />
+      </div>
+      <button type="submit" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+        <i class="ph ph-funnel"></i> Apply
+      </button>
     </form>
+  </div>
 
-    <form method="get" style="margin-top: 12px;">
-      <label for="id_q">Search students</label>
-      <input id="id_q" type="text" name="q" value="{{ q }}" />
-
-      <label for="id_per_page">Per page</label>
-      <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
-
-      <button type="submit">Apply</button>
-    </form>
-
-    <form method="post" style="margin-top: 12px;">
-      {% csrf_token %}
-      <input type="hidden" name="q" value="{{ q }}" />
-
-      <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-        <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <input type="hidden" name="q" value="{{ q }}" />
+    <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
           <tr>
-            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
-            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
-            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Score</th>
-            <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
           </tr>
         </thead>
-        <tbody class='bg-white divide-y divide-gray-200'>
+        <tbody class="bg-white divide-y divide-gray-200">
           {% for e in enrollments %}
             {% with s=existing_scores|get_item:e.student.id %}
             <tr>
-              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+              <td class="px-6 py-4 text-sm text-gray-800">
                 {{ e.student }}
                 <input type="hidden" name="student_ids" value="{{ e.student.id }}" />
               </td>
-              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ e.student.student_id }}</td>
-              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><input type="text" name="score_{{ e.student.id }}" value="{% if s %}{{ s.score }}{% endif %}" /></td>
-              <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><input type="text" name="note_{{ e.student.id }}" value="{% if s %}{{ s.note }}{% endif %}" /></td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ e.student.student_id }}</td>
+              <td class="px-6 py-4 text-sm">
+                <input type="number" step="0.01" min="0" max="{{ paper.max_score }}" name="score_{{ e.student.id }}" value="{% if s %}{{ s.score }}{% endif %}" class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </td>
+              <td class="px-6 py-4 text-sm">
+                <input type="text" name="note_{{ e.student.id }}" value="{% if s %}{{ s.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </td>
             </tr>
             {% endwith %}
           {% empty %}
-            <tr><td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No students found.</td></tr>
+            <tr><td colspan="4" class="px-6 py-6 text-sm text-center text-gray-500">No students found.</td></tr>
           {% endfor %}
         </tbody>
-      </table></div>
+      </table>
+    </div>
+    <div class="sticky bottom-0 bg-white/95 border border-gray-200 rounded-xl p-3 flex justify-between items-center">
+      <a href="{% url 'teacher_exams_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900">
+        <i class="ph ph-arrow-left"></i> Back to exams
+      </a>
+      <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+        <i class="ph ph-floppy-disk"></i> Save Scores
+      </button>
+    </div>
+  </form>
 
-      <p style="margin-top: 10px;">
-        <button type="submit">Save scores</button>
-      </p>
-    </form>
-
-    {% if page_obj %}
-      <div style="margin-top: 12px;">
-        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-        {% if page_obj.has_previous %}
-          <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-        {% endif %}
-
-        {% if page_obj.has_next %}
-          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-          <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-        {% endif %}
-      </div>
-    {% endif %}
-
-    <p style="margin-top: 12px;">
-      <a href="{% url 'teacher_exams_home' %}">Back</a>
-    </p>
-  </body>
-</html>
+  {% if page_obj %}
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -191,7 +191,9 @@ function bulkDownload() {
     .map(cb => cb.value);
   
   if (selected.length === 0) {
-    alert('Please select at least one student');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Selection required', 'Please select at least one student', 'warning');
+    }
     return;
   }
   

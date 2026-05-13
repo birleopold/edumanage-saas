@@ -3,6 +3,7 @@
 {% block title %}Parents{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Parents</h1>
@@ -72,6 +73,7 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Contact Information</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Consent</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
           <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
@@ -90,6 +92,16 @@
                 <span class="flex items-center gap-1 text-xs text-gray-500">
                   <i class="ph ph-envelope text-gray-400"></i>
                   {{ p.email }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex flex-col gap-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium {% if p.allow_sms_alerts %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                  SMS: {% if p.allow_sms_alerts %}On{% else %}Off{% endif %}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium {% if p.allow_whatsapp_alerts %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                  WhatsApp: {% if p.allow_whatsapp_alerts %}On{% else %}Off{% endif %}
                 </span>
               </div>
             </td>
@@ -128,4 +140,5 @@
   {% url 'admin_parents_create' as create_parent_url %}
   {% include "components/ui_empty_state.html" with icon="users" title="No parents found" description="Get started by adding your first parent/guardian or adjust your search filters" action_url=create_parent_url action_text="Add Parent" %}
 {% endif %}
+</div>
 {% endblock %}

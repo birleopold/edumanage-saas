@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import BedAllocationForm, BedForm, HostelForm, HostelRoomForm
@@ -20,7 +20,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def hostel_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -40,7 +40,7 @@ def hostel_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def hostel_create(request):
     if request.method == "POST":
         form = HostelForm(request.POST)
@@ -53,7 +53,7 @@ def hostel_create(request):
     return render(request, "portals/admin/hostels/hostel_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def hostel_edit(request, pk: int):
     obj = get_object_or_404(Hostel, pk=pk)
 
@@ -72,7 +72,7 @@ def hostel_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -94,7 +94,7 @@ def room_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_create(request):
     if request.method == "POST":
         form = HostelRoomForm(request.POST)
@@ -107,7 +107,7 @@ def room_create(request):
     return render(request, "portals/admin/hostels/room_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_edit(request, pk: int):
     obj = get_object_or_404(HostelRoom, pk=pk)
 
@@ -126,7 +126,7 @@ def room_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def bed_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -148,7 +148,7 @@ def bed_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def bed_create(request):
     if request.method == "POST":
         form = BedForm(request.POST)
@@ -161,7 +161,7 @@ def bed_create(request):
     return render(request, "portals/admin/hostels/bed_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def bed_edit(request, pk: int):
     obj = get_object_or_404(Bed, pk=pk)
 
@@ -180,7 +180,7 @@ def bed_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allocation_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -213,7 +213,7 @@ def allocation_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allocation_create(request):
     if request.method == "POST":
         form = BedAllocationForm(request.POST)
@@ -230,7 +230,7 @@ def allocation_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allocation_edit(request, pk: int):
     obj = get_object_or_404(BedAllocation, pk=pk)
 

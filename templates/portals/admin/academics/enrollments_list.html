@@ -3,6 +3,7 @@
 {% block title %}Enrollments{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Enrollments</h1>
@@ -156,4 +157,5 @@
   {% url 'admin_enrollment_create' as create_enrollment_url %}
   {% include "components/ui_empty_state.html" with icon="user-plus" title="No enrollments found" description="Get started by enrolling students in courses or use bulk enrollment tools" action_url=create_enrollment_url action_text="Add Enrollment" %}
 {% endif %}
+</div>
 {% endblock %}

@@ -5,11 +5,12 @@ from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.students.services import generate_next_student_id
 from apps.tenant.users.models import Role, User
@@ -17,6 +18,7 @@ from apps.tenant.orgsettings.utils import log_action
 
 from .forms import ApplicantForm
 from .models import Applicant
+from .pdf_letter import generate_admission_letter_pdf
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -69,7 +71,7 @@ def _create_student_user(applicant: Applicant) -> User:
     return user
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -103,7 +105,7 @@ def applicant_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_create(request):
     campuses = _campus_queryset()
     current = get_current_campus(request)
@@ -125,7 +127,7 @@ def applicant_create(request):
     return render(request, "portals/admin/admissions/applicant_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_edit(request, pk: int):
     campuses = _campus_queryset()
     applicant = get_object_or_404(Applicant, pk=pk)
@@ -146,7 +148,7 @@ def applicant_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_detail(request, pk: int):
     applicant = get_object_or_404(
         Applicant.objects.select_related(
@@ -163,7 +165,7 @@ def applicant_detail(request, pk: int):
     return render(request, "portals/admin/admissions/applicant_detail.html", {"applicant": applicant})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_set_status(request, pk: int):
     applicant = get_object_or_404(Applicant, pk=pk)
     status = (request.POST.get("status") or "").strip()
@@ -179,7 +181,7 @@ def applicant_set_status(request, pk: int):
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_reject(request, pk: int):
     applicant = get_object_or_404(Applicant, pk=pk)
     applicant.status = Applicant.REJECTED
@@ -188,7 +190,7 @@ def applicant_reject(request, pk: int):
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def applicant_admit(request, pk: int):
     applicant = get_object_or_404(Applicant, pk=pk)
 
@@ -257,3 +259,33 @@ def applicant_admit(request, pk: int):
     else:
         messages.success(request, "Applicant admitted and student profile created.")
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
+
+
+@admin_portal_required
+def applicant_admission_letter_pdf(request, pk: int):
+    applicant = get_object_or_404(
+        Applicant.objects.select_related("created_student", "campus", "target_term"),
+        pk=pk,
+    )
+    if applicant.status != Applicant.ADMITTED or not applicant.created_student_id:
+        return HttpResponseForbidden(
+            "This letter is only available after admission, once a student record exists."
+        )
+    student = applicant.created_student
+    org = get_or_create_organization()
+    buf = generate_admission_letter_pdf(
+        applicant=applicant,
+        student=student,
+        org=org,
+        issued_by=request.user.get_full_name() or request.user.get_username(),
+    )
+    log_action(
+        applicant,
+        action="ADMISSION_LETTER_PDF",
+        description=f"Admission letter PDF generated for student {student.student_id}.",
+        user=request.user,
+        metadata={"student_profile_id": student.pk},
+    )
+    response = HttpResponse(buf.read(), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="admission_{applicant.pk}.pdf"'
+    return response

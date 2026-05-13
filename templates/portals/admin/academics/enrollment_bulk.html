@@ -3,6 +3,7 @@
 {% block title %}Bulk Enroll Students{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Bulk Enroll Students</h1>
@@ -78,6 +79,10 @@
         <i class="ph ph-funnel"></i>
         <span>Load Students</span>
       </button>
+      <a href="{% url 'admin_enrollment_bulk' %}" class="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-x"></i>
+        <span>Reset</span>
+      </a>
     </div>
   </form>
 </div>
@@ -201,6 +206,10 @@
   function updateSelectedCount() {
     const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
     selectedCountSpan.textContent = checkedCount;
+    if (selectAllCheckbox && studentCheckboxes.length > 0) {
+      selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < studentCheckboxes.length;
+      selectAllCheckbox.checked = checkedCount === studentCheckboxes.length;
+    }
     
     // Enable/disable button based on selection
     if (checkedCount > 0) {
@@ -223,7 +232,17 @@
     checkbox.addEventListener('change', updateSelectedCount);
   });
 
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+      if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+      e.preventDefault();
+      studentCheckboxes.forEach((checkbox) => { checkbox.checked = true; });
+      updateSelectedCount();
+    }
+  });
+
   // Initial count
   updateSelectedCount();
 </script>
+</div>
 {% endblock %}

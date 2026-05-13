@@ -3,58 +3,116 @@
 {% block title %}Positions{% endblock %}
 
 {% block content %}
-  <h1>Positions</h1>
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Positions</h1>
+  <p class="text-gray-600">Define job titles within each department for staff assignments.</p>
+</div>
 
-  <form method="get">
-    <label for="id_q">Search</label>
-    <input id="id_q" type="text" name="q" value="{{ q }}" />
+{% include "components/ui_toast.html" %}
 
-    <label for="id_per_page">Per page</label>
-    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+  <form method="get" class="space-y-4">
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
+      <div class="flex-1 w-full md:max-w-md">
+        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="ph ph-magnifying-glass text-gray-400 text-lg" aria-hidden="true"></i>
+          </div>
+          <input id="id_q"
+                 type="text"
+                 name="q"
+                 value="{{ q }}"
+                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
+                 placeholder="Search by title or department…" />
+        </div>
+      </div>
 
-    <button type="submit">Apply</button>
+      <div class="w-full md:w-32">
+        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per page</label>
+        <input id="id_per_page"
+               type="number"
+               name="per_page"
+               value="{{ per_page }}"
+               min="1"
+               max="200"
+               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+      </div>
+
+      <button type="submit"
+              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-funnel text-lg" aria-hidden="true"></i>
+        <span>Apply</span>
+      </button>
+    </div>
+
+    <div class="flex justify-end pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_hr_position_create' %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-plus text-lg" aria-hidden="true"></i>
+        <span>Add position</span>
+      </a>
+    </div>
   </form>
+</div>
 
-  <p><a href="{% url 'admin_hr_position_create' %}">Add</a></p>
-
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Department</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Title</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Active</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for p in positions %}
+{% if positions %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
         <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.department }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.title }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{% if p.is_active %}Yes{% else %}No{% endif %}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_hr_position_edit' p.id %}">Edit</a></td>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Campus</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Active</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="5" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No positions.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for p in positions %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ p.id }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ p.department }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              {% if p.department.campus %}
+                {{ p.department.campus }}
+              {% else %}
+                <span class="text-gray-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-800">{{ p.title }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if p.is_active %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle" aria-hidden="true"></i>
+                  Active
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                  <i class="ph ph-x-circle" aria-hidden="true"></i>
+                  Inactive
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'admin_hr_position_edit' p.id %}"
+                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
+                <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i>
+                <span>Edit</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   {% if page_obj %}
-    <div style="margin-top: 12px;">
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-      {% if page_obj.has_previous %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-      {% endif %}
-
-      {% if page_obj.has_next %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-      {% endif %}
-    </div>
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
   {% endif %}
+{% else %}
+  {% url 'admin_hr_position_create' as add_position_url %}
+  {% include "components/ui_empty_state.html" with icon="identification-badge" title="No positions found" description="Add a position for each role in a department, or adjust your search." action_url=add_position_url action_text="Add position" %}
+{% endif %}
 {% endblock %}

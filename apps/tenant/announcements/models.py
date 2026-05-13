@@ -18,6 +18,10 @@ class Announcement(models.Model):
     body = models.TextField()
     audience = models.CharField(max_length=16, choices=AUDIENCE_CHOICES, default=ALL)
     is_active = models.BooleanField(default=True)
+    is_urgent = models.BooleanField(
+        default=False,
+        help_text="Urgent announcements can be broadcast through SMS/WhatsApp in Phase 2.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

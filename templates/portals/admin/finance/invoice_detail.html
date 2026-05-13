@@ -1,110 +1,199 @@
 {% extends 'portals/admin/base.html' %}
+{% load orgsettings_extras %}
 
 {% block title %}Invoice{% endblock %}
 
 {% block content %}
-  <h1>Invoice #{{ invoice.id }}</h1>
-
-  <div>
-    <div><strong>Student:</strong> {{ invoice.student }}</div>
-    <div><strong>Student ID:</strong> {{ invoice.student.student_id }}</div>
-    <div><strong>Year:</strong> {{ invoice.academic_year }}</div>
-    <div><strong>Term:</strong> {{ invoice.academic_term }}</div>
-    <div><strong>Reference:</strong> {{ invoice.reference }}</div>
-    <div><strong>Status:</strong> {{ invoice.status }}</div>
-    <div><strong>Due date:</strong> {{ invoice.due_date }}</div>
+<div class="space-y-6 motion-fast">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Invoice {{ invoice.reference }}</h1>
+      <p class="text-sm text-gray-600 mt-1">{{ invoice.student }} • {{ invoice.academic_year }} / {{ invoice.academic_term }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'admin_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
+        <i class="ph ph-arrow-left"></i> Back to invoices
+      </a>
+      <a href="{% url 'admin_invoices_edit' invoice.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+        <i class="ph ph-pencil-simple"></i> Edit Invoice
+      </a>
+      {% if balance > 0 %}
+      <a href="{% url 'admin_invoices_carry_forward' invoice.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700">
+        <i class="ph ph-calendar-plus"></i> Carry balance to next term
+      </a>
+      {% endif %}
+      <a href="{% url 'admin_invoices_clone' invoice.id %}" class="inline-flex items-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-800 rounded-lg text-sm font-semibold hover:bg-indigo-50">
+        <i class="ph ph-copy"></i> Clone lines to another period
+      </a>
+      <a href="{% url 'admin_invoices_print' invoice.id %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-50">
+        <i class="ph ph-printer"></i> Printable
+      </a>
+    </div>
   </div>
 
-  <h2 style="margin-top: 16px;">Totals</h2>
-  <div>
-    <div><strong>Total:</strong> {{ total_amount }}</div>
-    <div><strong>Paid:</strong> {{ total_paid }}</div>
-    <div><strong>Balance:</strong> {{ balance }}</div>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Total due</p>
+      <p class="text-xl font-bold text-gray-900 mt-1">{{ total_amount|format_money_amount:org_profile.default_currency }}</p>
+      {% if invoice.opening_balance and invoice.opening_balance != 0 %}
+      <p class="text-xs text-gray-500 mt-1">Includes opening balance {{ invoice.opening_balance|format_money_amount:org_profile.default_currency }}</p>
+      {% endif %}
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Paid</p>
+      <p class="text-xl font-bold text-green-700 mt-1">{{ total_paid|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Balance</p>
+      <p class="text-xl font-bold {% if balance > 0 %}text-red-700{% else %}text-gray-900{% endif %} mt-1">{{ balance|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Status</p>
+      <p class="text-xl font-bold text-gray-900 mt-1">{{ invoice.status }}</p>
+      <p class="text-xs text-gray-500 mt-1">Due {{ invoice.due_date|default:"-" }}</p>
+    </div>
   </div>
 
-  <h2 style="margin-top: 16px;">Lines</h2>
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Description</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Qty</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Unit</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Total</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for line in invoice.lines.all %}
-        <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.description }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.quantity }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.unit_amount }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ line.line_total }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
-            <form method="post" action="{% url 'admin_invoices_line_remove' invoice.id line.id %}" style="margin: 0;">
-              {% csrf_token %}
-              <button type="submit">Remove</button>
-            </form>
-          </td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="5" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No lines yet.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Invoice Lines</h2>
+      <span class="text-xs text-gray-500">Manage charge items</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unit</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          {% if invoice.opening_balance and invoice.opening_balance != 0 %}
+          <tr class="bg-amber-50/80">
+            <td class="px-6 py-4 text-sm font-medium text-amber-900" colspan="3">Opening balance (arrears / brought forward)</td>
+            <td class="px-6 py-4 text-sm font-semibold text-amber-900">{{ invoice.opening_balance|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4"></td>
+          </tr>
+          {% endif %}
+          {% for line in invoice.lines.all %}
+          <tr>
+            <td class="px-6 py-4 text-sm text-gray-800">{{ line.description }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ line.quantity }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ line.unit_amount|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ line.line_total|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4 text-sm text-right">
+              <form method="post" action="{% url 'admin_invoices_line_remove' invoice.id line.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-6 py-6 text-sm text-center text-gray-500">No line items yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-6 py-5 border-t border-gray-100 bg-gray-50">
+      <h3 class="text-sm font-semibold text-gray-900 mb-3">Add line item</h3>
+      <form method="post" class="grid grid-cols-1 gap-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_line" />
+        {{ line_form.as_p }}
+        <div>
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+            <i class="ph ph-plus"></i> Add line
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 
-  <h3 style="margin-top: 12px;">Add line</h3>
-  <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="add_line" />
-    {{ line_form.as_p }}
-    <button type="submit">Add line</button>
-  </form>
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Payments</h2>
+      <span class="text-xs text-gray-500">Track receipts and reversals</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile network</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Receipt</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Message</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          {% for p in invoice.payments.all %}
+          <tr>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.received_at }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ p.amount|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.get_method_display }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{% if p.mobile_network %}{{ p.get_mobile_network_display }}{% else %}—{% endif %}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.reference|default:"-" }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">
+              <a href="{% url 'admin_payment_receipt_pdf' p.id %}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-800 font-semibold">PDF</a>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">
+              <form method="post" class="inline" onsubmit="return confirm('Send payment receipt message to linked parent phone numbers?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_payment_receipt" />
+                <input type="hidden" name="payment_id" value="{{ p.id }}" />
+                <button type="submit" class="text-slate-700 hover:text-slate-900 font-semibold">Send</button>
+              </form>
+            </td>
+            <td class="px-6 py-4 text-sm text-right">
+              <form method="post" action="{% url 'admin_invoices_payment_remove' invoice.id p.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="px-6 py-6 text-sm text-center text-gray-500">No payments recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-6 py-5 border-t border-gray-100 bg-gray-50">
+      <h3 class="text-sm font-semibold text-gray-900 mb-3">Record payment</h3>
+      <form method="post" class="grid grid-cols-1 gap-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_payment" />
+        {{ payment_form.as_p }}
+        <div>
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">
+            <i class="ph ph-cash-register"></i> Record payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
 
-  <h2 style="margin-top: 16px;">Payments</h2>
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Date</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Amount</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Method</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Reference</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for p in invoice.payments.all %}
-        <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.received_at }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.amount }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.method }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ p.reference }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
-            <form method="post" action="{% url 'admin_invoices_payment_remove' invoice.id p.id %}" style="margin: 0;">
-              {% csrf_token %}
-              <button type="submit">Remove</button>
-            </form>
-          </td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="5" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No payments yet.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-
-  <h3 style="margin-top: 12px;">Record payment</h3>
-  <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="add_payment" />
-    {{ payment_form.as_p }}
-    <button type="submit">Record payment</button>
-  </form>
-
-  <p style="margin-top: 12px;">
-    <a href="{% url 'admin_invoices_list' %}">Back</a>
-  </p>
+  {% if balance > 0 %}
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">Fee reminder (SMS / WhatsApp)</h2>
+      <p class="text-xs text-gray-500 mt-1">Sends a short balance message to linked parents’ phone numbers. Configure <code class="text-xs bg-gray-100 px-1 rounded">FEE_REMINDER_HANDLER</code> and <code class="text-xs bg-gray-100 px-1 rounded">FEE_REMINDER_CHANNEL</code> in settings; otherwise messages are logged only.</p>
+    </div>
+    <div class="px-6 py-5">
+      <form method="post" class="inline" onsubmit="return confirm('Send fee reminder to linked parent phone numbers?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="send_fee_reminder" />
+        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-700 text-white rounded-lg text-sm font-semibold hover:bg-slate-800">
+          <i class="ph ph-chat-circle-text"></i> Send fee reminder to parents
+        </button>
+      </form>
+    </div>
+  </section>
+  {% endif %}
+</div>
 {% endblock %}

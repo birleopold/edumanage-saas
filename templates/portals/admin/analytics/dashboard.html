@@ -4,7 +4,7 @@
 {% block title %}Analytics Dashboard{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 motion-rich">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="mb-8">
@@ -24,6 +24,13 @@
                         Generate Reports
                     </a>
                 </div>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <p class="text-sm text-blue-900"><span class="font-semibold">Recommended review sequence:</span> critical risk -> class trends -> teacher metrics -> snapshot generation.</p>
+                <a href="{% url 'admin_analytics_alerts_list' %}" class="text-sm font-semibold text-blue-700 hover:text-blue-900">Open Risk Queue</a>
             </div>
         </div>
 

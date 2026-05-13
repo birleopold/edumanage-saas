@@ -1,18 +1,24 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Report incident</title>
-  </head>
-  <body>
-    <h1>Report incident</h1>
+{% extends 'portals/teacher/base.html' %}
 
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Submit</button>
-      <a href="{% url 'teacher_incidents_list' %}">Back</a>
-    </form>
-  </body>
-</html>
+{% block title %}Report Incident{% endblock %}
+{% block page_title %}Report Incident{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl">
+  <div class="bg-amber-50 border border-amber-100 rounded-lg p-4 mb-4">
+    <p class="text-sm text-amber-900">Use objective details (time, location, people involved, action taken) for faster admin follow-up.</p>
+  </div>
+  <form method="post" class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="flex items-center justify-between pt-2">
+      <a href="{% url 'teacher_incidents_list' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900">
+        <i class="ph ph-arrow-left"></i> Back
+      </a>
+      <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">
+        <i class="ph ph-warning-circle"></i> Submit Incident
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

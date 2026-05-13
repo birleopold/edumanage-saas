@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Service status | EduManage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        .skip-link:focus {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 50;
+            padding: 0.5rem 0.75rem;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            clip: auto;
+            width: auto;
+            height: auto;
+            margin: 0;
+            overflow: visible;
+        }
+        main a:focus-visible {
+            outline: 2px solid #0f172a;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+<a href="#status-main" class="sr-only skip-link">Skip to status summary</a>
+<main id="status-main" class="max-w-lg mx-auto px-4 py-16" role="main">
+    <h1 class="text-2xl font-bold text-slate-900">Service status</h1>
+    <p class="mt-2 text-sm text-slate-600">Plain summary for your school site. No personal data is shown here.</p>
+
+    <ul class="mt-8 space-y-4" aria-label="Status checks">
+        <li class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <span class="text-green-700 font-semibold"><span class="sr-only">Status: operational. </span>Web application</span>
+            <p class="text-sm mt-1 text-slate-600">Reachable (you are viewing this page).</p>
+        </li>
+        <li class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <span class="font-semibold {% if payload.fee_messaging.handler_ready %}text-green-700{% else %}text-amber-800{% endif %}">
+                <span class="sr-only">{% if payload.fee_messaging.handler_ready %}Status: operational. {% else %}Status: attention needed. {% endif %}</span>
+                Fee messaging ({{ payload.fee_messaging.channel }})
+            </span>
+            <p class="text-sm mt-1 text-slate-600">
+                {% if payload.fee_messaging.handler_ready %}Sending handler is configured.{% else %}Sending handler is not configured — reminders may be log-only until you set one.{% endif %}
+            </p>
+        </li>
+        {% if payload.fee_messaging.channel == "WHATSAPP" %}
+        <li class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <span class="font-semibold {% if payload.fee_messaging.whatsapp_credentials_present %}text-green-700{% else %}text-amber-800{% endif %}">
+                <span class="sr-only">{% if payload.fee_messaging.whatsapp_credentials_present %}Status: operational. {% else %}Status: attention needed. {% endif %}</span>
+                WhatsApp credentials
+            </span>
+            <p class="text-sm mt-1 text-slate-600">
+                {% if payload.fee_messaging.whatsapp_credentials_present %}Present in server settings.{% else %}Not detected in environment — configure token and phone number ID.{% endif %}
+            </p>
+        </li>
+        {% endif %}
+        <li class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <span class="text-sm text-slate-500">Last updated {{ payload.time }}</span>
+        </li>
+    </ul>
+
+    <p class="mt-8 text-xs text-slate-500">Machine-readable: append <code class="bg-slate-100 px-1 rounded">?format=json</code> to this URL.</p>
+</main>
+</body>
+</html>

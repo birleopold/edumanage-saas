@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .models import StaffProfile
@@ -49,7 +49,7 @@ def _admin_or_principal_required(request):
 
 
 # Pay Grade Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def pay_grade_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -69,7 +69,7 @@ def pay_grade_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def pay_grade_create(request):
     if request.method == "POST":
         form = PayGradeForm(request.POST)
@@ -83,7 +83,7 @@ def pay_grade_create(request):
     return render(request, "portals/admin/hr/payroll/pay_grade_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def pay_grade_edit(request, pk: int):
     obj = get_object_or_404(PayGrade, pk=pk)
 
@@ -100,7 +100,7 @@ def pay_grade_edit(request, pk: int):
 
 
 # Salary Structure Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def salary_structure_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -120,7 +120,7 @@ def salary_structure_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def salary_structure_create(request):
     if request.method == "POST":
         form = SalaryStructureForm(request.POST)
@@ -134,7 +134,7 @@ def salary_structure_create(request):
     return render(request, "portals/admin/hr/payroll/salary_structure_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def salary_structure_edit(request, pk: int):
     obj = get_object_or_404(SalaryStructure, pk=pk)
 
@@ -151,7 +151,7 @@ def salary_structure_edit(request, pk: int):
 
 
 # Allowance Type Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allowance_type_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -171,7 +171,7 @@ def allowance_type_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allowance_type_create(request):
     if request.method == "POST":
         form = AllowanceTypeForm(request.POST)
@@ -185,7 +185,7 @@ def allowance_type_create(request):
     return render(request, "portals/admin/hr/payroll/allowance_type_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allowance_type_edit(request, pk: int):
     obj = get_object_or_404(AllowanceType, pk=pk)
 
@@ -202,7 +202,7 @@ def allowance_type_edit(request, pk: int):
 
 
 # Deduction Type Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def deduction_type_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -222,7 +222,7 @@ def deduction_type_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def deduction_type_create(request):
     if request.method == "POST":
         form = DeductionTypeForm(request.POST)
@@ -236,7 +236,7 @@ def deduction_type_create(request):
     return render(request, "portals/admin/hr/payroll/deduction_type_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def deduction_type_edit(request, pk: int):
     obj = get_object_or_404(DeductionType, pk=pk)
 
@@ -253,7 +253,7 @@ def deduction_type_edit(request, pk: int):
 
 
 # Payslip Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def payslip_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -273,7 +273,7 @@ def payslip_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def payslip_generate(request):
     if request.method == "POST":
         form = PayslipGenerateForm(request.POST)
@@ -330,7 +330,7 @@ def payslip_generate(request):
     return render(request, "portals/admin/hr/payroll/payslip_generate.html", {"form": form})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def payslip_detail(request, pk: int):
     payslip = get_object_or_404(
         Payslip.objects.select_related("staff", "generated_by", "approved_by").prefetch_related(
@@ -342,7 +342,7 @@ def payslip_detail(request, pk: int):
     return render(request, "portals/admin/hr/payroll/payslip_detail.html", {"payslip": payslip})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def payslip_submit_for_approval(request, pk: int):
     payslip = get_object_or_404(Payslip, pk=pk)
 

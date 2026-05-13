@@ -3,6 +3,7 @@
 {% block title %}Roll Call{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Roll Call</h1>
   <p class="text-gray-600">Quick attendance marking for your class</p>
@@ -262,8 +263,11 @@
     
     // Toast notification helper
     function showToast(title, message, type) {
-      // You can implement your toast notification here
-      alert(title + ': ' + message);
+      if (typeof window.showToast === 'function') {
+        window.showToast(title, message, type);
+        return;
+      }
+      console.log(title + ': ' + message);
     }
     
     // Keyboard shortcuts
@@ -292,4 +296,5 @@
     <p class="text-gray-600">Choose a course offering and date to begin roll call</p>
   </div>
 {% endif %}
+</div>
 {% endblock %}

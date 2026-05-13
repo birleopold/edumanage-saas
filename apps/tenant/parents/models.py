@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class ParentProfile(models.Model):
@@ -14,6 +15,23 @@ class ParentProfile(models.Model):
     last_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=32, blank=True)
     email = models.EmailField(blank=True)
+    allow_sms_alerts = models.BooleanField(
+        default=True,
+        help_text="Parent consents to receive SMS alerts and reminders.",
+    )
+    allow_whatsapp_alerts = models.BooleanField(
+        default=True,
+        help_text="Parent consents to receive WhatsApp alerts and reminders.",
+    )
+    communication_consent_updated_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="Last time communication consent settings were updated.",
+    )
+    results_access_pin_hash = models.CharField(
+        max_length=128,
+        blank=True,
+        help_text="Hashed PIN for viewing children's published results in the parent portal.",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

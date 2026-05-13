@@ -3,6 +3,7 @@
 {% block title %}Teachers{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Teachers</h1>
@@ -139,4 +140,5 @@
   {% url 'admin_teachers_create' as create_teacher_url %}
   {% include "components/ui_empty_state.html" with icon="chalkboard-teacher" title="No teachers found" description="Get started by adding your first teacher or adjust your search filters" action_url=create_teacher_url action_text="Add Teacher" %}
 {% endif %}
+</div>
 {% endblock %}

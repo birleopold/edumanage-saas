@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import DocumentCreateForm, DocumentEditForm
@@ -22,7 +22,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def document_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -42,7 +42,7 @@ def document_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def document_upload(request):
     if request.method == "POST":
         form = DocumentCreateForm(request.POST, request.FILES)
@@ -58,7 +58,7 @@ def document_upload(request):
     return render(request, "portals/admin/documents/upload.html", {"form": form})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def document_edit(request, pk: int):
     doc = get_object_or_404(Document, pk=pk)
 
@@ -74,7 +74,7 @@ def document_edit(request, pk: int):
     return render(request, "portals/admin/documents/edit.html", {"form": form, "doc": doc})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def document_download(request, pk: int):
     doc = get_object_or_404(Document, pk=pk)
     if not doc.file:

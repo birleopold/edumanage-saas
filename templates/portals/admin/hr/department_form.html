@@ -3,7 +3,22 @@
 {% block title %}{% if mode == 'edit' %}Edit Department{% else %}Add Department{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Department{% else %}Add Department{% endif %}</h1>
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">
+    {% if mode == 'edit' %}Edit department{% else %}Add department{% endif %}
+  </h1>
+  <p class="text-gray-600">
+    {% if mode == 'edit' %}
+      Update campus, name, code, or visibility for <span class="font-semibold text-gray-800">{{ department.name }}</span>.
+    {% else %}
+      Create a department linked to a campus. Positions and staff can be assigned to it later.
+    {% endif %}
+  </p>
+</div>
 
+{% include "components/ui_toast.html" %}
+
+<div class="max-w-3xl">
   {% include 'components/ui_form.html' %}
+</div>
 {% endblock %}

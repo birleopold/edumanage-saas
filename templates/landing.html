@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "components/pwa_meta.html" %}
     <title>Welcome to EduManage | School Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -34,8 +35,9 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
     </style>
+    {% include "components/ui_public_polish.html" %}
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
+<body class="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden public-fade-in">
     
     <!-- Animated Background Elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
@@ -91,11 +93,11 @@
                 </div>
 
                 <!-- Portal Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto fade-in-up" style="animation-delay: 0.2s;">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto fade-in-up public-stagger" style="animation-delay: 0.2s;">
                     
                     <!-- Admin Portal Card -->
                     <a href="{% url 'login' %}?next={% url 'admin_home' %}" 
-                       class="portal-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
+                       class="portal-card public-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
                         <div class="flex flex-col items-center text-center">
                             <!-- Icon -->
                             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mb-5 shadow-lg">
@@ -134,7 +136,7 @@
 
                     <!-- Teacher Portal Card -->
                     <a href="{% url 'login' %}?next={% url 'teacher_home' %}" 
-                       class="portal-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
+                       class="portal-card public-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
                         <div class="flex flex-col items-center text-center">
                             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-5 shadow-lg">
                                 <i class="ph ph-chalkboard-teacher text-white text-4xl"></i>
@@ -169,7 +171,7 @@
 
                     <!-- Student Portal Card -->
                     <a href="{% url 'login' %}?next={% url 'student_home' %}" 
-                       class="portal-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
+                       class="portal-card public-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
                         <div class="flex flex-col items-center text-center">
                             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center mb-5 shadow-lg">
                                 <i class="ph ph-student text-white text-4xl"></i>
@@ -204,7 +206,7 @@
 
                     <!-- Parent Portal Card -->
                     <a href="{% url 'login' %}?next={% url 'parent_home' %}" 
-                       class="portal-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
+                       class="portal-card public-card bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl">
                         <div class="flex flex-col items-center text-center">
                             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-5 shadow-lg">
                                 <i class="ph ph-users text-white text-4xl"></i>

@@ -1,0 +1,50 @@
+{# expects: assessments, rows. Optional: print_mode=True for standalone print (no Tailwind). #}
+{% if print_mode %}
+<table style="border-collapse:collapse;width:100%;font-size:0.8rem;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:left;background:#f3f4f6;">Student</th>
+      {% for a in assessments %}
+      <th style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:left;background:#f3f4f6;white-space:nowrap;">{{ a.name }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr style="{% if forloop.counter0|divisibleby:2 %}background:#fff;{% else %}background:#f9fafb;{% endif %}">
+      <td style="border:1px solid #ccc;padding:0.35rem 0.5rem;font-weight:600;">{{ row.student.last_name }}, {{ row.student.first_name }}</td>
+      {% for cell in row.cells %}
+      <td style="border:1px solid #ccc;padding:0.35rem 0.5rem;">{% if cell == None %}—{% else %}{{ cell }}{% endif %}</td>
+      {% endfor %}
+    </tr>
+    {% empty %}
+    <tr><td colspan="99" style="border:1px solid #ccc;padding:1rem;text-align:center;color:#6b7280;">No students in this offering.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<table class="min-w-full divide-y divide-gray-200 text-sm">
+  <thead class="bg-gray-50">
+    <tr>
+      <th scope="col" class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-0 z-10 bg-gray-50 border-r border-gray-200">Student</th>
+      {% for a in assessments %}
+      <th scope="col" class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{{ a.name }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody class="bg-white divide-y divide-gray-200">
+    {% for row in rows %}
+    <tr class="hover:bg-gray-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-gray-50/80{% endif %}">
+      <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 z-10 border-r border-gray-100 {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-gray-50/80{% endif %} shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{{ row.student.last_name }}, {{ row.student.first_name }}</td>
+      {% for cell in row.cells %}
+      <td class="px-4 py-3 text-gray-800 whitespace-nowrap">{% if cell == None %}<span class="text-gray-400">—</span>{% else %}{{ cell }}{% endif %}</td>
+      {% endfor %}
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="99" class="px-6 py-12 text-center text-gray-500">No students in this offering.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

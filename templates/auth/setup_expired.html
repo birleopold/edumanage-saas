@@ -1,11 +1,11 @@
-{% extends 'base_auth.html' %}
+{% extends "base_auth.html" %}
 
 {% block title %}Link Expired{% endblock %}
 
 {% block auth_content %}
 <div class="text-center">
     <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-        <i class="ph ph-warning-circle text-red-600 text-4xl"></i>
+        <i class="ph ph-warning-circle text-red-600 text-4xl" aria-hidden="true"></i>
     </div>
     
     <h2 class="text-3xl font-bold text-gray-900 mb-4">
@@ -24,7 +24,7 @@
         href="{% url 'login' %}"
         class="inline-flex items-center px-6 py-3 border-2 border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all"
     >
-        <i class="ph ph-sign-in mr-2"></i>
+        <i class="ph ph-sign-in mr-2" aria-hidden="true"></i>
         Go to Login
     </a>
 </div>

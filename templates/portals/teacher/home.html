@@ -4,16 +4,26 @@
 {% block page_title %}My Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6 motion-rich">
     <!-- Welcome Banner -->
     <div class="bg-primary-50 rounded-xl p-6 border border-primary-100 flex flex-col md:flex-row md:items-center justify-between">
         <div>
             <h2 class="text-xl font-bold text-primary-900 mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}!</h2>
             <p class="text-sm text-primary-700">Manage your classes, students, and academic responsibilities.</p>
+            {% if teacher_profile %}
+            <p class="text-xs text-primary-800/90 mt-2 inline-flex flex-wrap gap-2">
+                {% if teacher_profile.campus %}<span class="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 border border-primary-100"><i class="ph ph-buildings" aria-hidden="true"></i> {{ teacher_profile.campus.name }}</span>{% endif %}
+                {% if teacher_current_year %}<span class="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 border border-primary-100"><i class="ph ph-calendar" aria-hidden="true"></i> {{ teacher_current_year.name }}</span>{% endif %}
+                {% if teacher_current_term %}<span class="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 border border-primary-100">{{ teacher_current_term.name }}</span>{% endif %}
+            </p>
+            {% endif %}
         </div>
-        <div class="mt-4 md:mt-0">
+        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3 sm:items-center">
+            {% if teacher_offerings_active %}
+            <span class="text-sm font-semibold text-primary-900 bg-white/90 border border-primary-100 rounded-lg px-3 py-1.5">{{ teacher_offerings_active }} active class{{ teacher_offerings_active|pluralize }}</span>
+            {% endif %}
             <a href="{% url 'teacher_timetable' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                <i class="ph ph-calendar mr-2"></i> View Timetable
+                <i class="ph ph-calendar mr-2" aria-hidden="true"></i> View Timetable
             </a>
         </div>
     </div>
@@ -24,27 +34,53 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <a href="{% url 'teacher_attendance_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-calendar-check text-2xl"></i>
+                    <i class="ph ph-calendar-check text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Attendance</span>
             </a>
             <a href="{% url 'teacher_assessments_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-exam text-2xl"></i>
+                    <i class="ph ph-exam text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Assessments</span>
             </a>
             <a href="{% url 'teacher_announcements_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-megaphone text-2xl"></i>
+                    <i class="ph ph-megaphone text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Announcements</span>
             </a>
             <a href="{% url 'teacher_incidents_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-warning-circle text-2xl"></i>
+                    <i class="ph ph-warning-circle text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Discipline</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Daily Workflow -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Daily Workflow</h3>
+            <span class="text-xs text-gray-500">Recommended order</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <a href="{% url 'teacher_roll_call' %}" class="p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                <p class="text-xs text-gray-500">Step 1</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">Take Roll Call</p>
+            </a>
+            <a href="{% url 'teacher_assessments_home' %}" class="p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                <p class="text-xs text-gray-500">Step 2</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">Grade Assessments</p>
+            </a>
+            <a href="{% url 'teacher_coursework_home' %}" class="p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                <p class="text-xs text-gray-500">Step 3</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">Review Submissions</p>
+            </a>
+            <a href="{% url 'teacher_announcements_list' %}" class="p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                <p class="text-xs text-gray-500">Step 4</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">Send Updates</p>
             </a>
         </div>
     </div>

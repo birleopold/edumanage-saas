@@ -1,4 +1,5 @@
 {% extends 'portals/parent/base.html' %}
+{% load orgsettings_extras %}
 
 {% block title %}Children's Invoices{% endblock %}
 
@@ -27,20 +28,32 @@
   </form>
 </div>
 
+<div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+  <p class="text-sm text-blue-900">
+    <span class="font-semibold">Tip:</span> Prioritize invoices with outstanding balances first, then review paid history for reconciliation.
+  </p>
+</div>
+
 {% if invoices %}
   <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amounts</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         {% for inv in invoices %}
           <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <span class="font-semibold text-primary-700">{{ inv.reference|default:"-" }}</span>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <div class="flex flex-col">
                 <span class="font-semibold text-gray-900">{{ inv.student }}</span>
@@ -53,11 +66,14 @@
                 <span class="text-xs text-gray-500">{{ inv.academic_term }}</span>
               </div>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              {{ inv.due_date|default:"-" }}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <div class="flex flex-col">
-                <span class="text-gray-900 font-semibold">Total: {{ inv.total_amount|floatformat:2 }}</span>
-                <span class="text-xs text-green-600">Paid: {{ inv.total_paid|floatformat:2 }}</span>
-                <span class="text-xs font-medium {% if inv.balance > 0 %}text-red-600{% else %}text-gray-500{% endif %}">Balance: {{ inv.balance|floatformat:2 }}</span>
+                <span class="text-gray-900 font-semibold">Total: {{ inv.total_amount|format_money_amount:org_profile.default_currency }}</span>
+                <span class="text-xs text-green-600">Paid: {{ inv.total_paid|format_money_amount:org_profile.default_currency }}</span>
+                <span class="text-xs font-medium {% if inv.balance > 0 %}text-red-600{% else %}text-gray-500{% endif %}">Balance: {{ inv.balance|format_money_amount:org_profile.default_currency }}</span>
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -76,6 +92,10 @@
               {% else %}
                 <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ inv.status }}</span>
               {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+              <a href="{% url 'parent_invoices_detail' inv.id %}" class="font-semibold text-primary-600 hover:text-primary-800 mr-3">View</a>
+              <a href="{% url 'parent_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer" class="font-semibold text-gray-700 hover:text-gray-900">Print</a>
             </td>
           </tr>
         {% endfor %}

@@ -1,10 +1,12 @@
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.contrib import messages
 from django.shortcuts import get_object_or_404, render
 
+from apps.tenant.finance import services as finance_services
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .models import AttendanceEntry, AttendanceSession
@@ -28,7 +30,7 @@ def _selected_campus_id(request):
     return current.id if current else None
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def session_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page_raw = request.GET.get("per_page")
@@ -85,7 +87,7 @@ def session_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def session_detail(request, pk: int):
     session = get_object_or_404(
         AttendanceSession.objects.select_related(
@@ -100,6 +102,28 @@ def session_detail(request, pk: int):
     )
 
     entries = AttendanceEntry.objects.filter(session=session).select_related("student")
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "send_absence_alerts":
+            include_late = request.POST.get("include_late") == "1"
+            dry_run = request.POST.get("dry_run") == "1"
+            org = get_or_create_organization()
+            summary = finance_services.send_absence_alerts_for_session(
+                session,
+                include_late=include_late,
+                school_name=org.name,
+                dry_run=dry_run,
+            )
+            messages.success(
+                request,
+                "Absence alerts: sent={sent}, failed={failed}, no_phone={no_phone}, dry_run={dry}".format(
+                    sent=summary["sent"],
+                    failed=summary["failed"],
+                    no_phone=summary["no_phone"],
+                    dry=summary["dry_run_count"],
+                ),
+            )
 
     return render(
         request,

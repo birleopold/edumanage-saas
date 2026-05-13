@@ -1,13 +1,15 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Create Assessment</title>
-  </head>
-  <body>
-    <h1>Create assessment</h1>
+{% extends 'portals/teacher/base.html' %}
 
-    {% include 'components/ui_form.html' %}
-  </body>
-</html>
+{% block title %}{% if mode == 'edit' %}Edit Assessment{% else %}Create Assessment{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Assessment{% else %}Create Assessment{% endif %}{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+    <p class="text-sm text-blue-900">
+      Set clear instructions and a fair max score so students understand expectations before submission.
+    </p>
+  </div>
+  {% include 'components/ui_form.html' %}
+</div>
+{% endblock %}

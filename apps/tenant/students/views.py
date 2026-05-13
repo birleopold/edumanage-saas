@@ -1,8 +1,12 @@
+import csv
+
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from django.contrib import messages
 
@@ -10,10 +14,12 @@ from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.orgsettings.utils import log_action
 from apps.tenant.users.models import Role, User, PasswordSetupToken
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.campus_permissions import get_user_campus_scope, user_can_access_campus
+from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import StudentProfileForm
 from .models import StudentProfile
+from .pdf_id_card import generate_student_id_card_pdf
 from .services import generate_next_student_id
 
 
@@ -22,13 +28,12 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
-@role_required(Role.ADMIN)
-def student_list(request):
+def _students_queryset_for_list_filters(request):
+    """
+    Same campus + search rules as the student list (and CSV export).
+    Returns (queryset, selected_campus_id, q).
+    """
     q = (request.GET.get("q") or "").strip()
-    per_page_raw = request.GET.get("per_page")
-    page_number = request.GET.get("page") or 1
-
-    campuses = _campus_queryset()
     current = get_current_campus(request)
 
     if "campus" in request.GET:
@@ -43,7 +48,7 @@ def student_list(request):
     else:
         campus_id = current.id if current else None
 
-    students_qs = StudentProfile.objects.all()
+    students_qs = StudentProfile.objects.select_related("campus", "stream").all()
     if campus_id:
         students_qs = students_qs.filter(campus_id=campus_id)
     if q:
@@ -52,6 +57,16 @@ def student_list(request):
             | Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
         )
+    return students_qs, campus_id, q
+
+
+@admin_portal_required
+def student_list(request):
+    per_page_raw = request.GET.get("per_page")
+    page_number = request.GET.get("page") or 1
+
+    campuses = _campus_queryset()
+    students_qs, campus_id, q = _students_queryset_for_list_filters(request)
 
     per_page = 25
     if per_page_raw:
@@ -79,11 +94,63 @@ def student_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
+def student_export_csv(request):
+    """Download students as CSV using the same campus and search filters as the list."""
+    students_qs, _campus_id, _q = _students_queryset_for_list_filters(request)
+    students_qs = students_qs.order_by("last_name", "first_name")
+
+    filename = f"students_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "student_id",
+            "first_name",
+            "last_name",
+            "email",
+            "campus",
+            "stream",
+            "date_of_birth",
+            "district",
+            "subcounty",
+            "parish",
+            "nin",
+            "learner_id",
+            "is_active",
+            "created_at",
+        ]
+    )
+    for s in students_qs.iterator():
+        writer.writerow(
+            [
+                s.student_id or "",
+                s.first_name or "",
+                s.last_name or "",
+                s.email or "",
+                s.campus.name if s.campus_id else "",
+                str(s.stream) if s.stream_id else "",
+                s.date_of_birth.isoformat() if s.date_of_birth else "",
+                s.district or "",
+                s.subcounty or "",
+                s.parish or "",
+                s.nin or "",
+                s.learner_id or "",
+                "yes" if s.is_active else "no",
+                s.created_at.isoformat() if s.created_at else "",
+            ]
+        )
+    return response
+
+
+@admin_portal_required
 def student_create(request):
     current = get_current_campus(request)
     if request.method == "POST":
-        form = StudentProfileForm(request.POST)
+        form = StudentProfileForm(request.POST, campus=current)
         if form.is_valid():
             with transaction.atomic():
                 obj = form.save(commit=False)
@@ -163,13 +230,13 @@ def student_create(request):
             messages.success(request, "Student created.")
             return redirect("admin_students_list")
     else:
-        form = StudentProfileForm()
+        form = StudentProfileForm(campus=current)
         if current is not None:
             form.fields["campus"].initial = current
     return render(request, "portals/admin/students/form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def student_credentials(request, pk: int):
     student = get_object_or_404(StudentProfile, pk=pk)
     temp_password = request.session.pop(f"student_temp_password_{student.pk}", None)
@@ -191,10 +258,27 @@ def student_credentials(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
+def student_id_card_pdf(request, pk: int):
+    student = get_object_or_404(StudentProfile.objects.select_related("campus"), pk=pk)
+    campus = getattr(student, "campus", None)
+    scoped = get_user_campus_scope(request.user)
+    if scoped is not None:
+        if campus is None or not user_can_access_campus(request.user, campus):
+            return HttpResponseForbidden("You cannot access this student.")
+    org = get_or_create_organization()
+    buf = generate_student_id_card_pdf(student=student, org=org)
+    response = HttpResponse(buf.read(), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="student_id_{student.pk}.pdf"'
+    return response
+
+
+@admin_portal_required
 def student_edit(request, pk: int):
     student = get_object_or_404(StudentProfile, pk=pk)
-    
+    current = get_current_campus(request)
+    stream_campus = student.campus or current
+
     if request.method == "POST":
         if "reset_password" in request.POST:
             if not student.user_id:
@@ -237,11 +321,11 @@ def student_edit(request, pk: int):
             messages.success(request, "Password reset link sent to student's email.")
             return redirect("admin_students_edit", pk=pk)
         
-        form = StudentProfileForm(request.POST, instance=student)
+        form = StudentProfileForm(request.POST, instance=student, campus=stream_campus)
         if form.is_valid():
             form.save()
             messages.success(request, "Student updated successfully.")
             return redirect("admin_students_list")
     else:
-        form = StudentProfileForm(instance=student)
+        form = StudentProfileForm(instance=student, campus=stream_campus)
     return render(request, "portals/admin/students/form.html", {"form": form, "mode": "edit", "student": student})

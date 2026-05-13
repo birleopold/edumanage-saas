@@ -92,6 +92,9 @@ class StaffProfile(models.Model):
     class Meta:
         ordering = ("last_name", "first_name")
 
+    def get_full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
     def __str__(self) -> str:
         return f"{self.last_name} {self.first_name}".strip()
 

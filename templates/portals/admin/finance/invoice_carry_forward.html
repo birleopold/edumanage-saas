@@ -1,0 +1,33 @@
+{% extends 'portals/admin/base.html' %}
+{% load orgsettings_extras %}
+
+{% block title %}Carry balance forward{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6 motion-fast">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Carry balance forward</h1>
+    <p class="text-sm text-gray-600 mt-2">
+      Source invoice <strong>#{{ source.pk }}</strong> for <strong>{{ source.student }}</strong>
+      ({{ source.academic_year|default:"—" }} · {{ source.academic_term|default:"—" }}).
+    </p>
+    <p class="text-sm font-semibold text-amber-800 mt-2">
+      Outstanding balance to carry: {{ balance|format_money_amount:org_profile.default_currency }}
+    </p>
+    <p class="text-xs text-gray-500 mt-2">
+      This adds the amount to <strong>opening balance</strong> on the target period’s invoice (creates one if needed). The source invoice is not modified.
+    </p>
+  </div>
+
+  <form method="post" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+    {% csrf_token %}
+    {% include "components/ui_form.html" %}
+    <div class="flex flex-wrap gap-2">
+      <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+        <i class="ph ph-arrow-right"></i> Apply carry-forward
+      </button>
+      <a href="{% url 'admin_invoices_detail' source.pk %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

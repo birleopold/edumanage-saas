@@ -1,28 +1,46 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Staff {{ staff.id }}{% endblock %}
+{% block title %}Staff {{ staff.last_name }}, {{ staff.first_name }}{% endblock %}
 
 {% block content %}
-  <h1>Staff #{{ staff.id }}</h1>
+<div class="max-w-3xl mx-auto space-y-6">
+  {% include "components/ui_toast.html" %}
 
-  <p>
-    <a href="{% url 'admin_hr_staff_edit' staff.id %}">Edit</a>
-    |
-    <a href="{% url 'admin_hr_staff_list' %}">Back to list</a>
-  </p>
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900">{{ staff.first_name }} {{ staff.last_name }}</h1>
+    <p class="text-gray-600 mt-1 font-mono text-sm">{{ staff.staff_id|default:"No staff ID" }}</p>
+  </div>
 
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      <tr><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Campus</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.campus }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Staff ID</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.staff_id }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Name</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.last_name }} {{ staff.first_name }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Email</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.email }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Phone</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.phone }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Department</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.department }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Position</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.position }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>User</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.user }}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Active</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{% if staff.is_active %}Yes{% else %}No{% endif %}</td></tr>
-        <tr class='hover:bg-gray-50 transition-colors'><th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created</th><td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ staff.created_at }}</td></tr>
-    </tbody>
-  </table></div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'admin_hr_staff_edit' staff.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 shadow-sm">
+      <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
+    </a>
+    <a href="{% url 'admin_hr_staff_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50">
+      <i class="ph ph-arrow-left text-lg" aria-hidden="true"></i><span>Back to list</span>
+    </a>
+  </div>
+
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48 align-top">Campus</th><td class="px-6 py-4 text-sm text-gray-900">{{ staff.campus|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Staff ID</th><td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-800">{{ staff.staff_id|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Name</th><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ staff.last_name }}, {{ staff.first_name }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Email</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.email|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Phone</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.phone|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Department</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.department|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Position</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.position|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">User</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.user|default:"—" }}</td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Active</th><td class="px-6 py-4 text-sm">
+          {% if staff.is_active %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="ph ph-check-circle" aria-hidden="true"></i> Yes</span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"><i class="ph ph-x-circle" aria-hidden="true"></i> No</span>
+          {% endif %}
+        </td></tr>
+        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Created</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.created_at|date:"M j, Y H:i"|default:"—" }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

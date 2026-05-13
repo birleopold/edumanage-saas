@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role, User
 
 from .forms import DepartmentForm, DepartmentHeadForm, PositionForm, StaffProfileForm
@@ -73,7 +73,7 @@ def _create_staff_user(username: str, email: str, role_code: str) -> User:
     return user
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def staff_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -187,7 +187,7 @@ def department_head_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def staff_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -239,7 +239,7 @@ def staff_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def staff_create(request):
     campuses = _campus_queryset()
     current = get_current_campus(request)
@@ -270,7 +270,7 @@ def staff_create(request):
     return render(request, "portals/admin/hr/staff_form.html", {"form": form, "mode": "create", "campuses": campuses})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def staff_edit(request, pk: int):
     staff = get_object_or_404(StaffProfile, pk=pk)
 
@@ -290,13 +290,13 @@ def staff_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def staff_detail(request, pk: int):
     staff = get_object_or_404(StaffProfile.objects.select_related("campus", "department", "position", "user"), pk=pk)
     return render(request, "portals/admin/hr/staff_detail.html", {"staff": staff})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def department_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -316,7 +316,7 @@ def department_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def department_create(request):
     current = get_current_campus(request)
 
@@ -337,7 +337,7 @@ def department_create(request):
     return render(request, "portals/admin/hr/department_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def department_edit(request, pk: int):
     dept = get_object_or_404(Department, pk=pk)
 
@@ -357,7 +357,7 @@ def department_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def position_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -377,7 +377,7 @@ def position_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def position_create(request):
     if request.method == "POST":
         form = PositionForm(request.POST)
@@ -391,7 +391,7 @@ def position_create(request):
     return render(request, "portals/admin/hr/position_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def position_edit(request, pk: int):
     position = get_object_or_404(Position, pk=pk)
 

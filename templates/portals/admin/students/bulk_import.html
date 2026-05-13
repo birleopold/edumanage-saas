@@ -6,7 +6,7 @@
 {% block breadcrumbs %}
 <div class="flex items-center text-sm">
     <a href="{% url 'admin_students_list' %}" class="text-primary-600 hover:text-primary-800">Students</a>
-    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
+    <i class="ph ph-caret-right mx-2 text-gray-400" aria-hidden="true"></i>
     <span class="text-gray-500">Bulk Import</span>
 </div>
 {% endblock %}
@@ -16,19 +16,20 @@
     <!-- Instructions Card -->
     <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
         <div class="flex items-start">
-            <i class="ph ph-info text-blue-500 text-2xl mr-3 mt-1"></i>
+            <i class="ph ph-info text-blue-500 text-2xl mr-3 mt-1" aria-hidden="true"></i>
             <div>
                 <h3 class="text-lg font-bold text-blue-900 mb-2">How to Use Bulk Import</h3>
                 <ol class="list-decimal list-inside space-y-2 text-sm text-blue-800">
                     <li>Download the sample template below to see the required format</li>
                     <li>Fill in your student data (CSV or Excel format)</li>
                     <li>Upload the file and choose your options</li>
-                    <li>Review the results and download/email credentials</li>
+                    <li>Review the preview — fix any rows with errors before confirming</li>
+                    <li>Confirm to import, then download or email credentials if needed</li>
                 </ol>
                 <div class="mt-4">
                     <a href="{% url 'admin_students_download_template' %}" 
                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-                        <i class="ph ph-download mr-2"></i>
+                        <i class="ph ph-download mr-2" aria-hidden="true"></i>
                         Download Sample Template
                     </a>
                 </div>
@@ -45,17 +46,20 @@
             
             <!-- File Upload -->
             <div>
-                <label class="block text-sm font-bold text-gray-800 mb-2">
-                    Select File <span class="text-red-500">*</span>
+                <label for="import_file" class="block text-sm font-bold text-gray-800 mb-2">
+                    Select File <span class="text-red-500" aria-hidden="true">*</span>
+                    <span class="sr-only">(required)</span>
                 </label>
                 <input 
                     type="file" 
+                    id="import_file"
                     name="import_file" 
                     accept=".csv,.xlsx,.xls"
                     required
+                    aria-describedby="import_file_hint import_file_columns"
                     class="block w-full text-sm text-gray-900 border-2 border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                 />
-                <p class="mt-2 text-sm text-gray-500">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                <p id="import_file_hint" class="mt-2 text-sm text-gray-500">Supported formats: CSV, Excel (.xlsx, .xls)</p>
             </div>
 
             <!-- Options -->
@@ -95,7 +99,7 @@
             </div>
 
             <!-- File Format Reference -->
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div id="import_file_columns" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 class="text-sm font-bold text-gray-800 mb-2">Required CSV/Excel Columns:</h4>
                 <ul class="text-sm text-gray-700 space-y-1">
                     <li><code class="bg-gray-200 px-2 py-0.5 rounded">first_name</code> - Student's first name (required)</li>
@@ -106,18 +110,20 @@
                 </ul>
             </div>
 
-            <!-- Submit Button -->
+            <!-- Submit Buttons -->
             <div class="flex justify-end gap-3 pt-4">
-                <a href="{% url 'admin_students_list' %}" 
+                <a href="{% url 'admin_students_list' %}"
                    class="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50 transition">
                     Cancel
                 </a>
-                <button 
+                <button
                     type="submit"
+                    name="action"
+                    value="preview"
                     class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 transition shadow-md"
                 >
-                    <i class="ph ph-upload mr-2"></i>
-                    Import Students
+                    <i class="ph ph-eye mr-2" aria-hidden="true"></i>
+                    Review import
                 </button>
             </div>
         </form>

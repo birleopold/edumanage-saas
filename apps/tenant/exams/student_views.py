@@ -113,12 +113,12 @@ def take_exam(request, pk: int):
     enrollment = Enrollment.objects.filter(student=student, offering=paper.offering, status=Enrollment.ACTIVE).first()
     if not enrollment:
         messages.error(request, "You are not enrolled in this course.")
-        return redirect("student_exams_results")
+        return redirect("student_exam_results")
     
     # Check if exam is online
     if paper.exam.exam_mode not in [Exam.ONLINE, Exam.HYBRID]:
         messages.error(request, "This exam is not available online.")
-        return redirect("student_exams_results")
+        return redirect("student_exam_results")
     
     # Get or create attempt
     attempt, created = OnlineExamAttempt.objects.get_or_create(
@@ -216,7 +216,7 @@ def exam_result(request, pk: int):
     # Check if results are available
     if not attempt.paper.show_results_immediately and attempt.status != OnlineExamAttempt.GRADED:
         messages.info(request, "Results will be available after grading is complete.")
-        return redirect("student_exams_results")
+        return redirect("student_exam_results")
     
     # Get responses
     responses = StudentResponse.objects.filter(attempt=attempt).select_related(

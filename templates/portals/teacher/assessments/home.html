@@ -3,6 +3,7 @@
 {% block title %}Assessments{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Assessments</h1>
   <p class="text-gray-600">Manage and grade your class assessments</p>
@@ -90,4 +91,5 @@
   {% url 'teacher_assessments_create' as create_url %}
   {% include "components/ui_empty_state.html" with icon="exam" title="No assessments" description="You haven't created any assessments yet" action_url=create_url action_text="Create Assessment" %}
 {% endif %}
+</div>
 {% endblock %}

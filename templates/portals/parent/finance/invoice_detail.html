@@ -1,0 +1,116 @@
+{% extends 'portals/parent/base.html' %}
+{% load orgsettings_extras %}
+
+{% block title %}Invoice {{ invoice.reference|default:invoice.id }}{% endblock %}
+{% block page_title %}Invoice details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <p class="text-sm text-gray-600">{{ invoice.student }} · {{ invoice.student.campus|default:"" }}</p>
+      <p class="text-sm text-gray-600 mt-1">{{ invoice.academic_year }} · {{ invoice.academic_term }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'parent_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
+        <i class="ph ph-arrow-left"></i> Back to invoices
+      </a>
+      <a href="{% url 'parent_invoices_print' invoice.id %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-50">
+        <i class="ph ph-printer"></i> Printable
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Total due</p>
+      <p class="text-lg font-bold text-gray-900 mt-1">{{ total_amount|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Paid</p>
+      <p class="text-lg font-bold text-green-700 mt-1">{{ total_paid|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Balance</p>
+      <p class="text-lg font-bold {% if balance > 0 %}text-red-700{% else %}text-gray-900{% endif %} mt-1">{{ balance|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500">Status / Due</p>
+      <p class="text-sm font-semibold text-gray-900 mt-1">{{ invoice.status }}</p>
+      <p class="text-xs text-gray-500 mt-1">Due {{ invoice.due_date|default:"-" }}</p>
+    </div>
+  </div>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h3 class="text-base font-semibold text-gray-900">Line items</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unit</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% if invoice.opening_balance and invoice.opening_balance != 0 %}
+          <tr class="bg-amber-50/80">
+            <td class="px-6 py-4 text-sm font-medium text-amber-900" colspan="3">Opening balance (brought forward)</td>
+            <td class="px-6 py-4 text-sm font-semibold text-amber-900">{{ invoice.opening_balance|format_money_amount:org_profile.default_currency }}</td>
+          </tr>
+          {% endif %}
+          {% for line in invoice.lines.all %}
+          <tr>
+            <td class="px-6 py-4 text-sm text-gray-800">{{ line.description }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ line.quantity }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ line.unit_amount|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ line.line_total|format_money_amount:org_profile.default_currency }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-6 py-6 text-sm text-center text-gray-500">No line items.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h3 class="text-base font-semibold text-gray-900">Payments</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Network</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Receipt</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for p in invoice.payments.all %}
+          <tr>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.received_at }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ p.amount|format_money_amount:org_profile.default_currency }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.get_method_display }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{% if p.mobile_network %}{{ p.get_mobile_network_display }}{% else %}—{% endif %}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ p.reference|default:"-" }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">
+              <a href="{% url 'parent_payment_receipt_pdf' invoice.id p.id %}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold hover:text-primary-800">PDF</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-6 py-6 text-sm text-center text-gray-500">No payments recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

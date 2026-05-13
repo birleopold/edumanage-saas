@@ -3,7 +3,22 @@
 {% block title %}{% if mode == 'edit' %}Edit Position{% else %}Add Position{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Position{% else %}Add Position{% endif %}</h1>
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">
+    {% if mode == 'edit' %}Edit position{% else %}Add position{% endif %}
+  </h1>
+  <p class="text-gray-600">
+    {% if mode == 'edit' %}
+      Update department, title, or status for <span class="font-semibold text-gray-800">{{ position.title }}</span>.
+    {% else %}
+      Link a job title to a department. Staff profiles can reference this position when assigned.
+    {% endif %}
+  </p>
+</div>
 
+{% include "components/ui_toast.html" %}
+
+<div class="max-w-3xl">
   {% include 'components/ui_form.html' %}
+</div>
 {% endblock %}

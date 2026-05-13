@@ -3,6 +3,8 @@ from django.urls import path
 from . import admin_views
 
 urlpatterns = [
+    path("charts/", admin_views.charts_overview, name="admin_analytics_charts"),
+    path("api/charts-overview/", admin_views.charts_overview_data, name="admin_analytics_api_charts_overview"),
     # Dashboard
     path("", admin_views.analytics_dashboard, name="admin_analytics_dashboard"),
     

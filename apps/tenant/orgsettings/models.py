@@ -25,6 +25,12 @@ class OrganizationProfile(models.Model):
     primary_color = models.CharField(max_length=32, blank=True)
     secondary_color = models.CharField(max_length=32, blank=True)
 
+    default_currency = models.CharField(
+        max_length=3,
+        default="UGX",
+        help_text="ISO 4217 code shown on invoices and fee statements (e.g. UGX, USD).",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -209,7 +209,9 @@
 function downloadPDF() {
   // Implement PDF generation
   // Could use jsPDF or send to server for PDF generation
-  alert('PDF download functionality - integrate with PDF generation service');
+  if (typeof window.showToast === 'function') {
+    window.showToast('Not yet available', 'PDF download will be integrated with the document service soon.', 'info');
+  }
 }
 </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import promotion_views, views
 
 urlpatterns = [
     path("context/", views.academic_context, name="admin_academic_context"),
@@ -53,7 +53,12 @@ urlpatterns = [
     path("streams/", views.stream_list, name="admin_stream_list"),
     path("streams/create/", views.stream_create, name="admin_stream_create"),
     path("streams/<int:pk>/edit/", views.stream_edit, name="admin_stream_edit"),
-    
+    path(
+        "promotions/stream/",
+        promotion_views.stream_promotion,
+        name="admin_stream_promotion",
+    ),
+
     path("report-cards/<int:student_id>/<int:term_id>/", views.report_card_view, name="admin_report_card_view"),
     path("terms/<int:term_id>/report-cards/", views.term_report_cards, name="admin_term_report_cards"),
 ]

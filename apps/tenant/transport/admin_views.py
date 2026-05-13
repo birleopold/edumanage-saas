@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from django.contrib import messages
@@ -29,7 +29,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def driver_list(request):
     q = (request.GET.get("q") or "").strip()
     status_filter = request.GET.get("status", "")
@@ -52,7 +52,7 @@ def driver_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def driver_create(request):
     if request.method == "POST":
         form = DriverForm(request.POST)
@@ -66,7 +66,7 @@ def driver_create(request):
     return render(request, "portals/admin/transport/driver_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def driver_edit(request, pk: int):
     obj = get_object_or_404(Driver, pk=pk)
 
@@ -86,7 +86,7 @@ def driver_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def vehicle_list(request):
     q = (request.GET.get("q") or "").strip()
     status_filter = request.GET.get("status", "")
@@ -109,7 +109,7 @@ def vehicle_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def vehicle_create(request):
     if request.method == "POST":
         form = VehicleForm(request.POST)
@@ -123,7 +123,7 @@ def vehicle_create(request):
     return render(request, "portals/admin/transport/vehicle_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def vehicle_edit(request, pk: int):
     obj = get_object_or_404(Vehicle, pk=pk)
 
@@ -143,7 +143,7 @@ def vehicle_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def vehicle_tracking(request, pk: int):
     vehicle = get_object_or_404(Vehicle, pk=pk)
     
@@ -160,7 +160,7 @@ def vehicle_tracking(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def route_list(request):
     q = (request.GET.get("q") or "").strip()
     shift_filter = request.GET.get("shift", "")
@@ -183,7 +183,7 @@ def route_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def route_create(request):
     if request.method == "POST":
         form = TransportRouteForm(request.POST)
@@ -197,7 +197,7 @@ def route_create(request):
     return render(request, "portals/admin/transport/route_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def route_edit(request, pk: int):
     obj = get_object_or_404(TransportRoute, pk=pk)
 
@@ -217,7 +217,7 @@ def route_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def route_detail(request, pk: int):
     route = get_object_or_404(TransportRoute.objects.select_related("vehicle", "driver").prefetch_related("stops", "student_assignments__student"), pk=pk)
     
@@ -232,27 +232,48 @@ def route_detail(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stop_list(request):
     q = (request.GET.get("q") or "").strip()
+    route_filter = (request.GET.get("route") or "").strip()
+    active_filter = request.GET.get("active", "")
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
     qs = RouteStop.objects.select_related("route").all()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(route__name__icontains=q) | Q(route__code__icontains=q))
+    if route_filter:
+        try:
+            qs = qs.filter(route_id=int(route_filter))
+        except (TypeError, ValueError):
+            pass
+    if active_filter == "1":
+        qs = qs.filter(is_active=True)
+    elif active_filter == "0":
+        qs = qs.filter(is_active=False)
 
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
 
+    route_options = TransportRoute.objects.order_by("code", "name")
+
     return render(
         request,
         "portals/admin/transport/stops_list.html",
-        {"stops": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {
+            "stops": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "per_page": per_page,
+            "route_filter": route_filter,
+            "active_filter": active_filter,
+            "routes_for_filter": route_options,
+        },
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stop_create(request):
     route_id = request.GET.get("route")
     
@@ -273,7 +294,7 @@ def stop_create(request):
     return render(request, "portals/admin/transport/stop_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stop_edit(request, pk: int):
     obj = get_object_or_404(RouteStop, pk=pk)
 
@@ -293,9 +314,12 @@ def stop_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_list(request):
     q = (request.GET.get("q") or "").strip()
+    route_filter = (request.GET.get("route") or "").strip()
+    active_filter = request.GET.get("active", "")
+    service_filter = (request.GET.get("service") or "").strip()
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
@@ -309,18 +333,47 @@ def assignment_list(request):
             | Q(route__code__icontains=q)
             | Q(stop__name__icontains=q)
         )
+    if route_filter:
+        try:
+            qs = qs.filter(route_id=int(route_filter))
+        except (TypeError, ValueError):
+            pass
+    if active_filter == "1":
+        qs = qs.filter(is_active=True)
+    elif active_filter == "0":
+        qs = qs.filter(is_active=False)
+
+    valid_service = {
+        StudentTransportAssignment.PICKUP_ONLY,
+        StudentTransportAssignment.DROPOFF_ONLY,
+        StudentTransportAssignment.BOTH,
+    }
+    if service_filter in valid_service:
+        qs = qs.filter(service_type=service_filter)
 
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
 
+    route_options = TransportRoute.objects.order_by("code", "name")
+
     return render(
         request,
         "portals/admin/transport/assignments_list.html",
-        {"assignments": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {
+            "assignments": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "per_page": per_page,
+            "route_filter": route_filter,
+            "active_filter": active_filter,
+            "service_filter": service_filter,
+            "routes_for_filter": route_options,
+            "service_choices": StudentTransportAssignment.SERVICE_TYPE_CHOICES,
+        },
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_create(request):
     if request.method == "POST":
         form = StudentTransportAssignmentForm(request.POST)
@@ -338,7 +391,7 @@ def assignment_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_edit(request, pk: int):
     obj = get_object_or_404(StudentTransportAssignment, pk=pk)
 

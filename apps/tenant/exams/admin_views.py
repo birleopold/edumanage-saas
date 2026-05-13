@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from django.contrib import messages
@@ -69,7 +69,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def exam_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -89,7 +89,7 @@ def exam_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def exam_create(request):
     if request.method == "POST":
         form = ExamForm(request.POST)
@@ -103,7 +103,7 @@ def exam_create(request):
     return render(request, "portals/admin/exams/exam_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def exam_edit(request, pk: int):
     obj = get_object_or_404(Exam, pk=pk)
 
@@ -123,7 +123,7 @@ def exam_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -137,6 +137,7 @@ def paper_list(request):
         "exam__term",
         "exam__term__year",
         "offering",
+        "offering__campus",
         "offering__course",
         "offering__term",
         "offering__term__year",
@@ -174,7 +175,7 @@ def paper_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_create(request):
     if request.method == "POST":
         form = ExamPaperForm(request.POST)
@@ -188,7 +189,7 @@ def paper_create(request):
     return render(request, "portals/admin/exams/paper_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_edit(request, pk: int):
     obj = get_object_or_404(ExamPaper, pk=pk)
 
@@ -208,7 +209,7 @@ def paper_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_detail(request, pk: int):
     paper = get_object_or_404(
         ExamPaper.objects.select_related('exam', 'offering__course').prefetch_related('questions__question', 'schedules'),
@@ -231,7 +232,7 @@ def paper_detail(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_scores(request, pk: int):
     paper = get_object_or_404(
         ExamPaper.objects.select_related(
@@ -256,7 +257,7 @@ def paper_scores(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def question_bank_list(request):
     q = (request.GET.get("q") or "").strip()
     course_filter = request.GET.get("course", "")
@@ -294,7 +295,7 @@ def question_bank_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def question_bank_create(request):
     if request.method == "POST":
         form = QuestionBankForm(request.POST, request.FILES)
@@ -311,7 +312,7 @@ def question_bank_create(request):
     return render(request, "portals/admin/exams/question_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def question_bank_edit(request, pk: int):
     obj = get_object_or_404(QuestionBank, pk=pk)
 
@@ -331,7 +332,7 @@ def question_bank_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_questions(request, pk: int):
     paper = get_object_or_404(ExamPaper.objects.select_related('exam', 'offering__course'), pk=pk)
     questions = ExamQuestion.objects.filter(paper=paper).select_related('question').order_by('order')
@@ -349,7 +350,7 @@ def paper_questions(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_add_question(request, pk: int):
     paper = get_object_or_404(ExamPaper, pk=pk)
     
@@ -371,7 +372,7 @@ def paper_add_question(request, pk: int):
     return render(request, "portals/admin/exams/add_question_to_paper.html", {"form": form, "paper": paper})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def schedule_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -396,7 +397,7 @@ def schedule_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def schedule_create(request):
     if request.method == "POST":
         form = ExamScheduleForm(request.POST)
@@ -410,7 +411,7 @@ def schedule_create(request):
     return render(request, "portals/admin/exams/schedule_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def schedule_edit(request, pk: int):
     obj = get_object_or_404(ExamSchedule, pk=pk)
 
@@ -430,7 +431,7 @@ def schedule_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def schedule_detail(request, pk: int):
     schedule = get_object_or_404(
         ExamSchedule.objects.select_related('paper__exam', 'paper__offering__course', 'invigilator'),
@@ -446,7 +447,7 @@ def schedule_detail(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def allocate_seats(request, pk: int):
     schedule = get_object_or_404(ExamSchedule, pk=pk)
     
@@ -480,7 +481,7 @@ def allocate_seats(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def generate_admit_card(request, pk: int):
     allocation = get_object_or_404(SeatAllocation.objects.select_related('student', 'schedule__paper__exam', 'schedule__paper__offering__course'), pk=pk)
     
@@ -496,7 +497,7 @@ def generate_admit_card(request, pk: int):
     return response
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def paper_analytics(request, pk: int):
     paper = get_object_or_404(ExamPaper.objects.select_related('exam', 'offering__course'), pk=pk)
     
@@ -532,7 +533,7 @@ def paper_analytics(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def calculate_ranks(request, pk: int):
     paper = get_object_or_404(ExamPaper, pk=pk)
     calculate_student_rank(paper)
@@ -540,7 +541,7 @@ def calculate_ranks(request, pk: int):
     return redirect("admin_paper_scores", pk=pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assign_paper_grades(request, pk: int):
     paper = get_object_or_404(ExamPaper, pk=pk)
     
@@ -564,7 +565,7 @@ def assign_paper_grades(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def online_attempts_list(request):
     q = (request.GET.get("q") or "").strip()
     status_filter = request.GET.get("status", "")

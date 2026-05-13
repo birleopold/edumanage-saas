@@ -1,76 +1,58 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Asset Assignments{% endblock %}
+{% block title %}Asset assignments{% endblock %}
 
 {% block content %}
-  <h1>Assignments</h1>
+{% url 'admin_inventory_assignments_list' as clear_url %}
+{% url 'admin_inventory_assignments_create' as create_url %}
+{% include "components/ui_admin_list_toolbar_get.html" with title="Asset assignments" description="Assign inventory items to students or staff." clear_url=clear_url create_url=create_url add_label="Assign asset" search_placeholder="Item, assignee, or status…" %}
 
-  <form method="get">
-    <label for="id_q">Search</label>
-    <input id="id_q" type="text" name="q" value="{{ q }}" />
-
-    <label for="id_per_page">Per page</label>
-    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
-
-    <button type="submit">Apply</button>
-  </form>
-
-  <p><a href="{% url 'admin_inventory_assignments_create' %}">Add</a></p>
-
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Item</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Qty</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Assigned to</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Assigned</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Returned</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created by</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Created</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for a in assignments %}
+{% if assignments %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
         <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.item }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.quantity }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
-            {% if a.assigned_to_student %}
-              {{ a.assigned_to_student }}
-            {% else %}
-              {{ a.assigned_to_user }}
-            {% endif %}
-          </td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.status }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.assigned_at }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.returned_at }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.created_by }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ a.created_at }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_inventory_assignments_edit' a.id %}">Edit</a></td>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Item</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned to</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Returned</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created by</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="10" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No assignments yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for a in assignments %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ a.id }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">{{ a.item }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right tabular-nums">{{ a.quantity }}</td>
+            <td class="px-6 py-4 text-sm text-gray-800">
+              {% if a.assigned_to_student %}{{ a.assigned_to_student }}{% else %}{{ a.assigned_to_user|default:"—" }}{% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.status }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.assigned_at|date:"M j, Y" }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{% if a.returned_at %}{{ a.returned_at|date:"M j, Y" }}{% else %}—{% endif %}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.created_by }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.created_at|date:"M j, Y" }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'admin_inventory_assignments_edit' a.id %}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold">
+                <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% if page_obj %}
-    <div style="margin-top: 12px;">
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-      {% if page_obj.has_previous %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-      {% endif %}
-
-      {% if page_obj.has_next %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-      {% endif %}
-    </div>
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
   {% endif %}
+{% else %}
+  {% url 'admin_inventory_assignments_create' as add_url %}
+  {% include "components/ui_empty_state.html" with icon="hand-arrow-down" title="No assignments" description="Assign assets from inventory or adjust your search." action_url=add_url action_text="Assign asset" %}
+{% endif %}
 {% endblock %}

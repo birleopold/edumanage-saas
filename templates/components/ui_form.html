@@ -8,7 +8,7 @@
         <div class="rounded-lg bg-red-50 border-l-4 border-red-500 p-4 mb-6">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <i class="ph ph-warning-circle text-red-500 text-xl"></i>
+                    <i class="ph ph-warning-circle text-red-500 text-xl" aria-hidden="true"></i>
                 </div>
                 <div class="ml-3">
                     <h3 class="text-sm font-bold text-red-800">Please correct the following errors:</h3>
@@ -26,7 +26,7 @@
 
         <div class="grid grid-cols-1 gap-y-6 gap-x-6 {% block grid_cols %}sm:grid-cols-2{% endblock %}">
             {% for field in form %}
-            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' %}sm:col-span-2{% endif %} group relative">
+            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' or 'textarea' in field.field.widget.template_name %}sm:col-span-2{% endif %} group relative">
                 {% if field.field.widget.input_type == 'checkbox' %}
                     <div class="relative flex items-start py-2 border border-transparent rounded-lg hover:border-gray-200 transition-colors p-2 -ml-2">
                         <div class="flex items-center h-5">
@@ -56,7 +56,7 @@
                     {% endif %}
                     {% if field.errors %}
                     <p class="mt-2 text-sm font-bold text-red-600 flex items-center">
-                        <i class="ph ph-warning-circle mr-1"></i>
+                        <i class="ph ph-warning-circle mr-1" aria-hidden="true"></i>
                         {% for error in field.errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
                     </p>
                     {% endif %}
@@ -65,14 +65,24 @@
             {% endfor %}
         </div>
 
-        <div class="pt-6 mt-2 border-t border-gray-200 flex justify-end gap-3">
+        <div class="pt-6 mt-2 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
             {% block form_actions %}
+            {% if form_cancel_url %}
+            <a href="{{ form_cancel_url }}" class="inline-flex justify-center items-center bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+                Cancel
+            </a>
+            {% else %}
             <button type="button" onclick="window.history.back();" class="bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
                 Cancel
             </button>
+            {% endif %}
             <button type="submit" class="inline-flex justify-center items-center py-2.5 px-6 border-2 border-transparent shadow-md text-sm font-bold rounded-lg text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5">
-                <i class="ph ph-floppy-disk mr-2 text-lg"></i>
-                Save Changes
+                {% if form_submit_icon %}
+                <i class="ph {{ form_submit_icon }} mr-2 text-lg" aria-hidden="true"></i>
+                {% else %}
+                <i class="ph ph-floppy-disk mr-2 text-lg" aria-hidden="true"></i>
+                {% endif %}
+                {{ form_submit_text|default:"Save Changes" }}
             </button>
             {% endblock %}
         </div>

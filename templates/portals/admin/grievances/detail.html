@@ -1,0 +1,31 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Grievance{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">{{ grievance.subject }}</h1>
+    <a href="{% url 'admin_grievances_list' %}" class="text-sm font-semibold text-primary-600 hover:text-primary-800">← Back to list</a>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-2 text-sm">
+    <p><span class="text-gray-500">Status:</span> <strong>{{ grievance.get_status_display }}</strong></p>
+    <p><span class="text-gray-500">Submitted by:</span> {{ grievance.submitted_by.get_full_name|default:grievance.submitted_by.username }} ({{ grievance.created_at|date:"Y-m-d H:i" }})</p>
+    {% if grievance.campus %}<p><span class="text-gray-500">Campus:</span> {{ grievance.campus.name }}</p>{% endif %}
+    {% if grievance.handled_by %}<p><span class="text-gray-500">Last handled by:</span> {{ grievance.handled_by.get_full_name|default:grievance.handled_by.username }}</p>{% endif %}
+  </div>
+
+  <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Description</h2>
+    <div class="text-gray-900 whitespace-pre-wrap">{{ grievance.body }}</div>
+  </div>
+
+  <form method="post" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+    {% csrf_token %}
+    <h2 class="text-lg font-semibold text-gray-900">Admin response</h2>
+    {% include "components/ui_form.html" %}
+    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">Save updates</button>
+  </form>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "components/pwa_meta.html" %}
     <title>{% block title %}Admin Portal{% endblock %} | EduManage</title>
     
     <!-- Tailwind CSS (via CDN for immediate development, recommend compiling for production) -->
@@ -103,22 +104,22 @@
             letter-spacing: 0.1em;
             margin-bottom: 1rem;
         }
-        
-        /* Generous white space between sections */
+
         nav > div {
             padding: 0.5rem 0;
         }
     </style>
-    
+    {% include "components/ui_portal_polish.html" %}
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full flex overflow-hidden">
+<body class="h-full flex overflow-hidden role-admin">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white border border-gray-300 rounded px-3 py-2 text-sm z-50">Skip to main content</a>
 
     <!-- Mobile sidebar backdrop -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-slate-50/95 via-white to-slate-50/95 backdrop-blur-xl border-r border-slate-200/60 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl shadow-slate-200/50">
+    <aside id="sidebar" class="fixed lg:relative inset-y-0 left-0 z-50 w-80 shrink-0 bg-gradient-to-b from-slate-50/95 via-white to-slate-50/95 backdrop-blur-xl border-r border-slate-200/60 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl shadow-slate-200/50">
         
         <!-- Sidebar Header (Logo & Brand) - Glassmorphism Design -->
         <div class="h-20 flex items-center px-6 border-b backdrop-blur-xl" style="background: linear-gradient(135deg, {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %}12 0%, {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %}05 100%); border-color: {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %}20;">
@@ -129,37 +130,49 @@
                 <img src="{{ org_profile.logo.url }}?v={{ cache_buster }}" alt="Logo" class="h-12 w-auto mr-4 rounded-2xl bg-white/80 backdrop-blur-sm p-2 shadow-lg" style="border: 1.5px solid {% if org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %}25;" />
             {% else %}
                 <div class="h-12 w-12 rounded-2xl flex items-center justify-center mr-4 shadow-lg" style="background: linear-gradient(135deg, {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %} 0%, {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %}e6 100%);">
-                    <i class="ph ph-graduation-cap text-white text-2xl"></i>
+                    <i class="ph ph-graduation-cap text-white text-2xl" aria-hidden="true"></i>
                 </div>
             {% endif %}
             
             <div class="flex flex-col overflow-hidden">
                 <span class="font-bold text-lg truncate text-slate-900">{% if org_profile %}{{ org_profile.name }}{% else %}EduManage{% endif %}</span>
                 <span class="text-xs truncate flex items-center gap-1.5 font-semibold tracking-wide" style="color: {% if current_campus and current_campus.primary_color_override %}{{ current_campus.primary_color_override }}{% elif org_profile and org_profile.primary_color %}{{ org_profile.primary_color }}{% else %}#6366F1{% endif %};">
-                    <i class="ph-fill ph-shield-check text-xs"></i>
+                    <i class="ph-fill ph-shield-check text-xs" aria-hidden="true"></i>
                     Admin Portal
                 </span>
             </div>
             
             <!-- Mobile close button -->
-            <button onclick="toggleSidebar()" class="lg:hidden ml-auto text-slate-400 hover:text-slate-600 transition-colors">
-                <i class="ph ph-x text-xl"></i>
+            <button type="button" onclick="toggleSidebar()" aria-label="Close sidebar" class="lg:hidden ml-auto text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="ph ph-x text-xl" aria-hidden="true"></i>
             </button>
         </div>
 
         <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto no-scrollbar px-4 py-6 space-y-8">
+        <nav class="flex-1 overflow-y-auto no-scrollbar px-4 py-6 space-y-8" role="navigation" aria-label="School administration menu">
             
             <!-- Core section -->
             <div>
                 <a href="{% url 'admin_home' %}" class="group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 {% if request.path == '/admin/' %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}" {% if request.path == '/admin/' %}style="color: white;"{% endif %}>
                     <div class="flex items-center justify-center w-8 h-8 mr-3 rounded-lg transition-all duration-200" style="background: {% if request.path == '/admin/' %}rgba(255, 255, 255, 0.2){% else %}color-mix(in srgb, var(--org-primary) 15%, transparent){% endif %};">
-                        <i class="ph-fill ph-squares-four text-xl" style="color: {% if request.path == '/admin/' %}white{% else %}var(--org-primary){% endif %};"></i>
+                        <i class="ph-fill ph-squares-four text-xl" style="color: {% if request.path == '/admin/' %}white{% else %}var(--org-primary){% endif %};" aria-hidden="true"></i>
                     </div>
                     <span>Dashboard</span>
                     {% if request.path == '/admin/' %}
-                        <i class="ph-fill ph-caret-right ml-auto" style="opacity: 0.8;"></i>
+                        <i class="ph-fill ph-caret-right ml-auto" style="opacity: 0.8;" aria-hidden="true"></i>
                     {% endif %}
+                </a>
+                <a href="{% url 'admin_communication_center' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/communication' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                    <i class="ph-fill ph-chats-circle text-lg mr-3" style="color: {% if '/admin/communication' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/communication' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                    <span>Communication Hub</span>
+                </a>
+                <a href="{% url 'admin_school_setup_guide' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/school-setup' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                    <i class="ph-fill ph-clipboard-text text-lg mr-3" style="color: {% if '/admin/school-setup' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/school-setup' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                    <span>Getting started</span>
+                </a>
+                <a href="{% url 'admin_system_status' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/system-status' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                    <i class="ph-fill ph-heartbeat text-lg mr-3" style="color: {% if '/admin/system-status' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/system-status' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                    <span>System status</span>
                 </a>
             </div>
 
@@ -173,41 +186,43 @@
                 <div class="space-y-1">
                     <!-- Students Dropdown -->
                     <div x-data="{ open: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}true{% else %}false{% endif %} }" class="relative">
-                        <button @click="open = !open" class="w-full group flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <button type="button" id="admin-nav-trigger-students" @click="open = !open" :aria-expanded="open" aria-controls="admin-nav-submenu-students" class="w-full group flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                             <div class="flex items-center">
-                                <i class="ph-fill ph-student text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}1{% else %}0.5{% endif %};"></i>
+                                <i class="ph-fill ph-student text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                                 <span>Students</span>
                             </div>
-                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" style="color: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}white{% else %}var(--org-primary){% endif %};"></i>
+                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" style="color: {% if '/admin/students' in request.path or '/admin/admissions' in request.path %}white{% else %}var(--org-primary){% endif %};" aria-hidden="true"></i>
                         </button>
-                        <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
+                        <div id="admin-nav-submenu-students" x-show="open" x-collapse role="group" aria-label="Students and admissions" class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
                             <a href="{% url 'admin_students_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/students' in request.path and 'bulk-import' not in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-list mr-2"></i>All Students
+                                <i class="ph ph-list mr-2" aria-hidden="true"></i>All Students
                             </a>
                             <a href="{% url 'admin_students_create' %}" class="block px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                                <i class="ph ph-user-plus mr-2"></i>Add Student
+                                <i class="ph ph-user-plus mr-2" aria-hidden="true"></i>Add Student
                             </a>
                             <a href="{% url 'admin_students_bulk_import' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'bulk-import' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-upload mr-2"></i>Bulk Import
+                                <i class="ph ph-upload mr-2" aria-hidden="true"></i>Bulk Import
                             </a>
                             <a href="{% url 'admin_admissions_applicants' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/admissions' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-clipboard-text mr-2"></i>Admissions
+                                <i class="ph ph-clipboard-text mr-2" aria-hidden="true"></i>Admissions
                             </a>
                         </div>
                     </div>
                     
                     <a href="{% url 'admin_teachers_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/teachers' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-chalkboard-teacher text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/teachers' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/teachers' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-chalkboard-teacher text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/teachers' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/teachers' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Teachers</span>
                     </a>
                     <a href="{% url 'admin_parents_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/parents' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-users text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/parents' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/parents' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-users text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/parents' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/parents' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Parents</span>
                     </a>
+                    {% if is_global_admin|default:False %}
                     <a href="{% url 'admin_users_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/users' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-shield-check text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/users' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/users' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-shield-check text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/users' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/users' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>System Users</span>
                     </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -220,76 +235,84 @@
                 </h3>
                 <div class="space-y-1">
                     <a href="{% url 'admin_offering_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/offerings' in request.path or 'academics/courses' in request.path or 'academics/programs' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-books text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/offerings' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/offerings' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-books text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/offerings' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/offerings' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Classes & Offerings</span>
                     </a>
                     <a href="{% url 'admin_coursework_materials_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/coursework' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-notebook text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/coursework' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/coursework' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-notebook text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/coursework' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/coursework' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Coursework</span>
                     </a>
                     <a href="{% url 'admin_activities_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/activities' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-flag-banner text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/activities' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/activities' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-flag-banner text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/activities' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/activities' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Activities & Clubs</span>
                     </a>
                     <a href="{% url 'admin_duty_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/duty' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-user-switch text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/duty' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/duty' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-user-switch text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/duty' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/duty' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Teacher On Duty</span>
                     </a>
                     <a href="{% url 'admin_stream_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/streams' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-users-three text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/streams' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/streams' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-users-three text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/streams' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/streams' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Class Streams</span>
                     </a>
+                    <a href="{% url 'admin_stream_promotion' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/promotions' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-arrows-left-right text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/promotions' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/promotions' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Stream promotion</span>
+                    </a>
                     <a href="{% url 'admin_enrollment_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/enrollments' in request.path and not 'bulk' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-user-plus text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/enrollments' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/enrollments' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-user-plus text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/enrollments' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/enrollments' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Enrollments</span>
                     </a>
                     <a href="{% url 'admin_grading_scale_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/grading-scales' in request.path or 'academics/grade-ranges' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-chart-line text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/grading-scales' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/grading-scales' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-chart-line text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/grading-scales' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/grading-scales' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Grading Scales</span>
                     </a>
                     {% if not feature_flags or feature_flags|get_item:'ASSESSMENTS' %}
-                    <a href="{% url 'admin_assessments_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/assessments' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-exam text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/assessments' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/assessments' in request.path %}1{% else %}0.5{% endif %};"></i>
+                    <a href="{% url 'admin_assessments_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/assessments' in request.path and 'tabulation' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-exam text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/assessments' in request.path and 'tabulation' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/assessments' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Assessments</span>
+                    </a>
+                    <a href="{% url 'admin_assessments_tabulation' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'assessments/tabulation' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-table text-lg mr-3 transition-colors duration-200" style="color: {% if 'assessments/tabulation' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'assessments/tabulation' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Mark tabulation</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'EXAMS' %}
                     <div x-data="{ open: {% if '/admin/exams' in request.path %}true{% else %}false{% endif %} }">
-                        <button @click="open = !open" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/exams' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <button type="button" id="admin-nav-trigger-exams" @click="open = !open" :aria-expanded="open" aria-controls="admin-nav-submenu-exams" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/exams' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                             <div class="flex items-center">
-                                <i class="ph-fill ph-file-text text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/exams' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/exams' in request.path %}1{% else %}0.5{% endif %};"></i>
+                                <i class="ph-fill ph-file-text text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/exams' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/exams' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                                 <span>Exams</span>
                             </div>
-                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
                         </button>
-                        <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
+                        <div id="admin-nav-submenu-exams" x-show="open" x-collapse role="group" aria-label="Exams" class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
                             <a href="{% url 'admin_exams_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/exams' in request.path and '/papers' not in request.path and '/questions' not in request.path and '/schedules' not in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-scroll mr-2"></i>Exams
+                                <i class="ph ph-scroll mr-2" aria-hidden="true"></i>Exams
                             </a>
                             <a href="{% url 'admin_exam_papers_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/papers' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-file-text mr-2"></i>Exam Papers
+                                <i class="ph ph-file-text mr-2" aria-hidden="true"></i>Exam Papers
                             </a>
                             <a href="{% url 'admin_question_bank_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/questions' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-question mr-2"></i>Question Bank
+                                <i class="ph ph-question mr-2" aria-hidden="true"></i>Question Bank
                             </a>
                             <a href="{% url 'admin_exam_schedules_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/schedules' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-calendar-check mr-2"></i>Exam Schedules
+                                <i class="ph ph-calendar-check mr-2" aria-hidden="true"></i>Exam Schedules
                             </a>
                             <a href="{% url 'admin_online_attempts_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/online-attempts' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-desktop mr-2"></i>Online Attempts
+                                <i class="ph ph-desktop mr-2" aria-hidden="true"></i>Online Attempts
                             </a>
                         </div>
                     </div>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'TIMETABLE' %}
                     <a href="{% url 'admin_timetable_entries_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/timetable' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-calendar text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/timetable' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/timetable' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-calendar text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/timetable' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/timetable' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Timetable</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'ATTENDANCE' %}
                     <a href="{% url 'admin_attendance_sessions_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/attendance' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-calendar-check text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/attendance' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/attendance' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-calendar-check text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/attendance' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/attendance' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Attendance</span>
                     </a>
                     {% endif %}
@@ -306,163 +329,169 @@
                 <div class="space-y-1">
                     {% if not feature_flags or feature_flags|get_item:'FINANCE' %}
                     <a href="{% url 'admin_invoices_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/finance' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-wallet text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/finance' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/finance' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-wallet text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/finance' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/finance' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Finance</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'ANNOUNCEMENTS' %}
                     <a href="{% url 'admin_announcements_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/announcements' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-megaphone text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/announcements' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/announcements' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-megaphone text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/announcements' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/announcements' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Announcements</span>
                     </a>
                     {% endif %}
+                    <a href="{% url 'admin_grievances_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/grievances' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-chats-circle text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/grievances' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/grievances' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Grievances</span>
+                    </a>
                     {% if not feature_flags or feature_flags|get_item:'LIBRARY' %}
                     <div x-data="{ open: {% if '/admin/library' in request.path %}true{% else %}false{% endif %} }">
-                        <button @click="open = !open" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/library' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <button type="button" id="admin-nav-trigger-library" @click="open = !open" :aria-expanded="open" aria-controls="admin-nav-submenu-library" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/library' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                             <div class="flex items-center">
-                                <i class="ph-fill ph-book-bookmark text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/library' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/library' in request.path %}1{% else %}0.5{% endif %};"></i>
+                                <i class="ph-fill ph-book-bookmark text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/library' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/library' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                                 <span>Library</span>
                             </div>
-                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
                         </button>
-                        <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
+                        <div id="admin-nav-submenu-library" x-show="open" x-collapse role="group" aria-label="Library" class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
                             <a href="{% url 'admin_library_books_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/library' in request.path and '/authors' not in request.path and '/categories' not in request.path and '/copies' not in request.path and '/loans' not in request.path and '/checkin' not in request.path and '/fines' not in request.path and '/reservations' not in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-books mr-2"></i>Books
+                                <i class="ph ph-books mr-2" aria-hidden="true"></i>Books
                             </a>
                             <a href="{% url 'admin_library_authors_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/authors' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-user-circle mr-2"></i>Authors
+                                <i class="ph ph-user-circle mr-2" aria-hidden="true"></i>Authors
                             </a>
                             <a href="{% url 'admin_library_categories_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/categories' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-folder mr-2"></i>Categories
+                                <i class="ph ph-folder mr-2" aria-hidden="true"></i>Categories
                             </a>
                             <a href="{% url 'admin_library_copies_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/copies' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-barcode mr-2"></i>Book Copies
+                                <i class="ph ph-barcode mr-2" aria-hidden="true"></i>Book Copies
                             </a>
                             <a href="{% url 'admin_library_loans_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/loans' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-hand-coins mr-2"></i>Loans/Checkouts
+                                <i class="ph ph-hand-coins mr-2" aria-hidden="true"></i>Loans/Checkouts
                             </a>
                             <a href="{% url 'admin_library_checkin' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/checkin' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-scan mr-2"></i>Quick Check-in
+                                <i class="ph ph-scan mr-2" aria-hidden="true"></i>Quick Check-in
                             </a>
                             <a href="{% url 'admin_library_fines_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/fines' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-currency-dollar mr-2"></i>Fines
+                                <i class="ph ph-currency-dollar mr-2" aria-hidden="true"></i>Fines
                             </a>
                             <a href="{% url 'admin_library_reservations_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/reservations' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-bookmark-simple mr-2"></i>Reservations
+                                <i class="ph ph-bookmark-simple mr-2" aria-hidden="true"></i>Reservations
                             </a>
                         </div>
                     </div>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'TRANSPORT' %}
                     <div x-data="{ open: {% if '/admin/transport' in request.path %}true{% else %}false{% endif %} }">
-                        <button @click="open = !open" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/transport' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <button type="button" id="admin-nav-trigger-transport" @click="open = !open" :aria-expanded="open" aria-controls="admin-nav-submenu-transport" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/transport' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                             <div class="flex items-center">
-                                <i class="ph-fill ph-bus text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/transport' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/transport' in request.path %}1{% else %}0.5{% endif %};"></i>
+                                <i class="ph-fill ph-bus text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/transport' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/transport' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                                 <span>Transport</span>
                             </div>
-                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" aria-hidden="true"></i>
                         </button>
-                        <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
+                        <div id="admin-nav-submenu-transport" x-show="open" x-collapse role="group" aria-label="Transport" class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
                             <a href="{% url 'admin_transport_drivers_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/drivers' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-steering-wheel mr-2"></i>Drivers
+                                <i class="ph ph-steering-wheel mr-2" aria-hidden="true"></i>Drivers
                             </a>
                             <a href="{% url 'admin_transport_vehicles_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/vehicles' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-car mr-2"></i>Vehicles
+                                <i class="ph ph-car mr-2" aria-hidden="true"></i>Vehicles
                             </a>
                             <a href="{% url 'admin_transport_routes_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/routes' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-map-trifold mr-2"></i>Routes
+                                <i class="ph ph-map-trifold mr-2" aria-hidden="true"></i>Routes
                             </a>
                             <a href="{% url 'admin_transport_stops_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/stops' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-map-pin mr-2"></i>Stops
+                                <i class="ph ph-map-pin mr-2" aria-hidden="true"></i>Stops
                             </a>
                             <a href="{% url 'admin_transport_assignments_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/assignments' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-users-three mr-2"></i>Student Assignments
+                                <i class="ph ph-users-three mr-2" aria-hidden="true"></i>Student Assignments
                             </a>
                             <a href="{% url 'admin_exam_schedules_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/schedules' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-calendar mr-2"></i>Schedules
+                                <i class="ph ph-calendar mr-2" aria-hidden="true"></i>Schedules
                             </a>
                         </div>
                     </div>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'HOSTELS' %}
                     <a href="{% url 'admin_hostels_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/hostels' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-buildings text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/hostels' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/hostels' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-buildings text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/hostels' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/hostels' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Hostels</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'INVENTORY' %}
                     <a href="{% url 'admin_inventory_items_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/inventory' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-package text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/inventory' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/inventory' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-package text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/inventory' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/inventory' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Inventory</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'HR' %}
                     <div x-data="{ open: {% if '/admin/hr' in request.path %}true{% else %}false{% endif %} }">
-                        <button @click="open = !open" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/hr' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}" {% if '/admin/hr' in request.path %}style="color: white;"{% endif %}>
+                        <button type="button" id="admin-nav-trigger-hr" @click="open = !open" :aria-expanded="open" aria-controls="admin-nav-submenu-hr" class="group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/hr' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}" {% if '/admin/hr' in request.path %}style="color: white;"{% endif %}>
                             <div class="flex items-center">
-                                <i class="ph-fill ph-briefcase text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/hr' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/hr' in request.path %}1{% else %}0.5{% endif %};"></i>
+                                <i class="ph-fill ph-briefcase text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/hr' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/hr' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                                 <span>Human Resources</span>
                             </div>
-                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" style="color: {% if '/admin/hr' in request.path %}white{% else %}var(--org-primary){% endif %};"></i>
+                            <i class="ph ph-caret-down text-sm transition-transform duration-200" :class="{ 'rotate-180': open }" style="color: {% if '/admin/hr' in request.path %}white{% else %}var(--org-primary){% endif %};" aria-hidden="true"></i>
                         </button>
-                        <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
+                        <div id="admin-nav-submenu-hr" x-show="open" x-collapse role="group" aria-label="Human resources" class="ml-4 mt-1 space-y-1 border-l-2 pl-3" style="border-color: color-mix(in srgb, var(--org-primary) 20%, transparent);">
                             <a href="{% url 'admin_hr_staff_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr' in request.path and 'department-heads' not in request.path and 'departments' not in request.path and 'positions' not in request.path and 'payroll' not in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-users mr-2"></i>Staff
+                                <i class="ph ph-users mr-2" aria-hidden="true"></i>Staff
                             </a>
                             <a href="{% url 'admin_hr_department_heads_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'department-heads' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-user-focus mr-2"></i>Department Heads
+                                <i class="ph ph-user-focus mr-2" aria-hidden="true"></i>Department Heads
                             </a>
                             <a href="{% url 'admin_hr_departments_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/departments' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-building-office mr-2"></i>Departments
+                                <i class="ph ph-building-office mr-2" aria-hidden="true"></i>Departments
                             </a>
                             <a href="{% url 'admin_hr_positions_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/positions' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-briefcase mr-2"></i>Positions
+                                <i class="ph ph-briefcase mr-2" aria-hidden="true"></i>Positions
                             </a>
                             <div class="my-2 border-t border-slate-300"></div>
                             <a href="{% url 'admin_hr_payroll_payslips_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/payroll/payslips' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-file-text mr-2"></i>Payslips
+                                <i class="ph ph-file-text mr-2" aria-hidden="true"></i>Payslips
                             </a>
                             <a href="{% url 'admin_hr_payroll_salary_structures_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/payroll/salary-structures' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-currency-dollar mr-2"></i>Salary Structures
+                                <i class="ph ph-currency-dollar mr-2" aria-hidden="true"></i>Salary Structures
                             </a>
                             <a href="{% url 'admin_hr_payroll_pay_grades_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/payroll/pay-grades' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-trend-up mr-2"></i>Pay Grades
+                                <i class="ph ph-trend-up mr-2" aria-hidden="true"></i>Pay Grades
                             </a>
                             <a href="{% url 'admin_hr_payroll_allowance_types_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/payroll/allowance-types' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-plus-circle mr-2"></i>Allowances
+                                <i class="ph ph-plus-circle mr-2" aria-hidden="true"></i>Allowances
                             </a>
                             <a href="{% url 'admin_hr_payroll_deduction_types_list' %}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/admin/hr/payroll/deduction-types' in request.path %}text-white font-semibold{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
-                                <i class="ph ph-minus-circle mr-2"></i>Deductions
+                                <i class="ph ph-minus-circle mr-2" aria-hidden="true"></i>Deductions
                             </a>
                         </div>
                     </div>
                     {% endif %}
-                    {% if not feature_flags or feature_flags|get_item:'LIBRARY' %}
-                    <a href="{% url 'admin_library_books_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/library' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-books text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/library' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/library' in request.path %}1{% else %}0.5{% endif %};"></i>
-                        <span>Library</span>
-                    </a>
-                    {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'DISCIPLINE' %}
                     <a href="{% url 'admin_incidents_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/discipline' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-gavel text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/discipline' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/discipline' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-gavel text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/discipline' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/discipline' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Discipline</span>
                     </a>
                     {% endif %}
                     {% if not feature_flags or feature_flags|get_item:'DOCUMENTS' %}
                     <a href="{% url 'admin_documents_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/documents' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-files text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/documents' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/documents' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-files text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/documents' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/documents' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Documents</span>
                     </a>
                     {% endif %}
-                    <a href="{% url 'admin_analytics_dashboard' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-chart-line-up text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics' in request.path %}1{% else %}0.5{% endif %};"></i>
+                    <a href="{% url 'admin_analytics_dashboard' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-chart-line-up text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Performance Analytics</span>
                     </a>
+                    <a href="{% url 'admin_analytics_charts' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics/charts' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-chart-pie text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics/charts' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics/charts' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Charts</span>
+                    </a>
                     {% if not feature_flags or feature_flags|get_item:'REPORTS' %}
-                    <a href="{% url 'admin_reports_overview' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/reports' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-chart-bar text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/reports' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/reports' in request.path %}1{% else %}0.5{% endif %};"></i>
+                    <a href="{% url 'admin_reports_overview' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/reports' in request.path and '/admin/reports/scheduled' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-chart-bar text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/reports' in request.path and '/admin/reports/scheduled' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/reports' in request.path and '/admin/reports/scheduled' not in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Reports & Analytics</span>
+                    </a>
+                    <a href="{% url 'admin_reports_scheduled' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/reports/scheduled' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-clock-counter-clockwise text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/reports/scheduled' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/reports/scheduled' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Scheduled reports</span>
                     </a>
                     {% endif %}
                 </div>
@@ -477,29 +506,31 @@
                 </h3>
                 <div class="space-y-1">
                     <a href="{% url 'admin_academic_context' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/context' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-calendar-check text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/context' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/context' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-calendar-check text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/context' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/context' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Academic Context</span>
                     </a>
                     <a href="{% url 'admin_academic_year_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/years' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-calendar text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/years' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/years' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-calendar text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/years' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/years' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Academic Years</span>
                     </a>
                     <a href="{% url 'admin_academic_term_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if 'academics/terms' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-calendar-dots text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/terms' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/terms' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-calendar-dots text-lg mr-3 transition-colors duration-200" style="color: {% if 'academics/terms' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if 'academics/terms' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Academic Terms</span>
                     </a>
+                    {% if is_global_admin|default:False %}
                     <a href="{% url 'admin_orgsettings_campuses' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/settings/campuses' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-buildings text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/campuses' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/campuses' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-buildings text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/campuses' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/campuses' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Campuses</span>
                     </a>
                     <a href="{% url 'admin_orgsettings_flags' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/settings/feature-flags' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-toggle-right text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/feature-flags' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/feature-flags' in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-toggle-right text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/feature-flags' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/feature-flags' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Feature Flags</span>
                     </a>
                     <a href="{% url 'admin_orgsettings_org' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/settings/' in request.path and '/admin/settings/campuses' not in request.path and '/admin/settings/feature-flags' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-gear text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/' in request.path and '/admin/settings/campuses' not in request.path and '/admin/settings/feature-flags' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/' in request.path and '/admin/settings/campuses' not in request.path and '/admin/settings/feature-flags' not in request.path %}1{% else %}0.5{% endif %};"></i>
+                        <i class="ph-fill ph-gear text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/settings/' in request.path and '/admin/settings/campuses' not in request.path and '/admin/settings/feature-flags' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/settings/' in request.path and '/admin/settings/campuses' not in request.path and '/admin/settings/feature-flags' not in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>System Settings</span>
                     </a>
+                    {% endif %}
                 </div>
             </div>
             
@@ -514,14 +545,14 @@
         <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
             <!-- Left: Hamburger + Context -->
             <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none">
-                    <i class="ph ph-list text-2xl"></i>
+                <button type="button" onclick="toggleSidebar()" aria-label="Open sidebar" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none">
+                    <i class="ph ph-list text-2xl" aria-hidden="true"></i>
                 </button>
                 
                 {% if campuses and campuses|length > 1 %}
                 <!-- Campus Selector Component -->
                 <div class="flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
-                    <i class="ph ph-buildings text-gray-500 mx-2"></i>
+                    <i class="ph ph-buildings text-gray-500 mx-2" aria-hidden="true"></i>
                     <select onchange="if(this.value){window.location=this.value;}" class="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 py-1 pr-8 cursor-pointer outline-none">
                         {% for c in campuses %}
                             <option value="{% url 'admin_orgsettings_campus_select' c.id %}?next={{ request.get_full_path|urlencode }}" {% if current_campus and c.id == current_campus.id %}selected{% endif %}>
@@ -532,7 +563,7 @@
                 </div>
                 {% elif current_campus %}
                 <div class="flex items-center text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-                    <i class="ph ph-buildings mr-2 text-gray-500"></i>
+                    <i class="ph ph-buildings mr-2 text-gray-500" aria-hidden="true"></i>
                     {{ current_campus.name }}
                 </div>
                 {% endif %}
@@ -540,16 +571,40 @@
 
             <!-- Right: User Profile & Actions -->
             <div class="flex items-center space-x-4">
-                <!-- Quick Search -->
-                <button class="text-gray-400 hover:text-gray-600 hidden sm:block">
-                    <i class="ph ph-magnifying-glass text-xl"></i>
-                </button>
+                <!-- Global search -->
+                <form method="get" action="{% url 'admin_global_search' %}" class="hidden sm:flex items-center gap-2 max-w-xs">
+                    <label class="sr-only" for="global-q">Search</label>
+                    <input id="global-q" type="search" name="q" placeholder="Search…" class="w-44 lg:w-56 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500" value="{{ request.GET.q }}" />
+                    <button type="submit" class="text-primary-600 hover:text-primary-800 p-1" aria-label="Submit search">
+                        <i class="ph ph-magnifying-glass text-xl" aria-hidden="true"></i>
+                    </button>
+                </form>
 
                 <!-- Notifications -->
-                <button class="text-gray-400 hover:text-gray-600 relative">
-                    <i class="ph ph-bell text-xl"></i>
-                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                </button>
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" aria-label="View notifications{% if unread_notifications_count %}, {{ unread_notifications_count }} unread{% endif %}" @click="open = !open" class="text-gray-400 hover:text-gray-600 relative">
+                        <i class="ph ph-bell text-xl" aria-hidden="true"></i>
+                        {% if unread_notifications_count %}
+                        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center ring-2 ring-white">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-30" role="region" aria-label="Notifications list">
+                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                            <p class="text-xs text-gray-500">{{ unread_notifications_count }} unread</p>
+                        </div>
+                        <div class="max-h-80 overflow-y-auto">
+                            {% for item in notification_items %}
+                                <a href="{{ item.link|default:'#' }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-900">{{ item.title }}</p>
+                                    <p class="text-xs text-gray-600 mt-1">{{ item.message|truncatechars:90 }}</p>
+                                </a>
+                            {% empty %}
+                                <p class="px-4 py-6 text-sm text-gray-500 text-center">No notifications yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Profile Dropdown (Simplified) -->
                 {% if request.user.is_authenticated %}
@@ -558,13 +613,13 @@
                         <span class="text-sm font-medium text-gray-900 leading-tight">{{ request.user.get_full_name|default:request.user.username }}</span>
                         <span class="text-xs text-gray-500 leading-tight">Administrator</span>
                     </div>
-                    <a href="{% url 'user_profile' %}" class="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200 hover:bg-primary-200 transition-colors">
+                    <a href="{% url 'user_profile' %}" class="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200 hover:bg-primary-200 transition-colors" aria-label="Open account profile">
                         {{ request.user.username|make_list|first|upper }}
                     </a>
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" title="Logout">
-                            <i class="ph ph-sign-out text-xl"></i>
+                        <button type="submit" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" aria-label="Log out">
+                            <i class="ph ph-sign-out text-xl" aria-hidden="true"></i>
                         </button>
                     </form>
                 </div>
@@ -573,16 +628,21 @@
         </header>
 
         <!-- Main Scrollable Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             
             <!-- Breadcrumbs / Page Title Context (Optional block) -->
             <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}Default Page{% endblock %}</h1>
-                    <div class="text-sm text-gray-500 mt-1">
-                        {% block breadcrumbs %}{% endblock %}
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}Default Page{% endblock %}</h1>
+                        {% if org_profile %}
+                        <p class="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="inline-flex items-center gap-1 font-medium text-gray-700"><i class="ph ph-map-pin" aria-hidden="true"></i> {{ org_profile.name }}{% if current_campus %}<span class="font-normal text-gray-400">·</span><span>{{ current_campus.name }}</span>{% endif %}</span>
+                        </p>
+                        {% endif %}
+                        <div class="text-sm text-gray-500 mt-1">
+                            {% block breadcrumbs %}{% endblock %}
+                        </div>
                     </div>
-                </div>
                 <div class="mt-4 sm:mt-0 flex gap-2">
                     {% block header_actions %}{% endblock %}
                 </div>
@@ -590,15 +650,17 @@
 
             <!-- Alerts / Messages -->
             {% if messages %}
-                <div class="mb-6 space-y-2">
+                <div class="mb-6 space-y-2" aria-label="Notifications">
                     {% for message in messages %}
-                        <div class="p-4 rounded-md border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %} flex items-start shadow-sm">
-                            {% if message.tags == 'error' %}
-                                <i class="ph ph-warning-circle text-xl mr-3 mt-0.5"></i>
-                            {% elif message.tags == 'success' %}
-                                <i class="ph ph-check-circle text-xl mr-3 mt-0.5"></i>
+                        <div class="p-4 rounded-md border {% if 'error' in message.tags %}bg-red-50 border-red-200 text-red-800{% elif 'warning' in message.tags %}bg-amber-50 border-amber-200 text-amber-950{% elif 'success' in message.tags %}bg-green-50 border-green-200 text-green-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %} flex items-start shadow-sm" role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}" aria-live="{% if 'error' in message.tags or 'danger' in message.tags %}assertive{% else %}polite{% endif %}">
+                            {% if 'error' in message.tags %}
+                                <i class="ph ph-warning-circle text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
+                            {% elif 'warning' in message.tags %}
+                                <i class="ph ph-warning text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
+                            {% elif 'success' in message.tags %}
+                                <i class="ph ph-check-circle text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
                             {% else %}
-                                <i class="ph ph-info text-xl mr-3 mt-0.5"></i>
+                                <i class="ph ph-info text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
                             {% endif %}
                             <p class="text-sm font-medium">{{ message }}</p>
                         </div>
@@ -615,8 +677,14 @@
             </div>
             
             <!-- Footer -->
-            <footer class="mt-8 text-center text-sm text-gray-500 pb-4">
-                &copy; {% now "Y" %} EduManage SaaS. All rights reserved.
+            <footer class="mt-8 text-center text-sm text-gray-500 pb-4 space-y-2">
+                {% if support_contact_email %}
+                <p class="text-gray-600">Need help? Email <a class="text-primary-600 font-medium hover:underline" href="mailto:{{ support_contact_email }}">{{ support_contact_email }}</a>.</p>
+                {% endif %}
+                {% if portal_support_reference %}
+                <p class="text-xs">School reference (quote this in support tickets): <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-800">{{ portal_support_reference }}</code></p>
+                {% endif %}
+                <p>&copy; {% now "Y" %} EduManage SaaS. All rights reserved.</p>
             </footer>
         </main>
     </div>
@@ -637,6 +705,8 @@
             }
         }
     </script>
+    {% include "components/ui_toast.html" %}
+    {% include "components/admin_product_tour.html" %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

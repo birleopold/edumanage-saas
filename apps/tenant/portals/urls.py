@@ -2,9 +2,11 @@ from django.urls import include, path
 from django.contrib.auth import views as auth_views
 
 from apps.tenant.users import auth_views as custom_auth_views
-from . import views
+from . import experience_views, public_views, search_views, student_parent_search_views, teacher_search_views, views
 
 urlpatterns = [
+    path("status/", public_views.public_status, name="public_status"),
+    path("manifest.webmanifest", views.pwa_manifest, name="pwa_manifest"),
     # Landing page
     path("", views.landing_page, name="landing_page"),
     
@@ -20,6 +22,10 @@ urlpatterns = [
     
     # Portals
     path("admin/", views.admin_home, name="admin_home"),
+    path("admin/communication/", experience_views.admin_communication_center, name="admin_communication_center"),
+    path("admin/school-setup/", experience_views.admin_school_setup_guide, name="admin_school_setup_guide"),
+    path("admin/system-status/", experience_views.admin_system_status, name="admin_system_status"),
+    path("admin/search/", search_views.global_search, name="admin_global_search"),
     path("admin/students/", include("apps.tenant.students.urls")),
     path("admin/teachers/", include("apps.tenant.teachers.urls")),
     path("admin/parents/", include("apps.tenant.parents.urls")),
@@ -34,6 +40,7 @@ urlpatterns = [
     path("admin/duty/", include("apps.tenant.duty.admin_urls")),
     path("admin/timetable/", include("apps.tenant.timetable.admin_urls")),
     path("admin/discipline/", include("apps.tenant.discipline.admin_urls")),
+    path("admin/grievances/", include("apps.tenant.grievances.admin_urls")),
     path("admin/documents/", include("apps.tenant.documents.admin_urls")),
     path("admin/transport/", include("apps.tenant.transport.admin_urls")),
     path("admin/library/", include("apps.tenant.library.admin_urls")),
@@ -46,16 +53,20 @@ urlpatterns = [
     path("admin/admissions/", include("apps.tenant.admissions.admin_urls")),
     path("admin/hr/", include("apps.tenant.hr.admin_urls")),
     path("teacher/", views.teacher_home, name="teacher_home"),
+    path("teacher/search/", teacher_search_views.teacher_search, name="teacher_global_search"),
     path("teacher/attendance/", include("apps.tenant.attendance.teacher_urls")),
     path("teacher/assessments/", include("apps.tenant.assessments.teacher_urls")),
     path("teacher/announcements/", include("apps.tenant.announcements.teacher_urls")),
     path("teacher/coursework/", include("apps.tenant.coursework.teacher_urls")),
     path("teacher/timetable/", include("apps.tenant.timetable.teacher_urls")),
     path("teacher/discipline/", include("apps.tenant.discipline.teacher_urls")),
+    path("teacher/grievances/", include("apps.tenant.grievances.teacher_urls")),
     path("teacher/documents/", include("apps.tenant.documents.teacher_urls")),
     path("teacher/exams/", include("apps.tenant.exams.teacher_urls")),
     path("teacher/payroll/", include("apps.tenant.hr.staff_urls")),
+    path("student/id-card/", include("apps.tenant.students.self_urls")),
     path("student/", views.student_home, name="student_home"),
+    path("student/search/", student_parent_search_views.student_search, name="student_global_search"),
     path("student/results/", include("apps.tenant.assessments.student_urls")),
     path("student/finance/", include("apps.tenant.finance.student_urls")),
     path("student/announcements/", include("apps.tenant.announcements.student_urls")),
@@ -68,11 +79,26 @@ urlpatterns = [
     path("student/hostels/", include("apps.tenant.hostels.student_urls")),
     path("student/exams/", include("apps.tenant.exams.student_urls")),
     path("parent/", views.parent_home, name="parent_home"),
+    path("parent/search/", student_parent_search_views.parent_search, name="parent_global_search"),
+    path(
+        "parent/account/results-pin/",
+        views.parent_results_pin_security,
+        name="parent_results_pin_security",
+    ),
+    path(
+        "parent/account/message-preferences/",
+        views.parent_communication_preferences,
+        name="parent_communication_preferences",
+    ),
+    path("parent/results/", include("apps.tenant.assessments.parent_urls")),
     path("parent/finance/", include("apps.tenant.finance.parent_urls")),
     path("parent/announcements/", include("apps.tenant.announcements.parent_urls")),
     path("parent/coursework/", include("apps.tenant.coursework.parent_urls")),
     path("parent/discipline/", include("apps.tenant.discipline.parent_urls")),
+    path("parent/grievances/", include("apps.tenant.grievances.parent_urls")),
     path("parent/documents/", include("apps.tenant.documents.parent_urls")),
     path("parent/transport/", include("apps.tenant.transport.parent_urls")),
     path("parent/library/", include("apps.tenant.library.parent_urls")),
+    path("parent/hostels/", include("apps.tenant.hostels.parent_urls")),
+    path("parent/students/", include("apps.tenant.students.parent_urls")),
 ]

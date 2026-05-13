@@ -1,0 +1,39 @@
+{% extends "portals/admin/base.html" %}
+{% block title %}Getting started{% endblock %}
+{% block page_title %}Getting started checklist{% endblock %}
+{% block breadcrumbs %}Finish these steps so your school can run smoothly for staff and parents.{% endblock %}
+
+{% block content %}
+<div class="space-y-6 -m-6 p-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-gray-200 bg-gradient-to-r from-primary-50 to-white p-5">
+    <div>
+      <p class="text-sm font-medium text-gray-600">Progress</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{{ done_count }} of {{ total }} complete</p>
+    </div>
+    <a href="{% url 'admin_home' %}" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back to dashboard</a>
+  </div>
+
+  <ol class="space-y-4">
+    {% for row in items %}
+    <li class="rounded-xl border {% if row.done %}border-green-200 bg-green-50/50{% else %}border-gray-200 bg-white{% endif %} p-4 flex gap-4">
+      <div class="shrink-0 mt-0.5">
+        {% if row.done %}
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-white" aria-label="Complete"><i class="ph ph-check-bold"></i></span>
+        {% else %}
+        <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-300 text-gray-400 font-bold text-sm">{{ forloop.counter }}</span>
+        {% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-base font-semibold text-gray-900">{{ row.title }}</h3>
+        <p class="text-sm text-gray-600 mt-1">{{ row.description }}</p>
+        {% if row.url %}
+        <a href="{{ row.url }}" class="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-primary-600 hover:text-primary-800">Open this step <i class="ph ph-arrow-right"></i></a>
+        {% elif row.key == 'portal_base' %}
+        <p class="mt-3 text-sm text-gray-600">Set environment variable <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">FEE_REMINDER_PORTAL_BASE_URL</code> to your public site URL, then restart the app.</p>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

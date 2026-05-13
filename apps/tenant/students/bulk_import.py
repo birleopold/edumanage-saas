@@ -1,6 +1,6 @@
 import csv
 import io
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
@@ -34,6 +34,29 @@ class ImportRow:
     
     def is_valid(self) -> bool:
         return len(self.errors) == 0
+
+
+def import_rows_to_serializable(rows: List[ImportRow]) -> list:
+    """JSON-serializable payloads for import preview cache."""
+    return [asdict(r) for r in rows]
+
+
+def import_rows_from_serializable(data: list) -> List[ImportRow]:
+    """Restore ImportRow list from import_rows_to_serializable()."""
+    rows: List[ImportRow] = []
+    for x in data:
+        rows.append(
+            ImportRow(
+                row_number=int(x["row_number"]),
+                first_name=str(x.get("first_name") or ""),
+                last_name=str(x.get("last_name") or ""),
+                date_of_birth=x.get("date_of_birth"),
+                email=x.get("email"),
+                campus_code=x.get("campus_code"),
+                errors=list(x.get("errors") or []),
+            )
+        )
+    return rows
 
 
 @dataclass

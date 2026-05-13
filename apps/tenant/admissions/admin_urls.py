@@ -5,6 +5,11 @@ from . import admin_views
 urlpatterns = [
     path("", admin_views.applicant_list, name="admin_admissions_applicants"),
     path("create/", admin_views.applicant_create, name="admin_admissions_applicant_create"),
+    path(
+        "<int:pk>/admission-letter/",
+        admin_views.applicant_admission_letter_pdf,
+        name="admin_admissions_applicant_letter_pdf",
+    ),
     path("<int:pk>/", admin_views.applicant_detail, name="admin_admissions_applicant_detail"),
     path("<int:pk>/edit/", admin_views.applicant_edit, name="admin_admissions_applicant_edit"),
     path("<int:pk>/set-status/", admin_views.applicant_set_status, name="admin_admissions_applicant_set_status"),

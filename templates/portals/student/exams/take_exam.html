@@ -28,6 +28,19 @@
 
     <!-- Main Content (with top padding for fixed header) -->
     <div class="mt-24 max-w-4xl mx-auto">
+        <div class="mb-4 bg-white border border-gray-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="text-sm text-gray-700">
+                Answered <span class="font-bold text-primary-700" x-text="answeredCount"></span> / <span class="font-bold">{{ questions|length }}</span>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" @click="scrollToNextUnanswered()" class="inline-flex items-center px-3 py-2 text-xs font-semibold border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="ph ph-arrow-down mr-1"></i> Next Unanswered
+                </button>
+                <span class="inline-flex items-center px-3 py-2 text-xs rounded-lg bg-green-50 text-green-700 border border-green-200" x-show="lastSavedAt">
+                    Saved <span class="ml-1 font-semibold" x-text="lastSavedAt"></span>
+                </span>
+            </div>
+        </div>
         <!-- Exam Instructions -->
         {% if paper.instructions %}
         <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
@@ -53,7 +66,7 @@
             <div class="space-y-6">
                 {% for exam_q in questions %}
                 {% with question=exam_q.question %}
-                <div class="bg-white shadow rounded-lg p-6">
+                <div class="bg-white shadow rounded-lg p-6 question-block" id="question-{{ exam_q.id }}" data-question-id="{{ exam_q.id }}">
                     <!-- Question Header -->
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex-1">
@@ -81,22 +94,22 @@
                         {% for opt_letter, opt_text in 'ABCD' %}
                             {% if forloop.counter == 1 and question.option_a %}
                             <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
+                                <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
                                 <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">A.</span> {{ question.option_a }}</span>
                             </label>
                             {% elif forloop.counter == 2 and question.option_b %}
                             <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
+                                <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
                                 <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">B.</span> {{ question.option_b }}</span>
                             </label>
                             {% elif forloop.counter == 3 and question.option_c %}
                             <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="C" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}checked{% endif %}>
+                                <input type="radio" name="question_{{ exam_q.id }}" value="C" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}checked{% endif %}>
                                 <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">C.</span> {{ question.option_c }}</span>
                             </label>
                             {% elif forloop.counter == 4 and question.option_d %}
                             <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="D" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}checked{% endif %}>
+                                <input type="radio" name="question_{{ exam_q.id }}" value="D" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}checked{% endif %}>
                                 <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">D.</span> {{ question.option_d }}</span>
                             </label>
                             {% endif %}
@@ -106,11 +119,11 @@
                     {% elif question.question_type == 'TRUE_FALSE' %}
                     <div class="space-y-3 mt-4">
                         <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                            <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
+                            <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
                             <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_a|default:"True" }}</span>
                         </label>
                         <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                            <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
+                            <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
                             <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_b|default:"False" }}</span>
                         </label>
                     </div>
@@ -119,9 +132,9 @@
                     <!-- Text Answer (Short Answer, Essay, Fill in Blank) -->
                     <div class="mt-4">
                         {% if question.question_type == 'ESSAY' %}
-                        <textarea name="question_{{ exam_q.id }}" rows="8" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm" placeholder="Type your answer here...">{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}</textarea>
+                        <textarea name="question_{{ exam_q.id }}" rows="8" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm question-input" placeholder="Type your answer here...">{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}</textarea>
                         {% else %}
-                        <input type="text" name="question_{{ exam_q.id }}" value="{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm" placeholder="Type your answer here...">
+                        <input type="text" name="question_{{ exam_q.id }}" value="{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm question-input" placeholder="Type your answer here...">
                         {% endif %}
                     </div>
                     {% endif %}
@@ -177,15 +190,22 @@ function examTimer(initialTime) {
         timeLeft: initialTime,
         showAutoSubmitWarning: false,
         warningShown: false,
+        answeredCount: 0,
+        lastSavedAt: '',
         
         init() {
             // Start countdown
             this.startTimer();
+            this.updateAnsweredCount();
             
             // Auto-save every 30 seconds
             setInterval(() => {
                 this.autoSave();
             }, 30000);
+            document.querySelectorAll('.question-input').forEach((el) => {
+                el.addEventListener('change', () => this.updateAnsweredCount());
+                el.addEventListener('input', () => this.updateAnsweredCount());
+            });
         },
         
         startTimer() {
@@ -225,11 +245,14 @@ function examTimer(initialTime) {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
+            }).then(() => {
+                const now = new Date();
+                this.lastSavedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             });
         },
         
         confirmSubmit() {
-            if (confirm('Are you sure you want to submit? You cannot change your answers after submission.')) {
+            if (window.confirm('Submit exam now? You will not be able to change answers after submission.')) {
                 const form = document.getElementById('examForm');
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -237,6 +260,31 @@ function examTimer(initialTime) {
                 input.value = 'submit';
                 form.appendChild(input);
                 form.submit();
+            }
+        },
+        updateAnsweredCount() {
+            const ids = new Set();
+            document.querySelectorAll('.question-block').forEach((block) => {
+                const qid = block.getAttribute('data-question-id');
+                const radioChecked = block.querySelector('input[type="radio"]:checked');
+                const inputValue = Array.from(block.querySelectorAll('input[type="text"], textarea')).some((field) => (field.value || '').trim().length > 0);
+                if (radioChecked || inputValue) {
+                    ids.add(qid);
+                }
+            });
+            this.answeredCount = ids.size;
+        },
+        scrollToNextUnanswered() {
+            const blocks = Array.from(document.querySelectorAll('.question-block'));
+            const unanswered = blocks.find((block) => {
+                const radioChecked = block.querySelector('input[type="radio"]:checked');
+                const inputValue = Array.from(block.querySelectorAll('input[type="text"], textarea')).some((field) => (field.value || '').trim().length > 0);
+                return !(radioChecked || inputValue);
+            });
+            if (unanswered) {
+                unanswered.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                unanswered.classList.add('ring-2', 'ring-yellow-300');
+                setTimeout(() => unanswered.classList.remove('ring-2', 'ring-yellow-300'), 1200);
             }
         },
         

@@ -33,7 +33,7 @@ Usage:
 {% if overlay %}
 <script>
   // Show loading overlay for forms with data-loading attribute
-  document.addEventListener('DOMContentLoads', function() {
+  document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form[data-loading]');
     const overlay = document.getElementById('loading-overlay');
     

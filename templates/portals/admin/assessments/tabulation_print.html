@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tabulation — {{ offering.course.name }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.5rem; color: #111; }
+    h1 { font-size: 1.1rem; margin: 0 0 0.25rem; }
+    p.meta { font-size: 0.85rem; color: #444; margin: 0 0 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+    th, td { border: 1px solid #ccc; padding: 0.35rem 0.5rem; text-align: left; }
+    th { background: #f3f4f6; }
+    @media print { body { margin: 0.5rem; } }
+  </style>
+</head>
+<body>
+  <h1>Marks tabulation</h1>
+  <p class="meta">
+    {{ offering.term.year.name }} {{ offering.term.name }} — {{ offering.course.name }}
+    {% if offering.class_group %}· {{ offering.class_group.name }}{% endif %}
+  </p>
+  {% include "components/assessment_tabulation_table.html" with print_mode=1 %}
+</body>
+</html>

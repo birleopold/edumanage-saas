@@ -1,13 +1,52 @@
+from typing import Optional
+
 from django import forms
+from django.contrib.auth.hashers import check_password
 
 from apps.tenant.students.models import StudentProfile
 
 from .models import ParentProfile, ParentStudentLink
 
 
+class ParentCommunicationPreferencesForm(forms.ModelForm):
+    """Parent-facing SMS/WhatsApp consent toggles."""
+
+    class Meta:
+        model = ParentProfile
+        fields = ["allow_sms_alerts", "allow_whatsapp_alerts"]
+        labels = {
+            "allow_sms_alerts": "Text message (SMS) alerts",
+            "allow_whatsapp_alerts": "WhatsApp alerts",
+        }
+        help_texts = {
+            "allow_sms_alerts": "Fee reminders, absence notices, and urgent school messages sent by SMS.",
+            "allow_whatsapp_alerts": "Same types of messages on WhatsApp when your school uses it.",
+        }
+        widgets = {
+            "allow_sms_alerts": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+            "allow_whatsapp_alerts": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+        }
+
+
 class ParentProfileForm(forms.ModelForm):
     create_user = forms.BooleanField(required=False, initial=True)
     send_email = forms.BooleanField(required=False, initial=True)
+    results_pin = forms.CharField(
+        label="Results portal PIN (optional)",
+        required=False,
+        max_length=6,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="4–6 digits. Parent must enter this to view published assessment results. Leave blank to keep unchanged.",
+    )
+    clear_results_pin = forms.BooleanField(
+        label="Remove results PIN",
+        required=False,
+        help_text="If checked, parents can view results without an extra PIN.",
+    )
 
     class Meta:
         model = ParentProfile
@@ -16,8 +55,98 @@ class ParentProfileForm(forms.ModelForm):
             "last_name",
             "phone",
             "email",
+            "allow_sms_alerts",
+            "allow_whatsapp_alerts",
             "is_active",
         ]
+
+    def clean_results_pin(self):
+        pin = (self.cleaned_data.get("results_pin") or "").strip()
+        if not pin:
+            return ""
+        if not pin.isdigit():
+            raise forms.ValidationError("PIN must contain digits only.")
+        if len(pin) < 4 or len(pin) > 6:
+            raise forms.ValidationError("PIN must be 4 to 6 digits.")
+        return pin
+
+
+class ParentResultsPinSelfServiceForm(forms.Form):
+    """Parent portal: set, change, or clear the optional results-view PIN."""
+
+    current_pin = forms.CharField(
+        label="Current PIN",
+        required=False,
+        max_length=6,
+        widget=forms.PasswordInput(render_value=False),
+    )
+    new_pin = forms.CharField(
+        label="New PIN",
+        required=False,
+        max_length=6,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="4–6 digits. Leave blank if you only want to remove the PIN.",
+    )
+    confirm_pin = forms.CharField(
+        label="Confirm new PIN",
+        required=False,
+        max_length=6,
+        widget=forms.PasswordInput(render_value=False),
+    )
+    clear_pin = forms.BooleanField(label="Remove my results PIN", required=False)
+
+    def __init__(self, *args, parent_profile: Optional[ParentProfile] = None, **kwargs):
+        self.parent_profile = parent_profile
+        super().__init__(*args, **kwargs)
+        pin_widget_class = (
+            "w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 "
+            "shadow-sm focus:border-primary-500 focus:ring-primary-500"
+        )
+        for name in ("current_pin", "new_pin", "confirm_pin"):
+            self.fields[name].widget.attrs.setdefault("class", pin_widget_class)
+
+    def clean_new_pin(self):
+        pin = (self.cleaned_data.get("new_pin") or "").strip()
+        if not pin:
+            return ""
+        if not pin.isdigit():
+            raise forms.ValidationError("PIN must contain digits only.")
+        if len(pin) < 4 or len(pin) > 6:
+            raise forms.ValidationError("PIN must be 4 to 6 digits.")
+        return pin
+
+    def clean(self):
+        data = super().clean()
+        if not self.parent_profile:
+            return data
+
+        clear = data.get("clear_pin")
+        new = (data.get("new_pin") or "").strip()
+        confirm = (data.get("confirm_pin") or "").strip()
+        current = (data.get("current_pin") or "").strip()
+        existing = self.parent_profile.results_access_pin_hash
+
+        if clear and new:
+            raise forms.ValidationError("Remove the PIN or set a new one — not both in the same request.")
+
+        if clear:
+            if not existing:
+                raise forms.ValidationError("You do not have a PIN set.")
+            if not current or not check_password(current, existing):
+                self.add_error("current_pin", "Enter your current PIN to remove it.")
+            return data
+
+        if new:
+            if new != confirm:
+                self.add_error("confirm_pin", "New PIN and confirmation do not match.")
+            if existing:
+                if not current or not check_password(current, existing):
+                    self.add_error("current_pin", "Enter your current PIN to change it.")
+            return data
+
+        raise forms.ValidationError(
+            "Choose an action: enter a new PIN and confirmation, or tick “Remove my results PIN”."
+        )
 
 
 class ParentStudentLinkForm(forms.ModelForm):

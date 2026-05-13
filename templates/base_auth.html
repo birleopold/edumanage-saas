@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}EduManage{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+      .floating { animation: float 6s ease-in-out infinite; }
+    </style>
+    {% include "components/ui_public_polish.html" %}
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center p-4 public-fade-in relative">
+    <a href="#auth-main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white border border-gray-300 rounded px-3 py-2 text-sm z-50 shadow">Skip to main content</a>
+    <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      <div class="absolute top-20 left-10 w-72 h-72 bg-white opacity-5 rounded-full floating"></div>
+      <div class="absolute bottom-20 right-10 w-96 h-96 bg-white opacity-5 rounded-full floating" style="animation-delay: -3s;"></div>
+    </div>
+
+    <div class="relative w-full max-w-md z-10">
+      {% block auth_pre_card %}{% endblock %}
+      <main id="auth-main" tabindex="-1" class="outline-none">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 public-card{% block auth_card_extra_class %}{% endblock %}">
+          {% block auth_content %}{% endblock %}
+        </div>
+      </main>
+      {% block auth_footer %}
+      <div class="mt-6 text-center text-blue-100 text-sm">
+        <p>&copy; 2026 EduManage. All rights reserved.</p>
+      </div>
+      {% endblock %}
+    </div>
+  </body>
+</html>

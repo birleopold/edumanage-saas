@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import IncidentActionForm, IncidentForm
@@ -22,7 +22,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def incident_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -49,7 +49,7 @@ def incident_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def incident_create(request):
     if request.method == "POST":
         form = IncidentForm(request.POST)
@@ -67,7 +67,7 @@ def incident_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def incident_edit(request, pk: int):
     incident = get_object_or_404(Incident, pk=pk)
 
@@ -87,7 +87,7 @@ def incident_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def incident_detail(request, pk: int):
     incident = get_object_or_404(
         Incident.objects.select_related("student", "reported_by").prefetch_related("actions"),

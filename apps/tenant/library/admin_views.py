@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import AuthorForm, BookCopyForm, BookForm, BookLoanForm, CategoryForm, CheckInForm, FineForm, ReservationForm
@@ -22,7 +22,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def book_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -44,7 +44,7 @@ def book_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def book_create(request):
     if request.method == "POST":
         form = BookForm(request.POST, request.FILES)
@@ -58,7 +58,7 @@ def book_create(request):
     return render(request, "portals/admin/library/book_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def book_edit(request, pk: int):
     obj = get_object_or_404(Book, pk=pk)
 
@@ -78,7 +78,7 @@ def book_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def copy_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -100,7 +100,7 @@ def copy_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def copy_create(request):
     if request.method == "POST":
         form = BookCopyForm(request.POST)
@@ -114,7 +114,7 @@ def copy_create(request):
     return render(request, "portals/admin/library/copy_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def copy_edit(request, pk: int):
     obj = get_object_or_404(BookCopy, pk=pk)
 
@@ -134,7 +134,7 @@ def copy_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def loan_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -160,7 +160,7 @@ def loan_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def loan_create(request):
     if request.method == "POST":
         form = BookLoanForm(request.POST)
@@ -182,7 +182,7 @@ def loan_create(request):
     return render(request, "portals/admin/library/loan_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def loan_edit(request, pk: int):
     obj = get_object_or_404(BookLoan, pk=pk)
 
@@ -202,7 +202,7 @@ def loan_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def loan_mark_returned(request, pk: int):
     loan = get_object_or_404(BookLoan, pk=pk)
 
@@ -236,7 +236,7 @@ def loan_mark_returned(request, pk: int):
 
 
 # Category Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def category_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -256,7 +256,7 @@ def category_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def category_create(request):
     if request.method == "POST":
         form = CategoryForm(request.POST)
@@ -270,7 +270,7 @@ def category_create(request):
     return render(request, "portals/admin/library/category_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def category_edit(request, pk: int):
     obj = get_object_or_404(Category, pk=pk)
 
@@ -287,7 +287,7 @@ def category_edit(request, pk: int):
 
 
 # Author Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def author_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -307,7 +307,7 @@ def author_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def author_create(request):
     if request.method == "POST":
         form = AuthorForm(request.POST)
@@ -321,7 +321,7 @@ def author_create(request):
     return render(request, "portals/admin/library/author_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def author_edit(request, pk: int):
     obj = get_object_or_404(Author, pk=pk)
 
@@ -338,7 +338,7 @@ def author_edit(request, pk: int):
 
 
 # Check-in with Barcode
-@role_required(Role.ADMIN)
+@admin_portal_required
 def checkin(request):
     if request.method == "POST":
         form = CheckInForm(request.POST)
@@ -389,7 +389,7 @@ def checkin(request):
 
 
 # Reservation Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def reservation_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -416,7 +416,7 @@ def reservation_list(request):
 
 
 # Fine Views
-@role_required(Role.ADMIN)
+@admin_portal_required
 def fine_list(request):
     q = (request.GET.get("q") or "").strip()
     status_filter = request.GET.get("status", "")
@@ -444,7 +444,7 @@ def fine_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def fine_mark_paid(request, pk: int):
     fine = get_object_or_404(Fine, pk=pk)
 
@@ -457,7 +457,7 @@ def fine_mark_paid(request, pk: int):
     return redirect("admin_library_fines_list")
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def fine_waive(request, pk: int):
     fine = get_object_or_404(Fine, pk=pk)
 

@@ -454,6 +454,45 @@ return export_queryset_to_csv(
 
 ---
 
+## Parent results PIN, receipts & campus dashboard (2026)
+
+### Parent portal — assessment results PIN
+- **Optional hashed PIN** on `ParentProfile` (`results_access_pin_hash`): staff can set or clear it when editing a parent; parents can also manage it under **Parent portal → Account → Results PIN** (`parent_results_pin_security`).
+- **Viewing results** (`/parent/results/`): published assessments for linked children (respects campus filter). If a PIN is set, parents enter it once per browser session (about 8 hours) before scores load; changing or removing the PIN clears that session flag.
+- **Session key** is centralized in `apps/tenant/assessments/parent_session.py` for consistency between the assessments views and the parent account page.
+
+### Finance — payment receipt PDF
+- **ReportLab** helper `generate_payment_receipt_pdf` in `apps/tenant/finance/pdf_receipt.py`.
+- **Download routes**: admin `admin_payment_receipt_pdf`, student `student_payment_receipt_pdf`, parent `parent_payment_receipt_pdf` (invoice + payment scoped to the signed-in user). Invoice detail tables in each portal include a **PDF** link per payment.
+
+### Admin home — campus-scoped metrics
+- **Global admins** (`Role.ADMIN`): dashboard counts remain tenant-wide; invoice/grievance overdue widgets follow the **selected campus** in session when set.
+- **Campus admins** (`Role.CAMPUS_ADMIN` with a campus on `UserRole`): student, teacher, parent, offering, enrollment, **invoice**, and **grievance** headline counts are restricted to that campus (parents counted if linked to any student on that campus).
+
+### Admissions — letter of admission (PDF)
+- **ReportLab** helper `generate_admission_letter_pdf` in `apps/tenant/admissions/pdf_letter.py`.
+- After an applicant is **ADMITTED** with a linked `StudentProfile`, admins can open **Admission letter (PDF)** on the applicant detail page (`admin_admissions_applicant_letter_pdf`). Downloads are logged to `ActionLog`.
+
+### Students — printable ID card (PDF)
+- **CR80-style** card via `generate_student_id_card_pdf` in `apps/tenant/students/pdf_id_card.py`.
+- **Admin**: student edit screen → **Download ID card (PDF)** (`admin_students_id_card_pdf`), with campus scope for campus admins.
+- **Student portal**: **Records & Finance → ID card (PDF)** at `/student/id-card/` (`student_id_card_self`).
+- **Parent portal**: per-child **ID card** link on the parent dashboard and PDF route `/parent/students/<student_pk>/id-card/` (`parent_child_id_card_pdf`), scoped to linked children and the campus filter.
+
+### Hostels — parent portal
+- Read-only **Hostels** page for parents (`/parent/hostels/`, `parent_hostel_home`): lists `BedAllocation` rows for all linked children, with the same campus filter pattern as transport/library.
+
+### Global search, charts, scheduled reports, mobile web (PWA-lite)
+- **Global search** (`/admin/search/`, `admin_global_search`): admin header search box; matches students, teachers, parents, invoices, **applicants**, **grievances** (subject/body), **active fee items** (name/code), and **users** for full admins only. Campus admins are scoped to their campus (applicants/grievances include rows with no campus).
+- **Teacher search** (`/teacher/search/`, `teacher_global_search`): teacher header + sidebar **Search**; matches **students they teach** (active enrollments on their offerings or streams where they are class teacher) with a shortcut to **Attendance take**, and **their own grievances** (subject/body) with links to the teacher grievance detail page.
+- **Student search** (`/student/search/`, `student_global_search`): student header + sidebar; scoped to the signed-in student — **announcements** (ALL/STUDENTS), **assignments & class materials** (same visibility rules as coursework home), **documents** (ALL/STUDENTS), **invoices** (reference).
+- **Parent search** (`/parent/search/`, `parent_global_search`): parent header + sidebar; respects **selected campus** like other parent pages — **linked children** (name/student ID), **announcements** (ALL/PARENTS), **assignments** per child (with link to parent assignment detail), **documents**, **invoices** for linked children, **their own grievances**.
+- **Charts** (`/admin/analytics/charts/` + JSON `admin_analytics_api_charts_overview`): Chart.js bar + doughnut for students-by-campus and invoices-by-status (scoped for campus admins).
+- **Scheduled reports**: `reports.ReportRun` log, **Scheduled reports** admin page (`/admin/reports/scheduled/`), CSV export via shared `execute_overview_csv_run`, downloads at `admin_reports_run_download`, and management command `run_scheduled_reports` for cron/Task Scheduler.
+- **Mobile**: not a separate native app — **Web App Manifest** at `/manifest.webmanifest` plus `theme-color` / Apple meta tags via `templates/components/pwa_meta.html` on admin, student, teacher, and parent bases for installable mobile browser experience.
+
+---
+
 ## System Maturity Level
 
 The EduManage SaaS platform now has:
@@ -472,14 +511,10 @@ The EduManage SaaS platform now has:
 
 ## Next Steps (Optional Enhancements)
 
-1. **Email notifications** - Send emails for important events
-2. **Advanced search** - Global search across modules
-3. **Charts & graphs** - Visual reporting
-4. **PDF export** - Generate PDF reports
-5. **Scheduled reports** - Automated report generation
-6. **Mobile app** - Native mobile applications
-7. **API enhancements** - REST API for integrations
-8. **Real-time updates** - WebSocket notifications
+1. **Email notifications** — outbound email for important events (admissions, finance, discipline).
+2. **Deeper portal search** — e.g. library catalog, transport routes, or pinned “saved searches”.
+3. **API & integrations** — expand REST coverage and webhooks for third-party systems.
+4. **Real-time updates** — WebSocket or SSE for notifications and live dashboards.
 
 ---
 
@@ -500,6 +535,6 @@ The EduManage SaaS platform now has:
 
 ---
 
-**Last Updated:** March 1, 2026
-**Version:** 2.0
-**Status:** ✅ All Features Implemented and Tested
+**Last Updated:** April 11, 2026
+**Version:** 2.1
+**Status:** ✅ Core features implemented; automated tests cover parent PIN forms, receipt PDF smoke, student receipt view, campus-scoped admin home counts, admin / teacher / student / parent portal search (including campus scope where applicable).

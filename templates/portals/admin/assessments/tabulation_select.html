@@ -1,0 +1,37 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Assessment tabulation{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Assessment tabulation</h1>
+    <p class="text-gray-600">Choose a course offering to view a marks matrix (students × assessments).</p>
+  </div>
+
+  {% if offerings %}
+  <div class="bg-white rounded-xl shadow-sm border-2 border-gray-200 p-6">
+    <form method="get" action="{% url 'admin_assessments_tabulation' %}" class="space-y-5">
+      <div>
+        <label for="id_offering" class="block text-sm font-bold text-gray-700 mb-2">Course offering</label>
+        <select id="id_offering" name="offering" required class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 bg-white">
+          <option value="">— Select —</option>
+          {% for o in offerings %}
+          <option value="{{ o.pk }}">{{ o.term.year.name }} {{ o.term.name }} — {{ o.course.name }}{% if o.class_group %} ({{ o.class_group.name }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex flex-wrap gap-3 pt-2 border-t border-gray-200">
+        <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md border-2 border-primary-600 hover:border-primary-700">
+          <i class="ph ph-table" aria-hidden="true"></i>
+          <span>View tabulation</span>
+        </button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+    {% url 'admin_offering_list' as offerings_url %}
+    {% include "components/ui_empty_state.html" with icon="table" title="No course offerings available" description="Create an active course offering first, then return here to build the marks matrix." action_url=offerings_url action_text="Go to offerings" %}
+  {% endif %}
+</div>
+{% endblock %}

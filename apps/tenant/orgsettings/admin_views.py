@@ -4,7 +4,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
+from apps.tenant.portals.permissions import admin_portal_required, role_required
 from apps.tenant.users.models import Role
 
 from .forms import CampusForm, OrganizationProfileForm
@@ -107,10 +108,14 @@ def campus_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def campus_select(request, pk: int):
     org = get_or_create_organization()
     campus = get_object_or_404(Campus, organization=org, pk=pk, is_active=True)
+    scoped = get_user_campus_scope(request.user)
+    if scoped is not None and campus.pk != scoped.pk:
+        messages.error(request, "You can only switch to your assigned campus.")
+        return redirect(request.GET.get("next") or "/admin/")
     set_current_campus(request, campus)
 
     next_url = request.GET.get("next") or "/admin/"

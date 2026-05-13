@@ -53,7 +53,12 @@
     </div>
 
     <!-- Add Announcement Button -->
-    <div class="flex justify-end pt-2 border-t border-gray-200">
+    <div class="flex justify-end gap-3 pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_finance_messaging_report' %}" 
+         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-chart-line-up"></i>
+        <span>Messaging Report</span>
+      </a>
       <a href="{% url 'admin_announcements_create' %}" 
          class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
         <i class="ph ph-megaphone"></i>
@@ -73,6 +78,7 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Audience</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Urgent</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
           <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
@@ -116,6 +122,18 @@
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if a.is_urgent %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                  <i class="ph ph-warning-octagon"></i>
+                  Urgent
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                  Normal
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
               {% if a.is_active %}
                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                   <i class="ph ph-check-circle"></i>
@@ -129,6 +147,17 @@
               {% endif %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              {% if a.is_urgent %}
+                <form method="post" action="{% url 'admin_announcements_broadcast' a.id %}" class="inline-block mr-3">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="inline-flex items-center gap-1 text-red-700 hover:text-red-900 font-semibold transition-colors"
+                          onclick="return confirm('Broadcast this urgent announcement now to opted-in parents?');">
+                    <i class="ph ph-paper-plane-tilt"></i>
+                    <span>Broadcast</span>
+                  </button>
+                </form>
+              {% endif %}
               <a href="{% url 'admin_announcements_edit' a.id %}" 
                  class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
                 <i class="ph ph-pencil-simple"></i>

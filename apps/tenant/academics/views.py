@@ -8,8 +8,7 @@ from urllib.parse import urlencode
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
-from apps.tenant.users.models import Role
+from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import (
     AcademicTermForm,
@@ -98,7 +97,7 @@ def _simple_form(request, template, title, form, list_url_name):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def year_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = AcademicYear.objects.all()
@@ -117,7 +116,7 @@ def year_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def academic_context(request):
     if request.method == "POST":
         action = request.POST.get("action")
@@ -175,7 +174,7 @@ def academic_context(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def enrollment_bulk_status(request):
     offering_id = request.GET.get("offering") or request.POST.get("offering")
     q = (request.GET.get("q") or request.POST.get("q") or "").strip()
@@ -255,7 +254,7 @@ def enrollment_bulk_status(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def year_create(request):
     if request.method == "POST":
         form = AcademicYearForm(request.POST)
@@ -273,7 +272,7 @@ def year_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def year_edit(request, pk: int):
     obj = get_object_or_404(AcademicYear, pk=pk)
     if request.method == "POST":
@@ -292,7 +291,7 @@ def year_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def term_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = AcademicTerm.objects.select_related("year").all()
@@ -311,7 +310,7 @@ def term_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def term_create(request):
     if request.method == "POST":
         form = AcademicTermForm(request.POST)
@@ -329,7 +328,7 @@ def term_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def term_edit(request, pk: int):
     obj = get_object_or_404(AcademicTerm, pk=pk)
     if request.method == "POST":
@@ -348,7 +347,7 @@ def term_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def level_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = Level.objects.all()
@@ -367,7 +366,7 @@ def level_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def level_create(request):
     if request.method == "POST":
         form = LevelForm(request.POST)
@@ -385,7 +384,7 @@ def level_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def level_edit(request, pk: int):
     obj = get_object_or_404(Level, pk=pk)
     if request.method == "POST":
@@ -404,7 +403,7 @@ def level_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def program_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = Program.objects.all()
@@ -423,7 +422,7 @@ def program_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def program_create(request):
     if request.method == "POST":
         form = ProgramForm(request.POST)
@@ -441,7 +440,7 @@ def program_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def program_edit(request, pk: int):
     obj = get_object_or_404(Program, pk=pk)
     if request.method == "POST":
@@ -460,7 +459,7 @@ def program_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def classgroup_list(request):
     q = (request.GET.get("q") or "").strip()
     campuses = _campus_queryset()
@@ -491,7 +490,7 @@ def classgroup_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def classgroup_create(request):
     current = get_current_campus(request)
     if request.method == "POST":
@@ -515,7 +514,7 @@ def classgroup_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def classgroup_edit(request, pk: int):
     obj = get_object_or_404(ClassGroup, pk=pk)
     if request.method == "POST":
@@ -534,7 +533,7 @@ def classgroup_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def course_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = Course.objects.select_related("level", "program").all()
@@ -558,7 +557,7 @@ def course_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def course_create(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
@@ -576,7 +575,7 @@ def course_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def course_edit(request, pk: int):
     obj = get_object_or_404(Course, pk=pk)
     if request.method == "POST":
@@ -595,7 +594,7 @@ def course_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def offering_list(request):
     q = (request.GET.get("q") or "").strip()
     campuses = _campus_queryset()
@@ -636,7 +635,7 @@ def offering_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def offering_create(request):
     current = get_current_campus(request)
     if request.method == "POST":
@@ -660,7 +659,7 @@ def offering_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def offering_edit(request, pk: int):
     obj = get_object_or_404(CourseOffering, pk=pk)
     if request.method == "POST":
@@ -682,7 +681,7 @@ def offering_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def enrollment_list(request):
     q = (request.GET.get("q") or "").strip()
     campuses = _campus_queryset()
@@ -722,7 +721,7 @@ def enrollment_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def enrollment_create(request):
     current = get_current_campus(request)
     if request.method == "POST":
@@ -749,7 +748,7 @@ def enrollment_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def enrollment_edit(request, pk: int):
     obj = get_object_or_404(Enrollment, pk=pk)
     if request.method == "POST":
@@ -776,7 +775,7 @@ def enrollment_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def enrollment_bulk(request):
     offering_id = request.GET.get("offering") or request.POST.get("offering")
     q = (request.GET.get("q") or request.POST.get("q") or "").strip()
@@ -861,7 +860,7 @@ def enrollment_bulk(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grading_scale_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = GradingScale.objects.all()
@@ -880,7 +879,7 @@ def grading_scale_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grading_scale_create(request):
     if request.method == "POST":
         form = GradingScaleForm(request.POST)
@@ -899,7 +898,7 @@ def grading_scale_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grading_scale_edit(request, pk: int):
     obj = get_object_or_404(GradingScale, pk=pk)
     if request.method == "POST":
@@ -919,7 +918,7 @@ def grading_scale_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grading_scale_detail(request, pk: int):
     scale = get_object_or_404(GradingScale.objects.prefetch_related('ranges'), pk=pk)
     
@@ -944,7 +943,7 @@ def grading_scale_detail(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grade_range_create(request, scale_id: int):
     scale = get_object_or_404(GradingScale, pk=scale_id)
     if request.method == "POST":
@@ -967,7 +966,7 @@ def grade_range_create(request, scale_id: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def grade_range_edit(request, pk: int):
     obj = get_object_or_404(GradeRange, pk=pk)
     scale_id = obj.scale_id
@@ -991,7 +990,7 @@ def grade_range_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stream_list(request):
     q = (request.GET.get("q") or "").strip()
     qs = Stream.objects.select_related("class_group", "class_teacher").all()
@@ -1014,7 +1013,7 @@ def stream_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stream_create(request):
     if request.method == "POST":
         form = StreamForm(request.POST)
@@ -1033,7 +1032,7 @@ def stream_create(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def stream_edit(request, pk: int):
     obj = get_object_or_404(Stream, pk=pk)
     if request.method == "POST":
@@ -1053,7 +1052,7 @@ def stream_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def report_card_view(request, student_id: int, term_id: int):
     from .reports import ReportCard
     
@@ -1075,7 +1074,7 @@ def report_card_view(request, student_id: int, term_id: int):
         return redirect("admin_student_list")
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def term_report_cards(request, term_id: int):
     from .reports import generate_class_report_cards
     

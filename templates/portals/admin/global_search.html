@@ -1,0 +1,133 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Search{% endblock %}
+{% block page_title %}Global search{% endblock %}
+{% block breadcrumbs %}
+<span class="text-gray-500">Students, staff, parents, invoices, admissions, grievances, fee items{% if scoped_campus %} ({{ scoped_campus.name }}){% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <form method="get" class="flex gap-2">
+    <input type="search" name="q" value="{{ q }}" placeholder="Type at least 2 characters…" class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500" autofocus />
+    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+      <i class="ph ph-magnifying-glass"></i> Search
+    </button>
+  </form>
+
+  {% if q|length < 2 %}
+  <p class="text-sm text-gray-500">Enter at least two characters to search.</p>
+  {% else %}
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Students</div>
+    <ul class="divide-y divide-gray-100">
+      {% for s in students %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ s }} <span class="text-gray-500">· {{ s.student_id|default:"—" }}</span></span>
+        <a href="{% url 'admin_students_edit' s.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Teachers</div>
+    <ul class="divide-y divide-gray-100">
+      {% for t in teachers %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ t }}</span>
+        <a href="{% url 'admin_teachers_edit' t.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Parents</div>
+    <ul class="divide-y divide-gray-100">
+      {% for p in parents %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ p }}</span>
+        <a href="{% url 'admin_parents_edit' p.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Invoices</div>
+    <ul class="divide-y divide-gray-100">
+      {% for inv in invoices %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ inv.reference|default:inv.pk }} · {{ inv.student }}</span>
+        <a href="{% url 'admin_invoices_detail' inv.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Applicants</div>
+    <ul class="divide-y divide-gray-100">
+      {% for a in applicants %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ a }} <span class="text-gray-500">· {{ a.get_status_display }}</span>{% if a.campus %} <span class="text-gray-400">· {{ a.campus.name }}</span>{% endif %}</span>
+        <a href="{% url 'admin_admissions_applicant_detail' a.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Grievances</div>
+    <ul class="divide-y divide-gray-100">
+      {% for g in grievances %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ g.subject|truncatechars:60 }} <span class="text-gray-500">· {{ g.get_status_display }}</span></span>
+        <a href="{% url 'admin_grievances_detail' g.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Fee items</div>
+    <ul class="divide-y divide-gray-100">
+      {% for fi in fee_items %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ fi.name }} <span class="text-gray-500">· {{ fi.code }}</span></span>
+        <a href="{% url 'admin_fee_items_edit' fi.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Edit</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% if users %}
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Users</div>
+    <ul class="divide-y divide-gray-100">
+      {% for u in users %}
+      <li class="px-4 py-3 text-sm text-gray-800">{{ u.username }} {% if u.email %}· {{ u.email }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

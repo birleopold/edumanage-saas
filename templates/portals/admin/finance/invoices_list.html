@@ -1,8 +1,10 @@
 {% extends 'portals/admin/base.html' %}
+{% load orgsettings_extras %}
 
 {% block title %}Invoices{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Invoices</h1>
@@ -57,16 +59,43 @@
                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
       </div>
 
+      <div class="w-full md:w-auto flex items-center pb-1 md:pb-0">
+        <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-800 cursor-pointer select-none">
+          <input type="checkbox" name="overdue" value="1" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" {% if overdue_only %}checked{% endif %} />
+          Overdue only
+        </label>
+      </div>
+
       <!-- Apply Button -->
       <button type="submit" 
               class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
         <i class="ph ph-funnel"></i>
         <span>Apply Filters</span>
       </button>
+      <a href="{% url 'admin_invoices_list' %}"
+         class="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-x"></i>
+        <span>Reset</span>
+      </a>
     </div>
 
-    <!-- Create Invoice Button -->
-    <div class="flex justify-end pt-2 border-t border-gray-200">
+    <!-- Create Invoice / Export -->
+    <div class="flex flex-wrap justify-end gap-3 pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_finance_messaging_report' %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-chart-line-up"></i>
+        <span>Messaging Report</span>
+      </a>
+      <a href="{% url 'admin_finance_message_logs' %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-paper-plane-tilt"></i>
+        <span>Message Logs</span>
+      </a>
+      <a href="{% url 'admin_invoices_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}{% if overdue_only %}&amp;overdue=1{% endif %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-download-simple"></i>
+        <span>Export CSV</span>
+      </a>
       <a href="{% url 'admin_invoices_create' %}" 
          class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
         <i class="ph ph-plus"></i>
@@ -74,6 +103,12 @@
       </a>
     </div>
   </form>
+</div>
+
+<div class="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
+  <p class="text-sm text-amber-900">
+    <span class="font-semibold">Billing workflow:</span> create invoice -> add line items -> record payments -> monitor balances.
+  </p>
 </div>
 
 <!-- Invoices Table or Empty State -->
@@ -158,6 +193,12 @@
                   <i class="ph ph-pencil-simple"></i>
                   <span>Edit</span>
                 </a>
+                <span class="text-gray-300">|</span>
+                <a href="{% url 'admin_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900 font-semibold transition-colors">
+                  <i class="ph ph-printer"></i>
+                  <span>Print</span>
+                </a>
               </div>
             </td>
           </tr>
@@ -175,4 +216,5 @@
   {% url 'admin_invoices_create' as create_invoice_url %}
   {% include "components/ui_empty_state.html" with icon="wallet" title="No invoices found" description="Get started by creating your first invoice or adjust your search filters" action_url=create_invoice_url action_text="Create Invoice" %}
 {% endif %}
+</div>
 {% endblock %}

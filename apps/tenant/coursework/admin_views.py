@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import AssignmentForm, LearningMaterialForm
@@ -22,7 +22,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def material_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -48,7 +48,7 @@ def material_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def material_create(request):
     if request.method == "POST":
         form = LearningMaterialForm(request.POST)
@@ -64,7 +64,7 @@ def material_create(request):
     return render(request, "portals/admin/coursework/material_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def material_edit(request, pk: int):
     obj = get_object_or_404(LearningMaterial, pk=pk)
 
@@ -90,7 +90,7 @@ def material_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def material_attachment_add(request, pk: int):
     obj = get_object_or_404(LearningMaterial, pk=pk)
 
@@ -111,7 +111,7 @@ def material_attachment_add(request, pk: int):
     return redirect("admin_coursework_materials_edit", pk=obj.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def material_attachment_remove(request, pk: int, attachment_id: int):
     obj = get_object_or_404(LearningMaterial, pk=pk)
     att = get_object_or_404(LearningMaterialAttachment, pk=attachment_id, material=obj)
@@ -123,7 +123,7 @@ def material_attachment_remove(request, pk: int, attachment_id: int):
     return redirect("admin_coursework_materials_edit", pk=obj.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -149,7 +149,7 @@ def assignment_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_create(request):
     if request.method == "POST":
         form = AssignmentForm(request.POST)
@@ -165,7 +165,7 @@ def assignment_create(request):
     return render(request, "portals/admin/coursework/assignment_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_edit(request, pk: int):
     obj = get_object_or_404(Assignment, pk=pk)
 
@@ -191,7 +191,7 @@ def assignment_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_attachment_add(request, pk: int):
     obj = get_object_or_404(Assignment, pk=pk)
 
@@ -212,7 +212,7 @@ def assignment_attachment_add(request, pk: int):
     return redirect("admin_coursework_assignments_edit", pk=obj.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def assignment_attachment_remove(request, pk: int, attachment_id: int):
     obj = get_object_or_404(Assignment, pk=pk)
     att = get_object_or_404(AssignmentAttachment, pk=attachment_id, assignment=obj)

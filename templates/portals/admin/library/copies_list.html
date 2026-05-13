@@ -1,62 +1,54 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Library Copies{% endblock %}
+{% block title %}Library copies{% endblock %}
 
 {% block content %}
-  <h1>Copies</h1>
+{% url 'admin_library_copies_list' as clear_url %}
+{% url 'admin_library_copy_create' as create_url %}
+{% include "components/ui_admin_list_toolbar_get.html" with title="Library copies" description="Individual book copies, barcodes, and circulation status." clear_url=clear_url create_url=create_url add_label="Add copy" search_placeholder="Book, copy code, or status…" %}
 
-  <form method="get">
-    <label for="id_q">Search</label>
-    <input id="id_q" type="text" name="q" value="{{ q }}" />
-
-    <label for="id_per_page">Per page</label>
-    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
-
-    <button type="submit">Apply</button>
-  </form>
-
-  <p><a href="{% url 'admin_library_copy_create' %}">Add</a></p>
-
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Book</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Copy code</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Status</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Active</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for c in copies %}
+{% if copies %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
         <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ c.id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ c.book }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ c.copy_code }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ c.status }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{% if c.is_active %}Yes{% else %}No{% endif %}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_library_copy_edit' c.id %}">Edit</a></td>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Book</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Copy code</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Listed</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="6" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No copies yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for c in copies %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ c.id }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">{{ c.book }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-800">{{ c.copy_code }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ c.status }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if c.is_active %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <a href="{% url 'admin_library_copy_edit' c.id %}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold">
+                <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% if page_obj %}
-    <div style="margin-top: 12px;">
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-      {% if page_obj.has_previous %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-      {% endif %}
-
-      {% if page_obj.has_next %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-      {% endif %}
-    </div>
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
   {% endif %}
+{% else %}
+  {% url 'admin_library_copy_create' as add_url %}
+  {% include "components/ui_empty_state.html" with icon="books" title="No copies found" description="Register copies for catalogued books or adjust your search." action_url=add_url action_text="Add copy" %}
+{% endif %}
 {% endblock %}

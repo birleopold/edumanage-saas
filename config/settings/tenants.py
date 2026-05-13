@@ -45,6 +45,7 @@ TENANT_APPS = (
     "apps.tenant.quizzes",
     "apps.tenant.polls",
     "apps.tenant.messaging",
+    "apps.tenant.grievances",
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

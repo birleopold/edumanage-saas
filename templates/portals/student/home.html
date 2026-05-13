@@ -4,7 +4,7 @@
 {% block page_title %}My Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6 motion-rich">
     <!-- Welcome Banner -->
     <div class="bg-primary-50 rounded-xl p-6 border border-primary-100 flex flex-col md:flex-row md:items-center justify-between">
         <div>
@@ -15,7 +15,7 @@
         <div class="mt-4 md:mt-0 flex gap-4">
             <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-primary-100 flex items-center">
                 <div class="bg-primary-100 rounded-full p-2 mr-3 text-primary-600">
-                    <i class="ph ph-student text-lg"></i>
+                    <i class="ph ph-student text-lg" aria-hidden="true"></i>
                 </div>
                 <div>
                     <span class="block text-xs text-gray-500 uppercase font-semibold">Student ID</span>
@@ -25,7 +25,7 @@
             {% if student.campus %}
             <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-primary-100 flex items-center">
                 <div class="bg-primary-100 rounded-full p-2 mr-3 text-primary-600">
-                    <i class="ph ph-buildings text-lg"></i>
+                    <i class="ph ph-buildings text-lg" aria-hidden="true"></i>
                 </div>
                 <div>
                     <span class="block text-xs text-gray-500 uppercase font-semibold">Campus</span>
@@ -37,31 +37,52 @@
         {% endif %}
     </div>
 
+    {% if student %}
+    {% if student_invoices_outstanding or student_invoices_overdue %}
+    <div class="flex flex-wrap gap-3">
+        {% if student_invoices_outstanding %}
+        <a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-900 text-sm font-semibold hover:bg-amber-100 transition-colors">
+            <i class="ph ph-coins text-lg" aria-hidden="true"></i>
+            <span>{{ student_invoices_outstanding }} fee statement(s) with a balance</span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+        {% if student_invoices_overdue %}
+        <a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-red-900 text-sm font-semibold hover:bg-red-100 transition-colors">
+            <i class="ph ph-warning text-lg" aria-hidden="true"></i>
+            <span>{{ student_invoices_overdue }} overdue (past due date)</span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
     <!-- Quick Access Grid -->
     <div>
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <a href="{% url 'student_timetable' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-calendar text-2xl"></i>
+                    <i class="ph ph-calendar text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Timetable</span>
             </a>
             <a href="{% url 'student_results_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-exam text-2xl"></i>
+                    <i class="ph ph-exam text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Results</span>
             </a>
             <a href="{% url 'student_announcements_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-megaphone text-2xl"></i>
+                    <i class="ph ph-megaphone text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Announcements</span>
             </a>
             <a href="{% url 'student_invoices_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
                 <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-wallet text-2xl"></i>
+                    <i class="ph ph-wallet text-2xl" aria-hidden="true"></i>
                 </div>
                 <span class="text-sm font-bold text-gray-700">Invoices</span>
             </a>

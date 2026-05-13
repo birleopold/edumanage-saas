@@ -1,42 +1,69 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Paper Scores{% endblock %}
+{% block title %}Paper scores{% endblock %}
 
 {% block content %}
-  <h1>Paper Scores</h1>
+<div class="max-w-6xl mx-auto space-y-6">
+  {% include "components/ui_toast.html" %}
 
   <div>
-    <div><strong>Exam:</strong> {{ paper.exam }}</div>
-    <div><strong>Offering:</strong> {{ paper.offering }}</div>
-    <div><strong>Max:</strong> {{ paper.max_score }}</div>
-    <div><strong>Published:</strong> {% if paper.is_published %}Yes{% else %}No{% endif %}</div>
+    <h1 class="text-3xl font-bold text-gray-900">Exam paper scores</h1>
+    <p class="text-gray-600 mt-1">{{ paper.offering.course }} · {{ paper.exam }}</p>
   </div>
 
-  <h2 style="margin-top: 16px;">Scores</h2>
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Score</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Note</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for s in scores %}
-        <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.student }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.student.student_id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.score }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ s.note }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="4" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No scores yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'admin_exam_papers_edit' paper.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50">
+      <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit paper</span>
+    </a>
+    <a href="{% url 'admin_exam_papers_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 shadow-sm">
+      <i class="ph ph-arrow-left text-lg" aria-hidden="true"></i><span>Back to papers</span>
+    </a>
+  </div>
 
-  <p style="margin-top: 12px;">
-    <a href="{% url 'admin_exam_papers_list' %}">Back</a>
-  </p>
+  <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6">
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Exam</dt><dd class="mt-1 text-gray-900 font-semibold">{{ paper.exam }}</dd></div>
+      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Offering</dt><dd class="mt-1 text-gray-800">{{ paper.offering }}</dd></div>
+      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Max score</dt><dd class="mt-1 text-gray-900 tabular-nums font-medium">{{ paper.max_score }}</dd></div>
+      <div>
+        <dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Published</dt>
+        <dd class="mt-1">
+          {% if paper.is_published %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="ph ph-check-circle" aria-hidden="true"></i> Yes</span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"><i class="ph ph-eye-slash" aria-hidden="true"></i> No</span>
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div>
+    <h2 class="text-xl font-bold text-gray-900 mb-3">Scores</h2>
+    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for s in scores %}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ s.student }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700">{{ s.student.student_id }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-right tabular-nums text-gray-900 font-medium">{{ s.score|default:"—" }}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">{{ s.note|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">No scores yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

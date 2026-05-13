@@ -4,31 +4,32 @@ Automatically displays Django messages as toast notifications
 Include this in your base template before </body>
 {% endcomment %}
 
-{% if messages %}
 <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-3" style="max-width: 380px;">
+  {% if messages %}
   {% for message in messages %}
   <div class="toast-message bg-white border-l-4 rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in-right
     {% if message.tags == 'success' or message.tags == 'info' %}border-green-500
     {% elif message.tags == 'warning' %}border-yellow-500
     {% elif message.tags == 'error' or message.tags == 'danger' %}border-red-500
     {% else %}border-blue-500{% endif %}"
-    role="alert">
+    role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}"
+    aria-live="{% if 'error' in message.tags or 'danger' in message.tags %}assertive{% else %}polite{% endif %}">
     
-    <div class="flex-shrink-0">
+    <div class="flex-shrink-0" aria-hidden="true">
       {% if message.tags == 'success' %}
-        <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20" focusable="false">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
         </svg>
       {% elif message.tags == 'error' or message.tags == 'danger' %}
-        <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+        <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20" focusable="false">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
         </svg>
       {% elif message.tags == 'warning' %}
-        <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+        <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" focusable="false">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
       {% else %}
-        <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+        <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20" focusable="false">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
         </svg>
       {% endif %}
@@ -38,13 +39,14 @@ Include this in your base template before </body>
       <p class="text-sm font-medium text-gray-900">{{ message }}</p>
     </div>
     
-    <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors" onclick="this.parentElement.remove()">
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors" onclick="this.parentElement.remove()" aria-label="Dismiss notification">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
       </svg>
     </button>
   </div>
   {% endfor %}
+  {% endif %}
 </div>
 
 <style>
@@ -65,19 +67,60 @@ Include this in your base template before </body>
 </style>
 
 <script>
-  // Auto-dismiss toasts after 5 seconds
+  function createToast(title, message, type) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const borderClass = type === 'success' ? 'border-green-500'
+      : type === 'warning' ? 'border-yellow-500'
+      : type === 'error' ? 'border-red-500'
+      : 'border-blue-500';
+    const icon = type === 'success' ? 'ph-check-circle'
+      : type === 'warning' ? 'ph-warning-circle'
+      : type === 'error' ? 'ph-x-circle'
+      : 'ph-info';
+
+    const toast = document.createElement('div');
+    const toastRole = type === 'error' ? 'alert' : 'status';
+    const toastLive = type === 'error' ? 'assertive' : 'polite';
+    toast.className = `toast-message bg-white border-l-4 rounded-lg shadow-lg p-4 flex items-start gap-3 animate-slide-in-right ${borderClass}`;
+    toast.setAttribute('role', toastRole);
+    toast.setAttribute('aria-live', toastLive);
+    toast.innerHTML = `
+      <div class="flex-shrink-0" aria-hidden="true"><i class="ph ${icon} text-xl"></i></div>
+      <div class="flex-1">
+        <p class="text-xs uppercase tracking-wide text-gray-500">${title || 'Notice'}</p>
+        <p class="text-sm font-medium text-gray-900">${message || ''}</p>
+      </div>
+      <button type="button" class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors">
+        <i class="ph ph-x"></i>
+      </button>
+    `;
+    toast.querySelector('button').addEventListener('click', function () {
+      toast.remove();
+    });
+    container.appendChild(toast);
+    scheduleDismiss(toast, 4500);
+  }
+
+  function scheduleDismiss(toast, delayMs) {
+    setTimeout(function() {
+      toast.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(function() {
+        toast.remove();
+      }, 300);
+    }, delayMs);
+  }
+
+  window.showToast = function(title, message, type) {
+    createToast(title, message, type || 'info');
+  };
+
   document.addEventListener('DOMContentLoaded', function() {
     const toasts = document.querySelectorAll('.toast-message');
     toasts.forEach(function(toast, index) {
-      setTimeout(function() {
-        toast.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(function() {
-          toast.remove();
-        }, 300);
-      }, 5000 + (index * 100));
+      scheduleDismiss(toast, 5000 + (index * 100));
     });
   });
 </script>
-{% endif %}

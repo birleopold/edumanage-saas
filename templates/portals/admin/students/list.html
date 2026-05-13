@@ -3,8 +3,9 @@
 {% block title %}Students{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <!-- Page Header -->
-<div class="mb-6">
+<div class="mb-6 motion-fast">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Students</h1>
   <p class="text-gray-600">Manage student records and enrollment</p>
 </div>
@@ -63,10 +64,19 @@
         <i class="ph ph-funnel"></i>
         <span>Apply Filters</span>
       </button>
+      <a href="{% url 'admin_students_list' %}" class="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-x"></i>
+        <span>Reset</span>
+      </a>
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex justify-end gap-3 pt-2 border-t border-gray-200">
+    <div class="flex flex-wrap justify-end gap-3 pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_students_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-download-simple"></i>
+        <span>Export CSV</span>
+      </a>
       <a href="{% url 'admin_students_bulk_import' %}" 
          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm hover:shadow-md">
         <i class="ph ph-upload"></i>
@@ -137,4 +147,5 @@
   {% url 'admin_students_create' as create_student_url %}
   {% include "components/ui_empty_state.html" with icon="student" title="No students found" description="Get started by adding your first student or adjust your search filters" action_url=create_student_url action_text="Add Student" %}
 {% endif %}
+</div>
 {% endblock %}

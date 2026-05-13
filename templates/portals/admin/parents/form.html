@@ -43,7 +43,7 @@
     <!-- Linked Students Section -->
     <div class="bg-white shadow-md rounded-xl border border-gray-300 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <h2 class="text-lg font-bold text-gray-900"><i class="ph ph-student mr-2"></i>Linked Students</h2>
+            <h2 class="text-lg font-bold text-gray-900"><i class="ph ph-users-three mr-2" aria-hidden="true"></i>Linked Students</h2>
         </div>
         
         <div class="p-6">
@@ -66,20 +66,20 @@
             </form>
 
             <!-- Linked Students List -->
-            <div class="overflow-x-auto border border-gray-200 rounded-lg">
-                <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-                    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider" class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Student</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider" class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Relationship</th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider" class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Primary Guardian</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider" class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Relationship</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Primary Guardian</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class='bg-white divide-y divide-gray-200'>
+                    <tbody class="bg-white divide-y divide-gray-200">
                         {% for link in links %}
                         <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3 border border-blue-200">
                                         {{ link.student.first_name|make_list|first|upper }}
@@ -87,10 +87,10 @@
                                     <span class="text-sm font-medium text-gray-900">{{ link.student }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
                                 {{ link.get_relationship_display|default:link.relationship }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
                                 {% if link.is_primary %}
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
                                         <i class="ph ph-check-circle mr-1"></i> Yes
@@ -101,7 +101,7 @@
                                     </span>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <form method="post" action="{% url 'admin_parents_remove_student' parent.id link.id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this link?');">
                                     {% csrf_token %}
                                     <button type="submit" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors font-bold inline-flex items-center">
@@ -112,14 +112,14 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
                                 <i class="ph ph-link-break text-3xl text-gray-300 mb-2 block"></i>
                                 <span class="font-medium">No students linked to this parent yet.</span>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table></div>
+                </table>
             </div>
         </div>
     </div>

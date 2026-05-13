@@ -3,6 +3,7 @@
 {% block title %}Exam Papers{% endblock %}
 
 {% block content %}
+<div class="motion-fast">
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Exam Papers</h1>
   <p class="text-gray-600">Grade exam papers for your subjects</p>
@@ -91,4 +92,5 @@
 {% else %}
   {% include "components/ui_empty_state.html" with icon="exam" title="No exam papers" description="No exam papers are assigned to you" %}
 {% endif %}
+</div>
 {% endblock %}

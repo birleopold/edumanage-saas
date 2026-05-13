@@ -1,62 +1,167 @@
-{% extends 'portals/admin/base.html' %}
+{% extends "portals/admin/base.html" %}
 
-{% block title %}Transport Vehicles{% endblock %}
+{% block title %}Vehicles{% endblock %}
 
 {% block content %}
-  <h1>Vehicles</h1>
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Transport vehicles</h1>
+  <p class="text-gray-600">Manage fleet capacity, plates, operational status, and GPS tracking.</p>
+</div>
 
-  <form method="get">
-    <label for="id_q">Search</label>
-    <input id="id_q" type="text" name="q" value="{{ q }}" />
+{% include "components/ui_toast.html" %}
 
-    <label for="id_per_page">Per page</label>
-    <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" />
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+  <form method="get" class="space-y-4">
+    <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+      <div class="flex-1 w-full lg:max-w-md">
+        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="ph ph-magnifying-glass text-gray-400 text-lg" aria-hidden="true"></i>
+          </div>
+          <input id="id_q"
+                 type="text"
+                 name="q"
+                 value="{{ q }}"
+                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
+                 placeholder="Name, plate, or model…" />
+        </div>
+      </div>
 
-    <button type="submit">Apply</button>
+      <div class="w-full lg:w-52">
+        <label for="id_status" class="block text-sm font-bold text-gray-700 mb-2">Fleet status</label>
+        <select id="id_status"
+                name="status"
+                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 bg-white">
+          <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
+          <option value="OPERATIONAL" {% if status_filter == 'OPERATIONAL' %}selected{% endif %}>Operational</option>
+          <option value="MAINTENANCE" {% if status_filter == 'MAINTENANCE' %}selected{% endif %}>Under maintenance</option>
+          <option value="OUT_OF_SERVICE" {% if status_filter == 'OUT_OF_SERVICE' %}selected{% endif %}>Out of service</option>
+        </select>
+      </div>
+
+      <div class="w-full lg:w-32">
+        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per page</label>
+        <input id="id_per_page"
+               type="number"
+               name="per_page"
+               value="{{ per_page }}"
+               min="1"
+               max="200"
+               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+      </div>
+
+      <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+        <button type="submit"
+                class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+          <i class="ph ph-funnel text-lg" aria-hidden="true"></i>
+          <span>Apply</span>
+        </button>
+        <a href="{% url 'admin_transport_vehicles_list' %}"
+           class="inline-flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
+          <i class="ph ph-x text-lg" aria-hidden="true"></i>
+          <span>Clear</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-2 border-t border-gray-200">
+      <a href="{% url 'admin_transport_vehicle_create' %}"
+         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-plus text-lg" aria-hidden="true"></i>
+        <span>Add vehicle</span>
+      </a>
+    </div>
   </form>
+</div>
 
-  <p><a href="{% url 'admin_transport_vehicle_create' %}">Add</a></p>
-
-  <div class='overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mt-6'><table class='min-w-full divide-y divide-gray-200'>
-    <thead class='bg-gray-50' class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>
-      <tr>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>ID</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Name</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Plate</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Capacity</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Active</th>
-        <th class=\'px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider\'>Actions</th>
-      </tr>
-    </thead>
-    <tbody class='bg-white divide-y divide-gray-200'>
-      {% for v in vehicles %}
+{% if vehicles %}
+  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
         <tr>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ v.id }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ v.name }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ v.plate_number }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{{ v.capacity }}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>{% if v.is_active %}Yes{% else %}No{% endif %}</td>
-          <td class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'><a href="{% url 'admin_transport_vehicle_edit' v.id %}">Edit</a></td>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Vehicle</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Plate</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Capacity</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fleet status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Listed</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="6" class=\'px-6 py-4 whitespace-nowrap text-sm text-gray-700\'>No vehicles yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for v in vehicles %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ v.id }}</td>
+            <td class="px-6 py-4 text-sm min-w-0">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                  <i class="ph ph-bus text-slate-600 text-xl" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-semibold text-gray-900 truncate">{{ v.name }}</div>
+                  <div class="text-gray-500 text-xs">{{ v.get_vehicle_type_display }}{% if v.model %} · {{ v.model }}{% endif %}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-800">{{ v.plate_number }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{{ v.capacity }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if v.status == 'OPERATIONAL' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                  <i class="ph ph-check-circle" aria-hidden="true"></i>
+                  Operational
+                </span>
+              {% elif v.status == 'MAINTENANCE' %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-semibold">
+                  <i class="ph ph-wrench" aria-hidden="true"></i>
+                  Maintenance
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                  <i class="ph ph-prohibit" aria-hidden="true"></i>
+                  Out of service
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if v.is_active %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                  <i class="ph ph-eye" aria-hidden="true"></i>
+                  Active
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                  <i class="ph ph-eye-slash" aria-hidden="true"></i>
+                  Hidden
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <div class="flex items-center justify-end gap-4 flex-wrap">
+                <a href="{% url 'admin_transport_vehicle_tracking' v.id %}"
+                   class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold transition-colors">
+                  <i class="ph ph-map-pin text-lg" aria-hidden="true"></i>
+                  <span>Track</span>
+                </a>
+                <a href="{% url 'admin_transport_vehicle_edit' v.id %}"
+                   class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
+                  <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i>
+                  <span>Edit</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   {% if page_obj %}
-    <div style="margin-top: 12px;">
-      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-      {% if page_obj.has_previous %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page=1">First</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">Prev</a>
-      {% endif %}
-
-      {% if page_obj.has_next %}
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">Next</a>
-        <a href="?q={{ q }}&per_page={{ per_page }}&page={{ page_obj.paginator.num_pages }}">Last</a>
-      {% endif %}
-    </div>
+    {% include "components/ui_pagination.html" with page_obj=page_obj %}
   {% endif %}
+{% else %}
+  {% url 'admin_transport_vehicle_create' as add_vehicle_url %}
+  {% include "components/ui_empty_state.html" with icon="bus" title="No vehicles found" description="Register a vehicle or adjust your search and fleet status filters." action_url=add_vehicle_url action_text="Add vehicle" %}
+{% endif %}
 {% endblock %}

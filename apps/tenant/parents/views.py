@@ -1,11 +1,13 @@
 from django.contrib import messages
+from django.contrib.auth.hashers import make_password
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.orgsettings.utils import log_action
 from apps.tenant.users.models import Role, User, PasswordSetupToken
 
@@ -23,7 +25,7 @@ def _generate_unique_username(base: str) -> str:
     return username
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page_raw = request.GET.get("per_page")
@@ -61,7 +63,7 @@ def parent_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_create(request):
     if request.method == "POST":
         form = ParentProfileForm(request.POST)
@@ -87,6 +89,12 @@ def parent_create(request):
                     parent.user = user
 
                 parent.save()
+                if form.cleaned_data.get("clear_results_pin"):
+                    parent.results_access_pin_hash = ""
+                elif form.cleaned_data.get("results_pin"):
+                    parent.results_access_pin_hash = make_password(form.cleaned_data["results_pin"])
+                if form.cleaned_data.get("clear_results_pin") or form.cleaned_data.get("results_pin"):
+                    parent.save(update_fields=["results_access_pin_hash"])
 
                 if parent.user_id and temp_password:
                     if parent.email and send_email_flag:
@@ -136,7 +144,7 @@ def parent_create(request):
     return render(request, "portals/admin/parents/form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_credentials(request, pk: int):
     parent = get_object_or_404(ParentProfile, pk=pk)
     temp_password = request.session.pop(f"parent_temp_password_{parent.pk}", None)
@@ -157,7 +165,7 @@ def parent_credentials(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_edit(request, pk: int):
     parent = get_object_or_404(ParentProfile, pk=pk)
 
@@ -204,7 +212,19 @@ def parent_edit(request, pk: int):
         
         form = ParentProfileForm(request.POST, instance=parent)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            sms_before = parent.allow_sms_alerts
+            wa_before = parent.allow_whatsapp_alerts
+            if form.cleaned_data.get("clear_results_pin"):
+                obj.results_access_pin_hash = ""
+            elif form.cleaned_data.get("results_pin"):
+                obj.results_access_pin_hash = make_password(form.cleaned_data["results_pin"])
+            if (
+                obj.allow_sms_alerts != sms_before
+                or obj.allow_whatsapp_alerts != wa_before
+            ):
+                obj.communication_consent_updated_at = timezone.now()
+            obj.save()
             messages.success(request, "Parent updated successfully.")
             return redirect("admin_parents_edit", pk=parent.pk)
     else:
@@ -226,7 +246,7 @@ def parent_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_add_student(request, pk: int):
     parent = get_object_or_404(ParentProfile, pk=pk)
     if request.method != "POST":
@@ -247,7 +267,7 @@ def parent_add_student(request, pk: int):
     return redirect("admin_parents_edit", pk=parent.pk)
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def parent_remove_student(request, pk: int, link_id: int):
     parent = get_object_or_404(ParentProfile, pk=pk)
     link = get_object_or_404(ParentStudentLink, pk=link_id, parent=parent)

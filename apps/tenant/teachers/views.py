@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.orgsettings.utils import log_action
 from apps.tenant.users.models import Role, User, PasswordSetupToken
 
@@ -30,7 +30,7 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def teacher_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page_raw = request.GET.get("per_page")
@@ -88,7 +88,7 @@ def teacher_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def teacher_create(request):
     current = get_current_campus(request)
     if request.method == "POST":
@@ -168,7 +168,7 @@ def teacher_create(request):
     return render(request, "portals/admin/teachers/form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def teacher_credentials(request, pk: int):
     teacher = get_object_or_404(TeacherProfile, pk=pk)
     temp_password = request.session.pop(f"teacher_temp_password_{teacher.pk}", None)
@@ -189,7 +189,7 @@ def teacher_credentials(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def teacher_edit(request, pk: int):
     teacher = get_object_or_404(TeacherProfile, pk=pk)
     

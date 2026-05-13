@@ -1,0 +1,70 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Review import{% endblock %}
+{% block page_title %}Review student import{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm">
+    <a href="{% url 'admin_students_list' %}" class="text-primary-600 hover:text-primary-800">Students</a>
+    <i class="ph ph-caret-right mx-2 text-gray-400" aria-hidden="true"></i>
+    <a href="{% url 'admin_students_bulk_import' %}" class="text-primary-600 hover:text-primary-800">Bulk Import</a>
+    <i class="ph ph-caret-right mx-2 text-gray-400" aria-hidden="true"></i>
+    <span class="text-gray-500">Preview</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6 -m-6 p-6">
+    <div id="preview-summary" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <p class="font-semibold">Check every row before importing.</p>
+        <p class="mt-1">{{ valid_count }} row{{ valid_count|pluralize }} ready · {{ invalid_count }} row{{ invalid_count|pluralize }} with validation errors (those rows will be skipped).</p>
+        <p class="mt-2 text-xs text-amber-900/90">Preview expires after about one hour. Options: create accounts {% if create_users %}<strong>on</strong>{% else %}off{% endif %},
+        send setup emails {% if send_emails %}<strong>on</strong>{% else %}off{% endif %}.</p>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200 text-sm" aria-label="Student import preview: one row per file line">
+            <caption class="sr-only">Preview of parsed rows. Invalid rows are highlighted and will be skipped on confirm.</caption>
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">Row</th>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">Name</th>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">DOB</th>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">Email</th>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">Campus</th>
+                    <th scope="col" class="px-3 py-2 text-left font-semibold text-gray-600">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+                {% for r in rows %}
+                <tr class="{% if not r.is_valid %}bg-red-50/80{% endif %}">
+                    <td class="px-3 py-2 text-gray-700">{{ r.row_number }}</td>
+                    <td class="px-3 py-2 font-medium text-gray-900">{{ r.first_name }} {{ r.last_name }}</td>
+                    <td class="px-3 py-2 text-gray-600">{{ r.date_of_birth|default:"—" }}</td>
+                    <td class="px-3 py-2 text-gray-600">{{ r.email|default:"—" }}</td>
+                    <td class="px-3 py-2 text-gray-600">{{ r.campus_code|default:"—" }}</td>
+                    <td class="px-3 py-2">
+                        {% if r.is_valid %}
+                        <span class="inline-flex items-center gap-1 text-green-800 font-medium text-xs"><i class="ph ph-check-circle" aria-hidden="true"></i> OK</span>
+                        {% else %}
+                        <span class="text-red-800 text-xs font-medium">{{ r.errors|join:", " }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="post" class="flex flex-wrap justify-end gap-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm" />
+        <input type="hidden" name="preview_token" value="{{ preview_token }}" />
+        <a href="{% url 'admin_students_bulk_import' %}" class="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50 transition">Upload a different file</a>
+        <button type="submit" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2" aria-describedby="preview-summary">
+            <i class="ph ph-check-circle mr-2" aria-hidden="true"></i>
+            Confirm import ({{ valid_count }} student{{ valid_count|pluralize }})
+        </button>
+    </form>
+</div>
+{% endblock %}

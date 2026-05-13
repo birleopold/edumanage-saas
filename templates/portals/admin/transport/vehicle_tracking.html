@@ -156,14 +156,18 @@
 <script>
 function refreshLocation() {
   // Implement GPS refresh logic
-  alert('Refreshing location data...');
+  if (typeof window.showToast === 'function') {
+    window.showToast('Refreshing', 'Refreshing location data...', 'info');
+  }
   location.reload();
 }
 
 function sendAlert() {
   if (confirm('Send alert to driver?')) {
     // Implement alert sending logic
-    alert('Alert sent to driver successfully!');
+    if (typeof window.showToast === 'function') {
+      window.showToast('Alert sent', 'Alert sent to driver successfully!', 'success');
+    }
   }
 }
 </script>

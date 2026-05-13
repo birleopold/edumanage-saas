@@ -1,0 +1,58 @@
+{% extends 'portals/teacher/base.html' %}
+
+{% block title %}Search{% endblock %}
+{% block page_title %}Search{% endblock %}
+{% block breadcrumbs %}
+<span class="text-gray-500">Your students &amp; grievances</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  {% if missing_profile %}
+  <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">No teacher profile is linked to this account. Contact an administrator.</p>
+  {% endif %}
+
+  <form method="get" class="flex gap-2">
+    <input type="search" name="q" value="{{ q }}" placeholder="Type at least 2 characters…" class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500" autofocus />
+    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
+      <i class="ph ph-magnifying-glass"></i> Search
+    </button>
+  </form>
+
+  {% if not missing_profile and q|length < 2 %}
+  <p class="text-sm text-gray-500">Enter at least two characters to search.</p>
+  {% elif not missing_profile %}
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Students you teach</div>
+    <ul class="divide-y divide-gray-100">
+      {% for row in student_rows %}
+      {% with s=row.student %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ s }} <span class="text-gray-500">· {{ s.student_id|default:"—" }}</span>{% if s.stream %} <span class="text-gray-400">· {{ s.stream }}</span>{% endif %}</span>
+        <a href="{{ row.attendance_href }}" class="text-primary-600 font-semibold hover:text-primary-800">Attendance</a>
+      </li>
+      {% endwith %}
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Your grievances</div>
+    <ul class="divide-y divide-gray-100">
+      {% for g in grievances %}
+      <li class="px-4 py-3 flex justify-between items-center text-sm">
+        <span class="font-medium text-gray-900">{{ g.subject|truncatechars:56 }} <span class="text-gray-500">· {{ g.get_status_display }}</span></span>
+        <a href="{% url 'teacher_grievances_detail' g.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Open</a>
+      </li>
+      {% empty %}
+      <li class="px-4 py-4 text-gray-500 text-sm">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% endif %}
+</div>
+{% endblock %}

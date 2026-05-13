@@ -1,0 +1,63 @@
+{# Skippable first-run hints for admin staff (localStorage: edumanage_admin_tour_v1) #}
+<div
+    x-data="{
+        open: false,
+        step: 0,
+        steps: [
+            { title: 'Communication Hub', body: 'Send fee alerts, read delivery logs, and edit message templates — all from one place.', href: '{% url "admin_communication_center" %}' },
+            { title: 'Getting started', body: 'Use the checklist to finish school name, campuses, academic year, and messaging setup with direct links.', href: '{% url "admin_school_setup_guide" %}' },
+            { title: 'System status', body: 'See whether SMS/WhatsApp sending is configured, in everyday language.', href: '{% url "admin_system_status" %}' }
+        ],
+        init() {
+            this.$watch('open', (value) => {
+                if (value) {
+                    this.$nextTick(() => this.$refs.tourPanel?.focus({ preventScroll: true }));
+                }
+            });
+            try {
+                if (localStorage.getItem('edumanage_admin_tour_v1') === '1') return;
+                this.open = true;
+            } catch (e) { this.open = true; }
+        },
+        skip() {
+            try { localStorage.setItem('edumanage_admin_tour_v1', '1'); } catch (e) {}
+            this.open = false;
+        },
+        next() {
+            if (this.step < this.steps.length - 1) { this.step++; return; }
+            this.skip();
+        }
+    }"
+    x-show="open"
+    x-cloak
+    class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/50"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tour-title"
+    aria-describedby="tour-desc"
+    @keydown.escape.window="skip()"
+>
+    <div
+        class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 p-6 outline-none"
+        tabindex="-1"
+        x-ref="tourPanel"
+        @click.outside="null"
+    >
+        <p class="text-xs font-bold uppercase tracking-wide text-primary-600">Quick tour</p>
+        <h2 id="tour-title" class="text-lg font-bold text-slate-900 mt-1" x-text="steps[step].title"></h2>
+        <p id="tour-desc" class="text-sm text-slate-600 mt-3 leading-relaxed" x-text="steps[step].body"></p>
+        <a
+            :href="steps[step].href"
+            class="mt-4 inline-flex text-sm font-semibold text-primary-600 hover:text-primary-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded"
+            x-text="'Open ' + steps[step].title + ' →'"
+        ></a>
+
+        <div class="mt-6 flex items-center justify-between gap-3">
+            <button type="button" @click="skip()" class="text-sm font-medium text-slate-500 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded px-1 -mx-1">Skip tour</button>
+            <div class="flex gap-2">
+                <button type="button" @click="step = Math.max(0, step - 1)" x-show="step > 0" class="px-3 py-2 text-sm rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2">Back</button>
+                <button type="button" @click="next()" class="px-4 py-2 text-sm rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2" x-text="step < steps.length - 1 ? 'Next' : 'Done'"></button>
+            </div>
+        </div>
+    </div>
+</div>

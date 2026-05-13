@@ -1,10 +1,13 @@
 import csv
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Optional, Tuple
 
+from django.conf import settings
+from django.contrib import messages
 from django.db.models import Avg, DecimalField, ExpressionWrapper, F, Q, Sum
-from django.http import HttpResponse
-from django.shortcuts import render
+from django.http import FileResponse, Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
@@ -15,10 +18,11 @@ from apps.tenant.parents.models import ParentProfile
 from apps.tenant.parents.models import ParentStudentLink
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
-from apps.tenant.users.models import Role
+from .models import ReportRun
+from .scheduler import execute_overview_csv_run
 
 
 def _parse_date(value: Optional[str]) -> Optional[date]:
@@ -189,7 +193,7 @@ def _compute_metrics(start: date, end: date, campus_id: Optional[int]) -> list[t
     return metrics
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def overview(request):
     start, end = _date_range_from_request(request)
     campuses = _campus_queryset()
@@ -203,7 +207,7 @@ def overview(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def overview_csv(request):
     start, end = _date_range_from_request(request)
     campus_id = _selected_campus_id(request)
@@ -218,3 +222,40 @@ def overview_csv(request):
         writer.writerow([name, value])
 
     return response
+
+
+@admin_portal_required
+def scheduled_reports(request):
+    runs = ReportRun.objects.order_by("-created_at")[:100]
+    return render(
+        request,
+        "portals/admin/reports/scheduled.html",
+        {"runs": runs},
+    )
+
+
+@admin_portal_required
+def scheduled_report_run_now(request):
+    if request.method != "POST":
+        return redirect("admin_reports_scheduled")
+    start, end = _date_range_from_request(request)
+    campus_id = _selected_campus_id(request)
+    run = execute_overview_csv_run(triggered_by=request.user, start=start, end=end, campus_id=campus_id)
+    if run.status == ReportRun.STATUS_SUCCESS:
+        messages.success(request, "Overview CSV generated. Download from the list below.")
+    else:
+        messages.error(request, run.detail or "Report generation failed.")
+    return redirect("admin_reports_scheduled")
+
+
+@admin_portal_required
+def report_run_download(request, pk: int):
+    run = get_object_or_404(ReportRun, pk=pk)
+    if run.status != ReportRun.STATUS_SUCCESS or not run.file_path:
+        raise Http404("File not available.")
+    if not run.file_path.startswith("generated_reports/"):
+        raise Http404("Invalid path.")
+    path = Path(settings.MEDIA_ROOT) / run.file_path
+    if not path.is_file():
+        raise Http404("File missing on disk.")
+    return FileResponse(path.open("rb"), as_attachment=True, filename=path.name)

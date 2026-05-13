@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
 from .forms import PeriodForm, RoomForm, TimetableEntryForm
@@ -20,7 +20,7 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def period_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -40,7 +40,7 @@ def period_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def period_create(request):
     if request.method == "POST":
         form = PeriodForm(request.POST)
@@ -53,7 +53,7 @@ def period_create(request):
     return render(request, "portals/admin/timetable/period_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def period_edit(request, pk: int):
     obj = get_object_or_404(Period, pk=pk)
     if request.method == "POST":
@@ -71,7 +71,7 @@ def period_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -91,7 +91,7 @@ def room_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_create(request):
     if request.method == "POST":
         form = RoomForm(request.POST)
@@ -104,7 +104,7 @@ def room_create(request):
     return render(request, "portals/admin/timetable/room_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def room_edit(request, pk: int):
     obj = get_object_or_404(Room, pk=pk)
     if request.method == "POST":
@@ -122,7 +122,7 @@ def room_edit(request, pk: int):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def entry_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
@@ -158,7 +158,7 @@ def entry_list(request):
     )
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def entry_create(request):
     if request.method == "POST":
         form = TimetableEntryForm(request.POST)
@@ -171,7 +171,7 @@ def entry_create(request):
     return render(request, "portals/admin/timetable/entry_form.html", {"form": form, "mode": "create"})
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def entry_edit(request, pk: int):
     obj = get_object_or_404(TimetableEntry, pk=pk)
     if request.method == "POST":

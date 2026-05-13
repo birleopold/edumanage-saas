@@ -17,11 +17,10 @@ from apps.tenant.portals.campus_permissions import (
     get_accessible_campuses,
     get_user_campus_scope,
 )
-from apps.tenant.portals.permissions import role_required
-from apps.tenant.users.models import Role
+from apps.tenant.portals.permissions import admin_portal_required
 
 
-@role_required(Role.ADMIN)
+@admin_portal_required
 def admin_dashboard(request):
     """
     Enhanced admin dashboard with campus-aware metrics.

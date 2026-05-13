@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "components/pwa_meta.html" %}
     <title>{% block title %}Student Portal{% endblock %} | EduManage</title>
     
     <!-- Tailwind CSS -->
@@ -11,6 +12,7 @@
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- Custom Theme Configuration -->
     <script>
@@ -33,14 +35,31 @@
     </script>
     
     <style>
+        :root {
+            {% if current_campus and current_campus.primary_color_override %}
+                --org-primary: {{ current_campus.primary_color_override }};
+            {% elif org_profile and org_profile.primary_color %}
+                --org-primary: {{ org_profile.primary_color }};
+            {% else %}
+                --org-primary: #0d9488;
+            {% endif %}
+            {% if current_campus and current_campus.secondary_color_override %}
+                --org-secondary: {{ current_campus.secondary_color_override }};
+            {% elif org_profile and org_profile.secondary_color %}
+                --org-secondary: {{ org_profile.secondary_color }};
+            {% else %}
+                --org-secondary: #0f766e;
+            {% endif %}
+        }
         a, button, input, select { transition: all 0.2s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-    
+    {% include "components/ui_portal_polish.html" %}
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full flex overflow-hidden">
+<body class="h-full flex overflow-hidden role-student">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white border border-gray-300 rounded px-3 py-2 text-sm z-50">Skip to main content</a>
 
     <!-- Mobile sidebar backdrop -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
@@ -49,30 +68,40 @@
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
         
         <!-- Sidebar Header -->
-        <div class="h-16 flex items-center px-6 border-b border-gray-200 bg-primary-900">
-            <div class="h-8 w-8 rounded bg-white/20 flex items-center justify-center mr-3">
-                <i class="ph ph-student text-white text-xl"></i>
+        <div class="h-16 flex items-center px-6 border-b text-white" style="background: linear-gradient(135deg, var(--org-primary) 0%, var(--org-secondary) 100%);">
+            {% if current_campus and current_campus.logo_override %}
+                <img src="{{ current_campus.logo_override.url }}?v={{ cache_buster }}" alt="" class="h-9 w-auto mr-3 rounded-lg bg-white/20 p-1 shrink-0" />
+            {% elif org_profile and org_profile.logo %}
+                <img src="{{ org_profile.logo.url }}?v={{ cache_buster }}" alt="" class="h-9 w-auto mr-3 rounded-lg bg-white/20 p-1 shrink-0" />
+            {% else %}
+            <div class="h-8 w-8 rounded bg-white/20 flex items-center justify-center mr-3 shrink-0">
+                <i class="ph ph-student text-white text-xl" aria-hidden="true"></i>
             </div>
+            {% endif %}
             
             <div class="flex flex-col text-white overflow-hidden">
-                <span class="font-bold truncate">EduManage</span>
+                <span class="font-bold truncate">{% if org_profile %}{{ org_profile.name }}{% else %}EduManage{% endif %}</span>
                 <span class="text-xs text-white/80 truncate">Student Portal</span>
             </div>
             
             <!-- Mobile close button -->
-            <button onclick="toggleSidebar()" class="lg:hidden ml-auto text-white/80 hover:text-white">
-                <i class="ph ph-x text-xl"></i>
+            <button type="button" onclick="toggleSidebar()" aria-label="Close sidebar" class="lg:hidden ml-auto text-white/80 hover:text-white">
+                <i class="ph ph-x text-xl" aria-hidden="true"></i>
             </button>
         </div>
 
         <!-- Navigation Links -->
-        <nav class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6">
+        <nav class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6" role="navigation" aria-label="Student portal navigation">
             
             <!-- Core section -->
             <div>
                 <a href="{% url 'student_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.path == '/student/' %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
-                    <i class="ph ph-squares-four text-lg mr-3 {% if request.path == '/student/' %}text-primary-700{% else %}text-gray-400{% endif %}"></i>
+                    <i class="ph ph-squares-four text-lg mr-3 {% if request.path == '/student/' %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i>
                     Dashboard
+                </a>
+                <a href="{% url 'student_global_search' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/search' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900{% endif %}">
+                    <i class="ph ph-magnifying-glass text-lg mr-3 {% if '/student/search' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i>
+                    Search
                 </a>
             </div>
 
@@ -81,16 +110,16 @@
                 <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Academics</h3>
                 <div class="space-y-1">
                     <a href="{% url 'student_timetable' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/timetable' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-calendar text-lg mr-3 {% if '/student/timetable' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Timetable
+                        <i class="ph ph-calendar text-lg mr-3 {% if '/student/timetable' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Timetable
                     </a>
                     <a href="{% url 'student_coursework_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/coursework' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-notebook text-lg mr-3 {% if '/student/coursework' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Coursework
+                        <i class="ph ph-notebook text-lg mr-3 {% if '/student/coursework' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Coursework
                     </a>
                     <a href="{% url 'student_results_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/results' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-exam text-lg mr-3 {% if '/student/results' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Results & Grades
+                        <i class="ph ph-exam text-lg mr-3 {% if '/student/results' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Results & Grades
                     </a>
                     <a href="{% url 'student_exam_results' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/exams' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-file-text text-lg mr-3 {% if '/student/exams' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Final Exams
+                        <i class="ph ph-file-text text-lg mr-3 {% if '/student/exams' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Final Exams
                     </a>
                 </div>
             </div>
@@ -100,19 +129,19 @@
                 <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Campus Life</h3>
                 <div class="space-y-1">
                     <a href="{% url 'student_announcements_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/announcements' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-megaphone text-lg mr-3 {% if '/student/announcements' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Announcements
+                        <i class="ph ph-megaphone text-lg mr-3 {% if '/student/announcements' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Announcements
                     </a>
                     <a href="{% url 'student_library_catalog' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/library' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-books text-lg mr-3 {% if '/student/library' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Library
+                        <i class="ph ph-books text-lg mr-3 {% if '/student/library' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Library
                     </a>
                     <a href="{% url 'student_transport_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/transport' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-bus text-lg mr-3 {% if '/student/transport' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Transport
+                        <i class="ph ph-bus text-lg mr-3 {% if '/student/transport' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Transport
                     </a>
                     <a href="{% url 'student_hostel_home' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/hostels' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-buildings text-lg mr-3 {% if '/student/hostels' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Hostels
+                        <i class="ph ph-buildings text-lg mr-3 {% if '/student/hostels' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Hostels
                     </a>
                     <a href="{% url 'student_incidents_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/discipline' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-warning-circle text-lg mr-3 {% if '/student/discipline' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Discipline
+                        <i class="ph ph-warning-circle text-lg mr-3 {% if '/student/discipline' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Discipline
                     </a>
                 </div>
             </div>
@@ -122,10 +151,13 @@
                 <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Records & Finance</h3>
                 <div class="space-y-1">
                     <a href="{% url 'student_invoices_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/finance' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-wallet text-lg mr-3 {% if '/student/finance' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Invoices & Payments
+                        <i class="ph ph-wallet text-lg mr-3 {% if '/student/finance' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Invoices & Payments
                     </a>
                     <a href="{% url 'student_documents_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/documents' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="ph ph-file-doc text-lg mr-3 {% if '/student/documents' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}"></i> Documents
+                        <i class="ph ph-file-doc text-lg mr-3 {% if '/student/documents' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Documents
+                    </a>
+                    <a href="{% url 'student_id_card_self' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/id-card' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-identification-card text-lg mr-3 {% if '/student/id-card' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> ID card (PDF)
                     </a>
                 </div>
             </div>
@@ -138,20 +170,48 @@
     <div class="flex-1 flex flex-col min-w-0 bg-gray-50">
         
         <!-- Top Header -->
-        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 gap-3">
             <!-- Left: Hamburger + Context -->
-            <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none">
-                    <i class="ph ph-list text-2xl"></i>
+            <div class="flex items-center flex-1 min-w-0">
+                <button type="button" onclick="toggleSidebar()" aria-label="Open sidebar" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none shrink-0">
+                    <i class="ph ph-list text-2xl" aria-hidden="true"></i>
                 </button>
+                <form method="get" action="{% url 'student_global_search' %}" class="hidden sm:flex items-center gap-2 flex-1 max-w-md min-w-0">
+                    <label class="sr-only" for="student-global-q">Search</label>
+                    <input id="student-global-q" type="search" name="q" placeholder="Search portal…" class="w-full min-w-0 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500" value="{{ request.GET.q }}" />
+                    <button type="submit" class="text-primary-600 hover:text-primary-800 p-1 shrink-0" aria-label="Submit search">
+                        <i class="ph ph-magnifying-glass text-xl" aria-hidden="true"></i>
+                    </button>
+                </form>
             </div>
 
             <!-- Right: User Profile & Actions -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 shrink-0">
                 <!-- Notifications -->
-                <button class="text-gray-400 hover:text-gray-600 relative">
-                    <i class="ph ph-bell text-xl"></i>
-                </button>
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" aria-label="View notifications{% if unread_notifications_count %}, {{ unread_notifications_count }} unread{% endif %}" @click="open = !open" class="text-gray-400 hover:text-gray-600 relative">
+                        <i class="ph ph-bell text-xl" aria-hidden="true"></i>
+                        {% if unread_notifications_count %}
+                        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center ring-2 ring-white">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-30" role="region" aria-label="Notifications list">
+                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                            <p class="text-xs text-gray-500">{{ unread_notifications_count }} unread</p>
+                        </div>
+                        <div class="max-h-80 overflow-y-auto">
+                            {% for item in notification_items %}
+                                <a href="{{ item.link|default:'#' }}" class="block px-4 py-3 border-b border-gray-100 hover:bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-900">{{ item.title }}</p>
+                                    <p class="text-xs text-gray-600 mt-1">{{ item.message|truncatechars:90 }}</p>
+                                </a>
+                            {% empty %}
+                                <p class="px-4 py-6 text-sm text-gray-500 text-center">No notifications yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Profile Dropdown -->
                 {% if request.user.is_authenticated %}
@@ -160,13 +220,13 @@
                         <span class="text-sm font-medium text-gray-900 leading-tight">{{ request.user.get_full_name|default:request.user.username }}</span>
                         <span class="text-xs text-gray-500 leading-tight">Student</span>
                     </div>
-                    <a href="{% url 'user_profile' %}" class="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200 hover:bg-primary-200 transition-colors">
+                    <a href="{% url 'user_profile' %}" class="h-9 w-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200 hover:bg-primary-200 transition-colors" aria-label="Open account profile">
                         {{ request.user.username|make_list|first|upper }}
                     </a>
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" title="Logout">
-                            <i class="ph ph-sign-out text-xl"></i>
+                        <button type="submit" class="ml-4 text-gray-400 hover:text-red-600 transition-colors" aria-label="Log out">
+                            <i class="ph ph-sign-out text-xl" aria-hidden="true"></i>
                         </button>
                     </form>
                 </div>
@@ -175,11 +235,16 @@
         </header>
 
         <!-- Main Scrollable Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             
             <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}Default Page{% endblock %}</h1>
+                    {% if org_profile %}
+                    <p class="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span class="inline-flex items-center gap-1 font-medium text-gray-700"><i class="ph ph-map-pin" aria-hidden="true"></i> {{ org_profile.name }}{% if current_campus %}<span class="font-normal text-gray-400">·</span><span>{{ current_campus.name }}</span>{% endif %}</span>
+                    </p>
+                    {% endif %}
                     <div class="text-sm text-gray-500 mt-1">
                         {% block breadcrumbs %}{% endblock %}
                     </div>
@@ -190,15 +255,17 @@
             </div>
 
             {% if messages %}
-                <div class="mb-6 space-y-2">
+                <div class="mb-6 space-y-2" aria-label="Notifications">
                     {% for message in messages %}
-                        <div class="p-4 rounded-md border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %} flex items-start shadow-sm">
-                            {% if message.tags == 'error' %}
-                                <i class="ph ph-warning-circle text-xl mr-3 mt-0.5"></i>
-                            {% elif message.tags == 'success' %}
-                                <i class="ph ph-check-circle text-xl mr-3 mt-0.5"></i>
+                        <div class="p-4 rounded-md border {% if 'error' in message.tags %}bg-red-50 border-red-200 text-red-800{% elif 'warning' in message.tags %}bg-amber-50 border-amber-200 text-amber-950{% elif 'success' in message.tags %}bg-green-50 border-green-200 text-green-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %} flex items-start shadow-sm" role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}" aria-live="{% if 'error' in message.tags or 'danger' in message.tags %}assertive{% else %}polite{% endif %}">
+                            {% if 'error' in message.tags %}
+                                <i class="ph ph-warning-circle text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
+                            {% elif 'warning' in message.tags %}
+                                <i class="ph ph-warning text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
+                            {% elif 'success' in message.tags %}
+                                <i class="ph ph-check-circle text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
                             {% else %}
-                                <i class="ph ph-info text-xl mr-3 mt-0.5"></i>
+                                <i class="ph ph-info text-xl mr-3 mt-0.5 shrink-0" aria-hidden="true"></i>
                             {% endif %}
                             <p class="text-sm font-medium">{{ message }}</p>
                         </div>
@@ -212,8 +279,14 @@
                 </div>
             </div>
             
-            <footer class="mt-8 text-center text-sm text-gray-500 pb-4">
-                &copy; {% now "Y" %} EduManage SaaS. All rights reserved.
+            <footer class="mt-8 text-center text-sm text-gray-500 pb-4 space-y-2">
+                {% if support_contact_email %}
+                <p class="text-gray-600">Need help? Email <a class="text-primary-600 font-medium hover:underline" href="mailto:{{ support_contact_email }}">{{ support_contact_email }}</a>.</p>
+                {% endif %}
+                {% if portal_support_reference %}
+                <p class="text-xs">School reference: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-800">{{ portal_support_reference }}</code></p>
+                {% endif %}
+                <p>&copy; {% now "Y" %} EduManage SaaS. All rights reserved.</p>
             </footer>
         </main>
     </div>
@@ -232,6 +305,7 @@
             }
         }
     </script>
+    {% include "components/ui_toast.html" %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

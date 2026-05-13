@@ -1,0 +1,39 @@
+{% extends "portals/parent/base.html" %}
+
+{% block title %}Message preferences{% endblock %}
+{% block page_title %}Message preferences{% endblock %}
+{% block breadcrumbs %}Choose how the school may contact you about fees, attendance, and urgent news.{% endblock %}
+
+{% block content %}
+<div class="max-w-xl space-y-6">
+  <p class="text-sm text-gray-600">Turning off a channel stops <strong>automatic</strong> messages on that channel. You can still log in anytime to view invoices and announcements.</p>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="space-y-4">
+      {% for field in form %}
+      <div class="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+        <div class="flex items-start gap-3">
+          <div class="shrink-0">{{ field }}</div>
+          <div class="min-w-0 flex-1">
+            <label class="block text-sm font-semibold text-gray-900 cursor-pointer" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.help_text %}<p class="text-xs text-gray-600 mt-1" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<p class="text-xs text-red-700 mt-2">{{ field.errors|striptags }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if parent_profile.communication_consent_updated_at %}
+    <p class="text-xs text-gray-500">Last updated {{ parent_profile.communication_consent_updated_at|date:"M j, Y, P" }}.</p>
+    {% endif %}
+
+    <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-primary-700">Save preferences</button>
+  </form>
+</div>
+{% endblock %}
