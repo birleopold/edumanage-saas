@@ -6,7 +6,7 @@
 <div class="motion-fast">
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Assessments</h1>
-  <p class="text-gray-600">Manage and grade your class assessments</p>
+  <p class="text-gray-600">Create assessments, enter marks, publish results, and monitor class performance.</p>
 </div>
 
 {% include "components/ui_toast.html" %}
@@ -18,25 +18,20 @@
         <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
         <div class="relative">
           <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input id="id_q" type="text" name="q" value="{{ q }}" 
-                 class="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
-                 placeholder="Search assessments..." />
+          <input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Search assessments..." />
         </div>
       </div>
       <div class="w-32">
         <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200"
-               class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg" />
+        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg" />
       </div>
       <button type="submit" class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold border-2 border-gray-300">
         <i class="ph ph-funnel"></i> Apply
       </button>
     </div>
     <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'teacher_assessments_create' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm">
-        <i class="ph ph-plus-circle"></i>
-        <span>Create Assessment</span>
+      <a href="{% url 'teacher_assessments_create' %}" class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm">
+        <i class="ph ph-plus-circle"></i><span>Create Assessment</span>
       </a>
     </div>
   </form>
@@ -49,7 +44,9 @@
         <tr>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assessment</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max Score</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max / Weight</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mark Entry</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Average</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
           <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
@@ -59,23 +56,31 @@
           <tr class="hover:bg-gray-50 transition-colors">
             <td class="px-6 py-4 text-sm font-semibold text-primary-600">{{ a.offering }}</td>
             <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ a.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.max_score }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <div>Max: {{ a.max_score }}</div>
+              <div class="text-xs text-gray-500">Weight: {{ a.weight|default:"Not weighted" }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <span class="font-semibold">{{ a.scored_count }}</span>/<span>{{ a.enrolled_count }}</span> scored
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if a.average_percentage != None %}
+                <span class="font-bold text-gray-900">{{ a.average_percentage|floatformat:2 }}%</span>
+                <span class="ml-1 inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">{{ a.average_grade }}</span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               {% if a.is_published %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i> Published
-                </span>
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold"><i class="ph ph-check-circle"></i> Published</span>
               {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-clock"></i> Draft
-                </span>
+                <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"><i class="ph ph-clock"></i> Draft</span>
               {% endif %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'teacher_assessments_grade' a.id %}" 
-                 class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                <i class="ph ph-pencil"></i>
-                <span>Grade</span>
+              <a href="{% url 'teacher_assessments_grade' a.id %}" class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="ph ph-pencil"></i><span>Grade</span>
               </a>
             </td>
           </tr>
@@ -84,9 +89,7 @@
     </table>
   </div>
 
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
+  {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
 {% else %}
   {% url 'teacher_assessments_create' as create_url %}
   {% include "components/ui_empty_state.html" with icon="exam" title="No assessments" description="You haven't created any assessments yet" action_url=create_url action_text="Create Assessment" %}
