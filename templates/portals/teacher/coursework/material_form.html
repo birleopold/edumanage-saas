@@ -1,10 +1,15 @@
 {% extends 'portals/teacher/base.html' %}
 
-{% block title %}Add Material{% endblock %}
-{% block page_title %}Add Material{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Material{% else %}Add Material{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Material{% else %}Add Material{% endif %}{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
 
-{% include "components/ui_form.html" with form=form %}
+<div class="mb-4 flex items-center justify-between">
+  <p class="text-sm text-gray-600">Upload notes, homework packages, or class resources and publish them to the right learners.</p>
+  <a href="{% url 'teacher_coursework_home' %}" class="text-sm font-semibold text-primary-700 hover:text-primary-900">Back to coursework</a>
+</div>
+
+{% include "components/ui_form.html" with form=form form_submit_text="Save Material" %}
 {% endblock %}
