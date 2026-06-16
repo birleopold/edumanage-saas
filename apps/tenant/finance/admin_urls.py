@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views
+from . import admin_views, bulk_views
 
 urlpatterns = [
     path(
@@ -16,6 +16,7 @@ urlpatterns = [
 
     path("invoices/", admin_views.invoice_list, name="admin_invoices_list"),
     path("invoices/create/", admin_views.invoice_create, name="admin_invoices_create"),
+    path("invoices/bulk-create/", bulk_views.invoice_bulk_create, name="admin_invoices_bulk_create"),
     path("invoices/export/csv/", admin_views.invoice_export_csv, name="admin_invoices_export_csv"),
     path(
         "invoices/<int:pk>/carry-forward/",
