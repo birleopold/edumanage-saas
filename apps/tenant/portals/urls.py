@@ -7,6 +7,7 @@ from . import experience_views, public_views, search_views, student_parent_searc
 urlpatterns = [
     path("status/", public_views.public_status, name="public_status"),
     path("manifest.webmanifest", views.pwa_manifest, name="pwa_manifest"),
+    path("apply/", include("apps.tenant.admissions.public_urls")),
     # Landing page
     path("", views.landing_page, name="landing_page"),
     
