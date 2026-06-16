@@ -15,7 +15,13 @@ from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
 from .parent_session import PIN_SESSION_KEY
-from .services import build_report_card, parent_linked_students, published_assessments_for_student, score_map_for_student
+from .services import (
+    build_report_card,
+    parent_linked_students,
+    published_assessments_for_student,
+    score_map_for_student,
+    score_result,
+)
 
 
 def _parent_allowed_student_ids(request, parent: ParentProfile):
@@ -110,6 +116,7 @@ def results_home(request):
 
     assessments = list(published_assessments_for_student(student))
     score_map = score_map_for_student(student, assessments)
+    result_map = {assessment.id: score_result(assessment, score_map.get(assessment.id)) for assessment in assessments}
     children = list(StudentProfile.objects.filter(pk__in=student_ids).order_by("last_name", "first_name"))
 
     return render(
@@ -121,6 +128,7 @@ def results_home(request):
             "children": children,
             "assessments": assessments,
             "score_map": score_map,
+            "result_map": result_map,
             "report": build_report_card(student),
         },
     )
