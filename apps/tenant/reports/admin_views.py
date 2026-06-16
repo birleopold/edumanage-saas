@@ -15,14 +15,21 @@ from apps.tenant.academics.models import Enrollment
 from apps.tenant.exams.models import Exam, ExamPaper, ExamScore
 from apps.tenant.finance.models import Invoice, InvoiceLine, Payment
 from apps.tenant.parents.models import ParentProfile
-from apps.tenant.parents.models import ParentStudentLink
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
+
 from .models import ReportRun
 from .scheduler import execute_overview_csv_run
+from .services import (
+    DateRange,
+    academic_performance_report,
+    attendance_report,
+    finance_report,
+    school_dashboard_summary,
+)
 
 
 def _parse_date(value: Optional[str]) -> Optional[date]:
@@ -45,6 +52,10 @@ def _date_range_from_request(request) -> Tuple[date, date]:
     return start, end
 
 
+def _range_obj(start: date, end: date) -> DateRange:
+    return DateRange(start=start, end=end)
+
+
 def _campus_queryset():
     org = get_or_create_organization()
     return Campus.objects.filter(organization=org).order_by("name")
@@ -61,6 +72,18 @@ def _selected_campus_id(request) -> Optional[int]:
         except (TypeError, ValueError):
             return None
     return current.id if current else None
+
+
+def _base_context(request):
+    start, end = _date_range_from_request(request)
+    campus_id = _selected_campus_id(request)
+    return {
+        "start": start,
+        "end": end,
+        "date_range": _range_obj(start, end),
+        "campuses": _campus_queryset(),
+        "selected_campus_id": campus_id,
+    }
 
 
 def _compute_metrics(start: date, end: date, campus_id: Optional[int]) -> list[tuple[str, object]]:
@@ -125,30 +148,10 @@ def _compute_metrics(start: date, end: date, campus_id: Optional[int]) -> list[t
     if campus_id:
         attendance_entries_qs = attendance_entries_qs.filter(session__offering__campus_id=campus_id)
     metrics.append(("Attendance entries (in range)", attendance_entries_qs.count()))
-    metrics.append(
-        (
-            "Attendance present (in range)",
-            attendance_entries_qs.filter(status=AttendanceEntry.PRESENT).count(),
-        )
-    )
-    metrics.append(
-        (
-            "Attendance absent (in range)",
-            attendance_entries_qs.filter(status=AttendanceEntry.ABSENT).count(),
-        )
-    )
-    metrics.append(
-        (
-            "Attendance late (in range)",
-            attendance_entries_qs.filter(status=AttendanceEntry.LATE).count(),
-        )
-    )
-    metrics.append(
-        (
-            "Attendance excused (in range)",
-            attendance_entries_qs.filter(status=AttendanceEntry.EXCUSED).count(),
-        )
-    )
+    metrics.append(("Attendance present (in range)", attendance_entries_qs.filter(status=AttendanceEntry.PRESENT).count()))
+    metrics.append(("Attendance absent (in range)", attendance_entries_qs.filter(status=AttendanceEntry.ABSENT).count()))
+    metrics.append(("Attendance late (in range)", attendance_entries_qs.filter(status=AttendanceEntry.LATE).count()))
+    metrics.append(("Attendance excused (in range)", attendance_entries_qs.filter(status=AttendanceEntry.EXCUSED).count()))
 
     invoices_in_range = Invoice.objects.filter(created_at__date__range=date_range)
     if campus_id:
@@ -195,16 +198,37 @@ def _compute_metrics(start: date, end: date, campus_id: Optional[int]) -> list[t
 
 @admin_portal_required
 def overview(request):
-    start, end = _date_range_from_request(request)
-    campuses = _campus_queryset()
-    campus_id = _selected_campus_id(request)
+    ctx = _base_context(request)
+    start = ctx["start"]
+    end = ctx["end"]
+    campus_id = ctx["selected_campus_id"]
+    date_range = ctx["date_range"]
     metrics = _compute_metrics(start, end, campus_id)
+    dashboard = school_dashboard_summary(campus_id, date_range)
 
-    return render(
-        request,
-        "portals/admin/reports/overview.html",
-        {"start": start, "end": end, "metrics": metrics, "campuses": campuses, "selected_campus_id": campus_id},
-    )
+    ctx.update({"metrics": metrics, "dashboard": dashboard})
+    return render(request, "portals/admin/reports/overview.html", ctx)
+
+
+@admin_portal_required
+def finance_report_view(request):
+    ctx = _base_context(request)
+    ctx["report"] = finance_report(ctx["selected_campus_id"], ctx["date_range"])
+    return render(request, "portals/admin/reports/finance.html", ctx)
+
+
+@admin_portal_required
+def attendance_report_view(request):
+    ctx = _base_context(request)
+    ctx["report"] = attendance_report(ctx["selected_campus_id"], ctx["date_range"])
+    return render(request, "portals/admin/reports/attendance.html", ctx)
+
+
+@admin_portal_required
+def academic_performance_report_view(request):
+    ctx = _base_context(request)
+    ctx["report"] = academic_performance_report(ctx["selected_campus_id"], ctx["date_range"])
+    return render(request, "portals/admin/reports/academic_performance.html", ctx)
 
 
 @admin_portal_required
@@ -221,6 +245,59 @@ def overview_csv(request):
     for name, value in metrics:
         writer.writerow([name, value])
 
+    return response
+
+
+@admin_portal_required
+def finance_csv(request):
+    start, end = _date_range_from_request(request)
+    report = finance_report(_selected_campus_id(request), _range_obj(start, end))
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="finance_report_{start.isoformat()}_{end.isoformat()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["section", "item", "count", "amount"])
+    writer.writerow(["summary", "invoices", report.invoice_count, ""])
+    writer.writerow(["summary", "total_billed", "", report.total_billed])
+    writer.writerow(["summary", "total_paid", "", report.total_paid])
+    writer.writerow(["summary", "total_balance", "", report.total_balance])
+    for row in report.by_method:
+        writer.writerow(["payment_method", row["method"], row["count"], row["amount"]])
+    for row in report.top_debtors:
+        writer.writerow(["top_debtor", row["student"], row["invoice"].reference or row["invoice"].pk, row["balance"]])
+    return response
+
+
+@admin_portal_required
+def attendance_csv(request):
+    start, end = _date_range_from_request(request)
+    report = attendance_report(_selected_campus_id(request), _range_obj(start, end))
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="attendance_report_{start.isoformat()}_{end.isoformat()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["offering", "entries", "present", "absent", "late", "excused", "attendance_rate"])
+    for row in report.by_offering:
+        writer.writerow([row["offering"], row["entries"], row["present"], row["absent"], row["late"], row["excused"], row["rate"]])
+    writer.writerow([])
+    writer.writerow(["frequent_absentee", "absent", "late", "total_flags"])
+    for row in report.frequent_absentees:
+        writer.writerow([row["student"], row["absent"], row["late"], row["total_flags"]])
+    return response
+
+
+@admin_portal_required
+def academic_performance_csv(request):
+    start, end = _date_range_from_request(request)
+    report = academic_performance_report(_selected_campus_id(request), _range_obj(start, end))
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="academic_performance_{start.isoformat()}_{end.isoformat()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["offering", "scores", "average_percentage", "grade", "remark"])
+    for row in report.by_offering:
+        writer.writerow([row["offering"], row["count"], row["average"], row["grade"], row["remark"]])
+    writer.writerow([])
+    writer.writerow(["student", "scores", "average_percentage", "grade", "remark"])
+    for row in report.student_averages:
+        writer.writerow([row["student"], row["count"], row["average"], row["grade"], row["remark"]])
     return response
 
 
