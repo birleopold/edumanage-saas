@@ -1,0 +1,83 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Communication Operations{% endblock %}
+{% block page_title %}Communication Operations{% endblock %}
+
+{% block content %}
+<div class="motion-fast space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Communication Operations</h1>
+      <p class="text-gray-600">Test SMS/WhatsApp delivery, retry failed messages, and process webhook retries.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'admin_finance_messaging_report' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50"><i class="ph ph-chart-line"></i> Messaging Report</a>
+      <a href="{% url 'admin_finance_message_logs' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700"><i class="ph ph-list"></i> Logs</a>
+    </div>
+  </div>
+
+  {% include "components/ui_toast.html" %}
+
+  <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase text-gray-500 font-bold">Channel</p><p class="text-2xl font-black text-gray-900">{{ readiness.channel }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase text-gray-500 font-bold">Handler Resolved</p><p class="text-2xl font-black {% if readiness.handler_resolved %}text-green-700{% else %}text-red-700{% endif %}">{{ readiness.handler_resolved|yesno:'Yes,No' }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase text-gray-500 font-bold">Failed Logs</p><p class="text-2xl font-black text-red-700">{{ readiness.failed_logs_count }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase text-gray-500 font-bold">Webhook Queue</p><p class="text-2xl font-black text-amber-700">{{ webhook_queue_count }}</p></div>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">Readiness Checklist</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>Handler configured</span><span class="font-bold {% if readiness.handler_configured %}text-green-700{% else %}text-red-700{% endif %}">{{ readiness.handler_configured|yesno:'Yes,No' }}</span></div>
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>Handler resolved</span><span class="font-bold {% if readiness.handler_resolved %}text-green-700{% else %}text-red-700{% endif %}">{{ readiness.handler_resolved|yesno:'Yes,No' }}</span></div>
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>Parent portal base URL</span><span class="font-bold {% if readiness.portal_base_configured %}text-green-700{% else %}text-amber-700{% endif %}">{{ readiness.portal_base_configured|yesno:'Set,Missing' }}</span></div>
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>WhatsApp token</span><span class="font-bold {% if readiness.whatsapp_token_set %}text-green-700{% else %}text-amber-700{% endif %}">{{ readiness.whatsapp_token_set|yesno:'Set,Missing' }}</span></div>
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>WhatsApp phone number ID</span><span class="font-bold {% if readiness.whatsapp_phone_number_id_set %}text-green-700{% else %}text-amber-700{% endif %}">{{ readiness.whatsapp_phone_number_id_set|yesno:'Set,Missing' }}</span></div>
+      <div class="flex items-center justify-between border border-gray-100 rounded-lg p-3"><span>Outstanding sample with parent phone</span><span class="font-bold text-gray-900">{{ readiness.outstanding_with_parent_phone_in_sample }}/{{ readiness.outstanding_invoices_in_sample }}</span></div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-3">Send Live Test</h2>
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="send_test_message" />
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Phone</label><input type="text" name="phone" placeholder="e.g. 077xxxxxxx" class="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Channel</label><select name="channel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">{% for ch in channel_options %}<option value="{{ ch }}">{{ ch }}</option>{% endfor %}</select></div>
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Message</label><textarea name="message" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg">EduManage test message. Please ignore.</textarea></div>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="dry_run" value="1" /> Dry run only</label>
+        <button type="submit" class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"><i class="ph ph-paper-plane-tilt"></i> Send Test</button>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-3">Retry Failed Messages</h2>
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="retry_failed_messages" />
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Message Type</label><select name="message_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">{% for opt in message_type_options %}<option value="{{ opt }}">{% if opt %}{{ opt }}{% else %}All failed types{% endif %}</option>{% endfor %}</select></div>
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Limit</label><input type="number" name="limit" value="50" min="1" max="1000" class="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="dry_run" value="1" /> Dry run only</label>
+        <button type="submit" class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800"><i class="ph ph-arrow-clockwise"></i> Retry Failed</button>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-3">Webhook Retry Queue</h2>
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="process_webhook_retries" />
+        <div><label class="block text-sm font-semibold text-gray-700 mb-1">Limit</label><input type="number" name="limit" value="50" min="1" max="1000" class="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" name="dry_run" value="1" /> Dry run only</label>
+        <button type="submit" class="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700"><i class="ph ph-webhooks-logo"></i> Process Queue</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100"><h2 class="text-lg font-bold text-gray-900">Recent Failed Messages</h2></div>
+    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">When</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Type</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Phone</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Error</th></tr></thead><tbody class="divide-y divide-gray-200">{% for log in recent_failed %}<tr><td class="px-4 py-3 text-sm text-gray-700">{{ log.created_at|date:'Y-m-d H:i' }}</td><td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ log.message_type }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ log.phone_normalized|default:log.phone_raw|default:'-' }}</td><td class="px-4 py-3 text-sm text-red-700">{{ log.error_message|default:'-'|truncatechars:100 }}</td></tr>{% empty %}<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">No failed messages.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+</div>
+{% endblock %}
