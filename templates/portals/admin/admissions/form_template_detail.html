@@ -1,0 +1,26 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Admission Form Template{% endblock %}
+{% block page_title %}Admission Form Template{% endblock %}
+
+{% block content %}
+<div class="motion-fast space-y-6 max-w-6xl">
+  <div class="flex items-center justify-between gap-3"><div><h1 class="text-3xl font-bold text-gray-900">{{ template_obj.name }}</h1><p class="text-gray-600 mt-1">Edit template settings and custom public application fields.</p></div><a href="{% url 'admin_admissions_form_templates' %}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Back</a></div>
+  {% include "components/ui_toast.html" %}
+  <section class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">{% include 'components/ui_form.html' with form=form form_submit_text='Save Template' %}</section>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Custom Fields</h2>
+      <div class="space-y-3">{% for field in template_obj.fields.all %}<div class="rounded-lg border border-gray-200 p-3 flex items-center justify-between gap-3"><div><p class="font-bold text-gray-900">{{ field.order }}. {{ field.label }}</p><p class="text-xs text-gray-500">{{ field.get_field_type_display }} · {{ field.is_required|yesno:'Required,Optional' }} · {{ field.is_active|yesno:'Active,Inactive' }}</p></div><a href="{% url 'admin_admissions_form_field_edit' field.id %}" class="text-sm font-semibold text-primary-700">Edit</a></div>{% empty %}<p class="text-sm text-gray-500">No custom fields added yet.</p>{% endfor %}</div>
+    </section>
+    <section class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Add Field</h2>
+      <form method="post" action="{% url 'admin_admissions_form_field_create' template_obj.id %}" class="space-y-4">
+        {% csrf_token %}
+        {{ field_form.as_p }}
+        <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold hover:bg-primary-700">Add Field</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
