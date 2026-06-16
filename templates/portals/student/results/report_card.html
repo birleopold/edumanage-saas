@@ -1,0 +1,25 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}Report Card{% endblock %}
+{% block page_title %}Report Card{% endblock %}
+
+{% block content %}
+<div class="motion-fast space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-1">Report Card</h1>
+      <p class="text-sm text-gray-600">{{ student }}{% if student.campus %} · {{ student.campus }}{% endif %}</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'student_results_home' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50">
+        <i class="ph ph-arrow-left"></i> Results
+      </a>
+      <a href="{% url 'student_report_card_print' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700">
+        <i class="ph ph-printer"></i> Print
+      </a>
+    </div>
+  </div>
+
+  {% include "portals/results/_report_card_body.html" %}
+</div>
+{% endblock %}
