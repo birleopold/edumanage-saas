@@ -1,54 +1,58 @@
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 
-from apps.tenant.academics.models import Enrollment
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
-from .models import Assessment, AssessmentScore
+from .services import build_report_card, published_assessments_for_student, score_map_for_student
+
+
+def _student_profile(request):
+    return StudentProfile.objects.filter(user=request.user).select_related("campus", "stream", "stream__class_group").first()
 
 
 @role_required(Role.STUDENT)
 def results_home(request):
-    student = StudentProfile.objects.filter(user=request.user).select_related("campus").first()
+    student = _student_profile(request)
     if not student:
         return HttpResponseForbidden("No student profile linked to this account.")
 
-    enrollments = (
-        Enrollment.objects.select_related(
-            "offering",
-            "offering__course",
-            "offering__term",
-            "offering__term__year",
-        )
-        .filter(student=student, status=Enrollment.ACTIVE)
-        .order_by("offering__term__year__name", "offering__term__order", "offering__course__name")
-    )
-
-    offering_ids = list(enrollments.values_list("offering_id", flat=True))
-
-    assessments = (
-        Assessment.objects.select_related(
-            "offering",
-            "offering__course",
-            "offering__term",
-            "offering__term__year",
-        )
-        .filter(offering_id__in=offering_ids, is_published=True)
-        .order_by("offering__term__year__name", "offering__term__order", "name")
-    )
-
-    scores = AssessmentScore.objects.filter(assessment__in=assessments, student=student)
-    score_map = {s.assessment_id: s for s in scores}
+    assessments = list(published_assessments_for_student(student))
+    score_map = score_map_for_student(student, assessments)
+    report = build_report_card(student)
 
     return render(
         request,
         "portals/student/results/home.html",
         {
             "student": student,
-            "enrollments": enrollments,
             "assessments": assessments,
             "score_map": score_map,
+            "report": report,
         },
+    )
+
+
+@role_required(Role.STUDENT)
+def report_card(request):
+    student = _student_profile(request)
+    if not student:
+        return HttpResponseForbidden("No student profile linked to this account.")
+    return render(
+        request,
+        "portals/student/results/report_card.html",
+        {"student": student, "report": build_report_card(student)},
+    )
+
+
+@role_required(Role.STUDENT)
+def report_card_print(request):
+    student = _student_profile(request)
+    if not student:
+        return HttpResponseForbidden("No student profile linked to this account.")
+    return render(
+        request,
+        "portals/student/results/report_card_print.html",
+        {"student": student, "report": build_report_card(student)},
     )
