@@ -1,0 +1,38 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Convert Applicant{% endblock %}
+{% block page_title %}Convert Applicant to Student{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+
+<div class="motion-fast space-y-6 max-w-5xl">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Convert Applicant to Student</h1>
+      <p class="text-gray-600">Confirm placement and account options before creating the student profile.</p>
+    </div>
+    <a href="{% url 'admin_admissions_applicant_detail' applicant.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50">
+      <i class="ph ph-arrow-left"></i> Back to Applicant
+    </a>
+  </div>
+
+  <section class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Applicant Summary</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div><p class="text-xs uppercase font-bold text-gray-500">Reference</p><p class="font-semibold text-gray-900">{{ applicant.application_reference }}</p></div>
+      <div><p class="text-xs uppercase font-bold text-gray-500">Name</p><p class="font-semibold text-gray-900">{{ applicant.full_name }}</p></div>
+      <div><p class="text-xs uppercase font-bold text-gray-500">Campus</p><p class="font-semibold text-gray-900">{{ applicant.campus|default:'Not set' }}</p></div>
+      <div><p class="text-xs uppercase font-bold text-gray-500">Target Class</p><p class="font-semibold text-gray-900">{{ applicant.target_class_group|default:'Not set' }}</p></div>
+      <div><p class="text-xs uppercase font-bold text-gray-500">Guardian</p><p class="font-semibold text-gray-900">{{ applicant.guardian_name|default:'Not set' }}</p></div>
+      <div><p class="text-xs uppercase font-bold text-gray-500">Contact</p><p class="font-semibold text-gray-900">{{ applicant.phone|default:'No phone' }}{% if applicant.email %} · {{ applicant.email }}{% endif %}</p></div>
+    </div>
+  </section>
+
+  <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-900">
+    <span class="font-semibold">Before converting:</span> confirm campus, stream placement, and whether to create a student login and guardian link. Once converted, the applicant will be marked as admitted and connected to the new student record.
+  </div>
+
+  {% include 'components/ui_form.html' with form=form form_submit_text='Convert to Student' form_submit_icon='ph-user-plus' %}
+</div>
+{% endblock %}
