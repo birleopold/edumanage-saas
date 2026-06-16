@@ -1,10 +1,15 @@
 {% extends 'portals/teacher/base.html' %}
 
-{% block title %}Add Assignment{% endblock %}
-{% block page_title %}Add Assignment{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Assignment{% else %}Add Assignment{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Assignment{% else %}Add Assignment{% endif %}{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
 
-{% include "components/ui_form.html" with form=form %}
+<div class="mb-4 flex items-center justify-between">
+  <p class="text-sm text-gray-600">Create assignments, attach instructions/files, set due dates, and track learner submissions.</p>
+  <a href="{% url 'teacher_coursework_home' %}" class="text-sm font-semibold text-primary-700 hover:text-primary-900">Back to coursework</a>
+</div>
+
+{% include "components/ui_form.html" with form=form form_submit_text="Save Assignment" %}
 {% endblock %}
