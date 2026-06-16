@@ -7,9 +7,9 @@ from apps.tenant.finance import services as finance_services
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.portals.permissions import admin_portal_required
-from apps.tenant.users.models import Role
 
 from .models import AttendanceEntry, AttendanceSession
+from .services import ensure_entries_for_session, session_summary
 
 
 def _campus_queryset():
@@ -30,10 +30,18 @@ def _selected_campus_id(request):
     return current.id if current else None
 
 
+def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
+    raw = request.GET.get("per_page")
+    try:
+        value = int(raw) if raw else default
+    except (TypeError, ValueError):
+        value = default
+    return max(1, min(value, max_value))
+
+
 @admin_portal_required
 def session_list(request):
     q = (request.GET.get("q") or "").strip()
-    per_page_raw = request.GET.get("per_page")
     page_number = request.GET.get("page") or 1
 
     campuses = _campus_queryset()
@@ -46,7 +54,7 @@ def session_list(request):
         "offering__term__year",
         "offering__class_group",
         "taken_by",
-    ).all()
+    ).prefetch_related("entries").all()
 
     if campus_id:
         qs = qs.filter(offering__campus_id=campus_id)
@@ -62,22 +70,19 @@ def session_list(request):
             | Q(taken_by__last_name__icontains=q)
         )
 
-    per_page = 25
-    if per_page_raw:
-        try:
-            per_page = int(per_page_raw)
-        except (TypeError, ValueError):
-            per_page = 25
-    per_page = max(1, min(per_page, 200))
-
+    per_page = _parse_per_page(request)
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
+
+    sessions = list(page_obj.object_list)
+    for session in sessions:
+        session.summary = session_summary(session)
 
     return render(
         request,
         "portals/admin/attendance/sessions_list.html",
         {
-            "sessions": page_obj.object_list,
+            "sessions": sessions,
             "page_obj": page_obj,
             "q": q,
             "per_page": per_page,
@@ -101,8 +106,6 @@ def session_detail(request, pk: int):
         pk=pk,
     )
 
-    entries = AttendanceEntry.objects.filter(session=session).select_related("student")
-
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         if action == "send_absence_alerts":
@@ -124,12 +127,17 @@ def session_detail(request, pk: int):
                     dry=summary["dry_run_count"],
                 ),
             )
+        elif action == "sync_students":
+            created = ensure_entries_for_session(session)
+            messages.success(request, f"Attendance list synced. Created {created} missing entry row(s).")
 
+    entries = AttendanceEntry.objects.filter(session=session).select_related("student")
     return render(
         request,
         "portals/admin/attendance/session_detail.html",
         {
             "session": session,
             "entries": entries,
+            "summary": session_summary(session),
         },
     )
