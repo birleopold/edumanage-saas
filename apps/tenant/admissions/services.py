@@ -6,6 +6,7 @@ from typing import Optional
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db import transaction
+from django.utils.crypto import get_random_string
 
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.students.models import StudentProfile
@@ -56,10 +57,6 @@ def ensure_student_role():
     return Role.objects.get_or_create(code=Role.STUDENT, defaults={"name": "Student"})[0]
 
 
-def ensure_parent_role():
-    return Role.objects.get_or_create(code=Role.PARENT, defaults={"name": "Parent"})[0]
-
-
 def _unique_username(base: str) -> str:
     base = (base or "user").strip().lower().replace(" ", "") or "user"
     username = base
@@ -74,7 +71,7 @@ def create_student_user(*, applicant: Applicant, student_id: str) -> tuple[User 
     if not applicant.email:
         return None, None
     username = _unique_username(student_id or applicant.email.split("@")[0])
-    temporary_password = User.objects.make_random_password(length=12)
+    temporary_password = get_random_string(12)
     user = User.objects.create(username=username, email=applicant.email)
     user.set_password(temporary_password)
     if hasattr(user, "must_change_password"):
