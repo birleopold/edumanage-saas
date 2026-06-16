@@ -1,0 +1,65 @@
+{% extends 'portals/admin/base.html' %}
+{% load orgsettings_extras %}
+
+{% block title %}Finance Report{% endblock %}
+{% block page_title %}Finance Report{% endblock %}
+
+{% block content %}
+<div class="motion-fast space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Finance Report</h1>
+      <p class="text-gray-600">Track invoices, payments, balances, overdue fees, and payment methods.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'admin_reports_overview' %}?campus={{ selected_campus_id|default:'' }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50"><i class="ph ph-chart-bar"></i> Dashboard</a>
+      <a href="{% url 'admin_reports_finance_csv' %}?campus={{ selected_campus_id|default:'' }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700"><i class="ph ph-file-csv"></i> Export CSV</a>
+    </div>
+  </div>
+
+  {% include "components/ui_toast.html" %}
+
+  <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 md:items-end">
+      <div><label class="block text-sm font-bold text-gray-700 mb-2">Campus</label><select name="campus" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div><label class="block text-sm font-bold text-gray-700 mb-2">Start Date</label><input type="date" name="start" value="{{ start|date:'Y-m-d' }}" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg" /></div>
+      <div><label class="block text-sm font-bold text-gray-700 mb-2">End Date</label><input type="date" name="end" value="{{ end|date:'Y-m-d' }}" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg" /></div>
+      <button type="submit" class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold border-2 border-gray-300"><i class="ph ph-funnel"></i> Apply</button>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Invoices</p><p class="text-3xl font-black text-gray-900">{{ report.invoice_count }}</p></div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Total Billed</p><p class="text-2xl font-black text-gray-900">{{ report.total_billed|format_money_amount:org_profile.default_currency }}</p></div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Total Paid</p><p class="text-2xl font-black text-green-700">{{ report.total_paid|format_money_amount:org_profile.default_currency }}</p></div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Balance</p><p class="text-2xl font-black text-red-700">{{ report.total_balance|format_money_amount:org_profile.default_currency }}</p></div>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="bg-green-50 border border-green-100 rounded-xl p-4"><p class="text-xs uppercase font-bold text-green-700">Paid</p><p class="text-2xl font-black text-green-900">{{ report.paid_count }}</p></div>
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4"><p class="text-xs uppercase font-bold text-blue-700">Partial</p><p class="text-2xl font-black text-blue-900">{{ report.partial_count }}</p></div>
+    <div class="bg-red-50 border border-red-100 rounded-xl p-4"><p class="text-xs uppercase font-bold text-red-700">Overdue</p><p class="text-2xl font-black text-red-900">{{ report.overdue_count }}</p></div>
+    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4"><p class="text-xs uppercase font-bold text-yellow-700">Unpaid</p><p class="text-2xl font-black text-yellow-900">{{ report.unpaid_count }}</p></div>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4"><p class="text-xs uppercase font-bold text-gray-600">Payments</p><p class="text-2xl font-black text-gray-900">{{ report.payments_count }}</p></div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Methods</h2>
+      {% if report.by_method %}
+      <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Method</th><th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Count</th><th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Amount</th></tr></thead><tbody class="divide-y divide-gray-200">{% for row in report.by_method %}<tr><td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ row.method }}</td><td class="px-4 py-3 text-sm text-right">{{ row.count }}</td><td class="px-4 py-3 text-sm text-right font-bold">{{ row.amount|format_money_amount:org_profile.default_currency }}</td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<p class="text-sm text-gray-500">No payments recorded in this period.</p>{% endif %}
+    </section>
+
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Payments</h2>
+      {% if report.recent_payments %}<div class="space-y-3">{% for payment in report.recent_payments %}<div class="flex justify-between gap-3 border-b border-gray-100 pb-3"><div><p class="text-sm font-semibold text-gray-900">{{ payment.invoice.student }}</p><p class="text-xs text-gray-500">{{ payment.get_method_display }} · {{ payment.received_at|default:payment.created_at }}</p></div><p class="text-sm font-bold text-green-700">{{ payment.amount|format_money_amount:org_profile.default_currency }}</p></div>{% endfor %}</div>{% else %}<p class="text-sm text-gray-500">No recent payments in this period.</p>{% endif %}
+    </section>
+  </div>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Top Outstanding Balances</h2>
+    {% if report.top_debtors %}<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Invoice</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Due Date</th><th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Balance</th></tr></thead><tbody class="divide-y divide-gray-200">{% for row in report.top_debtors %}<tr><td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ row.student }}</td><td class="px-4 py-3 text-sm text-primary-700">{{ row.invoice.reference|default:row.invoice.id }}</td><td class="px-4 py-3 text-sm text-gray-600">{{ row.due_date|default:'-' }}</td><td class="px-4 py-3 text-sm text-right font-bold text-red-700">{{ row.balance|format_money_amount:org_profile.default_currency }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="text-sm text-gray-500">No outstanding balances in this period.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
