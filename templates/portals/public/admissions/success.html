@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include "components/pwa_meta.html" %}
+    <title>Application Submitted | EduManage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    {% include "components/ui_public_polish.html" %}
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-700 via-teal-700 to-blue-800 public-fade-in">
+    <main class="min-h-screen flex items-center justify-center px-4 py-8">
+        <section class="max-w-3xl w-full bg-white rounded-2xl shadow-2xl border border-white/40 overflow-hidden">
+            <div class="px-6 py-8 sm:px-10 text-center border-b border-gray-100 bg-gray-50">
+                <div class="mx-auto w-16 h-16 rounded-full bg-green-100 text-green-700 flex items-center justify-center mb-4">
+                    <i class="ph ph-check-circle text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900">Application Submitted</h1>
+                <p class="text-gray-600 mt-2">Please keep this reference for follow-up with the admissions office.</p>
+            </div>
+
+            <div class="p-6 sm:p-10 space-y-6">
+                <div class="rounded-2xl bg-blue-50 border border-blue-100 p-6 text-center">
+                    <p class="text-sm uppercase tracking-wide text-blue-700 font-bold">Application Reference</p>
+                    <p class="text-3xl font-black text-blue-900 mt-2">{{ applicant.application_reference }}</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-xs uppercase text-gray-500 font-semibold">Applicant</p>
+                        <p class="font-bold text-gray-900 mt-1">{{ applicant.full_name }}</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-xs uppercase text-gray-500 font-semibold">Status</p>
+                        <p class="font-bold text-gray-900 mt-1">{{ applicant.get_status_display }}</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-xs uppercase text-gray-500 font-semibold">Campus</p>
+                        <p class="font-bold text-gray-900 mt-1">{{ applicant.campus|default:"Not selected" }}</p>
+                    </div>
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <p class="text-xs uppercase text-gray-500 font-semibold">Target Class</p>
+                        <p class="font-bold text-gray-900 mt-1">{{ applicant.target_class_group|default:"Not selected" }}</p>
+                    </div>
+                </div>
+
+                <div class="rounded-xl bg-yellow-50 border border-yellow-100 p-4 text-sm text-yellow-900">
+                    <p class="font-semibold flex items-center gap-2"><i class="ph ph-warning-circle"></i> Next step</p>
+                    <p class="mt-1">The admissions team will review the application. You may be contacted through the phone number or email provided.</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 sm:justify-center pt-2">
+                    <a href="{% url 'public_admissions_apply' %}" class="inline-flex justify-center items-center gap-2 px-5 py-3 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                        <i class="ph ph-plus"></i> Submit another application
+                    </a>
+                    <a href="{% url 'landing_page' %}" class="inline-flex justify-center items-center gap-2 px-5 py-3 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 shadow-lg">
+                        <i class="ph ph-house"></i> Back to portal
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
