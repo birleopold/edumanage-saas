@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 
@@ -6,6 +7,7 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
+from .invoicing import attach_invoice_amounts, collection_summary, invoice_amounts
 from .models import Invoice, Payment
 from .pdf_receipt import generate_payment_receipt_pdf
 
@@ -16,19 +18,31 @@ def invoice_list(request):
     if not student:
         return HttpResponseForbidden("No student profile linked to this account.")
 
-    invoices = list(
-        Invoice.objects.filter(student=student).prefetch_related("lines", "payments")
-    )
+    status = (request.GET.get("status") or "").strip().upper()
+    page_number = request.GET.get("page") or 1
 
-    for inv in invoices:
-        inv.total_amount = inv.total_amount()
-        inv.total_paid = inv.total_paid()
-        inv.balance = inv.balance()
+    qs = Invoice.objects.filter(student=student).select_related("academic_year", "academic_term").prefetch_related("lines", "payments")
+    invoices_all = attach_invoice_amounts(list(qs.order_by("-created_at")))
+
+    if status:
+        invoices_filtered = [inv for inv in invoices_all if inv.display_status == status]
+    else:
+        invoices_filtered = invoices_all
+
+    paginator = Paginator(invoices_filtered, 20)
+    page_obj = paginator.get_page(page_number)
 
     return render(
         request,
         "portals/student/finance/invoices_list.html",
-        {"student": student, "invoices": invoices},
+        {
+            "student": student,
+            "invoices": page_obj.object_list,
+            "page_obj": page_obj,
+            "summary": collection_summary(invoices_all),
+            "status": status,
+            "status_options": ["PAID", "PARTIAL", "OVERDUE", "UNPAID", "CLOSED"],
+        },
     )
 
 
@@ -44,6 +58,7 @@ def invoice_detail(request, pk: int):
         pk=pk,
         student=student,
     )
+    amounts = invoice_amounts(invoice)
 
     return render(
         request,
@@ -51,10 +66,12 @@ def invoice_detail(request, pk: int):
         {
             "student": student,
             "invoice": invoice,
-            "total_amount": invoice.total_amount(),
-            "subtotal_lines": invoice.subtotal_lines(),
-            "total_paid": invoice.total_paid(),
-            "balance": invoice.balance(),
+            "total_amount": amounts.total_amount,
+            "subtotal_lines": amounts.subtotal_lines,
+            "total_paid": amounts.total_paid,
+            "balance": amounts.balance,
+            "display_status": amounts.display_status,
+            "is_overdue": amounts.is_overdue,
         },
     )
 
@@ -90,6 +107,7 @@ def invoice_print(request, pk: int):
         pk=pk,
         student=student,
     )
+    amounts = invoice_amounts(invoice)
     org = get_or_create_organization()
     return render(
         request,
@@ -98,9 +116,9 @@ def invoice_print(request, pk: int):
             "student": student,
             "invoice": invoice,
             "org": org,
-            "total_amount": invoice.total_amount(),
-            "subtotal_lines": invoice.subtotal_lines(),
-            "total_paid": invoice.total_paid(),
-            "balance": invoice.balance(),
+            "total_amount": amounts.total_amount,
+            "subtotal_lines": amounts.subtotal_lines,
+            "total_paid": amounts.total_paid,
+            "balance": amounts.balance,
         },
     )
