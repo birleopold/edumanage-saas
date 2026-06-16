@@ -1,217 +1,260 @@
 # EduManage SaaS - School Management System
 
-A comprehensive multi-tenant school management system built with Django, designed to handle all aspects of educational institution administration.
+EduManage SaaS is a Django-based school management system for handling school administration, academic records, finance, communication, and reporting. The project is designed to support a SaaS/multi-tenant deployment model using `django-tenants`, while still allowing simple local development with SQLite.
 
-## Features
+## Main Features
 
 ### Core Modules
-- **Multi-Tenancy**: Isolated data per organization with campus-level management
-- **User Management**: Role-based access control (Admin, Teacher, Student, Parent)
-- **Academic Management**: Years, terms, levels, programs, streams, courses
-- **Student Management**: Profiles, enrollment, academic records
-- **Teacher Management**: Profiles, course assignments, attendance tracking
-- **Admissions**: Application processing and student onboarding
-- **Attendance**: Session-based tracking with roll call interface
-- **Assessments & Exams**: Grading, exam papers, and result management
-- **Finance**: Fee management, invoicing, and payment tracking
-- **Library**: Book catalog, inventory, and loan management
-- **Timetable**: Period scheduling and room management
-- **Transport**: Route management and student assignments
-- **Hostel**: Accommodation and bed allocation
-- **Discipline**: Incident tracking and action management
-- **Inventory**: Asset management and assignments
-- **Documents**: File management with audience targeting
-- **Announcements**: Communication system
-- **Reports**: Analytics and data export
 
-### Branding & Customization
-- Organization and campus-level logo uploads
-- Custom color schemes (primary/secondary)
-- Two-level branding system with campus overrides
+- **Multi-tenancy**: Tenant-aware setup using PostgreSQL schemas through `django-tenants`.
+- **User management**: Role-based access for admins, teachers, students, and parents.
+- **Academic management**: Academic years, terms, levels, programs, streams, courses, and enrollment.
+- **Student management**: Student profiles, academic records, and parent links.
+- **Teacher management**: Teacher profiles, course assignments, attendance, and grading workflows.
+- **Admissions**: Application processing and student onboarding.
+- **Attendance**: Session-based attendance and roll-call tracking.
+- **Assessments and exams**: Assessment capture, grading, exam papers, and result management.
+- **Finance**: Fees, invoices, payments, reminders, and receipts.
+- **Library**: Book catalog, inventory, and loan management.
+- **Timetable**: Period scheduling, rooms, and class timetables.
+- **Transport**: Route management and student transport assignments.
+- **Hostel**: Accommodation and bed allocation.
+- **Discipline**: Incident recording and disciplinary actions.
+- **Inventory**: Asset tracking and assignments.
+- **Documents**: File sharing with audience targeting.
+- **Announcements**: School communication and notices.
+- **Reports**: Analytics and exports.
+
+### Branding and Customization
+
+- Organization-level branding.
+- Campus-level logo and branding overrides.
+- Custom primary and secondary colors.
 
 ## Tech Stack
 
-- **Backend**: Django 5.x with django-tenants
-- **Database**: PostgreSQL (multi-tenant schema isolation)
-- **Frontend**: Tailwind CSS, Alpine.js, Phosphor Icons
-- **Storage**: Django FileField with tenant-aware uploads
+- **Backend**: Django 4.2 LTS
+- **Tenancy**: django-tenants
+- **Database**: SQLite for simple local development, PostgreSQL for tenant/SaaS deployment
+- **Frontend**: Django templates, Tailwind CSS, Alpine.js, Phosphor Icons
 - **API**: Django REST Framework
+- **Static files**: WhiteNoise
+- **Documents/Reports**: Pillow and ReportLab
 
-## Installation
+## Project Structure
 
-### Prerequisites
-- Python 3.10+
-- PostgreSQL 13+
-- pip and virtualenv
-
-### Setup
-
-1. **Clone the repository**
-```bash
-git clone <your-repo-url>
-cd edumanage_saas
+```text
+edumanage-saas/
+├── apps/
+│   ├── public/          # Public-schema tenant/domain models and public views
+│   └── tenant/          # Tenant-specific school modules
+├── config/
+│   ├── settings/
+│   │   ├── base.py      # Common settings
+│   │   ├── local.py     # Local development settings
+│   │   ├── tenants.py   # django-tenants/PostgreSQL settings
+│   │   └── prod.py      # Production settings
+│   ├── urls.py
+│   ├── public_urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+├── templates/
+├── staticfiles/
+├── media/
+├── manage.py
+├── requirements.txt
+└── .env.example
 ```
 
-2. **Create virtual environment**
+## Requirements
+
+- Python 3.10+
+- pip and virtualenv
+- PostgreSQL 13+ for tenant/SaaS deployment
+
+## Quick Start: Local Development
+
+The default `manage.py` uses `config.settings.local`, which is the simplest setup for local development.
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/birleopold/edumanage-saas.git
+cd edumanage-saas
+```
+
+2. **Create and activate a virtual environment**
+
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
+```
+
+On Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
 ```
 
 3. **Install dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Configure environment variables**
-Create a `.env` file in the root directory:
-```env
-DJANGO_SECRET_KEY=your-secret-key-here
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-DJANGO_TIME_ZONE=UTC
+4. **Create your environment file**
 
-# Database
-DATABASE_URL=postgres://user:password@localhost:5432/edumanage_db
+```bash
+cp .env.example .env
 ```
 
+Update `.env` with your local values.
+
 5. **Run migrations**
+
 ```bash
-python manage.py migrate_schemas --shared
-python manage.py migrate_schemas
+python manage.py migrate
 ```
 
 6. **Create a superuser**
+
 ```bash
 python manage.py createsuperuser
 ```
 
 7. **Run the development server**
+
 ```bash
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000` to access the application.
+Visit `http://127.0.0.1:8000`.
 
-## Project Structure
+## Tenant/SaaS Setup with PostgreSQL
 
-```
-edumanage_saas/
-├── apps/
-│   ├── public/          # Public schema apps
-│   └── tenant/          # Tenant-specific apps
-│       ├── academics/
-│       ├── admissions/
-│       ├── announcements/
-│       ├── assessments/
-│       ├── attendance/
-│       ├── discipline/
-│       ├── documents/
-│       ├── exams/
-│       ├── finance/
-│       ├── hostels/
-│       ├── hr/
-│       ├── inventory/
-│       ├── library/
-│       ├── orgsettings/
-│       ├── parents/
-│       ├── portals/
-│       ├── students/
-│       ├── teachers/
-│       ├── timetable/
-│       ├── transport/
-│       └── users/
-├── config/
-│   ├── settings/
-│   │   ├── base.py
-│   │   ├── development.py
-│   │   └── production.py
-│   ├── urls.py
-│   └── wsgi.py
-├── templates/
-│   ├── components/
-│   └── portals/
-│       ├── admin/
-│       ├── teacher/
-│       ├── student/
-│       └── parent/
-├── staticfiles/
-├── media/
-├── manage.py
-└── requirements.txt
+Use this mode when testing or deploying the multi-tenant architecture.
+
+1. Configure PostgreSQL variables in `.env`:
+
+```env
+POSTGRES_DB=edumanage_saas
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
 ```
 
-## Usage
+2. Use the tenant settings module:
 
-### Creating a New Tenant
-
-1. Access Django admin at `/dj-admin/`
-2. Create a new tenant organization
-3. Configure organization settings and branding
-4. Add campuses as needed
-5. Set up academic structure (years, terms, levels, programs)
-
-### User Roles
-
-- **Admin**: Full system access, organization management
-- **Teacher**: Course management, attendance, grading
-- **Student**: View schedules, grades, assignments
-- **Parent**: Monitor student progress and attendance
-
-## Development
-
-### Running Tests
 ```bash
-python manage.py test
+export DJANGO_SETTINGS_MODULE=config.settings.tenants
 ```
 
-### Creating Migrations
+On Windows PowerShell:
+
+```powershell
+$env:DJANGO_SETTINGS_MODULE="config.settings.tenants"
+```
+
+3. Run schema migrations:
+
 ```bash
-python manage.py makemigrations
+python manage.py migrate_schemas --shared
 python manage.py migrate_schemas
 ```
 
-### Collecting Static Files
-```bash
-python manage.py collectstatic
+4. Create the public tenant/domain records through Django admin or a management command.
+
+## Production Notes
+
+Production uses `config.settings.prod`, which imports the tenant settings and adds secure cookie/proxy settings.
+
+Before deployment, configure at least:
+
+```env
+DJANGO_SECRET_KEY=replace-this-with-a-strong-secret
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+DJANGO_TIME_ZONE=Africa/Kampala
+POSTGRES_DB=edumanage_saas
+POSTGRES_USER=edumanage_user
+POSTGRES_PASSWORD=strong-password
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
 ```
 
-## Deployment
+Recommended production setup:
 
-For production deployment:
+- Gunicorn or uWSGI behind Nginx.
+- PostgreSQL database backups.
+- HTTPS/SSL.
+- Proper `ALLOWED_HOSTS`.
+- Secure media file storage.
+- Log rotation and error monitoring.
+- Separate environment variables for secrets.
 
-1. Set `DJANGO_DEBUG=False`
-2. Configure proper `ALLOWED_HOSTS`
-3. Use a production-grade database (PostgreSQL)
-4. Set up proper media file storage (S3, etc.)
-5. Configure HTTPS/SSL
-6. Set up proper logging
-7. Use a production WSGI server (Gunicorn, uWSGI)
-8. Configure static file serving (Nginx, CDN)
+## Useful Commands
+
+```bash
+# Run Django checks
+python manage.py check
+
+# Create migrations
+python manage.py makemigrations
+
+# Apply local migrations
+python manage.py migrate
+
+# Apply tenant migrations
+DJANGO_SETTINGS_MODULE=config.settings.tenants python manage.py migrate_schemas
+
+# Collect static files
+python manage.py collectstatic
+
+# Run tests
+python manage.py test
+```
+
+## User Roles
+
+- **Admin**: Full school administration and organization setup.
+- **Teacher**: Course management, attendance, grading, and class operations.
+- **Student**: Schedules, grades, assignments, and academic information.
+- **Parent**: Student progress, attendance, invoices, and notices.
+
+## API
+
+API routes are mounted under:
+
+```text
+/api/v1/
+```
+
+The default REST framework permissions require authenticated users.
+
+## Environment Variables
+
+See `.env.example` for the supported configuration values.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a feature branch.
+2. Keep changes focused and small.
+3. Run checks before committing.
+4. Open a pull request with a clear description of the change.
 
 ## License
 
 This project is proprietary software. All rights reserved.
 
-## Support
-
-For support and questions, please contact the development team.
-
 ## Changelog
 
-### Version 1.0.0 (Current)
-- Initial release with core modules
-- Multi-tenant architecture
-- Role-based access control
-- Comprehensive school management features
-- Modern UI with Tailwind CSS
-- Date format placeholders across all forms
-- Logo upload and branding system
+### Version 1.0.0
+
+- Initial school management modules.
+- Multi-tenant architecture foundation.
+- Role-based access control.
+- Tailwind-based portal UI.
+- Date format placeholders across forms.
+- Logo upload and branding support.
