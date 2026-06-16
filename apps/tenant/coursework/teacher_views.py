@@ -35,14 +35,11 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
 
 
 def _teacher_profile(request):
-    teacher = TeacherProfile.objects.filter(user=request.user).select_related("campus").first()
-    if not teacher:
-        return None
-    return teacher
+    return TeacherProfile.objects.filter(user=request.user).select_related("campus").first()
 
 
 def _teacher_offerings(teacher):
-    return CourseOffering.objects.select_related("course", "term", "term__year", "class_group").filter(teacher=teacher)
+    return CourseOffering.objects.select_related("course", "term", "term__year", "class_group").filter(teacher=teacher, is_active=True)
 
 
 def _can_manage_assignment(teacher, assignment: Assignment, user) -> bool:
@@ -76,7 +73,24 @@ def _add_assignment_attachments(assignment: Assignment, files) -> int:
 def _configure_teacher_form(form, offerings):
     if "offering" in form.fields:
         form.fields["offering"].queryset = offerings
+        form.fields["offering"].required = True
+        form.fields["offering"].help_text = "Required for teachers: publish only to learners enrolled in one of your course offerings."
+    if "campus" in form.fields:
+        form.fields["campus"].required = False
     return form
+
+
+def _apply_offering_scope(obj):
+    """Keep teacher-created coursework scoped to the selected offering to avoid accidental school-wide publishing."""
+    if obj.offering:
+        obj.campus = obj.offering.campus
+        obj.class_group = obj.offering.class_group
+        obj.stream = None
+    return obj
+
+
+def _offering_ids(offerings):
+    return set(offerings.values_list("id", flat=True))
 
 
 @role_required(Role.TEACHER)
@@ -136,8 +150,9 @@ def material_create(request):
         form = _configure_teacher_form(LearningMaterialForm(request.POST, request.FILES), offerings)
         if form.is_valid():
             obj = form.save(commit=False)
-            if obj.offering_id and obj.offering_id not in set(offerings.values_list("id", flat=True)):
+            if obj.offering_id not in _offering_ids(offerings):
                 return HttpResponseForbidden("You are not allowed to create material for this offering.")
+            obj = _apply_offering_scope(obj)
             obj.created_by = request.user
             obj.save()
             uploaded_count = _add_material_attachments(obj, form.cleaned_data.get("attachments"))
@@ -186,7 +201,11 @@ def material_edit(request, pk: int):
     if request.method == "POST":
         form = _configure_teacher_form(LearningMaterialForm(request.POST, request.FILES, instance=material), offerings)
         if form.is_valid():
-            obj = form.save()
+            obj = form.save(commit=False)
+            if obj.offering_id not in _offering_ids(offerings):
+                return HttpResponseForbidden("You are not allowed to edit material for this offering.")
+            obj = _apply_offering_scope(obj)
+            obj.save()
             uploaded_count = _add_material_attachments(obj, form.cleaned_data.get("attachments"))
             messages.success(
                 request,
@@ -215,8 +234,9 @@ def assignment_create(request):
         form = _configure_teacher_form(AssignmentForm(request.POST, request.FILES), offerings)
         if form.is_valid():
             obj = form.save(commit=False)
-            if obj.offering_id and obj.offering_id not in set(offerings.values_list("id", flat=True)):
+            if obj.offering_id not in _offering_ids(offerings):
                 return HttpResponseForbidden("You are not allowed to create an assignment for this offering.")
+            obj = _apply_offering_scope(obj)
             obj.created_by = request.user
             obj.save()
             uploaded_count = _add_assignment_attachments(obj, form.cleaned_data.get("attachments"))
@@ -274,7 +294,11 @@ def assignment_edit(request, pk: int):
     if request.method == "POST":
         form = _configure_teacher_form(AssignmentForm(request.POST, request.FILES, instance=assignment), offerings)
         if form.is_valid():
-            obj = form.save()
+            obj = form.save(commit=False)
+            if obj.offering_id not in _offering_ids(offerings):
+                return HttpResponseForbidden("You are not allowed to edit assignments for this offering.")
+            obj = _apply_offering_scope(obj)
+            obj.save()
             uploaded_count = _add_assignment_attachments(obj, form.cleaned_data.get("attachments"))
             created_rows = ensure_assignment_submission_rows(obj)
             details = []
