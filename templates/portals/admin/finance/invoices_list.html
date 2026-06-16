@@ -5,41 +5,29 @@
 
 {% block content %}
 <div class="motion-fast">
-<!-- Page Header -->
 <div class="mb-6">
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Invoices</h1>
-  <p class="text-gray-600">Manage student billing and payment records</p>
+  <p class="text-gray-600">Manage student billing, bulk fee invoicing, payment records, and receipts.</p>
 </div>
 
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
 
-<!-- Search and Filters -->
 <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
   <form method="get" class="space-y-4">
     <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <!-- Search Bar -->
       <div class="flex-1 w-full md:max-w-md">
         <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="ph ph-magnifying-glass text-gray-400"></i>
           </div>
-          <input id="id_q" 
-                 type="text" 
-                 name="q" 
-                 value="{{ q }}" 
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Search by student or reference..." />
+          <input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400" placeholder="Search by student or reference..." />
         </div>
       </div>
 
-      <!-- Campus Filter -->
       <div class="w-full md:w-48">
         <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
-        <select id="id_campus" 
-                name="campus"
-                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
+        <select id="id_campus" name="campus" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
           <option value="">All Campuses</option>
           {% for c in campuses %}
             <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
@@ -47,16 +35,9 @@
         </select>
       </div>
 
-      <!-- Per Page -->
       <div class="w-full md:w-32">
         <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" 
-               type="number" 
-               name="per_page" 
-               value="{{ per_page }}" 
-               min="1" 
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
       </div>
 
       <div class="w-full md:w-auto flex items-center pb-1 md:pb-0">
@@ -66,40 +47,29 @@
         </label>
       </div>
 
-      <!-- Apply Button -->
-      <button type="submit" 
-              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>
-        <span>Apply Filters</span>
+      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-funnel"></i><span>Apply Filters</span>
       </button>
-      <a href="{% url 'admin_invoices_list' %}"
-         class="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-x"></i>
-        <span>Reset</span>
+      <a href="{% url 'admin_invoices_list' %}" class="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
+        <i class="ph ph-x"></i><span>Reset</span>
       </a>
     </div>
 
-    <!-- Create Invoice / Export -->
     <div class="flex flex-wrap justify-end gap-3 pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_finance_messaging_report' %}"
-         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
-        <i class="ph ph-chart-line-up"></i>
-        <span>Messaging Report</span>
+      <a href="{% url 'admin_finance_messaging_report' %}" class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-chart-line-up"></i><span>Messaging Report</span>
       </a>
-      <a href="{% url 'admin_finance_message_logs' %}"
-         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
-        <i class="ph ph-paper-plane-tilt"></i>
-        <span>Message Logs</span>
+      <a href="{% url 'admin_finance_message_logs' %}" class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-paper-plane-tilt"></i><span>Message Logs</span>
       </a>
-      <a href="{% url 'admin_invoices_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}{% if overdue_only %}&amp;overdue=1{% endif %}"
-         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
-        <i class="ph ph-download-simple"></i>
-        <span>Export CSV</span>
+      <a href="{% url 'admin_invoices_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}{% if overdue_only %}&amp;overdue=1{% endif %}" class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
+        <i class="ph ph-download-simple"></i><span>Export CSV</span>
       </a>
-      <a href="{% url 'admin_invoices_create' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-plus"></i>
-        <span>Create Invoice</span>
+      <a href="{% url 'admin_invoices_bulk_create' %}" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-files"></i><span>Bulk Create</span>
+      </a>
+      <a href="{% url 'admin_invoices_create' %}" class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+        <i class="ph ph-plus"></i><span>Create Invoice</span>
       </a>
     </div>
   </form>
@@ -107,11 +77,10 @@
 
 <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
   <p class="text-sm text-amber-900">
-    <span class="font-semibold">Billing workflow:</span> create invoice -> add line items -> record payments -> monitor balances.
+    <span class="font-semibold">Billing workflow:</span> bulk-create invoices for a period -> review line items -> record payments -> download receipts -> send reminders where balances remain.
   </p>
 </div>
 
-<!-- Invoices Table or Empty State -->
 {% if invoices %}
   <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
     <table class="min-w-full divide-y divide-gray-200">
@@ -154,51 +123,15 @@
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if inv.status == 'paid' or inv.status == 'PAID' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>
-                  Paid
-                </span>
-              {% elif inv.status == 'pending' or inv.status == 'PENDING' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-clock"></i>
-                  Pending
-                </span>
-              {% elif inv.status == 'overdue' or inv.status == 'OVERDUE' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-warning"></i>
-                  Overdue
-                </span>
-              {% elif inv.status == 'partial' or inv.status == 'PARTIAL' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-coins"></i>
-                  Partial
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                  {{ inv.status }}
-                </span>
-              {% endif %}
+              <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ inv.status }}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex items-center justify-end gap-2">
-                <a href="{% url 'admin_invoices_detail' inv.id %}" 
-                   class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                  <i class="ph ph-file-text"></i>
-                  <span>View</span>
-                </a>
+                <a href="{% url 'admin_invoices_detail' inv.id %}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors"><i class="ph ph-file-text"></i><span>View</span></a>
                 <span class="text-gray-300">|</span>
-                <a href="{% url 'admin_invoices_edit' inv.id %}" 
-                   class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 font-semibold transition-colors">
-                  <i class="ph ph-pencil-simple"></i>
-                  <span>Edit</span>
-                </a>
+                <a href="{% url 'admin_invoices_edit' inv.id %}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 font-semibold transition-colors"><i class="ph ph-pencil-simple"></i><span>Edit</span></a>
                 <span class="text-gray-300">|</span>
-                <a href="{% url 'admin_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900 font-semibold transition-colors">
-                  <i class="ph ph-printer"></i>
-                  <span>Print</span>
-                </a>
+                <a href="{% url 'admin_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900 font-semibold transition-colors"><i class="ph ph-printer"></i><span>Print</span></a>
               </div>
             </td>
           </tr>
@@ -206,15 +139,10 @@
       </tbody>
     </table>
   </div>
-
-  <!-- Pagination -->
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
+  {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
 {% else %}
-  <!-- Empty State -->
   {% url 'admin_invoices_create' as create_invoice_url %}
-  {% include "components/ui_empty_state.html" with icon="wallet" title="No invoices found" description="Get started by creating your first invoice or adjust your search filters" action_url=create_invoice_url action_text="Create Invoice" %}
+  {% include "components/ui_empty_state.html" with icon="wallet" title="No invoices found" description="Get started by creating your first invoice or use bulk create for a full class" action_url=create_invoice_url action_text="Create Invoice" %}
 {% endif %}
 </div>
 {% endblock %}
