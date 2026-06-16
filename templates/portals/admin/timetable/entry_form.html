@@ -1,9 +1,27 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}{% if mode == 'edit' %}Edit Entry{% else %}Add Entry{% endif %}{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Timetable Entry{% else %}Add Timetable Entry{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Timetable Entry{% else %}Add Timetable Entry{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Entry{% else %}Add Entry{% endif %}</h1>
+{% include "components/ui_toast.html" %}
 
-  {% include 'components/ui_form.html' %}
+<div class="motion-fast space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{% if mode == 'edit' %}Edit Timetable Entry{% else %}Add Timetable Entry{% endif %}</h1>
+      <p class="text-gray-600">Schedule a course offering into a weekday and period. The system blocks teacher, class, room, and student clashes.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_timetable_grid' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50"><i class="ph ph-calendar"></i> Grid</a>
+      <a href="{% url 'admin_timetable_entries_list' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"><i class="ph ph-list"></i> Entries</a>
+    </div>
+  </div>
+
+  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
+    <span class="font-semibold">Clash detection:</span> A slot cannot be saved if the teacher, class, selected room, or enrolled students already have another active timetable entry in the same weekday and period.
+  </div>
+
+  {% include 'components/ui_form.html' with form=form form_submit_text='Save Timetable Entry' %}
+</div>
 {% endblock %}
