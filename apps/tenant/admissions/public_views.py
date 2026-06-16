@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
@@ -61,10 +62,10 @@ def public_application_track(request):
     form = PublicTrackingForm(request.GET or None)
     if request.GET and form.is_valid():
         reference = form.cleaned_data["reference"].strip().upper()
-        contact = (form.cleaned_data.get("contact") or "").strip().lower()
+        contact = (form.cleaned_data.get("contact") or "").strip()
         qs = _public_applicant_queryset().filter(application_reference__iexact=reference)
         if contact:
-            qs = qs.filter(email__iexact=contact) | _public_applicant_queryset().filter(application_reference__iexact=reference, phone__icontains=contact)
+            qs = qs.filter(Q(email__iexact=contact) | Q(phone__icontains=contact))
         applicant = qs.first()
         if not applicant:
             messages.error(request, "No application matched those details. Check the reference and contact used during application.")
