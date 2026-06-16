@@ -1,7 +1,7 @@
 {% load widget_tweaks %}
 
 <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8">
-    <form method="{% block form_method %}post{% endblock %}" {% block form_attributes %}{% endblock %} class="space-y-6">
+    <form method="{% block form_method %}post{% endblock %}" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} {% block form_attributes %}{% endblock %} class="space-y-6">
         {% csrf_token %}
         
         {% if form.non_field_errors %}
@@ -26,7 +26,7 @@
 
         <div class="grid grid-cols-1 gap-y-6 gap-x-6 {% block grid_cols %}sm:grid-cols-2{% endblock %}">
             {% for field in form %}
-            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' or 'textarea' in field.field.widget.template_name %}sm:col-span-2{% endif %} group relative">
+            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'file' or 'textarea' in field.field.widget.template_name %}sm:col-span-2{% endif %} group relative">
                 {% if field.field.widget.input_type == 'checkbox' %}
                     <div class="relative flex items-start py-2 border border-transparent rounded-lg hover:border-gray-200 transition-colors p-2 -ml-2">
                         <div class="flex items-center h-5">
