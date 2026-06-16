@@ -1,17 +1,19 @@
 {% extends 'portals/teacher/base.html' %}
-{% load assessments_extras %}
 
 {% block title %}Grade Assessment{% endblock %}
 {% block page_title %}Grade Assessment{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
+  {% include "components/ui_toast.html" %}
+
   <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div class="space-y-1 text-sm">
         <p><span class="font-semibold text-gray-800">Assessment:</span> {{ assessment.name }}</p>
         <p><span class="font-semibold text-gray-800">Offering:</span> {{ assessment.offering }}</p>
         <p><span class="font-semibold text-gray-800">Maximum Score:</span> {{ assessment.max_score }}</p>
+        <p><span class="font-semibold text-gray-800">Weight:</span> {{ assessment.weight|default:"Not weighted" }}</p>
       </div>
       <form method="post">
         {% csrf_token %}
@@ -20,6 +22,21 @@
           {% if assessment.is_published %}Unpublish Results{% else %}Publish Results{% endif %}
         </button>
       </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs uppercase font-bold text-gray-500">Students</p>
+      <p class="text-2xl font-black text-gray-900">{{ total_count }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs uppercase font-bold text-gray-500">Scores entered</p>
+      <p class="text-2xl font-black text-green-700">{{ scored_count }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <p class="text-xs uppercase font-bold text-gray-500">Missing</p>
+      <p class="text-2xl font-black text-amber-700">{{ total_count|add:"-"|add:scored_count }}</p>
     </div>
   </div>
 
@@ -45,28 +62,35 @@
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">%</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grade</th>
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          {% for e in enrollments %}
-            {% with s=existing_scores|get_item:e.student.id %}
+          {% for row in rows %}
             <tr>
               <td class="px-6 py-4 text-sm text-gray-800">
-                {{ e.student }}
-                <input type="hidden" name="student_ids" value="{{ e.student.id }}" />
+                {{ row.student }}
+                <input type="hidden" name="student_ids" value="{{ row.student.id }}" />
               </td>
-              <td class="px-6 py-4 text-sm text-gray-600">{{ e.student.student_id }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ row.student.student_id }}</td>
               <td class="px-6 py-4 text-sm">
-                <input type="number" step="0.01" min="0" max="{{ assessment.max_score }}" name="score_{{ e.student.id }}" value="{% if s %}{{ s.score }}{% endif %}" class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <input type="number" step="0.01" min="0" max="{{ assessment.max_score }}" name="score_{{ row.student.id }}" value="{% if row.score and row.score.score != None %}{{ row.score.score }}{% endif %}" class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {% if row.result.percentage != None %}<span class="font-bold text-gray-900">{{ row.result.percentage }}%</span>{% else %}<span class="text-gray-400">-</span>{% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold {% if row.result.grade == 'A' or row.result.grade == 'B' %}bg-green-100 text-green-800{% elif row.result.grade == 'C' or row.result.grade == 'D' %}bg-yellow-100 text-yellow-800{% elif row.result.grade == 'F' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-700{% endif %}">{{ row.result.grade }}</span>
+                <span class="text-xs text-gray-500 ml-1">{{ row.result.remark }}</span>
               </td>
               <td class="px-6 py-4 text-sm">
-                <input type="text" name="note_{{ e.student.id }}" value="{% if s %}{{ s.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                <input type="text" name="note_{{ row.student.id }}" value="{% if row.score %}{{ row.score.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </td>
             </tr>
-            {% endwith %}
           {% empty %}
-            <tr><td colspan="4" class="px-6 py-6 text-sm text-center text-gray-500">No enrolled students.</td></tr>
+            <tr><td colspan="6" class="px-6 py-6 text-sm text-center text-gray-500">No enrolled students.</td></tr>
           {% endfor %}
         </tbody>
       </table>
