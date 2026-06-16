@@ -92,6 +92,17 @@ class CarryForwardForm(forms.Form):
         return cleaned
 
 
+def _campus_scope_ids(campus_scope):
+    if campus_scope is None:
+        return None
+    if isinstance(campus_scope, Campus):
+        return [campus_scope.id]
+    try:
+        return [campus.id for campus in campus_scope]
+    except TypeError:
+        return [campus_scope.id]
+
+
 class BulkInvoiceForm(forms.Form):
     campus = forms.ModelChoiceField(
         queryset=Campus.objects.none(),
@@ -145,11 +156,12 @@ class BulkInvoiceForm(forms.Form):
         class_qs = ClassGroup.objects.filter(is_active=True).select_related("campus", "level", "program").order_by("name")
         stream_qs = Stream.objects.filter(is_active=True).select_related("class_group").order_by("class_group__name", "name")
 
-        if campus_scope is not None:
-            campus_qs = campus_qs.filter(id__in=[c.id for c in campus_scope])
-            students_qs = students_qs.filter(campus__in=campus_scope)
-            class_qs = class_qs.filter(campus__in=campus_scope)
-            stream_qs = stream_qs.filter(class_group__campus__in=campus_scope)
+        campus_ids = _campus_scope_ids(campus_scope)
+        if campus_ids is not None:
+            campus_qs = campus_qs.filter(id__in=campus_ids)
+            students_qs = students_qs.filter(campus_id__in=campus_ids)
+            class_qs = class_qs.filter(campus_id__in=campus_ids)
+            stream_qs = stream_qs.filter(class_group__campus_id__in=campus_ids)
 
         self.fields["campus"].queryset = campus_qs
         self.fields["students"].queryset = students_qs.order_by("last_name", "first_name")
