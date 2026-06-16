@@ -13,6 +13,7 @@ from apps.tenant.users.models import Role
 
 from .forms import AssessmentForm
 from .models import Assessment, AssessmentScore
+from .services import grade_for_percentage, percentage, score_result, validate_score
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -26,9 +27,22 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
+def _teacher_profile(request):
+    return TeacherProfile.objects.filter(user=request.user).first()
+
+
+def _teacher_offerings(teacher):
+    return CourseOffering.objects.select_related(
+        "course",
+        "term",
+        "term__year",
+        "class_group",
+    ).filter(teacher=teacher, is_active=True)
+
+
 @role_required(Role.TEACHER)
 def assessment_home(request):
-    teacher = TeacherProfile.objects.filter(user=request.user).first()
+    teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
 
@@ -36,13 +50,7 @@ def assessment_home(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    offerings = CourseOffering.objects.select_related(
-        "course",
-        "term",
-        "term__year",
-        "class_group",
-    ).filter(teacher=teacher)
-
+    offerings = _teacher_offerings(teacher)
     assessments_qs = Assessment.objects.select_related(
         "offering",
         "offering__course",
@@ -57,34 +65,53 @@ def assessment_home(request):
             | Q(offering__course__code__icontains=q)
         )
 
-    paginator = Paginator(assessments_qs, per_page)
-    page_obj = paginator.get_page(page_number)
+    page_obj = Paginator(assessments_qs, per_page).get_page(page_number)
+    assessments = list(page_obj.object_list)
+    for assessment in assessments:
+        scores = AssessmentScore.objects.filter(assessment=assessment)
+        scored = [s for s in scores if s.score is not None]
+        assessment.scored_count = len(scored)
+        assessment.enrolled_count = Enrollment.objects.filter(offering=assessment.offering, status=Enrollment.ACTIVE).count()
+        if scored:
+            total_pct = sum((percentage(s.score, assessment.max_score) or 0) for s in scored)
+            assessment.average_percentage = total_pct / len(scored)
+            assessment.average_grade, assessment.average_remark = grade_for_percentage(assessment.average_percentage)
+        else:
+            assessment.average_percentage = None
+            assessment.average_grade = "-"
+            assessment.average_remark = "Not graded"
 
     return render(
         request,
         "portals/teacher/assessments/home.html",
-        {"teacher": teacher, "assessments": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {
+            "teacher": teacher,
+            "assessments": assessments,
+            "page_obj": page_obj,
+            "q": q,
+            "per_page": per_page,
+        },
     )
 
 
 @role_required(Role.TEACHER)
 def assessment_create(request):
-    teacher = TeacherProfile.objects.filter(user=request.user).first()
+    teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
 
-    offerings = CourseOffering.objects.filter(teacher=teacher)
+    offerings = _teacher_offerings(teacher)
 
     if request.method == "POST":
         form = AssessmentForm(request.POST)
         form.fields["offering"].queryset = offerings
         if form.is_valid():
             assessment = form.save(commit=False)
-            if assessment.offering_id not in offerings.values_list("id", flat=True):
+            if assessment.offering_id not in set(offerings.values_list("id", flat=True)):
                 return HttpResponseForbidden("You are not allowed to create an assessment for this offering.")
             assessment.save()
             messages.success(request, "Assessment created.")
-            return redirect("teacher_assessments_home")
+            return redirect("teacher_assessments_grade", pk=assessment.pk)
     else:
         form = AssessmentForm()
         form.fields["offering"].queryset = offerings
@@ -94,7 +121,7 @@ def assessment_create(request):
 
 @role_required(Role.TEACHER)
 def assessment_grade(request, pk: int):
-    teacher = TeacherProfile.objects.filter(user=request.user).first()
+    teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
 
@@ -104,6 +131,7 @@ def assessment_grade(request, pk: int):
             "offering__course",
             "offering__term",
             "offering__term__year",
+            "offering__class_group",
         ),
         pk=pk,
     )
@@ -139,18 +167,15 @@ def assessment_grade(request, pk: int):
 
         student_ids = request.POST.getlist("student_ids")
         updated = 0
+        errors = []
         with transaction.atomic():
             for sid in student_ids:
                 score_raw = request.POST.get(f"score_{sid}")
                 note = request.POST.get(f"note_{sid}") or ""
-
-                if score_raw is None or score_raw == "":
-                    value = None
-                else:
-                    try:
-                        value = float(score_raw)
-                    except ValueError:
-                        value = None
+                value, error = validate_score(score_raw, assessment.max_score)
+                if error:
+                    errors.append(f"Student #{sid}: {error}")
+                    continue
 
                 AssessmentScore.objects.update_or_create(
                     assessment=assessment,
@@ -159,8 +184,28 @@ def assessment_grade(request, pk: int):
                 )
                 updated += 1
 
-        messages.success(request, f"Saved scores for {updated} student(s).")
+        if errors:
+            for error in errors[:5]:
+                messages.error(request, error)
+            if len(errors) > 5:
+                messages.error(request, f"{len(errors) - 5} more score error(s) were skipped.")
+        if updated:
+            messages.success(request, f"Saved scores for {updated} student(s).")
         return redirect(reverse("teacher_assessments_grade", kwargs={"pk": assessment.pk}))
+
+    rows = []
+    for enrollment in enrollments_qs:
+        score_obj = existing_scores.get(enrollment.student_id)
+        rows.append(
+            {
+                "enrollment": enrollment,
+                "student": enrollment.student,
+                "score": score_obj,
+                "result": score_result(assessment, score_obj),
+            }
+        )
+
+    scored_count = sum(1 for row in rows if row["result"].score is not None)
 
     return render(
         request,
@@ -168,8 +213,11 @@ def assessment_grade(request, pk: int):
         {
             "teacher": teacher,
             "assessment": assessment,
+            "rows": rows,
             "enrollments": enrollments_qs,
             "existing_scores": existing_scores,
             "q": q,
+            "scored_count": scored_count,
+            "total_count": len(rows),
         },
     )
