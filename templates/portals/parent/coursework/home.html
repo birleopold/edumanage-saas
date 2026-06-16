@@ -47,28 +47,25 @@
       <div class="text-sm text-gray-500">{% if item.student.campus %}{{ item.student.campus }}{% endif %}</div>
     </div>
 
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Pending</p><p class="text-xl font-black text-yellow-700">{{ item.pending_count }}</p></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Submitted</p><p class="text-xl font-black text-green-700">{{ item.submitted_count }}</p></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Overdue</p><p class="text-xl font-black text-red-700">{{ item.overdue_count }}</p></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Marked</p><p class="text-xl font-black text-blue-700">{{ item.marked_count }}</p></div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
         <h3 class="font-bold text-gray-900 mb-2">Materials</h3>
         <div class="space-y-2">
           {% for m in item.materials %}
             <div class="p-3 border border-gray-200 rounded-lg">
-              <div class="text-xs font-bold text-gray-500">{{ m.get_type_display }}</div>
+              <div class="text-xs font-bold text-gray-500 uppercase">{{ m.get_type_display }}</div>
               <div class="font-semibold text-gray-900">{{ m.title }}</div>
-              <div class="text-xs text-gray-500">{{ m.publish_at|date:'Y-m-d' }}</div>
-              {% if m.attachments.all %}
-                <div class="mt-2">
-                  <div class="text-xs font-bold text-gray-600 mb-1">Attachments</div>
-                  <div class="space-y-1">
-                    {% for att in m.attachments.all|slice:':2' %}
-                      <a href="{{ att.file.url }}" target="_blank" rel="noopener" class="block text-xs text-primary-700 hover:underline">{{ att.file.name }}</a>
-                    {% endfor %}
-                    {% if m.attachments.count > 2 %}
-                      <div class="text-xs text-gray-500">+{{ m.attachments.count|add:'-2' }} more</div>
-                    {% endif %}
-                  </div>
-                </div>
-              {% endif %}
+              <div class="text-xs text-gray-500">{{ m.publish_at|date:'Y-m-d' }} · {{ m.attachments.count }} file(s)</div>
+              <div class="mt-2 flex justify-end">
+                <a href="{% url 'parent_coursework_material_detail' item.student.pk m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold">Open</a>
+              </div>
             </div>
           {% empty %}
             <div class="text-sm text-gray-500">No materials.</div>
@@ -76,18 +73,15 @@
         </div>
       </div>
 
-      <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
         <h3 class="font-bold text-gray-900 mb-2">Assignments</h3>
         <div class="space-y-2">
           {% for a in item.assignments %}
             <div class="p-3 border border-gray-200 rounded-lg">
-              <div class="flex items-start justify-between">
+              <div class="flex items-start justify-between gap-3">
                 <div>
                   <div class="font-semibold text-gray-900">{{ a.title }}</div>
                   {% if a.due_date %}<div class="text-xs text-gray-500">Due: {{ a.due_date|date:'Y-m-d H:i' }}</div>{% endif %}
-                  <div class="text-xs text-gray-500 mt-1">
-                    {% if a.attachments.count %}{{ a.attachments.count }} attachment(s){% else %}No attachments{% endif %}
-                  </div>
                   {% if a.submission and a.submission.submitted_at %}
                     <div class="text-xs text-gray-500">Submitted: {{ a.submission.submitted_at|date:'Y-m-d H:i' }}</div>
                   {% endif %}
@@ -95,6 +89,8 @@
                 <div>
                   {% if a.is_submitted %}
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Submitted</span>
+                  {% elif a.is_overdue %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Overdue</span>
                   {% else %}
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Pending</span>
                   {% endif %}
@@ -112,7 +108,7 @@
     </div>
   </div>
 {% empty %}
-  <div class="text-sm text-gray-500">No linked students found.</div>
+  <div class="text-sm text-gray-500 bg-white rounded-lg border border-gray-200 p-6">No linked students found.</div>
 {% endfor %}
 
 {% endblock %}
