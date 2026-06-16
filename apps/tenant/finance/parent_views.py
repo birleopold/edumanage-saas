@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 
@@ -11,6 +12,7 @@ from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.users.models import Role
 
+from .invoicing import attach_invoice_amounts, collection_summary, invoice_amounts
 from .models import Invoice, Payment
 from .pdf_receipt import generate_payment_receipt_pdf
 
@@ -35,27 +37,52 @@ def invoice_list(request):
 
     campuses = campus_queryset()
     campus_id = selected_campus_id_from_request(request)
+    status = (request.GET.get("status") or "").strip().upper()
+    student_filter = (request.GET.get("student") or "").strip()
+    page_number = request.GET.get("page") or 1
 
     links_qs = ParentStudentLink.objects.filter(parent=parent).select_related("student", "student__campus")
     if campus_id:
         links_qs = links_qs.filter(student__campus_id=campus_id)
 
-    invoices = list(
+    qs = (
         Invoice.objects.filter(student_id__in=student_ids)
         .select_related("student", "academic_year", "academic_term")
         .prefetch_related("lines", "payments")
         .order_by("student__last_name", "student__first_name", "-created_at")
     )
+    if student_filter:
+        try:
+            sid = int(student_filter)
+        except (TypeError, ValueError):
+            sid = None
+        if sid in student_ids:
+            qs = qs.filter(student_id=sid)
 
-    for inv in invoices:
-        inv.total_amount = inv.total_amount()
-        inv.total_paid = inv.total_paid()
-        inv.balance = inv.balance()
+    invoices_all = attach_invoice_amounts(list(qs))
+    if status:
+        invoices_filtered = [inv for inv in invoices_all if inv.display_status == status]
+    else:
+        invoices_filtered = invoices_all
+
+    paginator = Paginator(invoices_filtered, 25)
+    page_obj = paginator.get_page(page_number)
 
     return render(
         request,
         "portals/parent/finance/invoices_list.html",
-        {"parent": parent, "invoices": invoices, "campuses": campuses, "selected_campus_id": campus_id},
+        {
+            "parent": parent,
+            "invoices": page_obj.object_list,
+            "page_obj": page_obj,
+            "summary": collection_summary(invoices_all),
+            "campuses": campuses,
+            "links": links_qs,
+            "selected_campus_id": campus_id,
+            "selected_student_id": int(student_filter) if student_filter.isdigit() else None,
+            "status": status,
+            "status_options": ["PAID", "PARTIAL", "OVERDUE", "UNPAID", "CLOSED"],
+        },
     )
 
 
@@ -73,6 +100,7 @@ def invoice_detail(request, pk: int):
         pk=pk,
         student_id__in=student_ids,
     )
+    amounts = invoice_amounts(invoice)
 
     return render(
         request,
@@ -80,10 +108,12 @@ def invoice_detail(request, pk: int):
         {
             "parent": parent,
             "invoice": invoice,
-            "total_amount": invoice.total_amount(),
-            "subtotal_lines": invoice.subtotal_lines(),
-            "total_paid": invoice.total_paid(),
-            "balance": invoice.balance(),
+            "total_amount": amounts.total_amount,
+            "subtotal_lines": amounts.subtotal_lines,
+            "total_paid": amounts.total_paid,
+            "balance": amounts.balance,
+            "display_status": amounts.display_status,
+            "is_overdue": amounts.is_overdue,
         },
     )
 
@@ -124,6 +154,7 @@ def invoice_print(request, pk: int):
         pk=pk,
         student_id__in=student_ids,
     )
+    amounts = invoice_amounts(invoice)
     org = get_or_create_organization()
     return render(
         request,
@@ -132,9 +163,9 @@ def invoice_print(request, pk: int):
             "parent": parent,
             "invoice": invoice,
             "org": org,
-            "total_amount": invoice.total_amount(),
-            "subtotal_lines": invoice.subtotal_lines(),
-            "total_paid": invoice.total_paid(),
-            "balance": invoice.balance(),
+            "total_amount": amounts.total_amount,
+            "subtotal_lines": amounts.subtotal_lines,
+            "total_paid": amounts.total_paid,
+            "balance": amounts.balance,
         },
     )
