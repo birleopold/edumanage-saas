@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track Application</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <main class="max-w-4xl mx-auto px-4 py-10">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
+      <h1 class="text-3xl font-black text-slate-900">Track your application</h1>
+      <p class="text-slate-600 mt-2">Enter your application reference and the phone or email used during application.</p>
+      {% if messages %}{% for message in messages %}<div class="mt-4 rounded-lg p-3 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-100{% else %}bg-green-50 text-green-800 border border-green-100{% endif %}">{{ message }}</div>{% endfor %}{% endif %}
+      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+        <div><label class="block text-sm font-bold text-slate-700 mb-1">Reference</label>{{ form.reference }}</div>
+        <div><label class="block text-sm font-bold text-slate-700 mb-1">Phone or Email</label>{{ form.contact }}</div>
+        <button type="submit" class="md:self-end px-5 py-2.5 bg-blue-700 text-white rounded-lg font-bold hover:bg-blue-800">Track</button>
+      </form>
+    </div>
+
+    {% if applicant %}
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p class="text-sm text-slate-500">Application Reference</p>
+          <h2 class="text-2xl font-black text-blue-700">{{ applicant.application_reference }}</h2>
+        </div>
+        <span class="inline-flex w-fit px-3 py-1 rounded-full text-sm font-bold bg-blue-50 text-blue-800 border border-blue-100">{{ applicant.get_status_display }}</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Applicant</p><p class="text-slate-900 font-semibold">{{ applicant.full_name }}</p></div>
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Campus</p><p class="text-slate-900 font-semibold">{{ applicant.campus|default:'Not assigned yet' }}</p></div>
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Target class</p><p class="text-slate-900 font-semibold">{{ applicant.target_class_group|default:'Not assigned yet' }}</p></div>
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Appointments</p><p class="text-slate-900 font-semibold">{{ applicant.appointments.count }}</p></div>
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Admission invoice</p><p class="text-slate-900 font-semibold">{% if applicant.created_admission_invoice %}Created{% else %}Not yet{% endif %}</p></div>
+        <div><p class="text-slate-500 font-bold uppercase text-xs">Student record</p><p class="text-slate-900 font-semibold">{% if applicant.created_student %}Created{% else %}Not yet{% endif %}</p></div>
+      </div>
+      {% if applicant.appointments.all %}
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">Scheduled appointments</h3>
+        <div class="space-y-2">{% for item in applicant.appointments.all %}<div class="rounded-lg bg-slate-50 border border-slate-100 p-3 text-sm"><span class="font-bold">{{ item.get_appointment_type_display }}</span> · {{ item.scheduled_at }} · {{ item.get_status_display }}{% if item.location %} · {{ item.location }}{% endif %}</div>{% endfor %}</div>
+      </div>
+      {% endif %}
+      <p class="text-sm text-slate-500">For detailed updates, contact the admissions office using the phone or email provided by the school.</p>
+    </section>
+    {% endif %}
+
+    <div class="mt-6"><a href="{% url 'public_admissions_apply' %}" class="text-blue-700 font-bold hover:text-blue-900">Submit a new application</a></div>
+  </main>
+</body>
+</html>
