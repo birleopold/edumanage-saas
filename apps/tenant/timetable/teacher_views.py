@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
 
@@ -7,7 +5,7 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.users.models import Role
 
-from .models import TimetableEntry
+from .services import active_periods, entries_for_teacher, timetable_matrix, weekday_choices
 
 
 @role_required(Role.TEACHER)
@@ -16,26 +14,18 @@ def my_timetable(request):
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
 
-    entries = (
-        TimetableEntry.objects.select_related(
-            "offering",
-            "offering__course",
-            "offering__term",
-            "offering__term__year",
-            "offering__class_group",
-            "period",
-            "room",
-        )
-        .filter(is_active=True, offering__teacher=teacher)
-        .order_by("weekday", "period__order", "period__name")
-    )
-
-    by_day = defaultdict(list)
-    for e in entries:
-        by_day[e.weekday].append(e)
+    entries = list(entries_for_teacher(teacher))
+    periods = list(active_periods())
+    matrix = timetable_matrix(entries, periods)
 
     return render(
         request,
         "portals/teacher/timetable/home.html",
-        {"teacher": teacher, "entries": entries, "by_day": dict(by_day)},
+        {
+            "teacher": teacher,
+            "entries": entries,
+            "periods": periods,
+            "weekdays": weekday_choices(),
+            "matrix": matrix,
+        },
     )
