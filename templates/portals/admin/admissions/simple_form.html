@@ -1,0 +1,18 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl motion-fast space-y-6">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">{{ title }}</h1>
+      <p class="text-gray-600 mt-1">Complete the form below and save changes.</p>
+    </div>
+    <a href="javascript:history.back()" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Back</a>
+  </div>
+  {% include "components/ui_toast.html" %}
+  {% include 'components/ui_form.html' with form=form form_submit_text='Save' %}
+</div>
+{% endblock %}
