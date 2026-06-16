@@ -5,7 +5,7 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
-from .services import build_report_card, published_assessments_for_student, score_map_for_student
+from .services import build_report_card, published_assessments_for_student, score_map_for_student, score_result
 
 
 def _student_profile(request):
@@ -20,6 +20,7 @@ def results_home(request):
 
     assessments = list(published_assessments_for_student(student))
     score_map = score_map_for_student(student, assessments)
+    result_map = {assessment.id: score_result(assessment, score_map.get(assessment.id)) for assessment in assessments}
     report = build_report_card(student)
 
     return render(
@@ -29,6 +30,7 @@ def results_home(request):
             "student": student,
             "assessments": assessments,
             "score_map": score_map,
+            "result_map": result_map,
             "report": report,
         },
     )
