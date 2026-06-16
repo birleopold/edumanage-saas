@@ -4,6 +4,7 @@ from . import admin_views
 
 urlpatterns = [
     path("", admin_views.applicant_list, name="admin_admissions_applicants"),
+    path("pipeline/", admin_views.applicant_pipeline, name="admin_admissions_pipeline"),
     path("create/", admin_views.applicant_create, name="admin_admissions_applicant_create"),
     path(
         "<int:pk>/admission-letter/",
