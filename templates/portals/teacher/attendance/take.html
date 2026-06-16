@@ -6,6 +6,8 @@
 
 {% block content %}
 <div class="space-y-6">
+  {% include "components/ui_toast.html" %}
+
   <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
     <form method="get" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
       <div>
@@ -13,7 +15,7 @@
         <select id="id_campus" name="campus" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
           <option value="">All</option>
           {% for c in campuses %}
-          <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
+          <option value="{{ c.id }}" {% if selected_campus_id and selected_campus_id == c.id %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
       </div>
@@ -41,9 +43,22 @@
   </div>
 
   {% if selected_offering %}
-  <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-900">
-    <span class="font-semibold">Selected offering:</span> {{ selected_offering }}
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-900">
+    <div><span class="font-semibold">Selected offering:</span> {{ selected_offering }}</div>
+    <a href="{% url 'teacher_roll_call' %}?offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-800 rounded-lg font-semibold hover:bg-blue-100">
+      <i class="ph ph-lightning"></i> Open roll call
+    </a>
   </div>
+
+  {% if summary %}
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Marked</p><p class="text-xl font-black text-gray-900">{{ summary.marked }}/{{ summary.total }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Present</p><p class="text-xl font-black text-green-700">{{ summary.present }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Absent</p><p class="text-xl font-black text-red-700">{{ summary.absent }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Late</p><p class="text-xl font-black text-yellow-700">{{ summary.late }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Rate</p><p class="text-xl font-black text-primary-700">{{ summary.attendance_rate }}%</p></div>
+  </div>
+  {% endif %}
 
   <form method="post" class="space-y-4">
     {% csrf_token %}
@@ -73,7 +88,7 @@
             <td class="px-6 py-4 text-sm">
               <select name="status_{{ e.student.id }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 {% for value,label in STATUS_CHOICES %}
-                <option value="{{ value }}" {% if entry and entry.status == value %}selected{% endif %}>{{ label }}</option>
+                <option value="{{ value }}" {% if entry and entry.status == value %}selected{% elif not entry and value == 'PRESENT' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
             </td>
