@@ -4,6 +4,7 @@ from . import student_views
 
 urlpatterns = [
     path("", student_views.coursework_home, name="student_coursework_home"),
+    path("materials/<int:pk>/", student_views.material_detail, name="student_coursework_material_detail"),
     path("assignments/<int:pk>/", student_views.assignment_detail, name="student_coursework_assignment_detail"),
     path("assignments/<int:pk>/submit/", student_views.assignment_submit, name="student_coursework_assignment_submit"),
     path(
