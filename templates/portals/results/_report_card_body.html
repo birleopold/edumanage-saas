@@ -1,0 +1,73 @@
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <p class="text-xs uppercase font-bold text-gray-500">Overall</p>
+    <p class="text-2xl font-black text-primary-700">{% if report.overall_percentage != None %}{{ report.overall_percentage }}%{% else %}-{% endif %}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <p class="text-xs uppercase font-bold text-gray-500">Grade</p>
+    <p class="text-2xl font-black text-gray-900">{{ report.overall_grade }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <p class="text-xs uppercase font-bold text-gray-500">Remark</p>
+    <p class="text-lg font-bold text-gray-900">{{ report.overall_remark }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <p class="text-xs uppercase font-bold text-gray-500">Published Scores</p>
+    <p class="text-2xl font-black text-green-700">{{ report.completed_assessment_count }}/{{ report.published_assessment_count }}</p>
+  </div>
+</div>
+
+{% if report.course_results %}
+  <div class="space-y-6">
+    {% for course in report.course_results %}
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900">{{ course.offering.course }}</h3>
+          <p class="text-sm text-gray-600">{{ course.offering.class_group|default:"" }} · {{ course.offering.term|default:"" }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <span class="inline-flex px-3 py-1 rounded-full bg-primary-100 text-primary-800 font-bold">
+            {% if course.weighted_percentage != None %}{{ course.weighted_percentage }}%{% elif course.simple_percentage != None %}{{ course.simple_percentage }}%{% else %}-{% endif %}
+          </span>
+          <span class="inline-flex px-3 py-1 rounded-full bg-gray-100 text-gray-800 font-bold">Grade {{ course.grade }}</span>
+          <span class="inline-flex px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">{{ course.remark }}</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-white">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assessment</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">%</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grade</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Remark / Note</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for row in course.assessments %}
+            <tr>
+              <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ row.assessment.name }}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">{% if row.result.score != None %}{{ row.result.score }}{% else %}-{% endif %}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">{{ row.result.max_score }}</td>
+              <td class="px-6 py-4 text-sm font-semibold text-gray-900">{% if row.result.percentage != None %}{{ row.result.percentage }}%{% else %}-{% endif %}</td>
+              <td class="px-6 py-4 text-sm">
+                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold {% if row.result.grade == 'A' or row.result.grade == 'B' %}bg-green-100 text-green-800{% elif row.result.grade == 'C' or row.result.grade == 'D' %}bg-yellow-100 text-yellow-800{% elif row.result.grade == 'F' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-700{% endif %}">{{ row.result.grade }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">
+                {{ row.result.remark }}{% if row.result.note %} · {{ row.result.note }}{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+{% else %}
+  {% include "components/ui_empty_state.html" with icon="chart-bar" title="No report-card data" description="No published assessments are available yet." %}
+{% endif %}
