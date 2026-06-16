@@ -1,9 +1,5 @@
-from typing import Optional
-
 from django.contrib import messages
-from django.core.mail import send_mail
 from django.core.paginator import Paginator
-from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,14 +7,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.portals.permissions import admin_portal_required
-from apps.tenant.students.models import StudentProfile
-from apps.tenant.students.services import generate_next_student_id
-from apps.tenant.users.models import Role, User
 from apps.tenant.orgsettings.utils import log_action
 
-from .forms import ApplicantForm
+from .forms import AdmissionDecisionForm, ApplicantConversionForm, ApplicantForm
 from .models import Applicant
 from .pdf_letter import generate_admission_letter_pdf
+from .services import convert_applicant_to_student, pipeline_summary
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -37,47 +31,8 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
-def _ensure_student_role():
-    return Role.objects.get_or_create(code=Role.STUDENT, defaults={"name": "Student"})[0]
-
-
-def _generate_unique_username(base: str) -> str:
-    base = (base or "student").strip()
-    if not base:
-        base = "student"
-
-    username = base
-    i = 1
-    while User.objects.filter(username=username).exists():
-        username = f"{base}{i}"
-        i += 1
-    return username
-
-
-def _create_student_user(applicant: Applicant) -> User:
-    if applicant.email:
-        base = applicant.email.split("@")[0]
-    else:
-        base = f"student{applicant.id}"
-
-    username = _generate_unique_username(base)
-    user = User.objects.create(username=username, email=applicant.email)
-    user.set_unusable_password()
-    user.save(update_fields=["password"])
-
-    student_role = _ensure_student_role()
-    user.roles.add(student_role)
-
-    return user
-
-
-@admin_portal_required
-def applicant_list(request):
-    q = (request.GET.get("q") or "").strip()
-    per_page = _parse_per_page(request)
-    page_number = request.GET.get("page") or 1
-
-    qs = Applicant.objects.select_related(
+def _applicant_queryset():
+    return Applicant.objects.select_related(
         "campus",
         "target_term",
         "target_term__year",
@@ -85,23 +40,88 @@ def applicant_list(request):
         "target_program",
         "target_class_group",
         "created_student",
-    ).all()
+    ).prefetch_related("documents")
+
+
+def _filter_applicants(request, qs):
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status") or "").strip()
+    source = (request.GET.get("source") or "").strip()
+    campus_raw = (request.GET.get("campus") or "").strip()
 
     if q:
         qs = qs.filter(
             Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
+            | Q(application_reference__icontains=q)
             | Q(email__icontains=q)
             | Q(phone__icontains=q)
+            | Q(guardian_name__icontains=q)
         )
+    if status in dict(Applicant.STATUS_CHOICES):
+        qs = qs.filter(status=status)
+    if source in dict(Applicant.SOURCE_CHOICES):
+        qs = qs.filter(source=source)
+    if campus_raw.isdigit():
+        qs = qs.filter(campus_id=int(campus_raw))
+    return qs, q, status, source, int(campus_raw) if campus_raw.isdigit() else None
 
-    paginator = Paginator(qs, per_page)
-    page_obj = paginator.get_page(page_number)
+
+@admin_portal_required
+def applicant_list(request):
+    per_page = _parse_per_page(request)
+    page_number = request.GET.get("page") or 1
+
+    qs, q, status, source, campus_id = _filter_applicants(request, _applicant_queryset().all())
+    all_for_summary = _applicant_queryset().all()
+    summary = pipeline_summary(all_for_summary)
+
+    page_obj = Paginator(qs, per_page).get_page(page_number)
 
     return render(
         request,
         "portals/admin/admissions/applicants_list.html",
-        {"applicants": page_obj.object_list, "page_obj": page_obj, "q": q, "per_page": per_page},
+        {
+            "applicants": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "status": status,
+            "source": source,
+            "selected_campus_id": campus_id,
+            "per_page": per_page,
+            "summary": summary,
+            "campuses": _campus_queryset(),
+            "status_choices": Applicant.STATUS_CHOICES,
+            "source_choices": Applicant.SOURCE_CHOICES,
+        },
+    )
+
+
+@admin_portal_required
+def applicant_pipeline(request):
+    qs, q, status, source, campus_id = _filter_applicants(request, _applicant_queryset().all())
+    applicants = list(qs)
+    columns = [
+        (Applicant.NEW, "New", [a for a in applicants if a.status == Applicant.NEW]),
+        (Applicant.IN_REVIEW, "In review", [a for a in applicants if a.status == Applicant.IN_REVIEW]),
+        (Applicant.ADMITTED, "Admitted", [a for a in applicants if a.status == Applicant.ADMITTED]),
+        (Applicant.REJECTED, "Rejected", [a for a in applicants if a.status == Applicant.REJECTED]),
+    ]
+
+    return render(
+        request,
+        "portals/admin/admissions/pipeline.html",
+        {
+            "columns": columns,
+            "q": q,
+            "status": status,
+            "source": source,
+            "selected_campus_id": campus_id,
+            "campuses": _campus_queryset(),
+            "status_choices": Applicant.STATUS_CHOICES,
+            "source_choices": Applicant.SOURCE_CHOICES,
+            "summary": pipeline_summary(applicants),
+        },
     )
 
 
@@ -118,7 +138,7 @@ def applicant_create(request):
                 applicant.campus = current
             applicant.save()
             messages.success(request, "Applicant created.")
-            return redirect("admin_admissions_applicants")
+            return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
     else:
         form = ApplicantForm(campuses=campuses)
         if current is not None:
@@ -150,115 +170,119 @@ def applicant_edit(request, pk: int):
 
 @admin_portal_required
 def applicant_detail(request, pk: int):
-    applicant = get_object_or_404(
-        Applicant.objects.select_related(
-            "campus",
-            "target_term",
-            "target_term__year",
-            "target_level",
-            "target_program",
-            "target_class_group",
-            "created_student",
-        ),
-        pk=pk,
+    applicant = get_object_or_404(_applicant_queryset(), pk=pk)
+    decision_form = AdmissionDecisionForm(initial={"status": applicant.status})
+    conversion_form = ApplicantConversionForm(applicant=applicant, campuses=_campus_queryset())
+    if applicant.campus_id:
+        conversion_form.fields["campus"].initial = applicant.campus
+    return render(
+        request,
+        "portals/admin/admissions/applicant_detail.html",
+        {
+            "applicant": applicant,
+            "decision_form": decision_form,
+            "conversion_form": conversion_form,
+        },
     )
-    return render(request, "portals/admin/admissions/applicant_detail.html", {"applicant": applicant})
 
 
 @admin_portal_required
 def applicant_set_status(request, pk: int):
     applicant = get_object_or_404(Applicant, pk=pk)
-    status = (request.POST.get("status") or "").strip()
+    if request.method != "POST":
+        return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
-    allowed = {Applicant.NEW, Applicant.IN_REVIEW, Applicant.REJECTED}
-    if status not in allowed:
-        messages.error(request, "Invalid status.")
+    form = AdmissionDecisionForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Invalid admission decision.")
+        return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
+
+    status = form.cleaned_data["status"]
+    note = (form.cleaned_data.get("note") or "").strip()
+    if applicant.status == Applicant.ADMITTED and applicant.created_student_id and status != Applicant.ADMITTED:
+        messages.error(request, "This applicant has already been converted to a student and cannot be moved backwards.")
         return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
     applicant.status = status
-    applicant.save(update_fields=["status", "updated_at"])
-    messages.success(request, "Status updated.")
+    if note:
+        applicant.note = (applicant.note + "\n" if applicant.note else "") + note
+        applicant.save(update_fields=["status", "note", "updated_at"])
+    else:
+        applicant.save(update_fields=["status", "updated_at"])
+
+    messages.success(request, "Admission decision updated.")
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
 
 @admin_portal_required
 def applicant_reject(request, pk: int):
     applicant = get_object_or_404(Applicant, pk=pk)
+    if request.method != "POST":
+        return render(request, "portals/admin/admissions/reject_confirm.html", {"applicant": applicant})
+
+    note = (request.POST.get("note") or "").strip()
+    if applicant.created_student_id:
+        messages.error(request, "This applicant has already been converted to a student and cannot be rejected.")
+        return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
     applicant.status = Applicant.REJECTED
-    applicant.save(update_fields=["status", "updated_at"])
+    if note:
+        applicant.note = (applicant.note + "\n" if applicant.note else "") + f"Rejection note: {note}"
+        applicant.save(update_fields=["status", "note", "updated_at"])
+    else:
+        applicant.save(update_fields=["status", "updated_at"])
     messages.success(request, "Applicant rejected.")
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
 
 @admin_portal_required
 def applicant_admit(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
-
-    current = get_current_campus(request)
+    applicant = get_object_or_404(Applicant.objects.select_related("created_student", "campus", "target_class_group"), pk=pk)
+    campuses = _campus_queryset()
 
     if applicant.status == Applicant.ADMITTED and applicant.created_student_id:
-        messages.info(request, "Applicant already admitted.")
+        messages.info(request, "Applicant already converted to a student.")
         return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
 
-    with transaction.atomic():
-        campus = applicant.campus or current
-        student_id = generate_next_student_id(campus)
-
-        user: Optional[User] = None
-        temp_password: Optional[str] = None
-        if applicant.email:
-            temp_password = User.objects.make_random_password(length=12)
-            user = User.objects.create(username=student_id, email=applicant.email)
-            user.set_password(temp_password)
-            user.must_change_password = True
-            user.save(update_fields=["password", "must_change_password"])
-
-            student_role = _ensure_student_role()
-            user.roles.add(student_role)
-
-        student = StudentProfile.objects.create(
-            user=user,
-            campus=campus,
-            first_name=applicant.first_name,
-            last_name=applicant.last_name,
-            date_of_birth=applicant.date_of_birth,
-            student_id=student_id,
-            email=applicant.email or "",
-            is_active=True,
-        )
-
-        applicant.status = Applicant.ADMITTED
-        applicant.created_student = student
-        applicant.save(update_fields=["status", "created_student", "updated_at"])
-
-    if applicant.email and temp_password:
-        send_mail(
-            subject="Your Student Portal Login",
-            message=(
-                f"Hello {student.first_name},\n\n"
-                f"Your student number: {student.student_id}\n"
-                f"Temporary password: {temp_password}\n\n"
-                "Please change your password immediately after your first login."
-            ),
-            from_email=None,
-            recipient_list=[applicant.email],
-            fail_silently=True,
-        )
-        log_action(
-            student,
-            action="CREDENTIALS_ISSUED",
-            description="Student credentials issued via email (admissions admit).",
-            user=request.user,
-            metadata={
-                "delivery": "email",
-                "username": student.user.username if student.user_id else "",
-                "student_id": student.student_id,
-            },
-        )
-        messages.success(request, "Applicant admitted. Login details sent via email.")
+    if request.method == "POST":
+        form = ApplicantConversionForm(request.POST, applicant=applicant, campuses=campuses)
+        if form.is_valid():
+            try:
+                result = convert_applicant_to_student(
+                    applicant=applicant,
+                    campus=form.cleaned_data["campus"],
+                    stream=form.cleaned_data.get("stream"),
+                    student_id=form.cleaned_data.get("student_id"),
+                    create_student_login=form.cleaned_data.get("create_student_login"),
+                    create_parent_link=form.cleaned_data.get("create_parent_link"),
+                    send_credentials_email_flag=form.cleaned_data.get("send_credentials_email"),
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                log_action(
+                    result.student,
+                    action="APPLICANT_CONVERTED_TO_STUDENT",
+                    description=f"Applicant {applicant.application_reference} converted to student {result.student.student_id}.",
+                    user=request.user,
+                    metadata={"applicant_id": applicant.pk, "credentials_sent": result.credentials_sent},
+                )
+                if result.credentials_sent:
+                    messages.success(request, "Applicant admitted, student profile created, and login details sent by email.")
+                elif result.user:
+                    messages.success(request, "Applicant admitted and student profile created. Login was created but email was not sent.")
+                else:
+                    messages.success(request, "Applicant admitted and student profile created.")
+                return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
     else:
-        messages.success(request, "Applicant admitted and student profile created.")
-    return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
+        form = ApplicantConversionForm(applicant=applicant, campuses=campuses)
+        if applicant.campus_id:
+            form.fields["campus"].initial = applicant.campus
+
+    return render(
+        request,
+        "portals/admin/admissions/convert_to_student.html",
+        {"applicant": applicant, "form": form},
+    )
 
 
 @admin_portal_required
