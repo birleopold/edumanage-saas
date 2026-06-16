@@ -206,6 +206,7 @@ def assessment_grade(request, pk: int):
         )
 
     scored_count = sum(1 for row in rows if row["result"].score is not None)
+    total_count = len(rows)
 
     return render(
         request,
@@ -218,6 +219,7 @@ def assessment_grade(request, pk: int):
             "existing_scores": existing_scores,
             "q": q,
             "scored_count": scored_count,
-            "total_count": len(rows),
+            "total_count": total_count,
+            "missing_count": max(total_count - scored_count, 0),
         },
     )
