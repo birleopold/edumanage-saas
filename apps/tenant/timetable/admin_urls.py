@@ -3,6 +3,9 @@ from django.urls import path
 from . import admin_views
 
 urlpatterns = [
+    path("", admin_views.timetable_grid, name="admin_timetable_grid"),
+    path("clashes/", admin_views.clash_report, name="admin_timetable_clashes"),
+
     path("periods/", admin_views.period_list, name="admin_periods_list"),
     path("periods/create/", admin_views.period_create, name="admin_periods_create"),
     path("periods/<int:pk>/edit/", admin_views.period_edit, name="admin_periods_edit"),
