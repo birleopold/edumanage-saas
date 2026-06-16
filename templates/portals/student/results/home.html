@@ -2,68 +2,76 @@
 {% load assessments_extras %}
 
 {% block title %}My Results{% endblock %}
+{% block page_title %}My Results{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">My Results</h1>
-  <p class="text-gray-600">View your published assessment scores</p>
-</div>
-
-{% include "components/ui_toast.html" %}
-
-{% if assessments %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assessment</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max Score</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Percentage</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for a in assessments %}
-          {% with s=score_map|get_item:a.id %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 text-sm font-semibold text-primary-600">{{ a.offering }}</td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ a.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if s %}
-                <span class="text-2xl font-bold text-indigo-600">{{ s.score }}</span>
-              {% else %}
-                <span class="text-gray-400">-</span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.max_score }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if s and a.max_score > 0 %}
-                {% widthratio s.score a.max_score 100 as percentage %}
-                {% if percentage >= 75 %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                    <i class="ph ph-check-circle"></i> {{ percentage }}%
-                  </span>
-                {% elif percentage >= 50 %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                    <i class="ph ph-warning"></i> {{ percentage }}%
-                  </span>
-                {% else %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                    <i class="ph ph-x-circle"></i> {{ percentage }}%
-                  </span>
-                {% endif %}
-              {% else %}
-                <span class="text-gray-400">-</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endwith %}
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="motion-fast space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">My Results</h1>
+      <p class="text-gray-600">View your published assessment scores, grades, and report-card summary.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'student_report_card' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700">
+        <i class="ph ph-student"></i> Report Card
+      </a>
+      <a href="{% url 'student_report_card_print' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50">
+        <i class="ph ph-printer"></i> Print
+      </a>
+    </div>
   </div>
-{% else %}
-  {% include "components/ui_empty_state.html" with icon="chart-bar" title="No results" description="No published assessment results yet" %}
-{% endif %}
+
+  {% include "components/ui_toast.html" %}
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Overall</p><p class="text-2xl font-black text-primary-700">{% if report.overall_percentage != None %}{{ report.overall_percentage }}%{% else %}-{% endif %}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Grade</p><p class="text-2xl font-black text-gray-900">{{ report.overall_grade }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Remark</p><p class="text-lg font-bold text-gray-900">{{ report.overall_remark }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Published Scores</p><p class="text-2xl font-black text-green-700">{{ report.completed_assessment_count }}/{{ report.published_assessment_count }}</p></div>
+  </div>
+
+  {% if assessments %}
+    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assessment</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Max</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">%</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grade</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for a in assessments %}
+            {% with s=score_map|get_item:a.id %}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 text-sm font-semibold text-primary-600">{{ a.offering }}</td>
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ a.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">{% if s and s.score != None %}<span class="text-xl font-bold text-indigo-600">{{ s.score }}</span>{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.max_score }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {% if s and s.score != None and a.max_score > 0 %}{% widthratio s.score a.max_score 100 as pct %}<span class="font-bold text-gray-900">{{ pct }}%</span>{% else %}<span class="text-gray-400">-</span>{% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {% if s and s.score != None and a.max_score > 0 %}
+                  {% widthratio s.score a.max_score 100 as pct %}
+                  {% if pct >= 80 %}<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">A</span>
+                  {% elif pct >= 70 %}<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">B</span>
+                  {% elif pct >= 60 %}<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">C</span>
+                  {% elif pct >= 50 %}<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">D</span>
+                  {% else %}<span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">F</span>{% endif %}
+                {% else %}<span class="text-gray-400">-</span>{% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% include "components/ui_empty_state.html" with icon="chart-bar" title="No results" description="No published assessment results yet" %}
+  {% endif %}
+</div>
 {% endblock %}
