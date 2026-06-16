@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Optional
 
 from django.contrib.auth import get_user_model
@@ -13,7 +14,7 @@ from apps.tenant.students.models import StudentProfile
 from apps.tenant.students.services import generate_next_student_id
 from apps.tenant.users.models import Role
 
-from .models import Applicant
+from .models import AdmissionLead, Applicant
 
 User = get_user_model()
 
@@ -36,6 +37,7 @@ class ConversionResult:
     parent: Optional[ParentProfile]
     temporary_password: str | None
     credentials_sent: bool
+    admission_invoice: object | None = None
 
 
 def pipeline_summary(applicants) -> AdmissionPipelineSummary:
@@ -143,6 +145,69 @@ def send_student_credentials_email(*, applicant: Applicant, student: StudentProf
     return True
 
 
+def create_admission_invoice_for_student(*, applicant: Applicant, student: StudentProfile, fee_item=None, amount=None, due_date=None):
+    from apps.tenant.finance.models import FeeItem, Invoice, InvoiceLine
+
+    fee_amount = Decimal(str(amount or 0))
+    selected_item = fee_item
+    if selected_item and not fee_amount:
+        fee_amount = selected_item.amount or Decimal("0")
+    if not selected_item and fee_amount > 0:
+        selected_item, _ = FeeItem.objects.get_or_create(
+            code="ADMISSION",
+            defaults={"name": "Admission/Application Fee", "amount": fee_amount, "is_active": True},
+        )
+    if fee_amount <= 0:
+        return None
+
+    invoice = Invoice.objects.create(
+        student=student,
+        academic_year=getattr(applicant.target_term, "year", None),
+        academic_term=applicant.target_term,
+        reference=f"ADM-{applicant.application_reference or applicant.pk}"[:64],
+        due_date=due_date,
+        status=Invoice.ACTIVE,
+    )
+    InvoiceLine.objects.create(
+        invoice=invoice,
+        fee_item=selected_item,
+        description=(selected_item.name if selected_item else "Admission/Application Fee"),
+        quantity=Decimal("1"),
+        unit_amount=fee_amount,
+    )
+    return invoice
+
+
+@transaction.atomic
+def convert_lead_to_applicant(*, lead: AdmissionLead, user=None) -> Applicant:
+    if lead.converted_applicant_id:
+        return lead.converted_applicant
+    parts = lead.learner_name.strip().split()
+    if len(parts) <= 1:
+        first_name = parts[0] if parts else "Learner"
+        last_name = ""
+    else:
+        first_name = " ".join(parts[:-1])
+        last_name = parts[-1]
+    applicant = Applicant.objects.create(
+        campus=lead.campus,
+        first_name=first_name,
+        last_name=last_name,
+        email=lead.email,
+        phone=lead.phone,
+        guardian_name=lead.parent_name,
+        target_program=lead.interested_program,
+        target_class_group=lead.interested_class_group,
+        source=Applicant.SOURCE_LEAD,
+        status=Applicant.NEW,
+        note=lead.notes,
+    )
+    lead.status = AdmissionLead.CONVERTED
+    lead.converted_applicant = applicant
+    lead.save(update_fields=["status", "converted_applicant", "updated_at"])
+    return applicant
+
+
 @transaction.atomic
 def convert_applicant_to_student(
     *,
@@ -153,6 +218,10 @@ def convert_applicant_to_student(
     create_student_login: bool = True,
     create_parent_link: bool = True,
     send_credentials_email_flag: bool = True,
+    create_admission_invoice: bool = False,
+    admission_fee_item=None,
+    admission_fee_amount=None,
+    invoice_due_date=None,
 ) -> ConversionResult:
     if applicant.created_student_id:
         return ConversionResult(
@@ -161,6 +230,7 @@ def convert_applicant_to_student(
             parent=None,
             temporary_password=None,
             credentials_sent=False,
+            admission_invoice=applicant.created_admission_invoice,
         )
 
     if campus is None:
@@ -194,23 +264,27 @@ def convert_applicant_to_student(
             ParentStudentLink.objects.update_or_create(
                 parent=parent,
                 student=student,
-                defaults={
-                    "relationship": applicant.guardian_relationship or "Guardian",
-                    "is_primary": True,
-                },
+                defaults={"relationship": applicant.guardian_relationship or "Guardian", "is_primary": True},
             )
+
+    admission_invoice = None
+    if create_admission_invoice:
+        admission_invoice = create_admission_invoice_for_student(
+            applicant=applicant,
+            student=student,
+            fee_item=admission_fee_item,
+            amount=admission_fee_amount,
+            due_date=invoice_due_date,
+        )
 
     applicant.status = Applicant.ADMITTED
     applicant.created_student = student
-    applicant.save(update_fields=["status", "created_student", "updated_at"])
+    applicant.created_admission_invoice = admission_invoice
+    applicant.save(update_fields=["status", "created_student", "created_admission_invoice", "updated_at"])
 
     credentials_sent = False
     if send_credentials_email_flag:
-        credentials_sent = send_student_credentials_email(
-            applicant=applicant,
-            student=student,
-            temporary_password=temporary_password,
-        )
+        credentials_sent = send_student_credentials_email(applicant=applicant, student=student, temporary_password=temporary_password)
 
     return ConversionResult(
         student=student,
@@ -218,4 +292,5 @@ def convert_applicant_to_student(
         parent=parent,
         temporary_password=temporary_password,
         credentials_sent=credentials_sent,
+        admission_invoice=admission_invoice,
     )
