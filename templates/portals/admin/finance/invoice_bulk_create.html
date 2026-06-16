@@ -1,0 +1,82 @@
+{% extends 'portals/admin/base.html' %}
+{% load orgsettings_extras %}
+
+{% block title %}Bulk Create Invoices{% endblock %}
+{% block page_title %}Bulk Create Invoices{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+
+<div class="space-y-6 motion-fast">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Bulk Create Invoices</h1>
+      <p class="text-gray-600">Generate fee invoices for a full campus, class, stream, or selected students.</p>
+    </div>
+    <a href="{% url 'admin_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
+      <i class="ph ph-arrow-left"></i> Back to invoices
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500 font-bold">Invoices</p>
+      <p class="text-2xl font-black text-gray-900 mt-1">{{ current_summary.invoice_count }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500 font-bold">Total billed</p>
+      <p class="text-xl font-black text-gray-900 mt-1">{{ current_summary.total_billed|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500 font-bold">Paid</p>
+      <p class="text-xl font-black text-green-700 mt-1">{{ current_summary.total_paid|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <p class="text-xs uppercase text-gray-500 font-bold">Balance</p>
+      <p class="text-xl font-black text-red-700 mt-1">{{ current_summary.total_balance|format_money_amount:org_profile.default_currency }}</p>
+    </div>
+  </div>
+
+  <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
+    <p class="text-sm text-amber-900">
+      <span class="font-semibold">Recommended workflow:</span> select year and term, choose fee items, then choose either filters or specific students. Keep “skip existing” on to avoid duplicate invoices for the same period.
+    </p>
+  </div>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {% for field in form %}
+        <div class="{% if field.name == 'students' or field.name == 'fee_items' %}md:col-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-800 mb-1.5">
+            {{ field.label }}{% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}
+          <p class="mt-1 text-xs font-semibold text-red-600">
+            {% for error in field.errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          </p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-gray-100">
+        <a href="{% url 'admin_invoices_list' %}" class="inline-flex justify-center items-center px-5 py-3 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
+        <button type="submit" class="inline-flex justify-center items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-lg" onclick="return confirm('Create invoices for all matching students?');">
+          <i class="ph ph-files"></i> Generate Invoices
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
