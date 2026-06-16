@@ -103,6 +103,11 @@ class ApplicantConversionForm(forms.Form):
                 self.fields["campus"].initial = applicant.campus
             if applicant.target_class_group_id:
                 self.fields["stream"].queryset = self.fields["stream"].queryset.filter(class_group=applicant.target_class_group)
+            if not applicant.email:
+                self.fields["create_student_login"].initial = False
+                self.fields["send_credentials_email"].initial = False
+                self.fields["create_student_login"].help_text = "No applicant email is available, so login creation is off by default."
+                self.fields["send_credentials_email"].help_text = "No applicant email is available, so credentials cannot be emailed."
 
     def clean_student_id(self):
         value = (self.cleaned_data.get("student_id") or "").strip()
