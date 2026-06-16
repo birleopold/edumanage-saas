@@ -1,4 +1,5 @@
 {% extends 'portals/teacher/base.html' %}
+{% load attendance_extras %}
 
 {% block title %}Roll Call{% endblock %}
 
@@ -19,10 +20,7 @@
       <!-- Course Offering -->
       <div>
         <label for="id_offering" class="block text-sm font-bold text-gray-700 mb-2">Course</label>
-        <select id="id_offering" 
-                name="offering"
-                onchange="this.form.submit()"
-                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
+        <select id="id_offering" name="offering" onchange="this.form.submit()" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
           <option value="">-- Select Course --</option>
           {% for o in offerings %}
             <option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>
@@ -35,20 +33,12 @@
       <!-- Date -->
       <div>
         <label for="id_date" class="block text-sm font-bold text-gray-700 mb-2">Date</label>
-        <input id="id_date" 
-               type="date" 
-               name="date" 
-               value="{{ selected_date|date:'Y-m-d' }}"
-               placeholder="YYYY-MM-DD"
-               onchange="this.form.submit()"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
+        <input id="id_date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" placeholder="YYYY-MM-DD" onchange="this.form.submit()" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
       </div>
 
       <!-- Quick Actions -->
       <div class="flex items-end gap-2">
-        <button type="button" 
-                onclick="markAllPresent()"
-                class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+        <button type="button" onclick="markAllPresent()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
           <i class="ph ph-check-circle"></i>
           <span>All Present</span>
         </button>
@@ -58,6 +48,16 @@
 </div>
 
 {% if selected_offering and students %}
+  {% if summary %}
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Marked</p><p class="text-xl font-black text-gray-900">{{ summary.marked }}/{{ summary.total }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Present</p><p class="text-xl font-black text-green-700">{{ summary.present }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Absent</p><p class="text-xl font-black text-red-700">{{ summary.absent }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Late</p><p class="text-xl font-black text-yellow-700">{{ summary.late }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Rate</p><p class="text-xl font-black text-primary-700">{{ summary.attendance_rate }}%</p></div>
+  </div>
+  {% endif %}
+
   <!-- Roll Call Interface -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200">
     <!-- Header -->
@@ -100,36 +100,17 @@
 
             <!-- Status Buttons -->
             <div class="flex items-center gap-2">
-              <button type="button" 
-                      onclick="markStudent({{ student.id }}, 'PRESENT', this)"
-                      class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'PRESENT' %}bg-green-600 text-white border-green-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-green-600{% endif %}"
-                      data-status="PRESENT">
-                <i class="ph ph-check-circle"></i>
-                <span class="ml-1">Present</span>
+              <button type="button" onclick="markStudent({{ student.id }}, 'PRESENT', this)" class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'PRESENT' %}bg-green-600 text-white border-green-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-green-600{% endif %}" data-status="PRESENT">
+                <i class="ph ph-check-circle"></i><span class="ml-1">Present</span>
               </button>
-              
-              <button type="button" 
-                      onclick="markStudent({{ student.id }}, 'ABSENT', this)"
-                      class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'ABSENT' %}bg-red-600 text-white border-red-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-red-600{% endif %}"
-                      data-status="ABSENT">
-                <i class="ph ph-x-circle"></i>
-                <span class="ml-1">Absent</span>
+              <button type="button" onclick="markStudent({{ student.id }}, 'ABSENT', this)" class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'ABSENT' %}bg-red-600 text-white border-red-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-red-600{% endif %}" data-status="ABSENT">
+                <i class="ph ph-x-circle"></i><span class="ml-1">Absent</span>
               </button>
-              
-              <button type="button" 
-                      onclick="markStudent({{ student.id }}, 'LATE', this)"
-                      class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'LATE' %}bg-yellow-600 text-white border-yellow-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-yellow-600{% endif %}"
-                      data-status="LATE">
-                <i class="ph ph-clock"></i>
-                <span class="ml-1">Late</span>
+              <button type="button" onclick="markStudent({{ student.id }}, 'LATE', this)" class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'LATE' %}bg-yellow-600 text-white border-yellow-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-yellow-600{% endif %}" data-status="LATE">
+                <i class="ph ph-clock"></i><span class="ml-1">Late</span>
               </button>
-              
-              <button type="button" 
-                      onclick="markStudent({{ student.id }}, 'EXCUSED', this)"
-                      class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'EXCUSED' %}bg-blue-600 text-white border-blue-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-blue-600{% endif %}"
-                      data-status="EXCUSED">
-                <i class="ph ph-note"></i>
-                <span class="ml-1">Excused</span>
+              <button type="button" onclick="markStudent({{ student.id }}, 'EXCUSED', this)" class="status-btn px-4 py-2 rounded-lg font-semibold transition-all border-2 {% if existing_entries|get_item:student.id == 'EXCUSED' %}bg-blue-600 text-white border-blue-600{% else %}bg-white text-gray-700 border-gray-300 hover:border-blue-600{% endif %}" data-status="EXCUSED">
+                <i class="ph ph-note"></i><span class="ml-1">Excused</span>
               </button>
             </div>
           </div>
@@ -140,113 +121,65 @@
     <!-- Footer Actions -->
     <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
       <div class="flex items-center justify-between">
-        <a href="{% url 'teacher_attendance_home' %}" 
-           class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors">
-          <i class="ph ph-arrow-left"></i>
-          <span>Back</span>
+        <a href="{% url 'teacher_attendance_home' %}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors">
+          <i class="ph ph-arrow-left"></i><span>Back</span>
         </a>
-        
-        <button type="button" 
-                onclick="saveAttendance()"
-                class="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-          <i class="ph ph-floppy-disk"></i>
-          <span>Save Attendance</span>
+        <button type="button" onclick="saveAttendance()" class="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
+          <i class="ph ph-floppy-disk"></i><span>Save Attendance</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Keyboard Shortcuts Help -->
-  <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-    <div class="flex items-start gap-3">
-      <i class="ph ph-keyboard text-blue-600 text-xl"></i>
-      <div>
-        <p class="font-semibold text-blue-900 mb-2">Keyboard Shortcuts</p>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-blue-800">
-          <div><kbd class="px-2 py-1 bg-white rounded border border-blue-300">P</kbd> Present</div>
-          <div><kbd class="px-2 py-1 bg-white rounded border border-blue-300">A</kbd> Absent</div>
-          <div><kbd class="px-2 py-1 bg-white rounded border border-blue-300">L</kbd> Late</div>
-          <div><kbd class="px-2 py-1 bg-white rounded border border-blue-300">E</kbd> Excused</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Store attendance data
     const attendanceData = {};
-    
-    // Initialize with existing entries
     {% for student in students %}
       {% if existing_entries|get_item:student.id %}
         attendanceData[{{ student.id }}] = '{{ existing_entries|get_item:student.id }}';
       {% endif %}
     {% endfor %}
-    
-    // Update marked count
+
     function updateMarkedCount() {
-      const count = Object.keys(attendanceData).length;
-      document.getElementById('marked-count').textContent = count;
+      document.getElementById('marked-count').textContent = Object.keys(attendanceData).length;
     }
-    
-    // Mark individual student
+
     function markStudent(studentId, status, button) {
       attendanceData[studentId] = status;
-      
-      // Update button states for this student
       const row = button.closest('[data-student-id]');
       const buttons = row.querySelectorAll('.status-btn');
-      
       buttons.forEach(btn => {
         const btnStatus = btn.getAttribute('data-status');
+        btn.classList.remove('bg-green-600', 'bg-red-600', 'bg-yellow-600', 'bg-blue-600', 'text-white', 'border-green-600', 'border-red-600', 'border-yellow-600', 'border-blue-600');
+        btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
         if (btnStatus === status) {
-          // Active state
           btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
-          if (status === 'PRESENT') {
-            btn.classList.add('bg-green-600', 'text-white', 'border-green-600');
-          } else if (status === 'ABSENT') {
-            btn.classList.add('bg-red-600', 'text-white', 'border-red-600');
-          } else if (status === 'LATE') {
-            btn.classList.add('bg-yellow-600', 'text-white', 'border-yellow-600');
-          } else if (status === 'EXCUSED') {
-            btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-          }
-        } else {
-          // Inactive state
-          btn.classList.remove('bg-green-600', 'bg-red-600', 'bg-yellow-600', 'bg-blue-600', 'text-white', 'border-green-600', 'border-red-600', 'border-yellow-600', 'border-blue-600');
-          btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+          if (status === 'PRESENT') btn.classList.add('bg-green-600', 'text-white', 'border-green-600');
+          if (status === 'ABSENT') btn.classList.add('bg-red-600', 'text-white', 'border-red-600');
+          if (status === 'LATE') btn.classList.add('bg-yellow-600', 'text-white', 'border-yellow-600');
+          if (status === 'EXCUSED') btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
         }
       });
-      
       updateMarkedCount();
     }
-    
-    // Mark all students as present
+
     function markAllPresent() {
-      const rows = document.querySelectorAll('[data-student-id]');
-      rows.forEach(row => {
+      document.querySelectorAll('[data-student-id]').forEach(row => {
         const studentId = row.getAttribute('data-student-id');
         const presentBtn = row.querySelector('[data-status="PRESENT"]');
         markStudent(parseInt(studentId), 'PRESENT', presentBtn);
       });
     }
-    
-    // Save attendance via AJAX
+
     function saveAttendance() {
       const offeringId = {{ selected_offering.id }};
       const date = '{{ selected_date|date:"Y-m-d" }}';
-      
       fetch('{% url "teacher_roll_call_save" %}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: JSON.stringify({
-          offering_id: offeringId,
-          date: date,
-          attendance: attendanceData
-        })
+        body: JSON.stringify({ offering_id: offeringId, date: date, attendance: attendanceData })
       })
       .then(response => response.json())
       .then(data => {
@@ -256,44 +189,26 @@
           showToast('Error', data.error || 'Failed to save attendance', 'error');
         }
       })
-      .catch(error => {
-        showToast('Error', 'Network error occurred', 'error');
-      });
+      .catch(() => showToast('Error', 'Network error occurred', 'error'));
     }
-    
-    // Toast notification helper
+
     function showToast(title, message, type) {
       if (typeof window.showToast === 'function') {
         window.showToast(title, message, type);
         return;
       }
-      console.log(title + ': ' + message);
+      alert(title + ': ' + message);
     }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-      
-      const key = e.key.toLowerCase();
-      if (key === 'p' || key === 'a' || key === 'l' || key === 'e') {
-        e.preventDefault();
-        // This would require tracking current student focus
-        // For now, just show the shortcut is available
-      }
-    });
-    
-    // Initialize count
+
     updateMarkedCount();
   </script>
 {% elif selected_offering %}
-  <!-- No Students -->
   {% include "components/ui_empty_state.html" with icon="users" title="No students enrolled" description="There are no students enrolled in this course offering" %}
 {% else %}
-  <!-- No Course Selected -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
     <i class="ph ph-chalkboard-teacher text-gray-300 text-6xl mb-4"></i>
-    <h3 class="text-lg font-semibold text-gray-900 mb-2">Select a Course</h3>
-    <p class="text-gray-600">Choose a course offering and date to begin roll call</p>
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">Select a course</h3>
+    <p class="text-gray-600">Choose a course and date above to begin roll call.</p>
   </div>
 {% endif %}
 </div>
