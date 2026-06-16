@@ -6,8 +6,8 @@
 <div class="space-y-6 motion-rich">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Applicant #{{ applicant.id }}</h1>
-      <p class="text-sm text-gray-600 mt-1">Review profile details and complete admission actions quickly.</p>
+      <h1 class="text-2xl font-bold text-gray-900">Applicant {{ applicant.application_reference|default:applicant.id }}</h1>
+      <p class="text-sm text-gray-600 mt-1">Review profile details, documents, and complete admission actions quickly.</p>
     </div>
     <div class="flex items-center gap-2">
       <a href="{% url 'admin_admissions_applicants' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
@@ -32,12 +32,20 @@
       <div class="divide-y divide-gray-100">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-4">
           <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Application Reference</p>
+            <p class="text-sm font-semibold text-gray-900">{{ applicant.application_reference|default:"-" }}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Source</p>
+            <p class="text-sm text-gray-900">{{ applicant.get_source_display }}</p>
+          </div>
+          <div>
             <p class="text-xs uppercase tracking-wide text-gray-500">Name</p>
-            <p class="text-sm font-semibold text-gray-900">{{ applicant.last_name }} {{ applicant.first_name }}</p>
+            <p class="text-sm font-semibold text-gray-900">{{ applicant.full_name }}</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wide text-gray-500">Status</p>
-            <p class="text-sm text-gray-900">{{ applicant.status }}</p>
+            <p class="text-sm text-gray-900">{{ applicant.get_status_display }}</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wide text-gray-500">Email</p>
@@ -54,6 +62,18 @@
           <div>
             <p class="text-xs uppercase tracking-wide text-gray-500">Date of Birth</p>
             <p class="text-sm text-gray-900">{{ applicant.date_of_birth|default:"-" }}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Guardian</p>
+            <p class="text-sm text-gray-900">{{ applicant.guardian_name|default:"-" }}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Relationship</p>
+            <p class="text-sm text-gray-900">{{ applicant.guardian_relationship|default:"-" }}</p>
+          </div>
+          <div class="md:col-span-2">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Previous School</p>
+            <p class="text-sm text-gray-900">{{ applicant.previous_school|default:"-" }}</p>
           </div>
         </div>
         <div class="px-6 py-4">
@@ -101,10 +121,30 @@
       <div><span class="block text-xs uppercase text-gray-500">Target program</span><span class="font-semibold text-gray-900">{{ applicant.target_program|default:"-" }}</span></div>
       <div><span class="block text-xs uppercase text-gray-500">Class group</span><span class="font-semibold text-gray-900">{{ applicant.target_class_group|default:"-" }}</span></div>
     </div>
-    <div class="mt-4 pt-4 border-t border-gray-100">
-      <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Notes</p>
-      <p class="text-sm text-gray-800">{{ applicant.note|default:"No notes yet." }}</p>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h2>
+    <div class="space-y-3">
+      {% for document in applicant.documents.all %}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 rounded-lg border border-gray-200 bg-gray-50">
+          <div>
+            <p class="text-sm font-semibold text-gray-900">{{ document.title }}</p>
+            <p class="text-xs text-gray-500">Uploaded {{ document.uploaded_at }}</p>
+          </div>
+          <a href="{{ document.file.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100">
+            <i class="ph ph-download-simple"></i> Open file
+          </a>
+        </div>
+      {% empty %}
+        <p class="text-sm text-gray-500">No supporting documents uploaded.</p>
+      {% endfor %}
     </div>
+  </section>
+
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Notes</h2>
+    <p class="text-sm text-gray-800">{{ applicant.note|default:"No notes yet." }}</p>
   </section>
 </div>
 {% endblock %}
