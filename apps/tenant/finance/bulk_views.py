@@ -45,14 +45,15 @@ def invoice_bulk_create(request):
     else:
         form = BulkInvoiceForm(campus_scope=campus_scope)
 
-    current_summary = collection_summary(
-        Invoice.objects.select_related("student", "academic_year", "academic_term").prefetch_related("lines", "payments")
-    )
+    invoice_qs = Invoice.objects.select_related("student", "academic_year", "academic_term").prefetch_related("lines", "payments")
+    if campus_scope is not None:
+        invoice_qs = invoice_qs.filter(student__campus=campus_scope)
+
     return render(
         request,
         "portals/admin/finance/invoice_bulk_create.html",
         {
             "form": form,
-            "current_summary": current_summary,
+            "current_summary": collection_summary(invoice_qs),
         },
     )
