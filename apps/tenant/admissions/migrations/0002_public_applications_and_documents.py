@@ -1,8 +1,11 @@
 # Generated manually for Phase 1 public admissions workflow
 
-from django.db import migrations, models
-import django.db.models.deletion
 import uuid
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+import apps.tenant.admissions.models
 
 
 def backfill_application_references(apps, schema_editor):
@@ -72,7 +75,7 @@ class Migration(migrations.Migration):
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("uuid", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
                 ("title", models.CharField(default="Supporting document", max_length=120)),
-                ("file", models.FileField(upload_to="admissions/documents/")),
+                ("file", models.FileField(upload_to=apps.tenant.admissions.models.applicant_document_upload_to)),
                 ("uploaded_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "applicant",
