@@ -7,47 +7,17 @@
 {% include "components/ui_toast.html" %}
 
 <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-  <div>
-    <a href="{% url 'teacher_coursework_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-900 mb-2">
-      <i class="ph ph-arrow-left"></i> Back to coursework
-    </a>
-    <h1 class="text-2xl font-bold text-gray-900">{{ material.title }}</h1>
-    <p class="text-sm text-gray-600 mt-1">{{ material.get_type_display }} · {% if material.offering %}{{ material.offering }}{% else %}General material{% endif %}</p>
-  </div>
-  <a href="{% url 'teacher_coursework_material_edit' material.pk %}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700">
-    <i class="ph ph-pencil-simple"></i> Edit
-  </a>
+  <div><a href="{% url 'teacher_coursework_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-900 mb-2">Back to coursework</a><h1 class="text-2xl font-bold text-gray-900">{{ material.title }}</h1><p class="text-sm text-gray-600 mt-1">{{ material.get_type_display }} · {% if material.offering %}{{ material.offering }}{% else %}General material{% endif %}</p></div>
+  <a href="{% url 'teacher_coursework_material_edit' material.pk %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700">Edit</a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <section class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-    <h2 class="text-lg font-bold text-gray-900 mb-3">Material Details</h2>
-    {% if material.description %}
-      <div class="prose max-w-none text-sm text-gray-800 whitespace-pre-wrap">{{ material.description }}</div>
-    {% else %}
-      <p class="text-sm text-gray-500">No description provided.</p>
-    {% endif %}
-
-    <div class="mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-      <div><span class="block text-xs uppercase text-gray-500 font-bold">Publish at</span><span class="text-gray-900">{{ material.publish_at|date:'Y-m-d H:i' }}</span></div>
-      <div><span class="block text-xs uppercase text-gray-500 font-bold">Due date</span><span class="text-gray-900">{% if material.due_date %}{{ material.due_date|date:'Y-m-d' }}{% else %}-{% endif %}</span></div>
-      <div><span class="block text-xs uppercase text-gray-500 font-bold">Class group</span><span class="text-gray-900">{{ material.class_group|default:"All" }}</span></div>
-      <div><span class="block text-xs uppercase text-gray-500 font-bold">Stream</span><span class="text-gray-900">{{ material.stream|default:"All" }}</span></div>
-    </div>
+  <section class="lg:col-span-2 space-y-6">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-bold text-gray-900 mb-3">Material Details</h2>{% if material.description %}<div class="text-sm text-gray-800 whitespace-pre-wrap">{{ material.description }}</div>{% else %}<p class="text-sm text-gray-500">No description provided.</p>{% endif %}<div class="mt-6 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"><div><span class="block text-xs uppercase text-gray-500 font-bold">Publish at</span><span class="text-gray-900">{{ material.publish_at|date:'Y-m-d H:i' }}</span></div><div><span class="block text-xs uppercase text-gray-500 font-bold">Due date</span><span class="text-gray-900">{% if material.due_date %}{{ material.due_date|date:'Y-m-d' }}{% else %}-{% endif %}</span></div><div><span class="block text-xs uppercase text-gray-500 font-bold">Class group</span><span class="text-gray-900">{{ material.class_group|default:'All' }}</span></div><div><span class="block text-xs uppercase text-gray-500 font-bold">Stream</span><span class="text-gray-900">{{ material.stream|default:'All' }}</span></div></div></div>
+    {% if material.external_url or material.video_url or material.meeting_url %}<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-bold text-gray-900 mb-3">Online Learning Links</h2><div class="space-y-2">{% if material.video_url %}<a href="{{ material.video_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Open video lesson</a>{% endif %}{% if material.meeting_url %}<a href="{{ material.meeting_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Open Google Meet / Zoom / live class</a>{% endif %}{% if material.external_url %}<a href="{{ material.external_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Open external resource</a>{% endif %}</div></div>{% endif %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-bold text-gray-900 mb-3">Lesson Discussion</h2><div class="space-y-3 mb-4">{% for comment in material.comments.all %}<div class="rounded-lg border border-gray-200 p-3 text-sm"><div class="flex justify-between"><span class="font-bold text-gray-900">{{ comment.user|default:'User' }}{% if comment.is_teacher_reply %} · Teacher</span>{% else %}</span>{% endif %}<span class="text-xs text-gray-500">{{ comment.created_at|date:'Y-m-d H:i' }}</span></div><p class="mt-1 text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p></div>{% empty %}<p class="text-sm text-gray-500">No discussion yet.</p>{% endfor %}</div>{% if material.allow_comments %}<form method="post" class="space-y-3">{% csrf_token %}{{ comment_form.as_p }}<button class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold">Reply</button></form>{% else %}<p class="text-sm text-gray-500">Comments are disabled.</p>{% endif %}</div>
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-bold text-gray-900 mb-3">Learner Progress</h2><div class="space-y-2">{% for progress in material.progress_records.all %}<div class="flex justify-between gap-3 p-3 border border-gray-200 rounded-lg text-sm"><span class="font-semibold text-gray-900">{{ progress.student }}</span><span class="font-bold text-primary-700">{{ progress.percent_complete }}%</span></div>{% empty %}<p class="text-sm text-gray-500">No learner progress yet.</p>{% endfor %}</div></div>
   </section>
-
-  <aside class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-    <h2 class="text-lg font-bold text-gray-900 mb-3">Attachments</h2>
-    <div class="space-y-2">
-      {% for att in material.attachments.all %}
-        <a href="{{ att.file.url }}" target="_blank" rel="noopener" class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm">
-          <span class="font-semibold text-primary-700 truncate">{{ att.file.name }}</span>
-          <i class="ph ph-download-simple text-gray-400"></i>
-        </a>
-      {% empty %}
-        <p class="text-sm text-gray-500">No files attached.</p>
-      {% endfor %}
-    </div>
-  </aside>
+  <aside class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-fit"><h2 class="text-lg font-bold text-gray-900 mb-3">Attachments</h2><div class="space-y-2">{% for att in material.attachments.all %}<a href="{{ att.file.url }}" target="_blank" rel="noopener" class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm"><span class="font-semibold text-primary-700 truncate">{{ att.file.name }}</span></a>{% empty %}<p class="text-sm text-gray-500">No files attached.</p>{% endfor %}</div></aside>
 </div>
 {% endblock %}
