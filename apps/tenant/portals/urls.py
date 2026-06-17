@@ -8,10 +8,7 @@ urlpatterns = [
     path("status/", public_views.public_status, name="public_status"),
     path("manifest.webmanifest", views.pwa_manifest, name="pwa_manifest"),
     path("apply/", include("apps.tenant.admissions.public_urls")),
-    # Landing page
     path("", views.landing_page, name="landing_page"),
-    
-    # Authentication
     path("login/", custom_auth_views.CustomLoginView.as_view(), name="login"),
     path("logout/", custom_auth_views.logout_view, name="logout"),
     path("password-reset/", custom_auth_views.CustomPasswordResetView.as_view(), name="password_reset"),
@@ -20,8 +17,6 @@ urlpatterns = [
     path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(template_name="auth/password_reset_complete.html"), name="password_reset_complete"),
     path("change-password/", custom_auth_views.change_password, name="change_password"),
     path("profile/", custom_auth_views.user_profile, name="user_profile"),
-    
-    # Portals
     path("admin/", views.admin_home, name="admin_home"),
     path("admin/communication/", experience_views.admin_communication_center, name="admin_communication_center"),
     path("admin/school-setup/", experience_views.admin_school_setup_guide, name="admin_school_setup_guide"),
@@ -82,21 +77,14 @@ urlpatterns = [
     path("student/exams/", include("apps.tenant.exams.student_urls")),
     path("parent/", views.parent_home, name="parent_home"),
     path("parent/search/", student_parent_search_views.parent_search, name="parent_global_search"),
-    path(
-        "parent/account/results-pin/",
-        views.parent_results_pin_security,
-        name="parent_results_pin_security",
-    ),
-    path(
-        "parent/account/message-preferences/",
-        views.parent_communication_preferences,
-        name="parent_communication_preferences",
-    ),
+    path("parent/account/results-pin/", views.parent_results_pin_security, name="parent_results_pin_security"),
+    path("parent/account/message-preferences/", views.parent_communication_preferences, name="parent_communication_preferences"),
     path("parent/attendance/", include("apps.tenant.attendance.parent_urls")),
     path("parent/results/", include("apps.tenant.assessments.parent_urls")),
     path("parent/finance/", include("apps.tenant.finance.parent_urls")),
     path("parent/announcements/", include("apps.tenant.announcements.parent_urls")),
     path("parent/coursework/", include("apps.tenant.coursework.parent_urls")),
+    path("parent/exams/", include("apps.tenant.exams.parent_urls")),
     path("parent/discipline/", include("apps.tenant.discipline.parent_urls")),
     path("parent/grievances/", include("apps.tenant.grievances.parent_urls")),
     path("parent/documents/", include("apps.tenant.documents.parent_urls")),
