@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Assignment, LearningMaterial
+from .models import Assignment, CourseworkComment, LearningMaterial
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -35,6 +35,10 @@ class LearningMaterialForm(forms.ModelForm):
             "class_group",
             "stream",
             "offering",
+            "external_url",
+            "video_url",
+            "meeting_url",
+            "allow_comments",
             "publish_at",
             "due_date",
             "is_active",
@@ -45,6 +49,17 @@ class LearningMaterialForm(forms.ModelForm):
             "publish_at": forms.DateTimeInput(attrs={"type": "datetime-local", "placeholder": "YYYY-MM-DD HH:MM"}),
             "description": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        material_type = cleaned.get("type")
+        video_url = cleaned.get("video_url")
+        meeting_url = cleaned.get("meeting_url")
+        if material_type == LearningMaterial.VIDEO_LESSON and not video_url:
+            self.add_error("video_url", "Video lessons should include a video link or upload an attachment.")
+        if material_type == LearningMaterial.LIVE_CLASS and not meeting_url:
+            self.add_error("meeting_url", "Live classes should include a Google Meet, Zoom, or live-class link.")
+        return cleaned
 
 
 class AssignmentForm(forms.ModelForm):
@@ -63,6 +78,8 @@ class AssignmentForm(forms.ModelForm):
             "class_group",
             "stream",
             "offering",
+            "resource_url",
+            "allow_comments",
             "publish_at",
             "due_date",
             "is_active",
@@ -84,3 +101,16 @@ class AssignmentForm(forms.ModelForm):
         if publish_at and due_date and due_date < publish_at:
             self.add_error("due_date", "Due date cannot be earlier than the publish date.")
         return cleaned
+
+
+class CourseworkCommentForm(forms.ModelForm):
+    class Meta:
+        model = CourseworkComment
+        fields = ["body"]
+        widgets = {"body": forms.Textarea(attrs={"rows": 3, "placeholder": "Ask a question or add a discussion comment..."})}
+
+    def clean_body(self):
+        body = (self.cleaned_data.get("body") or "").strip()
+        if len(body) < 2:
+            raise forms.ValidationError("Comment is too short.")
+        return body
