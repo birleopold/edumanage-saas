@@ -1,0 +1,12 @@
+{% extends 'portals/student/base.html' %}
+{% block title %}Exam Details{% endblock %}
+{% block page_title %}Exam Details{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="max-w-4xl mx-auto bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-6">
+  <div><a href="{% url 'student_exams_dashboard' %}" class="text-sm font-semibold text-primary-700">Back to exams</a><h1 class="text-3xl font-black text-gray-900 mt-2">{{ paper.offering.course.name }}</h1><p class="text-gray-600">{{ paper.exam }}</p></div>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="rounded-lg bg-gray-50 border border-gray-100 p-4"><p class="text-xs uppercase font-bold text-gray-500">Duration</p><p class="text-xl font-black text-gray-900">{{ paper.duration_minutes|default:'-' }} min</p></div><div class="rounded-lg bg-gray-50 border border-gray-100 p-4"><p class="text-xs uppercase font-bold text-gray-500">Questions</p><p class="text-xl font-black text-gray-900">{{ question_count }}</p></div><div class="rounded-lg bg-gray-50 border border-gray-100 p-4"><p class="text-xs uppercase font-bold text-gray-500">Max score</p><p class="text-xl font-black text-gray-900">{{ paper.max_score }}</p></div><div class="rounded-lg bg-gray-50 border border-gray-100 p-4"><p class="text-xs uppercase font-bold text-gray-500">Order</p><p class="text-xl font-black text-gray-900">{% if paper.randomize_questions %}Random{% else %}Fixed{% endif %}</p></div></div>
+  {% if paper.instructions %}<section class="rounded-lg bg-blue-50 border border-blue-100 p-4"><h2 class="font-bold text-blue-900 mb-2">Instructions</h2><div class="text-sm text-blue-900 whitespace-pre-wrap">{{ paper.instructions }}</div></section>{% endif %}
+  <form method="post">{% csrf_token %}<button type="submit" class="w-full px-5 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700">Open Paper</button></form>
+</div>
+{% endblock %}
