@@ -25,6 +25,7 @@ from .mobile_api_views import (
     MobileTeachers,
     MobileTransport,
 )
+from .mobile_openapi_views import MobileOpenAPISchema
 from .mobile_payment_api_views import MobilePaymentRequests, MobilePaymentStart
 
 
@@ -42,6 +43,7 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="api_token_refresh"),
     path("auth/token/verify/", TokenVerifyView.as_view(), name="api_token_verify"),
     path("mobile/docs/", MobileDocs.as_view(), name="api_mobile_docs"),
+    path("mobile/openapi/", MobileOpenAPISchema.as_view(), name="api_mobile_openapi"),
     path("mobile/me/", MobileMe.as_view(), name="api_mobile_me"),
     path("mobile/dashboard/", MobileDashboard.as_view(), name="api_mobile_dashboard"),
     path("mobile/students/", MobileStudents.as_view(), name="api_mobile_students"),
