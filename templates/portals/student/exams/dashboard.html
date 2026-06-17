@@ -1,0 +1,41 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}Online Exams{% endblock %}
+{% block page_title %}Online Exams{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Available Online</p><p class="text-3xl font-black text-primary-700">{{ online_count }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Completed Attempts</p><p class="text-3xl font-black text-green-700">{{ completed_count }}</p></div>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Published Results</p><p class="text-3xl font-black text-blue-700">{{ scores.count }}</p></div>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center"><h2 class="text-lg font-bold text-gray-900">My Exam Papers</h2><a href="{% url 'student_exam_results' %}" class="text-sm font-semibold text-primary-700">Results</a></div>
+    <div class="divide-y divide-gray-100">
+      {% for row in rows %}
+      <div class="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h3 class="font-bold text-gray-900">{{ row.paper.offering.course.name }}</h3>
+          <p class="text-sm text-gray-600">{{ row.paper.exam }}{% if row.paper.duration_minutes %} · {{ row.paper.duration_minutes }} minutes{% endif %}</p>
+          <p class="text-xs text-gray-500 mt-1">Questions: {{ row.paper.questions.count }} · {% if row.paper.randomize_questions %}Randomized{% else %}Fixed order{% endif %}</p>
+          {% if row.attempt %}<p class="text-xs text-gray-500 mt-1">Attempt: {{ row.attempt.get_status_display }} · Warnings: {{ row.attempt.browser_focus_warnings }}</p>{% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {% if row.paper.exam.exam_mode == 'ONLINE' or row.paper.exam.exam_mode == 'HYBRID' %}
+            {% if row.attempt and row.attempt.is_locked %}
+              <a href="{% url 'student_exam_result' row.attempt.id %}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-gray-700">View Attempt</a>
+            {% else %}
+              <a href="{% url 'student_exam_start' row.paper.id %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700">Start / Continue</a>
+            {% endif %}
+          {% endif %}
+          {% if row.score and row.results_visible %}<a href="{% url 'student_exam_result' row.attempt.id %}" class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">Result</a>{% endif %}
+        </div>
+      </div>
+      {% empty %}<div class="p-8 text-center text-gray-500">No published exam papers available.</div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
