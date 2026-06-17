@@ -25,6 +25,7 @@ from .mobile_api_views import (
     MobileTeachers,
     MobileTransport,
 )
+from .mobile_payment_api_views import MobilePaymentRequests, MobilePaymentStart
 
 
 class WhoAmI(APIView):
@@ -49,6 +50,8 @@ urlpatterns = [
     path("mobile/attendance/", MobileAttendance.as_view(), name="api_mobile_attendance"),
     path("mobile/attendance/offerings/<int:offering_id>/mark/", MobileTeacherAttendanceMark.as_view(), name="api_mobile_teacher_attendance_mark"),
     path("mobile/finance/", MobileFinance.as_view(), name="api_mobile_finance"),
+    path("mobile/finance/payment-requests/", MobilePaymentRequests.as_view(), name="api_mobile_payment_requests"),
+    path("mobile/finance/invoices/<int:invoice_id>/pay/", MobilePaymentStart.as_view(), name="api_mobile_payment_start"),
     path("mobile/exams/", MobileExams.as_view(), name="api_mobile_exams"),
     path("mobile/coursework/", MobileCoursework.as_view(), name="api_mobile_coursework"),
     path("mobile/messages/", MobileMessages.as_view(), name="api_mobile_messages"),
