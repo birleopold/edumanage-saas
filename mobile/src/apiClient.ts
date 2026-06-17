@@ -1,9 +1,23 @@
 import { API_BASE_URL } from './config';
+import { sessionStore } from './sessionStore';
 
 let accessValue = '';
 
 export function setAccess(value: string) {
   accessValue = value;
+}
+
+export async function restoreSession() {
+  const raw = await sessionStore.load();
+  if (!raw) return null;
+  const data = JSON.parse(raw);
+  setAccess(data.access || '');
+  return data;
+}
+
+export async function clearSession() {
+  accessValue = '';
+  await sessionStore.clear();
 }
 
 export async function signIn(username: string, password: string) {
@@ -15,6 +29,7 @@ export async function signIn(username: string, password: string) {
   if (!response.ok) throw new Error('Login failed');
   const data = await response.json();
   setAccess(data.access);
+  await sessionStore.save(JSON.stringify(data));
   return data;
 }
 
