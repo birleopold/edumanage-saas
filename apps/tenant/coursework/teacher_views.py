@@ -12,14 +12,8 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.users.models import Role
 
-from .forms import AssignmentForm, LearningMaterialForm
-from .models import (
-    Assignment,
-    AssignmentAttachment,
-    AssignmentSubmission,
-    LearningMaterial,
-    LearningMaterialAttachment,
-)
+from .forms import AssignmentForm, CourseworkCommentForm, LearningMaterialForm
+from .models import Assignment, AssignmentAttachment, AssignmentSubmission, LearningMaterial, LearningMaterialAttachment
 from .services import ensure_assignment_submission_rows, submission_summary_for_assignment
 
 
@@ -81,7 +75,6 @@ def _configure_teacher_form(form, offerings):
 
 
 def _apply_offering_scope(obj):
-    """Keep teacher-created coursework scoped to the selected offering to avoid accidental school-wide publishing."""
     if obj.offering:
         obj.campus = obj.offering.campus
         obj.class_group = obj.offering.class_group
@@ -98,44 +91,22 @@ def coursework_home(request):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
-
     offerings = _teacher_offerings(teacher)
-    assignments_qs = Assignment.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments").filter(
-        Q(offering__in=offerings) | Q(offering__isnull=True, created_by=request.user)
-    )
-    materials_qs = LearningMaterial.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments").filter(
-        Q(offering__in=offerings) | Q(offering__isnull=True, created_by=request.user)
-    )
-
+    assignments_qs = Assignment.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments", "comments").filter(Q(offering__in=offerings) | Q(offering__isnull=True, created_by=request.user))
+    materials_qs = LearningMaterial.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments", "comments").filter(Q(offering__in=offerings) | Q(offering__isnull=True, created_by=request.user))
     if q:
         assignments_qs = assignments_qs.filter(Q(title__icontains=q) | Q(instructions__icontains=q))
         materials_qs = materials_qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-
     assignments_page = Paginator(assignments_qs.order_by("-publish_at"), per_page).get_page(page_number)
     materials = list(materials_qs.order_by("-publish_at")[:20])
-
     assignments = list(assignments_page.object_list)
     for assignment in assignments:
         ensure_assignment_submission_rows(assignment)
         assignment.summary = submission_summary_for_assignment(assignment)
-
-    return render(
-        request,
-        "portals/teacher/coursework/home.html",
-        {
-            "teacher": teacher,
-            "offerings": offerings,
-            "materials": materials,
-            "assignments": assignments,
-            "page_obj": assignments_page,
-            "q": q,
-            "per_page": per_page,
-        },
-    )
+    return render(request, "portals/teacher/coursework/home.html", {"teacher": teacher, "offerings": offerings, "materials": materials, "assignments": assignments, "page_obj": assignments_page, "q": q, "per_page": per_page})
 
 
 @role_required(Role.TEACHER)
@@ -143,9 +114,7 @@ def material_create(request):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     offerings = _teacher_offerings(teacher)
-
     if request.method == "POST":
         form = _configure_teacher_form(LearningMaterialForm(request.POST, request.FILES), offerings)
         if form.is_valid():
@@ -156,14 +125,10 @@ def material_create(request):
             obj.created_by = request.user
             obj.save()
             uploaded_count = _add_material_attachments(obj, form.cleaned_data.get("attachments"))
-            messages.success(
-                request,
-                "Material created" + (f" with {uploaded_count} attachment(s)" if uploaded_count else "") + ".",
-            )
+            messages.success(request, "Material created" + (f" with {uploaded_count} attachment(s)" if uploaded_count else "") + ".")
             return redirect("teacher_coursework_material_detail", pk=obj.pk)
     else:
         form = _configure_teacher_form(LearningMaterialForm(), offerings)
-
     return render(request, "portals/teacher/coursework/material_form.html", {"form": form, "mode": "create"})
 
 
@@ -172,19 +137,22 @@ def material_detail(request, pk: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
-    material = get_object_or_404(
-        LearningMaterial.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments"),
-        pk=pk,
-    )
+    material = get_object_or_404(LearningMaterial.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments", "comments", "comments__user", "progress_records", "progress_records__student"), pk=pk)
     if not _can_manage_material(teacher, material, request.user):
         return HttpResponseForbidden("You are not allowed to view this material.")
-
-    return render(
-        request,
-        "portals/teacher/coursework/material_detail.html",
-        {"teacher": teacher, "material": material},
-    )
+    if request.method == "POST" and material.allow_comments:
+        form = CourseworkCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.material = material
+            comment.user = request.user
+            comment.is_teacher_reply = True
+            comment.save()
+            messages.success(request, "Reply posted.")
+            return redirect("teacher_coursework_material_detail", pk=material.pk)
+    else:
+        form = CourseworkCommentForm()
+    return render(request, "portals/teacher/coursework/material_detail.html", {"teacher": teacher, "material": material, "comment_form": form})
 
 
 @role_required(Role.TEACHER)
@@ -192,11 +160,9 @@ def material_edit(request, pk: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     material = get_object_or_404(LearningMaterial.objects.select_related("offering").prefetch_related("attachments"), pk=pk)
     if not _can_manage_material(teacher, material, request.user):
         return HttpResponseForbidden("You are not allowed to edit this material.")
-
     offerings = _teacher_offerings(teacher)
     if request.method == "POST":
         form = _configure_teacher_form(LearningMaterialForm(request.POST, request.FILES, instance=material), offerings)
@@ -207,19 +173,11 @@ def material_edit(request, pk: int):
             obj = _apply_offering_scope(obj)
             obj.save()
             uploaded_count = _add_material_attachments(obj, form.cleaned_data.get("attachments"))
-            messages.success(
-                request,
-                "Material updated" + (f" and {uploaded_count} attachment(s) added" if uploaded_count else "") + ".",
-            )
+            messages.success(request, "Material updated" + (f" and {uploaded_count} attachment(s) added" if uploaded_count else "") + ".")
             return redirect("teacher_coursework_material_detail", pk=obj.pk)
     else:
         form = _configure_teacher_form(LearningMaterialForm(instance=material), offerings)
-
-    return render(
-        request,
-        "portals/teacher/coursework/material_form.html",
-        {"form": form, "mode": "edit", "material": material},
-    )
+    return render(request, "portals/teacher/coursework/material_form.html", {"form": form, "mode": "edit", "material": material})
 
 
 @role_required(Role.TEACHER)
@@ -227,9 +185,7 @@ def assignment_create(request):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     offerings = _teacher_offerings(teacher)
-
     if request.method == "POST":
         form = _configure_teacher_form(AssignmentForm(request.POST, request.FILES), offerings)
         if form.is_valid():
@@ -250,7 +206,6 @@ def assignment_create(request):
             return redirect("teacher_coursework_assignment_detail", pk=obj.pk)
     else:
         form = _configure_teacher_form(AssignmentForm(), offerings)
-
     return render(request, "portals/teacher/coursework/assignment_form.html", {"form": form, "mode": "create"})
 
 
@@ -259,25 +214,23 @@ def assignment_detail(request, pk: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
-    assignment = get_object_or_404(
-        Assignment.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments"),
-        pk=pk,
-    )
+    assignment = get_object_or_404(Assignment.objects.select_related("offering", "class_group", "stream").prefetch_related("attachments", "comments", "comments__user", "progress_records", "progress_records__student"), pk=pk)
     if not _can_manage_assignment(teacher, assignment, request.user):
         return HttpResponseForbidden("You are not allowed to view this assignment.")
-
     ensure_assignment_submission_rows(assignment)
-    return render(
-        request,
-        "portals/teacher/coursework/assignment_detail.html",
-        {
-            "teacher": teacher,
-            "assignment": assignment,
-            "summary": submission_summary_for_assignment(assignment),
-            "now": timezone.now(),
-        },
-    )
+    if request.method == "POST" and assignment.allow_comments:
+        form = CourseworkCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.assignment = assignment
+            comment.user = request.user
+            comment.is_teacher_reply = True
+            comment.save()
+            messages.success(request, "Reply posted.")
+            return redirect("teacher_coursework_assignment_detail", pk=assignment.pk)
+    else:
+        form = CourseworkCommentForm()
+    return render(request, "portals/teacher/coursework/assignment_detail.html", {"teacher": teacher, "assignment": assignment, "summary": submission_summary_for_assignment(assignment), "now": timezone.now(), "comment_form": form})
 
 
 @role_required(Role.TEACHER)
@@ -285,11 +238,9 @@ def assignment_edit(request, pk: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     assignment = get_object_or_404(Assignment.objects.select_related("offering").prefetch_related("attachments"), pk=pk)
     if not _can_manage_assignment(teacher, assignment, request.user):
         return HttpResponseForbidden("You are not allowed to edit this assignment.")
-
     offerings = _teacher_offerings(teacher)
     if request.method == "POST":
         form = _configure_teacher_form(AssignmentForm(request.POST, request.FILES, instance=assignment), offerings)
@@ -310,12 +261,7 @@ def assignment_edit(request, pk: int):
             return redirect("teacher_coursework_assignment_detail", pk=obj.pk)
     else:
         form = _configure_teacher_form(AssignmentForm(instance=assignment), offerings)
-
-    return render(
-        request,
-        "portals/teacher/coursework/assignment_form.html",
-        {"form": form, "mode": "edit", "assignment": assignment},
-    )
+    return render(request, "portals/teacher/coursework/assignment_form.html", {"form": form, "mode": "edit", "assignment": assignment})
 
 
 @role_required(Role.TEACHER)
@@ -323,47 +269,26 @@ def assignment_submissions(request, pk: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     assignment = get_object_or_404(Assignment.objects.select_related("offering", "offering__teacher"), pk=pk)
     if not _can_manage_assignment(teacher, assignment, request.user):
         return HttpResponseForbidden("You are not allowed to view submissions for this assignment.")
-
     ensure_assignment_submission_rows(assignment)
-
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status") or "").strip().lower()
-
     subs_qs = AssignmentSubmission.objects.select_related("student").prefetch_related("attachments").filter(assignment=assignment)
     if q:
-        subs_qs = subs_qs.filter(
-            Q(student__first_name__icontains=q)
-            | Q(student__last_name__icontains=q)
-            | Q(student__student_id__icontains=q)
-        )
+        subs_qs = subs_qs.filter(Q(student__first_name__icontains=q) | Q(student__last_name__icontains=q) | Q(student__student_id__icontains=q))
     if status == "submitted":
         subs_qs = subs_qs.filter(submitted_at__isnull=False)
     elif status == "pending":
         subs_qs = subs_qs.filter(submitted_at__isnull=True)
     elif status == "marked":
         subs_qs = subs_qs.filter(marked_at__isnull=False)
-
     subs = list(subs_qs.order_by("student__last_name", "student__first_name"))
     for submission in subs:
         submission.is_submitted = submission.submitted_at is not None
         submission.is_marked = submission.marked_at is not None
-
-    return render(
-        request,
-        "portals/teacher/coursework/submissions.html",
-        {
-            "teacher": teacher,
-            "assignment": assignment,
-            "submissions": subs,
-            "summary": submission_summary_for_assignment(assignment),
-            "q": q,
-            "status": status,
-        },
-    )
+    return render(request, "portals/teacher/coursework/submissions.html", {"teacher": teacher, "assignment": assignment, "submissions": subs, "summary": submission_summary_for_assignment(assignment), "q": q, "status": status})
 
 
 @role_required(Role.TEACHER)
@@ -371,21 +296,13 @@ def submission_mark(request, assignment_id: int, submission_id: int):
     teacher = _teacher_profile(request)
     if not teacher:
         return HttpResponseForbidden("No teacher profile linked to this account.")
-
     assignment = get_object_or_404(Assignment.objects.select_related("offering", "offering__teacher"), pk=assignment_id)
     if not _can_manage_assignment(teacher, assignment, request.user):
         return HttpResponseForbidden("You are not allowed to mark this assignment.")
-
-    submission = get_object_or_404(
-        AssignmentSubmission.objects.select_related("student").prefetch_related("attachments"),
-        pk=submission_id,
-        assignment=assignment,
-    )
-
+    submission = get_object_or_404(AssignmentSubmission.objects.select_related("student").prefetch_related("attachments"), pk=submission_id, assignment=assignment)
     if request.method == "POST":
         score_raw = request.POST.get("score")
         feedback = request.POST.get("feedback") or ""
-
         score = None
         if score_raw not in (None, ""):
             try:
@@ -399,7 +316,6 @@ def submission_mark(request, assignment_id: int, submission_id: int):
             if assignment.max_score is not None and score > assignment.max_score:
                 messages.error(request, "Score cannot exceed the assignment maximum score.")
                 return redirect("teacher_coursework_submission_mark", assignment_id=assignment.pk, submission_id=submission.pk)
-
         submission.score = score
         submission.feedback = feedback
         submission.marked_by = request.user
@@ -407,9 +323,4 @@ def submission_mark(request, assignment_id: int, submission_id: int):
         submission.save(update_fields=["score", "feedback", "marked_by", "marked_at", "updated_at"])
         messages.success(request, "Submission marked.")
         return redirect("teacher_coursework_assignment_submissions", pk=assignment.pk)
-
-    return render(
-        request,
-        "portals/teacher/coursework/mark.html",
-        {"teacher": teacher, "assignment": assignment, "submission": submission},
-    )
+    return render(request, "portals/teacher/coursework/mark.html", {"teacher": teacher, "assignment": assignment, "submission": submission})
