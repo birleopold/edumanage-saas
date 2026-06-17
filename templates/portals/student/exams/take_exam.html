@@ -1,311 +1,40 @@
-{% extends "portals/student/base.html" %}
-{% load static %}
-
-{% block title %}{{ paper.exam.name }} - {{ paper.offering.course.name }}{% endblock %}
-
+{% extends 'portals/student/base.html' %}
+{% block title %}Online Paper{% endblock %}
+{% block page_title %}Online Paper{% endblock %}
 {% block content %}
-<div class="px-4 sm:px-6 lg:px-8 py-8" x-data="examTimer({{ time_remaining|default:0 }})">
-    <!-- Timer Bar (Fixed Top) -->
-    <div class="fixed top-0 left-0 right-0 bg-white shadow-md z-50 border-b-4" :class="timeLeft > 300 ? 'border-green-500' : timeLeft > 60 ? 'border-yellow-500' : 'border-red-500'">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-900">{{ paper.exam.name }}</h2>
-                    <p class="text-sm text-gray-500">{{ paper.offering.course.name }}</p>
-                </div>
-                <div class="text-right">
-                    <div class="flex items-center space-x-2">
-                        <i class="ph ph-clock text-2xl" :class="timeLeft > 300 ? 'text-green-600' : timeLeft > 60 ? 'text-yellow-600' : 'text-red-600'"></i>
-                        <div>
-                            <div class="text-2xl font-bold" :class="timeLeft > 300 ? 'text-green-600' : timeLeft > 60 ? 'text-yellow-600' : 'text-red-600'" x-text="formatTime(timeLeft)"></div>
-                            <div class="text-xs text-gray-500">Time Remaining</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+{% include "components/ui_toast.html" %}
+<div class="max-w-7xl mx-auto" x-data="examPage({{ time_remaining|default:0 }})" x-init="init()">
+  <div class="sticky top-0 z-40 bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div><h1 class="text-xl font-black text-gray-900">{{ paper.offering.course.name }}</h1><p class="text-sm text-gray-600">{{ paper.exam }} · {{ question_rows|length }} questions</p></div>
+    <div class="flex items-center gap-3"><span class="px-3 py-2 rounded-lg bg-slate-100 text-slate-800 font-bold" x-text="formatTime(timeLeft)"></span><span class="text-sm text-gray-600">Answered <b x-text="answeredCount"></b> / {{ question_rows|length }}</span></div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <aside class="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-4 h-fit sticky top-24">
+      <h2 class="font-bold text-gray-900 mb-3">Question Navigation</h2>
+      <div class="grid grid-cols-5 gap-2">{% for exam_q,response in question_rows %}<a href="#q{{ forloop.counter }}" class="text-center px-2 py-2 border border-gray-200 rounded-lg text-sm font-bold hover:bg-gray-50">{{ forloop.counter }}</a>{% endfor %}</div>
+      <button type="button" @click="scrollToNextUnanswered" class="mt-4 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50">Next Unanswered</button>
+      <p class="mt-4 text-xs text-gray-500">Keep this page open until you finish and submit.</p>
+    </aside>
+    <section class="lg:col-span-3">
+      {% if paper.instructions %}<div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 text-sm text-blue-900"><b>Instructions:</b><div class="mt-1 whitespace-pre-wrap">{{ paper.instructions }}</div></div>{% endif %}
+      <form method="post" id="examForm" @submit="submitting = true">
+        {% csrf_token %}
+        <div class="space-y-5">
+          {% for exam_q,response in question_rows %}{% with question=exam_q.question %}
+          <div id="q{{ forloop.counter }}" class="question-block bg-white border border-gray-200 rounded-xl shadow-sm p-5" data-question-id="{{ exam_q.id }}">
+            <div class="flex items-start justify-between gap-3 mb-3"><div><span class="inline-flex px-2.5 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-bold">Question {{ forloop.counter }}</span><span class="ml-2 text-xs text-gray-500">{{ exam_q.marks }} mark(s)</span></div><span class="text-xs text-gray-500">{{ question.get_question_type_display }}</span></div>
+            <div class="text-gray-900 mb-4 whitespace-pre-wrap">{{ question.question_text }}</div>
+            {% if question.question_image %}<img src="{{ question.question_image.url }}" class="max-w-full rounded-lg mb-4" alt="Question image">{% endif %}
+            {% if question.question_type == 'MCQ' %}<div class="space-y-2">{% if question.option_a %}<label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="A" {% if response and response.selected_option == 'A' %}checked{% endif %}>A. {{ question.option_a }}</label>{% endif %}{% if question.option_b %}<label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="B" {% if response and response.selected_option == 'B' %}checked{% endif %}>B. {{ question.option_b }}</label>{% endif %}{% if question.option_c %}<label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="C" {% if response and response.selected_option == 'C' %}checked{% endif %}>C. {{ question.option_c }}</label>{% endif %}{% if question.option_d %}<label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="D" {% if response and response.selected_option == 'D' %}checked{% endif %}>D. {{ question.option_d }}</label>{% endif %}</div>{% elif question.question_type == 'TRUE_FALSE' %}<div class="space-y-2"><label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="A" {% if response and response.selected_option == 'A' %}checked{% endif %}>{{ question.option_a|default:'True' }}</label><label class="block p-3 border rounded-lg"><input type="radio" class="question-input mr-2" name="question_{{ exam_q.id }}" value="B" {% if response and response.selected_option == 'B' %}checked{% endif %}>{{ question.option_b|default:'False' }}</label></div>{% elif question.question_type == 'ESSAY' %}<textarea class="question-input w-full border border-gray-300 rounded-lg p-3" rows="8" name="question_{{ exam_q.id }}">{% if response %}{{ response.answer_text }}{% endif %}</textarea>{% else %}<input class="question-input w-full border border-gray-300 rounded-lg p-3" type="text" name="question_{{ exam_q.id }}" value="{% if response %}{{ response.answer_text }}{% endif %}">{% endif %}
+          </div>
+          {% endwith %}{% endfor %}
         </div>
-    </div>
-
-    <!-- Main Content (with top padding for fixed header) -->
-    <div class="mt-24 max-w-4xl mx-auto">
-        <div class="mb-4 bg-white border border-gray-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="text-sm text-gray-700">
-                Answered <span class="font-bold text-primary-700" x-text="answeredCount"></span> / <span class="font-bold">{{ questions|length }}</span>
-            </div>
-            <div class="flex gap-2">
-                <button type="button" @click="scrollToNextUnanswered()" class="inline-flex items-center px-3 py-2 text-xs font-semibold border border-gray-300 rounded-lg hover:bg-gray-50">
-                    <i class="ph ph-arrow-down mr-1"></i> Next Unanswered
-                </button>
-                <span class="inline-flex items-center px-3 py-2 text-xs rounded-lg bg-green-50 text-green-700 border border-green-200" x-show="lastSavedAt">
-                    Saved <span class="ml-1 font-semibold" x-text="lastSavedAt"></span>
-                </span>
-            </div>
-        </div>
-        <!-- Exam Instructions -->
-        {% if paper.instructions %}
-        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="ph ph-info text-blue-400 text-xl"></i>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-blue-800">Instructions</h3>
-                    <div class="mt-2 text-sm text-blue-700">
-                        {{ paper.instructions|linebreaks }}
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Exam Form -->
-        <form method="post" id="examForm" x-on:submit="handleSubmit">
-            {% csrf_token %}
-            
-            <!-- Questions -->
-            <div class="space-y-6">
-                {% for exam_q in questions %}
-                {% with question=exam_q.question %}
-                <div class="bg-white shadow rounded-lg p-6 question-block" id="question-{{ exam_q.id }}" data-question-id="{{ exam_q.id }}">
-                    <!-- Question Header -->
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                                    Question {{ forloop.counter }}
-                                </span>
-                                <span class="text-xs text-gray-500">{{ exam_q.marks }} mark{{ exam_q.marks|floatformat:0|pluralize }}</span>
-                                {% if question.difficulty %}
-                                <span class="text-xs px-2 py-0.5 rounded-full {% if question.difficulty == 'EASY' %}bg-green-100 text-green-800{% elif question.difficulty == 'MEDIUM' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                    {{ question.get_difficulty_display }}
-                                </span>
-                                {% endif %}
-                            </div>
-                            <div class="text-gray-900 text-base">{{ question.question_text|linebreaks }}</div>
-                            {% if question.question_image %}
-                            <img src="{{ question.question_image.url }}" alt="Question image" class="mt-3 max-w-full h-auto rounded">
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Answer Options -->
-                    {% if question.question_type == 'MCQ' %}
-                    <div class="space-y-3 mt-4">
-                        {% for opt_letter, opt_text in 'ABCD' %}
-                            {% if forloop.counter == 1 and question.option_a %}
-                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
-                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">A.</span> {{ question.option_a }}</span>
-                            </label>
-                            {% elif forloop.counter == 2 and question.option_b %}
-                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
-                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">B.</span> {{ question.option_b }}</span>
-                            </label>
-                            {% elif forloop.counter == 3 and question.option_c %}
-                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="C" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'C' %}checked{% endif %}>
-                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">C.</span> {{ question.option_c }}</span>
-                            </label>
-                            {% elif forloop.counter == 4 and question.option_d %}
-                            <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                                <input type="radio" name="question_{{ exam_q.id }}" value="D" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'D' %}checked{% endif %}>
-                                <span class="ml-3 text-sm text-gray-900"><span class="font-semibold">D.</span> {{ question.option_d }}</span>
-                            </label>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-
-                    {% elif question.question_type == 'TRUE_FALSE' %}
-                    <div class="space-y-3 mt-4">
-                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                            <input type="radio" name="question_{{ exam_q.id }}" value="A" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'A' %}checked{% endif %}>
-                            <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_a|default:"True" }}</span>
-                        </label>
-                        <label class="flex items-start p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}border-primary-500 bg-primary-50{% else %}border-gray-200{% endif %}">
-                            <input type="radio" name="question_{{ exam_q.id }}" value="B" class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 question-input" {% if response_map|get_item:exam_q.id and response_map|get_item:exam_q.id.selected_option == 'B' %}checked{% endif %}>
-                            <span class="ml-3 text-sm font-medium text-gray-900">{{ question.option_b|default:"False" }}</span>
-                        </label>
-                    </div>
-
-                    {% else %}
-                    <!-- Text Answer (Short Answer, Essay, Fill in Blank) -->
-                    <div class="mt-4">
-                        {% if question.question_type == 'ESSAY' %}
-                        <textarea name="question_{{ exam_q.id }}" rows="8" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm question-input" placeholder="Type your answer here...">{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}</textarea>
-                        {% else %}
-                        <input type="text" name="question_{{ exam_q.id }}" value="{% if response_map|get_item:exam_q.id %}{{ response_map|get_item:exam_q.id.answer_text }}{% endif %}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm question-input" placeholder="Type your answer here...">
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endwith %}
-                {% endfor %}
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="mt-8 flex items-center justify-between bg-white shadow rounded-lg p-6">
-                <button type="submit" name="action" value="save" class="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <i class="ph ph-floppy-disk mr-2"></i>
-                    Save Progress
-                </button>
-                <button type="button" @click="confirmSubmit" class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                    <i class="ph ph-check-circle mr-2"></i>
-                    Submit Exam
-                </button>
-            </div>
-        </form>
-    </div>
+        <div class="mt-6 bg-white border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3"><button type="submit" name="action" value="save" class="px-5 py-3 border border-gray-300 rounded-lg font-bold text-gray-700 hover:bg-gray-50">Save Progress</button><button type="submit" name="action" value="submit" class="px-5 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700" onclick="return confirm('Submit this paper now?')">Submit Paper</button></div>
+      </form>
+    </section>
+  </div>
 </div>
-
-<!-- Auto-submit Modal -->
-<div x-show="showAutoSubmitWarning" x-cloak class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-            <div class="sm:flex sm:items-start">
-                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <i class="ph ph-warning text-yellow-600 text-2xl"></i>
-                </div>
-                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Time Running Out!</h3>
-                    <div class="mt-2">
-                        <p class="text-sm text-gray-500">You have less than 1 minute remaining. The exam will be automatically submitted when time expires.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                <button type="button" @click="showAutoSubmitWarning = false" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    I Understand
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-function examTimer(initialTime) {
-    return {
-        timeLeft: initialTime,
-        showAutoSubmitWarning: false,
-        warningShown: false,
-        answeredCount: 0,
-        lastSavedAt: '',
-        
-        init() {
-            // Start countdown
-            this.startTimer();
-            this.updateAnsweredCount();
-            
-            // Auto-save every 30 seconds
-            setInterval(() => {
-                this.autoSave();
-            }, 30000);
-            document.querySelectorAll('.question-input').forEach((el) => {
-                el.addEventListener('change', () => this.updateAnsweredCount());
-                el.addEventListener('input', () => this.updateAnsweredCount());
-            });
-        },
-        
-        startTimer() {
-            const interval = setInterval(() => {
-                this.timeLeft--;
-                
-                // Show warning at 1 minute
-                if (this.timeLeft === 60 && !this.warningShown) {
-                    this.showAutoSubmitWarning = true;
-                    this.warningShown = true;
-                }
-                
-                // Auto-submit at 0
-                if (this.timeLeft <= 0) {
-                    clearInterval(interval);
-                    this.autoSubmit();
-                }
-            }, 1000);
-        },
-        
-        formatTime(seconds) {
-            if (seconds < 0) return '00:00:00';
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        },
-        
-        autoSave() {
-            const form = document.getElementById('examForm');
-            const formData = new FormData(form);
-            formData.set('action', 'save');
-            
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(() => {
-                const now = new Date();
-                this.lastSavedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            });
-        },
-        
-        confirmSubmit() {
-            if (window.confirm('Submit exam now? You will not be able to change answers after submission.')) {
-                const form = document.getElementById('examForm');
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'action';
-                input.value = 'submit';
-                form.appendChild(input);
-                form.submit();
-            }
-        },
-        updateAnsweredCount() {
-            const ids = new Set();
-            document.querySelectorAll('.question-block').forEach((block) => {
-                const qid = block.getAttribute('data-question-id');
-                const radioChecked = block.querySelector('input[type="radio"]:checked');
-                const inputValue = Array.from(block.querySelectorAll('input[type="text"], textarea')).some((field) => (field.value || '').trim().length > 0);
-                if (radioChecked || inputValue) {
-                    ids.add(qid);
-                }
-            });
-            this.answeredCount = ids.size;
-        },
-        scrollToNextUnanswered() {
-            const blocks = Array.from(document.querySelectorAll('.question-block'));
-            const unanswered = blocks.find((block) => {
-                const radioChecked = block.querySelector('input[type="radio"]:checked');
-                const inputValue = Array.from(block.querySelectorAll('input[type="text"], textarea')).some((field) => (field.value || '').trim().length > 0);
-                return !(radioChecked || inputValue);
-            });
-            if (unanswered) {
-                unanswered.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                unanswered.classList.add('ring-2', 'ring-yellow-300');
-                setTimeout(() => unanswered.classList.remove('ring-2', 'ring-yellow-300'), 1200);
-            }
-        },
-        
-        autoSubmit() {
-            const form = document.getElementById('examForm');
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'action';
-            input.value = 'submit';
-            form.appendChild(input);
-            form.submit();
-        },
-        
-        handleSubmit(event) {
-            // Let form submit normally
-        }
-    }
-}
+function examPage(initialTime){return{timeLeft:initialTime,answeredCount:0,submitting:false,init(){this.updateAnswered();setInterval(()=>{this.timeLeft--;if(this.timeLeft<=0&&!this.submitting){this.submitting=true;const f=document.getElementById('examForm');const i=document.createElement('input');i.type='hidden';i.name='action';i.value='submit';f.appendChild(i);f.submit();}},1000);document.querySelectorAll('.question-input').forEach(el=>{el.addEventListener('input',()=>this.updateAnswered());el.addEventListener('change',()=>this.updateAnswered());});document.addEventListener('visibilitychange',()=>{if(document.hidden){this.logEvent();}});window.addEventListener('blur',()=>this.logEvent());},formatTime(s){if(s<0)s=0;const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');},updateAnswered(){let c=0;document.querySelectorAll('.question-block').forEach(b=>{const checked=b.querySelector('input[type=radio]:checked');const txt=Array.from(b.querySelectorAll('input[type=text],textarea')).some(x=>(x.value||'').trim());if(checked||txt)c++;});this.answeredCount=c;},scrollToNextUnanswered(){const b=Array.from(document.querySelectorAll('.question-block')).find(x=>!x.querySelector('input[type=radio]:checked')&&!Array.from(x.querySelectorAll('input[type=text],textarea')).some(t=>(t.value||'').trim()));if(b)b.scrollIntoView({behavior:'smooth',block:'start'});},logEvent(){fetch('{% url 'student_exam_security_event' attempt.id %}',{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','X-Requested-With':'XMLHttpRequest'}}).catch(()=>{});}}}
 </script>
-
-<style>
-    [x-cloak] { display: none !important; }
-</style>
 {% endblock %}
