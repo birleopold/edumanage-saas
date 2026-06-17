@@ -23,9 +23,7 @@ class FeeItem(models.Model):
 class Invoice(models.Model):
     ACTIVE = "ACTIVE"
     CLOSED = "CLOSED"
-
     STATUS_CHOICES = ((ACTIVE, "Active"), (CLOSED, "Closed"))
-
     student = models.ForeignKey("students.StudentProfile", on_delete=models.CASCADE)
     academic_year = models.ForeignKey("academics.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True)
     academic_term = models.ForeignKey("academics.AcademicTerm", on_delete=models.SET_NULL, null=True, blank=True)
@@ -83,15 +81,11 @@ class Payment(models.Model):
     BANK = "BANK"
     MOBILE = "MOBILE"
     CARD = "CARD"
-
     METHOD_CHOICES = ((CASH, "Cash"), (BANK, "Bank"), (MOBILE, "Mobile money"), (CARD, "Card"))
-
     MTN_MOMO = "MTN_MOMO"
     AIRTEL_MONEY = "AIRTEL_MONEY"
     MOBILE_OTHER = "OTHER"
-
     MOBILE_NETWORK_CHOICES = ((MTN_MOMO, "MTN MoMo"), (AIRTEL_MONEY, "Airtel Money"), (MOBILE_OTHER, "Other mobile wallet"))
-
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     method = models.CharField(max_length=16, choices=METHOD_CHOICES, default=CASH)
@@ -119,7 +113,6 @@ class MobilePaymentRequest(models.Model):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     STATUS_CHOICES = ((PENDING, "Pending"), (PROCESSING, "Processing"), (SUCCESSFUL, "Successful"), (FAILED, "Failed"), (CANCELLED, "Cancelled"))
-
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="mobile_payment_requests")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     phone_number = models.CharField(max_length=32)
@@ -146,17 +139,14 @@ class OutboundMessageLog(models.Model):
     ABSENCE_ALERT = "ABSENCE_ALERT"
     URGENT_ANNOUNCEMENT = "URGENT_ANNOUNCEMENT"
     MESSAGE_TYPE_CHOICES = ((FEE_REMINDER, "Fee reminder"), (PAYMENT_RECEIPT, "Payment receipt"), (ABSENCE_ALERT, "Absence alert"), (URGENT_ANNOUNCEMENT, "Urgent announcement"))
-
     SMS = "SMS"
     WHATSAPP = "WHATSAPP"
     CHANNEL_CHOICES = ((SMS, "SMS"), (WHATSAPP, "WhatsApp"))
-
     SENT = "SENT"
     FAILED = "FAILED"
     DRY_RUN = "DRY_RUN"
     NO_PHONE = "NO_PHONE"
     STATUS_CHOICES = ((SENT, "Sent"), (FAILED, "Failed"), (DRY_RUN, "Dry run"), (NO_PHONE, "No phone"))
-
     message_type = models.CharField(max_length=32, choices=MESSAGE_TYPE_CHOICES)
     channel = models.CharField(max_length=16, choices=CHANNEL_CHOICES, default=SMS)
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name="message_logs")
@@ -220,7 +210,6 @@ class IntegrationApiKey(models.Model):
 class WebhookEndpoint(models.Model):
     EVENT_MESSAGE_LOG_CREATED = "message_log.created"
     EVENT_CHOICES = ((EVENT_MESSAGE_LOG_CREATED, "Message log created"),)
-
     name = models.CharField(max_length=120)
     target_url = models.URLField(max_length=400)
     secret = models.CharField(max_length=128, blank=True)
@@ -296,7 +285,7 @@ class CommunicationTemplate(models.Model):
     SMS = "SMS"
     WHATSAPP = "WHATSAPP"
     CHANNEL_HINT_CHOICES = ((ANY, "Any channel"), (SMS, "SMS"), (WHATSAPP, "WhatsApp"))
-
+    sort_order = models.PositiveSmallIntegerField(default=1)
     code = models.SlugField(max_length=64, unique=True)
     name = models.CharField(max_length=128)
     message_type = models.CharField(max_length=32, choices=OutboundMessageLog.MESSAGE_TYPE_CHOICES)
@@ -306,7 +295,7 @@ class CommunicationTemplate(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("code",)
+        ordering = ("sort_order", "code")
 
     def __str__(self):
         return f"{self.code} - {self.name}"
