@@ -1,38 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { DashboardScreen } from './src/screens/DashboardScreen';
+import { FinanceScreen } from './src/screens/FinanceScreen';
+import { AttendanceScreen } from './src/screens/AttendanceScreen';
+import { ExamsScreen } from './src/screens/ExamsScreen';
+import { CourseworkScreen } from './src/screens/CourseworkScreen';
+import { MessagesScreen } from './src/screens/MessagesScreen';
+import { RoutesScreen } from './src/screens/RoutesScreen';
+import { PushScreen } from './src/screens/PushScreen';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://your-school-domain.com/api/v1';
+const tabs = ['Dashboard', 'Finance', 'Attendance', 'Exams', 'Coursework', 'Messages', 'Routes', 'Alerts'];
 
 export default function App() {
-  const [apiStatus, setApiStatus] = useState('Checking tenant API...');
+  const [tab, setTab] = useState('Dashboard');
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/whoami/`)
-      .then((response) => response.json())
-      .then((data) => setApiStatus(`Connected to tenant: ${data.tenant || 'public'}`))
-      .catch(() => setApiStatus('API not reachable yet. Check EXPO_PUBLIC_API_BASE_URL.'));
-  }, []);
+  function body() {
+    if (tab === 'Finance') return <FinanceScreen />;
+    if (tab === 'Attendance') return <AttendanceScreen />;
+    if (tab === 'Exams') return <ExamsScreen />;
+    if (tab === 'Coursework') return <CourseworkScreen />;
+    if (tab === 'Messages') return <MessagesScreen />;
+    if (tab === 'Routes') return <RoutesScreen />;
+    if (tab === 'Alerts') return <PushScreen />;
+    return <DashboardScreen />;
+  }
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <Text style={{ fontSize: 30, fontWeight: '800', color: '#111827', marginBottom: 8 }}>EduManage Mobile</Text>
-        <Text style={{ fontSize: 16, color: '#4b5563', marginBottom: 24 }}>{apiStatus}</Text>
-        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 18, marginBottom: 16 }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Parent App</Text>
-          <Text style={{ color: '#4b5563' }}>Dashboard, children, invoices, payments, results, coursework, transport, and announcements.</Text>
-        </View>
-        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 18, marginBottom: 16 }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Student App</Text>
-          <Text style={{ color: '#4b5563' }}>Coursework, online exams, attendance, finance status, messages, and transport details.</Text>
-        </View>
-        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 18 }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Teacher App</Text>
-          <Text style={{ color: '#4b5563' }}>Mobile attendance marking, assigned classes, exam attempts, coursework, and messages.</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  return <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}><StatusBar style="dark" /><View style={{ padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}><Text style={{ fontSize: 24, fontWeight: '900', color: '#111827' }}>EduManage Mobile</Text></View><ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 58, backgroundColor: '#fff' }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10 }}>{tabs.map((item) => <TouchableOpacity key={item} onPress={() => setTab(item)} style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: tab === item ? '#2563eb' : '#f1f5f9', marginRight: 8 }}><Text style={{ color: tab === item ? '#fff' : '#334155', fontWeight: '800' }}>{item}</Text></TouchableOpacity>)}</ScrollView>{body()}</SafeAreaView>;
 }
