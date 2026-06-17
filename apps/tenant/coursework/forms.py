@@ -20,29 +20,14 @@ class MultipleFileField(forms.FileField):
 
 
 class LearningMaterialForm(forms.ModelForm):
-    attachments = MultipleFileField(
-        required=False,
-        help_text="Optional: attach notes, PDFs, images, videos, or other learning files.",
-    )
+    attachments = MultipleFileField(required=False, help_text="Optional: attach notes, PDFs, images, videos, or other learning files.")
 
     class Meta:
         model = LearningMaterial
         fields = [
-            "type",
-            "title",
-            "description",
-            "campus",
-            "class_group",
-            "stream",
-            "offering",
-            "external_url",
-            "video_url",
-            "meeting_url",
-            "allow_comments",
-            "publish_at",
-            "due_date",
-            "is_active",
-            "attachments",
+            "type", "title", "description", "campus", "class_group", "stream", "offering",
+            "external_url", "video_url", "meeting_url", "allow_comments",
+            "publish_at", "due_date", "is_active", "attachments",
         ]
         widgets = {
             "due_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
@@ -55,35 +40,22 @@ class LearningMaterialForm(forms.ModelForm):
         material_type = cleaned.get("type")
         video_url = cleaned.get("video_url")
         meeting_url = cleaned.get("meeting_url")
-        if material_type == LearningMaterial.VIDEO_LESSON and not video_url:
-            self.add_error("video_url", "Video lessons should include a video link or upload an attachment.")
+        attachments = cleaned.get("attachments") or []
+        if material_type == LearningMaterial.VIDEO_LESSON and not video_url and not attachments:
+            self.add_error("video_url", "Video lessons should include a video link or a video attachment.")
         if material_type == LearningMaterial.LIVE_CLASS and not meeting_url:
             self.add_error("meeting_url", "Live classes should include a Google Meet, Zoom, or live-class link.")
         return cleaned
 
 
 class AssignmentForm(forms.ModelForm):
-    attachments = MultipleFileField(
-        required=False,
-        help_text="Optional: attach question papers, rubrics, templates, or reference files.",
-    )
+    attachments = MultipleFileField(required=False, help_text="Optional: attach question papers, rubrics, templates, or reference files.")
 
     class Meta:
         model = Assignment
         fields = [
-            "title",
-            "instructions",
-            "max_score",
-            "campus",
-            "class_group",
-            "stream",
-            "offering",
-            "resource_url",
-            "allow_comments",
-            "publish_at",
-            "due_date",
-            "is_active",
-            "attachments",
+            "title", "instructions", "max_score", "campus", "class_group", "stream", "offering",
+            "resource_url", "allow_comments", "publish_at", "due_date", "is_active", "attachments",
         ]
         widgets = {
             "publish_at": forms.DateTimeInput(attrs={"type": "datetime-local", "placeholder": "YYYY-MM-DD HH:MM"}),
