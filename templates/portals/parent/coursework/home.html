@@ -8,107 +8,20 @@
 
 <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
   <form method="get" class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-    <div class="w-full md:w-56">
-      <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
-      <select id="id_campus" name="campus" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
-        <option value="">All Campuses</option>
-        {% for c in campuses %}
-          <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="w-full md:flex-1">
-      <label for="id_student" class="block text-sm font-bold text-gray-700 mb-2">Child</label>
-      <select id="id_student" name="student" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
-        <option value="">All Children</option>
-        {% for item in children %}
-          <option value="{{ item.student.id }}" {% if selected_student_id and item.student.id == selected_student_id %}selected{% endif %}>{{ item.student }}</option>
-        {% endfor %}
-      </select>
-      <p class="text-xs text-gray-500 mt-1">Filters apply to the list below.</p>
-    </div>
-
-    <div>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>Apply
-      </button>
-    </div>
+    <div class="w-full md:w-56"><label class="block text-sm font-bold text-gray-700 mb-2">Campus</label><select name="campus" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="w-full md:flex-1"><label class="block text-sm font-bold text-gray-700 mb-2">Child</label><select name="student" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg"><option value="">All Children</option>{% for item in children %}<option value="{{ item.student.id }}" {% if selected_student_id and item.student.id == selected_student_id %}selected{% endif %}>{{ item.student }}</option>{% endfor %}</select></div>
+    <button type="submit" class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold border-2 border-gray-300">Apply</button>
   </form>
 </div>
 
 {% for item in children %}
   <div class="mb-8">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <div class="text-sm text-gray-500">Child</div>
-        <div class="text-lg font-bold text-gray-900">{{ item.student }}</div>
-      </div>
-      <div class="text-sm text-gray-500">{% if item.student.campus %}{{ item.student.campus }}{% endif %}</div>
-    </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Pending</p><p class="text-xl font-black text-yellow-700">{{ item.pending_count }}</p></div>
-      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Submitted</p><p class="text-xl font-black text-green-700">{{ item.submitted_count }}</p></div>
-      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Overdue</p><p class="text-xl font-black text-red-700">{{ item.overdue_count }}</p></div>
-      <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Marked</p><p class="text-xl font-black text-blue-700">{{ item.marked_count }}</p></div>
-    </div>
-
+    <div class="flex items-center justify-between mb-3"><div><div class="text-sm text-gray-500">Child</div><div class="text-lg font-bold text-gray-900">{{ item.student }}</div></div><div class="text-right"><div class="text-xs uppercase font-bold text-gray-500">Completion</div><div class="text-2xl font-black text-primary-700">{{ item.summary.completion_rate }}%</div></div></div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4"><div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Items</p><p class="text-xl font-black text-gray-900">{{ item.summary.total_items }}</p></div><div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Pending</p><p class="text-xl font-black text-yellow-700">{{ item.pending_count }}</p></div><div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Submitted</p><p class="text-xl font-black text-green-700">{{ item.submitted_count }}</p></div><div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Overdue</p><p class="text-xl font-black text-red-700">{{ item.overdue_count }}</p></div><div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs font-bold uppercase text-gray-500">Marked</p><p class="text-xl font-black text-blue-700">{{ item.marked_count }}</p></div></div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 class="font-bold text-gray-900 mb-2">Materials</h3>
-        <div class="space-y-2">
-          {% for m in item.materials %}
-            <div class="p-3 border border-gray-200 rounded-lg">
-              <div class="text-xs font-bold text-gray-500 uppercase">{{ m.get_type_display }}</div>
-              <div class="font-semibold text-gray-900">{{ m.title }}</div>
-              <div class="text-xs text-gray-500">{{ m.publish_at|date:'Y-m-d' }} · {{ m.attachments.count }} file(s)</div>
-              <div class="mt-2 flex justify-end">
-                <a href="{% url 'parent_coursework_material_detail' item.student.pk m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold">Open</a>
-              </div>
-            </div>
-          {% empty %}
-            <div class="text-sm text-gray-500">No materials.</div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <h3 class="font-bold text-gray-900 mb-2">Assignments</h3>
-        <div class="space-y-2">
-          {% for a in item.assignments %}
-            <div class="p-3 border border-gray-200 rounded-lg">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="font-semibold text-gray-900">{{ a.title }}</div>
-                  {% if a.due_date %}<div class="text-xs text-gray-500">Due: {{ a.due_date|date:'Y-m-d H:i' }}</div>{% endif %}
-                  {% if a.submission and a.submission.submitted_at %}
-                    <div class="text-xs text-gray-500">Submitted: {{ a.submission.submitted_at|date:'Y-m-d H:i' }}</div>
-                  {% endif %}
-                </div>
-                <div>
-                  {% if a.is_submitted %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Submitted</span>
-                  {% elif a.is_overdue %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Overdue</span>
-                  {% else %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Pending</span>
-                  {% endif %}
-                </div>
-              </div>
-              <div class="mt-2 flex justify-end">
-                <a href="{% url 'parent_coursework_assignment_detail' item.student.pk a.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold">View</a>
-              </div>
-            </div>
-          {% empty %}
-            <div class="text-sm text-gray-500">No assignments.</div>
-          {% endfor %}
-        </div>
-      </div>
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"><h3 class="font-bold text-gray-900 mb-2">Materials</h3><div class="space-y-2">{% for m in item.materials %}<div class="p-3 border border-gray-200 rounded-lg"><div class="text-xs font-bold text-gray-500 uppercase">{{ m.get_type_display }} · Progress {{ m.progress_percent }}%</div><div class="font-semibold text-gray-900">{{ m.title }}</div><div class="text-xs text-gray-500">{{ m.publish_at|date:'Y-m-d' }} · {{ m.attachments.count }} file(s) · {{ m.comments.count }} comment(s)</div><div class="mt-2 flex justify-end"><a href="{% url 'parent_coursework_material_detail' item.student.pk m.pk %}" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold">Open</a></div></div>{% empty %}<div class="text-sm text-gray-500">No materials.</div>{% endfor %}</div></div>
+      <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"><h3 class="font-bold text-gray-900 mb-2">Assignments</h3><div class="space-y-2">{% for a in item.assignments %}<div class="p-3 border border-gray-200 rounded-lg"><div class="flex items-start justify-between gap-3"><div><div class="font-semibold text-gray-900">{{ a.title }}</div>{% if a.due_date %}<div class="text-xs text-gray-500">Due: {{ a.due_date|date:'Y-m-d H:i' }}</div>{% endif %}<div class="text-xs text-gray-500">Progress {{ a.progress_percent }}% · {{ a.comments.count }} comment(s)</div>{% if a.submission and a.submission.submitted_at %}<div class="text-xs text-gray-500">Submitted: {{ a.submission.submitted_at|date:'Y-m-d H:i' }}</div>{% endif %}</div><div>{% if a.is_submitted %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Submitted</span>{% elif a.is_overdue %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Overdue</span>{% else %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Pending</span>{% endif %}</div></div><div class="mt-2 flex justify-end"><a href="{% url 'parent_coursework_assignment_detail' item.student.pk a.pk %}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold">View</a></div></div>{% empty %}<div class="text-sm text-gray-500">No assignments.</div>{% endfor %}</div></div>
     </div>
   </div>
-{% empty %}
-  <div class="text-sm text-gray-500 bg-white rounded-lg border border-gray-200 p-6">No linked students found.</div>
-{% endfor %}
-
+{% empty %}<div class="text-sm text-gray-500 bg-white rounded-lg border border-gray-200 p-6">No linked students found.</div>{% endfor %}
 {% endblock %}
