@@ -11,13 +11,13 @@ class Exam(models.Model):
     PAPER_BASED = "PAPER_BASED"
     ONLINE = "ONLINE"
     HYBRID = "HYBRID"
-    
+
     EXAM_MODE_CHOICES = (
         (PAPER_BASED, "Paper-Based"),
         (ONLINE, "Online"),
         (HYBRID, "Hybrid"),
     )
-    
+
     name = models.CharField(max_length=128)
     term = models.ForeignKey("academics.AcademicTerm", on_delete=models.CASCADE)
     exam_mode = models.CharField(max_length=16, choices=EXAM_MODE_CHOICES, default=PAPER_BASED)
@@ -50,6 +50,9 @@ class ExamPaper(models.Model):
     weight = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     duration_minutes = models.PositiveIntegerField(null=True, blank=True, help_text="Duration for online exams")
     is_published = models.BooleanField(default=False)
+    results_published = models.BooleanField(default=False, help_text="Allow students and parents to view final results.")
+    results_published_at = models.DateTimeField(null=True, blank=True)
+    report_cards_enabled = models.BooleanField(default=True)
     date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
@@ -70,12 +73,12 @@ class ExamPaper(models.Model):
         return self.questions.count()
 
     def total_marks(self):
-        return self.questions.aggregate(total=models.Sum('marks'))['total'] or 0
+        return self.questions.aggregate(total=models.Sum("marks"))["total"] or 0
 
     def average_score(self):
         scores = self.scores.filter(score__isnull=False)
         if scores.exists():
-            return scores.aggregate(avg=models.Avg('score'))['avg']
+            return scores.aggregate(avg=models.Avg("score"))["avg"]
         return None
 
     def pass_rate(self):
@@ -87,25 +90,27 @@ class ExamPaper(models.Model):
         passed = self.scores.filter(score__gte=self.passing_score).count()
         return (passed / total) * 100
 
+    def results_are_visible(self):
+        return self.results_published or self.show_results_immediately
+
 
 class QuestionBank(models.Model):
-    """Question repository for exams"""
     EASY = "EASY"
     MEDIUM = "MEDIUM"
     HARD = "HARD"
-    
+
     DIFFICULTY_CHOICES = (
         (EASY, "Easy"),
         (MEDIUM, "Medium"),
         (HARD, "Hard"),
     )
-    
+
     MCQ = "MCQ"
     TRUE_FALSE = "TRUE_FALSE"
     SHORT_ANSWER = "SHORT_ANSWER"
     ESSAY = "ESSAY"
     FILL_BLANK = "FILL_BLANK"
-    
+
     QUESTION_TYPE_CHOICES = (
         (MCQ, "Multiple Choice"),
         (TRUE_FALSE, "True/False"),
@@ -113,25 +118,19 @@ class QuestionBank(models.Model):
         (ESSAY, "Essay"),
         (FILL_BLANK, "Fill in the Blank"),
     )
-    
+
     course = models.ForeignKey("academics.Course", on_delete=models.CASCADE, related_name="questions")
     question_type = models.CharField(max_length=16, choices=QUESTION_TYPE_CHOICES)
     difficulty = models.CharField(max_length=16, choices=DIFFICULTY_CHOICES, default=MEDIUM)
     question_text = models.TextField()
     question_image = models.ImageField(upload_to="exam_questions/", null=True, blank=True)
     marks = models.DecimalField(max_digits=5, decimal_places=2, default=1)
-    
-    # For MCQ and True/False
     option_a = models.CharField(max_length=255, blank=True)
     option_b = models.CharField(max_length=255, blank=True)
     option_c = models.CharField(max_length=255, blank=True)
     option_d = models.CharField(max_length=255, blank=True)
     correct_option = models.CharField(max_length=1, blank=True, help_text="A, B, C, or D")
-    
-    # For Fill in the Blank and Short Answer
     correct_answer = models.TextField(blank=True)
-    
-    # Metadata
     explanation = models.TextField(blank=True, help_text="Explanation for the correct answer")
     tags = models.CharField(max_length=255, blank=True, help_text="Comma-separated tags")
     created_by = models.ForeignKey("teachers.TeacherProfile", on_delete=models.SET_NULL, null=True, blank=True)
@@ -150,7 +149,6 @@ class QuestionBank(models.Model):
 
 
 class ExamQuestion(models.Model):
-    """Links questions from question bank to specific exam papers"""
     paper = models.ForeignKey(ExamPaper, on_delete=models.CASCADE, related_name="questions")
     question = models.ForeignKey(QuestionBank, on_delete=models.CASCADE)
     order = models.PositiveIntegerField(default=1)
@@ -165,7 +163,6 @@ class ExamQuestion(models.Model):
 
 
 class ExamSchedule(models.Model):
-    """Schedule for exam papers with room and seat allocation"""
     paper = models.ForeignKey(ExamPaper, on_delete=models.CASCADE, related_name="schedules")
     room_name = models.CharField(max_length=128)
     date = models.DateField()
@@ -189,7 +186,6 @@ class ExamSchedule(models.Model):
 
 
 class SeatAllocation(models.Model):
-    """Individual seat assignments for students"""
     schedule = models.ForeignKey(ExamSchedule, on_delete=models.CASCADE, related_name="seat_allocations")
     student = models.ForeignKey("students.StudentProfile", on_delete=models.CASCADE)
     seat_number = models.CharField(max_length=16)
@@ -205,19 +201,18 @@ class SeatAllocation(models.Model):
 
 
 class OnlineExamAttempt(models.Model):
-    """Tracks student attempts for online exams"""
     IN_PROGRESS = "IN_PROGRESS"
     SUBMITTED = "SUBMITTED"
     AUTO_SUBMITTED = "AUTO_SUBMITTED"
     GRADED = "GRADED"
-    
+
     STATUS_CHOICES = (
         (IN_PROGRESS, "In Progress"),
         (SUBMITTED, "Submitted"),
         (AUTO_SUBMITTED, "Auto-Submitted"),
         (GRADED, "Graded"),
     )
-    
+
     paper = models.ForeignKey(ExamPaper, on_delete=models.CASCADE, related_name="attempts")
     student = models.ForeignKey("students.StudentProfile", on_delete=models.CASCADE, related_name="exam_attempts")
     started_at = models.DateTimeField(auto_now_add=True)
@@ -225,7 +220,15 @@ class OnlineExamAttempt(models.Model):
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=IN_PROGRESS)
     score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    
+    submitted_by_ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device_fingerprint = models.CharField(max_length=255, blank=True)
+    question_order = models.JSONField(default=list, blank=True)
+    browser_focus_warnings = models.PositiveIntegerField(default=0)
+    last_activity_at = models.DateTimeField(null=True, blank=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    locked_reason = models.CharField(max_length=255, blank=True)
+
     class Meta:
         ordering = ("-started_at",)
         unique_together = ("paper", "student")
@@ -242,17 +245,23 @@ class OnlineExamAttempt(models.Model):
         return max(0, remaining)
 
     def is_expired(self):
-        return self.time_remaining() == 0 if self.time_remaining() is not None else False
+        remaining = self.time_remaining()
+        return remaining == 0 if remaining is not None else False
+
+    def is_locked(self):
+        return self.status in [self.SUBMITTED, self.AUTO_SUBMITTED, self.GRADED] or self.locked_at is not None
 
 
 class StudentResponse(models.Model):
-    """Student's response to individual questions in online exam"""
     attempt = models.ForeignKey(OnlineExamAttempt, on_delete=models.CASCADE, related_name="responses")
     exam_question = models.ForeignKey(ExamQuestion, on_delete=models.CASCADE)
     selected_option = models.CharField(max_length=1, blank=True, help_text="A, B, C, or D for MCQ")
     answer_text = models.TextField(blank=True)
     is_correct = models.BooleanField(null=True, blank=True)
     marks_awarded = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    manual_feedback = models.TextField(blank=True)
+    manually_marked_by = models.ForeignKey("teachers.TeacherProfile", on_delete=models.SET_NULL, null=True, blank=True)
+    manually_marked_at = models.DateTimeField(null=True, blank=True)
     answered_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -263,9 +272,7 @@ class StudentResponse(models.Model):
         return f"{self.attempt.student} - Q{self.exam_question.order}"
 
     def auto_grade(self):
-        """Automatically grade objective questions"""
         question = self.exam_question.question
-        
         if question.question_type in [QuestionBank.MCQ, QuestionBank.TRUE_FALSE]:
             if self.selected_option.upper() == question.correct_option.upper():
                 self.is_correct = True
@@ -275,7 +282,6 @@ class StudentResponse(models.Model):
                 self.marks_awarded = Decimal(0)
             self.save()
             return True
-        
         if question.question_type == QuestionBank.FILL_BLANK:
             if self.answer_text.strip().lower() == question.correct_answer.strip().lower():
                 self.is_correct = True
@@ -285,8 +291,45 @@ class StudentResponse(models.Model):
                 self.marks_awarded = Decimal(0)
             self.save()
             return True
-        
         return False
+
+
+class ExamAntiCheatEvent(models.Model):
+    FOCUS_LOST = "FOCUS_LOST"
+    TAB_HIDDEN = "TAB_HIDDEN"
+    COPY_PASTE = "COPY_PASTE"
+    FULLSCREEN_EXIT = "FULLSCREEN_EXIT"
+    AUTO_SUBMIT = "AUTO_SUBMIT"
+    START = "START"
+    SAVE = "SAVE"
+    SUBMIT = "SUBMIT"
+    MANUAL_REVIEW = "MANUAL_REVIEW"
+
+    EVENT_CHOICES = (
+        (FOCUS_LOST, "Focus lost"),
+        (TAB_HIDDEN, "Tab hidden"),
+        (COPY_PASTE, "Copy/paste attempt"),
+        (FULLSCREEN_EXIT, "Fullscreen exit"),
+        (AUTO_SUBMIT, "Auto submit"),
+        (START, "Attempt started"),
+        (SAVE, "Answers saved"),
+        (SUBMIT, "Attempt submitted"),
+        (MANUAL_REVIEW, "Manual review"),
+    )
+
+    attempt = models.ForeignKey(OnlineExamAttempt, on_delete=models.CASCADE, related_name="security_events")
+    event_type = models.CharField(max_length=32, choices=EVENT_CHOICES)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=["attempt", "event_type", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.attempt} - {self.event_type}"
 
 
 class ExamScore(models.Model):
@@ -297,12 +340,7 @@ class ExamScore(models.Model):
     grade = models.CharField(max_length=8, blank=True)
     rank = models.PositiveIntegerField(null=True, blank=True)
     note = models.CharField(max_length=255, blank=True)
-    graded_by = models.ForeignKey(
-        "teachers.TeacherProfile",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
+    graded_by = models.ForeignKey("teachers.TeacherProfile", on_delete=models.SET_NULL, null=True, blank=True)
     graded_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -313,18 +351,17 @@ class ExamScore(models.Model):
         return f"{self.student} -> {self.paper}"
 
     def calculate_percentage(self):
-        if self.score and self.paper.max_score:
+        if self.score is not None and self.paper.max_score:
             self.percentage = (self.score / self.paper.max_score) * 100
             self.save()
 
     def is_pass(self):
-        if self.paper.passing_score and self.score:
+        if self.paper.passing_score and self.score is not None:
             return self.score >= self.paper.passing_score
         return None
 
 
 class ExamAnalytics(models.Model):
-    """Aggregated analytics for exam performance"""
     paper = models.OneToOneField(ExamPaper, on_delete=models.CASCADE, related_name="analytics")
     total_students = models.PositiveIntegerField(default=0)
     appeared_students = models.PositiveIntegerField(default=0)
@@ -344,27 +381,17 @@ class ExamAnalytics(models.Model):
         return f"Analytics - {self.paper}"
 
     def refresh_analytics(self):
-        """Recalculate all analytics"""
-        from django.db.models import Avg, Max, Min, Count
-        
+        from django.db.models import Avg, Max, Min
         scores = self.paper.scores.filter(score__isnull=False)
-        
         self.total_students = self.paper.scores.count()
         self.appeared_students = scores.count()
-        
         if scores.exists():
-            stats = scores.aggregate(
-                avg=Avg('score'),
-                max=Max('score'),
-                min=Min('score')
-            )
-            self.average_score = stats['avg']
-            self.highest_score = stats['max']
-            self.lowest_score = stats['min']
-            
+            stats = scores.aggregate(avg=Avg("score"), max=Max("score"), min=Min("score"))
+            self.average_score = stats["avg"]
+            self.highest_score = stats["max"]
+            self.lowest_score = stats["min"]
             if self.paper.passing_score:
                 self.passed_students = scores.filter(score__gte=self.paper.passing_score).count()
                 self.failed_students = self.appeared_students - self.passed_students
                 self.pass_rate = (self.passed_students / self.appeared_students * 100) if self.appeared_students > 0 else 0
-        
         self.save()
