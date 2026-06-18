@@ -1,0 +1,6 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Finance Accounts{% endblock %}
+{% block page_title %}Finance Accounts{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border overflow-hidden"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Name</th><th class="px-4 py-3 text-left">Kind</th><th class="px-4 py-3 text-left">Ledger</th><th class="px-4 py-3 text-right">Opening</th></tr></thead><tbody>{% for item in items %}<tr><td class="px-4 py-3 font-bold">{{ item.name }}</td><td class="px-4 py-3">{{ item.kind }}</td><td class="px-4 py-3">{{ item.ledger_account }}</td><td class="px-4 py-3 text-right">{{ item.opening_balance }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No accounts.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
