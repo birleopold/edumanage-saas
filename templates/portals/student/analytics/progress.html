@@ -1,0 +1,9 @@
+{% extends 'portals/student/base.html' %}
+{% block title %}Progress{% endblock %}
+{% block page_title %}Progress{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Progress</div><table class="min-w-full divide-y"><tbody>{% for t in trends %}<tr><td class="px-4 py-3">{{ t.term }}</td><td class="px-4 py-3">{{ t.percentage }}</td><td class="px-4 py-3">{{ t.gpa }}</td><td class="px-4 py-3">{{ t.grade }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No data yet.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border p-4"><h2 class="font-bold mb-3">Comments</h2>{% for c in comments %}<div class="border rounded-lg p-3 mb-3"><p class="font-bold">{{ c.term }}</p><p>{{ c.comment }}</p></div>{% empty %}<p class="text-gray-500">No comments yet.</p>{% endfor %}</section>
+</div>
+{% endblock %}
