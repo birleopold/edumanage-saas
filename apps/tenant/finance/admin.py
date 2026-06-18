@@ -96,3 +96,5 @@ class InboundWebhookEventAdmin(admin.ModelAdmin):
 
 
 import apps.tenant.finance.accounting_admin
+import apps.tenant.finance.gateway_admin
+import apps.tenant.finance.integration_admin
