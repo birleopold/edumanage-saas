@@ -1,0 +1,7 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Income Statement{% endblock %}
+{% block page_title %}Income Statement{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Income</p><p class="text-2xl font-black">{{ report.total_income }}</p></div><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Expenses</p><p class="text-2xl font-black">{{ report.total_expenses }}</p></div><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Net</p><p class="text-2xl font-black">{{ report.net_income }}</p></div></div>
+<div class="bg-white rounded-xl border p-5"><h2 class="font-bold mb-3">Income</h2>{% for row in report.income_rows %}<div class="flex justify-between py-2 border-b"><span>{{ row.account }}</span><b>{{ row.amount }}</b></div>{% empty %}<p class="text-gray-500">No income rows.</p>{% endfor %}<h2 class="font-bold mt-6 mb-3">Expenses</h2>{% for row in report.expense_rows %}<div class="flex justify-between py-2 border-b"><span>{{ row.account }}</span><b>{{ row.amount }}</b></div>{% empty %}<p class="text-gray-500">No expense rows.</p>{% endfor %}</div>
+{% endblock %}
