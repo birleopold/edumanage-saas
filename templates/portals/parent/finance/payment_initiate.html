@@ -1,0 +1,21 @@
+{% extends 'portals/parent/base.html' %}
+{% load orgsettings_extras %}
+{% block title %}Pay Invoice{% endblock %}
+{% block page_title %}Pay Invoice{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="max-w-2xl space-y-6">
+  <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+    <p class="text-sm text-gray-500">Invoice</p>
+    <h2 class="text-xl font-black text-gray-900">{{ invoice.reference|default:invoice.id }}</h2>
+    <p class="text-gray-600 mt-1">{{ invoice.student }}</p>
+    <p class="text-lg font-bold text-red-700 mt-3">Balance: {{ balance|format_money_amount:org_profile.default_currency }}</p>
+  </div>
+  <form method="post" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Initiate Mobile Money Payment</button>
+    <a href="{% url 'parent_invoices_detail' invoice.id %}" class="ml-3 text-sm font-semibold text-gray-600">Cancel</a>
+  </form>
+</div>
+{% endblock %}
