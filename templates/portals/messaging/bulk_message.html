@@ -1,0 +1,12 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Notice{% endblock %}
+{% block page_title %}Notice{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<form method="post" class="max-w-4xl bg-white rounded-xl border p-6 space-y-4">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Send</button>
+</form>
+{% if result %}<div class="mt-6 bg-white rounded-xl border p-6"><p>Recipients: {{ result.recipients }}</p><p>Sent: {{ result.sent }}</p><p>Failed: {{ result.failed }}</p><p>Skipped: {{ result.skipped }}</p></div>{% endif %}
+{% endblock %}
