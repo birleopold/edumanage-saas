@@ -10,14 +10,7 @@ class Account(models.Model):
     EQUITY = "EQUITY"
     INCOME = "INCOME"
     EXPENSE = "EXPENSE"
-    ACCOUNT_TYPE_CHOICES = (
-        (ASSET, "Asset"),
-        (LIABILITY, "Liability"),
-        (EQUITY, "Equity"),
-        (INCOME, "Income"),
-        (EXPENSE, "Expense"),
-    )
-
+    ACCOUNT_TYPE_CHOICES = ((ASSET, "Asset"), (LIABILITY, "Liability"), (EQUITY, "Equity"), (INCOME, "Income"), (EXPENSE, "Expense"))
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=160)
     account_type = models.CharField(max_length=16, choices=ACCOUNT_TYPE_CHOICES)
@@ -41,7 +34,6 @@ class CashAccount(models.Model):
     MOBILE_MONEY = "MOBILE_MONEY"
     CARD = "CARD"
     ACCOUNT_KIND_CHOICES = ((CASH, "Cash"), (BANK, "Bank"), (MOBILE_MONEY, "Mobile money"), (CARD, "Card/Card settlement"))
-
     name = models.CharField(max_length=120)
     kind = models.CharField(max_length=20, choices=ACCOUNT_KIND_CHOICES)
     ledger_account = models.ForeignKey("finance.Account", on_delete=models.PROTECT, related_name="cash_accounts")
@@ -65,7 +57,6 @@ class JournalEntry(models.Model):
     POSTED = "POSTED"
     REVERSED = "REVERSED"
     STATUS_CHOICES = ((DRAFT, "Draft"), (POSTED, "Posted"), (REVERSED, "Reversed"))
-
     MANUAL = "MANUAL"
     INVOICE = "INVOICE"
     PAYMENT = "PAYMENT"
@@ -74,7 +65,6 @@ class JournalEntry(models.Model):
     ADJUSTMENT = "ADJUSTMENT"
     OPENING = "OPENING"
     SOURCE_CHOICES = ((MANUAL, "Manual"), (INVOICE, "Invoice"), (PAYMENT, "Payment"), (EXPENSE, "Expense"), (PAYROLL, "Payroll"), (ADJUSTMENT, "Fee adjustment"), (OPENING, "Opening balance"))
-
     entry_date = models.DateField(default=timezone.localdate)
     reference = models.CharField(max_length=80, blank=True, db_index=True)
     description = models.CharField(max_length=255)
@@ -137,11 +127,6 @@ class ExpenseCategory(models.Model):
 
 
 class SchoolExpense(models.Model):
-    CASH = "CASH"
-    BANK = "BANK"
-    MOBILE_MONEY = "MOBILE_MONEY"
-    PAYMENT_SOURCE_CHOICES = ((CASH, "Cash"), (BANK, "Bank"), (MOBILE_MONEY, "Mobile money"))
-
     expense_date = models.DateField(default=timezone.localdate)
     category = models.ForeignKey("finance.ExpenseCategory", on_delete=models.PROTECT, related_name="expenses")
     paid_from = models.ForeignKey("finance.CashAccount", on_delete=models.PROTECT, related_name="expenses")
@@ -166,7 +151,6 @@ class PayrollRun(models.Model):
     APPROVED = "APPROVED"
     PAID = "PAID"
     STATUS_CHOICES = ((DRAFT, "Draft"), (APPROVED, "Approved"), (PAID, "Paid"))
-
     name = models.CharField(max_length=120)
     period_start = models.DateField()
     period_end = models.DateField()
@@ -233,6 +217,25 @@ class BankReconciliation(models.Model):
         return f"{self.cash_account} - {self.statement_date}"
 
 
+class BankStatementLine(models.Model):
+    cash_account = models.ForeignKey("finance.CashAccount", on_delete=models.PROTECT, related_name="statement_lines")
+    transaction_date = models.DateField()
+    description = models.CharField(max_length=255, blank=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    reference = models.CharField(max_length=120, blank=True)
+    matched_payment = models.ForeignKey("finance.Payment", on_delete=models.SET_NULL, null=True, blank=True, related_name="statement_matches")
+    is_reconciled = models.BooleanField(default=False)
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = "finance"
+        ordering = ("-transaction_date", "-id")
+        indexes = [models.Index(fields=["cash_account", "transaction_date"]), models.Index(fields=["reference"])]
+
+    def __str__(self):
+        return f"{self.transaction_date} {self.amount} {self.reference}"
+
+
 class FeeAdjustment(models.Model):
     DISCOUNT = "DISCOUNT"
     BURSARY = "BURSARY"
@@ -241,7 +244,6 @@ class FeeAdjustment(models.Model):
     TAX = "TAX"
     ADJUSTMENT_TYPE_CHOICES = ((DISCOUNT, "Discount"), (BURSARY, "Bursary"), (SCHOLARSHIP, "Scholarship"), (PENALTY, "Penalty"), (TAX, "Tax"))
     REDUCE_TYPES = {DISCOUNT, BURSARY, SCHOLARSHIP}
-
     invoice = models.ForeignKey("finance.Invoice", on_delete=models.CASCADE, related_name="adjustments")
     adjustment_type = models.CharField(max_length=24, choices=ADJUSTMENT_TYPE_CHOICES)
     description = models.CharField(max_length=255)
