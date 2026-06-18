@@ -1,0 +1,16 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Finance Books{% endblock %}
+{% block page_title %}Finance Books{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="space-y-6">
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Accounts</p><p class="text-3xl font-black">{{ summary.accounts }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Money Accounts</p><p class="text-3xl font-black">{{ summary.cash_accounts }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Journals</p><p class="text-3xl font-black">{{ summary.journal_entries }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Unposted Expenses</p><p class="text-3xl font-black">{{ summary.unposted_expenses }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Unposted Payroll</p><p class="text-3xl font-black">{{ summary.unposted_payrolls }}</p></div>
+  </div>
+  <div class="bg-white rounded-xl border overflow-hidden"><div class="px-5 py-4 border-b"><h2 class="font-bold">Recent Journal Entries</h2></div><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Date</th><th class="px-4 py-3 text-left">Reference</th><th class="px-4 py-3 text-left">Description</th><th class="px-4 py-3 text-left">Source</th></tr></thead><tbody>{% for entry in recent_entries %}<tr><td class="px-4 py-3">{{ entry.entry_date }}</td><td class="px-4 py-3">{{ entry.reference }}</td><td class="px-4 py-3">{{ entry.description }}</td><td class="px-4 py-3">{{ entry.source }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No journal entries yet.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}
