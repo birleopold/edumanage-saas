@@ -1,5 +1,5 @@
 from django.urls import path
-from . import accounting_views
+from . import accounting_views, payment_recon_views
 
 urlpatterns = [
     path("", accounting_views.accounting_dashboard, name="finance_books_home"),
@@ -9,6 +9,7 @@ urlpatterns = [
     path("cost/new/", accounting_views.expense_create, name="finance_books_cost_new"),
     path("staffpay/new/", accounting_views.payroll_create, name="finance_books_staffpay_new"),
     path("upload/", accounting_views.statement_import, name="finance_books_upload"),
+    path("payments/", payment_recon_views.payment_reconciliation_dashboard, name="finance_books_payment_recon"),
     path("trial/", accounting_views.trial_balance_report, name="finance_books_trial"),
     path("income/", accounting_views.income_statement_report, name="finance_books_income"),
     path("position/", accounting_views.balance_sheet_report, name="finance_books_position"),
