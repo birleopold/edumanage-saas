@@ -19,11 +19,24 @@ from .models import FeeItem, Invoice, InvoiceLine
 class InvoiceAmounts:
     subtotal_lines: Decimal
     opening_balance: Decimal
+    adjustment_total: Decimal
     total_amount: Decimal
     total_paid: Decimal
     balance: Decimal
     display_status: str
     is_overdue: bool
+
+    @property
+    def overdue(self):
+        return self.is_overdue
+
+
+def invoice_adjustment_total(invoice: Invoice) -> Decimal:
+    total = Decimal("0")
+    if hasattr(invoice, "adjustments"):
+        for adjustment in invoice.adjustments.all():
+            total += adjustment.signed_amount()
+    return total
 
 
 @dataclass(frozen=True)
@@ -42,7 +55,8 @@ def invoice_amounts(invoice: Invoice, *, today: date | None = None) -> InvoiceAm
     today = today or timezone.localdate()
     subtotal_lines = invoice.subtotal_lines()
     opening_balance = invoice.opening_balance or Decimal("0")
-    total_amount = opening_balance + subtotal_lines
+    adjustment_total = invoice_adjustment_total(invoice)
+    total_amount = opening_balance + subtotal_lines + adjustment_total
     total_paid = invoice.total_paid()
     balance = total_amount - total_paid
     is_overdue = bool(invoice.due_date and invoice.due_date < today and balance > 0)
@@ -61,6 +75,7 @@ def invoice_amounts(invoice: Invoice, *, today: date | None = None) -> InvoiceAm
     return InvoiceAmounts(
         subtotal_lines=subtotal_lines,
         opening_balance=opening_balance,
+        adjustment_total=adjustment_total,
         total_amount=total_amount,
         total_paid=total_paid,
         balance=balance,
@@ -75,6 +90,7 @@ def attach_invoice_amounts(invoices: Iterable[Invoice]) -> list[Invoice]:
     for invoice in invoices:
         amounts = invoice_amounts(invoice, today=today)
         invoice.subtotal_lines_amount = amounts.subtotal_lines
+        invoice.adjustment_total_amount = amounts.adjustment_total
         invoice.total_amount_value = amounts.total_amount
         invoice.total_paid_value = amounts.total_paid
         invoice.balance_value = amounts.balance
@@ -109,16 +125,7 @@ def collection_summary(invoices: Iterable[Invoice]) -> CollectionSummary:
         elif amounts.balance > 0:
             unpaid_count += 1
 
-    return CollectionSummary(
-        invoice_count=invoice_count,
-        total_billed=total_billed,
-        total_paid=total_paid,
-        total_balance=total_balance,
-        overdue_count=overdue_count,
-        paid_count=paid_count,
-        partial_count=partial_count,
-        unpaid_count=unpaid_count,
-    )
+    return CollectionSummary(invoice_count=invoice_count, total_billed=total_billed, total_paid=total_paid, total_balance=total_balance, overdue_count=overdue_count, paid_count=paid_count, partial_count=partial_count, unpaid_count=unpaid_count)
 
 
 def build_invoice_reference(student: StudentProfile, year: AcademicYear | None, term: AcademicTerm | None, prefix: str = "INV") -> str:
@@ -140,17 +147,7 @@ def invoice_exists_for_period(student: StudentProfile, year: AcademicYear | None
 
 
 @transaction.atomic
-def create_invoice_from_fee_items(
-    *,
-    student: StudentProfile,
-    academic_year: AcademicYear | None,
-    academic_term: AcademicTerm | None,
-    fee_items: Iterable[FeeItem],
-    due_date: date | None = None,
-    opening_balance: Decimal | int | str | None = None,
-    reference_prefix: str = "INV",
-    skip_existing: bool = True,
-) -> tuple[Invoice | None, str]:
+def create_invoice_from_fee_items(*, student: StudentProfile, academic_year: AcademicYear | None, academic_term: AcademicTerm | None, fee_items: Iterable[FeeItem], due_date: date | None = None, opening_balance: Decimal | int | str | None = None, reference_prefix: str = "INV", skip_existing: bool = True) -> tuple[Invoice | None, str]:
     if skip_existing and invoice_exists_for_period(student, academic_year, academic_term):
         return None, "skipped_existing"
 
@@ -158,58 +155,25 @@ def create_invoice_from_fee_items(
     if not items:
         return None, "no_fee_items"
 
-    invoice = Invoice.objects.create(
-        student=student,
-        academic_year=academic_year,
-        academic_term=academic_term,
-        reference=build_invoice_reference(student, academic_year, academic_term, reference_prefix),
-        due_date=due_date,
-        opening_balance=Decimal(str(opening_balance or "0")),
-        status=Invoice.ACTIVE,
-    )
-    InvoiceLine.objects.bulk_create(
-        [
-            InvoiceLine(
-                invoice=invoice,
-                fee_item=item,
-                description=item.name,
-                quantity=Decimal("1"),
-                unit_amount=item.amount,
-            )
-            for item in items
-        ]
-    )
+    invoice = Invoice.objects.create(student=student, academic_year=academic_year, academic_term=academic_term, reference=build_invoice_reference(student, academic_year, academic_term, reference_prefix), due_date=due_date, opening_balance=Decimal(str(opening_balance or "0")), status=Invoice.ACTIVE)
+    InvoiceLine.objects.bulk_create([InvoiceLine(invoice=invoice, fee_item=item, description=item.name, quantity=Decimal("1"), unit_amount=item.amount) for item in items])
+    try:
+        from .accounting_posting import post_invoice_to_ledger
+        post_invoice_to_ledger(invoice)
+    except Exception:
+        pass
     return invoice, "created"
 
 
 @transaction.atomic
-def bulk_create_invoices(
-    *,
-    students: QuerySet | Iterable[StudentProfile],
-    academic_year: AcademicYear | None,
-    academic_term: AcademicTerm | None,
-    fee_items: Iterable[FeeItem],
-    due_date: date | None = None,
-    opening_balance: Decimal | int | str | None = None,
-    reference_prefix: str = "INV",
-    skip_existing: bool = True,
-) -> dict:
+def bulk_create_invoices(*, students: QuerySet | Iterable[StudentProfile], academic_year: AcademicYear | None, academic_term: AcademicTerm | None, fee_items: Iterable[FeeItem], due_date: date | None = None, opening_balance: Decimal | int | str | None = None, reference_prefix: str = "INV", skip_existing: bool = True) -> dict:
     created = []
     skipped_existing = []
     failed = []
     items = list(fee_items)
 
     for student in students:
-        invoice, status = create_invoice_from_fee_items(
-            student=student,
-            academic_year=academic_year,
-            academic_term=academic_term,
-            fee_items=items,
-            due_date=due_date,
-            opening_balance=opening_balance,
-            reference_prefix=reference_prefix,
-            skip_existing=skip_existing,
-        )
+        invoice, status = create_invoice_from_fee_items(student=student, academic_year=academic_year, academic_term=academic_term, fee_items=items, due_date=due_date, opening_balance=opening_balance, reference_prefix=reference_prefix, skip_existing=skip_existing)
         if status == "created" and invoice:
             created.append(invoice)
         elif status == "skipped_existing":
@@ -217,11 +181,4 @@ def bulk_create_invoices(
         else:
             failed.append({"student": student, "reason": status})
 
-    return {
-        "created": created,
-        "skipped_existing": skipped_existing,
-        "failed": failed,
-        "created_count": len(created),
-        "skipped_existing_count": len(skipped_existing),
-        "failed_count": len(failed),
-    }
+    return {"created": created, "skipped_existing": skipped_existing, "failed": failed, "created_count": len(created), "skipped_existing_count": len(skipped_existing), "failed_count": len(failed)}
