@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django import forms
 
@@ -41,5 +40,5 @@ def template_edit(request, pk=None):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Message template saved.")
-        return redirect("messaging_templates")
+        return redirect("msg_copy")
     return render(request, "portals/messaging/template_form.html", {"form": form, "obj": obj})
