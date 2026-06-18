@@ -87,8 +87,8 @@ class InvoiceLine(models.Model):
         super().save(*args, **kwargs)
         if was_new:
             try:
-                from .accounting_posting import post_invoice_to_ledger
-                post_invoice_to_ledger(self.invoice)
+                from .accounting_posting import refresh_invoice_ledger
+                refresh_invoice_ledger(self.invoice)
             except Exception:
                 pass
 
