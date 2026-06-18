@@ -1,0 +1,18 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Payment Reconciliation{% endblock %}
+{% block page_title %}Payment Reconciliation{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Pending</p><p class="text-2xl font-black">{{ summary.pending_requests }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Failed</p><p class="text-2xl font-black">{{ summary.failed_requests }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Success</p><p class="text-2xl font-black">{{ summary.successful_requests }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Events</p><p class="text-2xl font-black">{{ summary.unprocessed_events }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Duplicates</p><p class="text-2xl font-black">{{ summary.duplicate_alerts }}</p></div>
+    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Unmatched</p><p class="text-2xl font-black">{{ summary.unmatched_statement_lines }}</p></div>
+  </div>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Recent Payment Requests</div><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Invoice</th><th class="px-4 py-3 text-left">Amount</th><th class="px-4 py-3 text-left">Network</th><th class="px-4 py-3 text-left">Status</th><th class="px-4 py-3 text-left">Reference</th></tr></thead><tbody>{% for item in recent_requests %}<tr><td class="px-4 py-3">{{ item.invoice }}</td><td class="px-4 py-3">{{ item.amount }}</td><td class="px-4 py-3">{{ item.network }}</td><td class="px-4 py-3 font-bold">{{ item.status }}</td><td class="px-4 py-3">{{ item.provider_reference }}</td></tr>{% empty %}<tr><td colspan="5" class="p-6 text-center text-gray-500">No requests.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Duplicate Alerts</div><table class="min-w-full divide-y"><tbody>{% for alert in duplicate_alerts %}<tr><td class="px-4 py-3">{{ alert.payment }}</td><td class="px-4 py-3">{{ alert.reason }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No duplicate alerts.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Recent Provider Events</div><table class="min-w-full divide-y"><tbody>{% for event in recent_events %}<tr><td class="px-4 py-3">{{ event.provider }}</td><td class="px-4 py-3">{{ event.provider_reference }}</td><td class="px-4 py-3">{{ event.provider_status }}</td><td class="px-4 py-3">{{ event.processed|yesno:'Processed,Pending' }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No events.</td></tr>{% endfor %}</tbody></table></section>
+</div>
+{% endblock %}
