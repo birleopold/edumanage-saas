@@ -45,9 +45,16 @@ class Invoice(models.Model):
             total += line.line_total()
         return total
 
+    def adjustment_total(self) -> Decimal:
+        total = Decimal("0")
+        if hasattr(self, "adjustments"):
+            for adjustment in self.adjustments.all():
+                total += adjustment.signed_amount()
+        return total
+
     def total_amount(self) -> Decimal:
         ob = self.opening_balance if self.opening_balance is not None else Decimal("0")
-        return ob + self.subtotal_lines()
+        return ob + self.subtotal_lines() + self.adjustment_total()
 
     def total_paid(self) -> Decimal:
         total = Decimal("0")
@@ -299,3 +306,6 @@ class CommunicationTemplate(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
+
+from .accounting_models import *
