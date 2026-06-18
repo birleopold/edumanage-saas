@@ -327,3 +327,4 @@ class CommunicationTemplate(models.Model):
 
 from .accounting_models import *
 from .payment_gateway_models import *
+from .integration_models import *
