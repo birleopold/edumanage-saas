@@ -1,0 +1,14 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Integrations{% endblock %}
+{% block page_title %}Integrations{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="space-y-6">
+  <div class="flex justify-between items-center"><h2 class="font-black text-xl">Integration Setup</h2><a href="{% url 'admin_connectors_provider_new' %}" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold">New Provider</a></div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    {% for k,v in summary.items %}<div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-500 font-bold">{{ k }}</p><p class="text-2xl font-black">{{ v }}</p></div>{% endfor %}
+  </div>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Providers</div><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Name</th><th class="px-4 py-3 text-left">Type</th><th class="px-4 py-3 text-left">Active</th><th class="px-4 py-3 text-left">Last Test</th></tr></thead><tbody>{% for p in providers %}<tr><td class="px-4 py-3 font-bold"><a class="text-primary-700" href="{% url 'admin_connectors_provider_edit' p.id %}">{{ p.name }}</a></td><td class="px-4 py-3">{{ p.provider_type }}</td><td class="px-4 py-3">{{ p.is_active|yesno:'Yes,No' }}</td><td class="px-4 py-3">{{ p.last_test_status|default:'-' }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No providers configured.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Recent Integration Events</div><table class="min-w-full divide-y"><tbody>{% for e in events %}<tr><td class="px-4 py-3">{{ e.created_at }}</td><td class="px-4 py-3">{{ e.event_type }}</td><td class="px-4 py-3 font-bold">{{ e.status }}</td><td class="px-4 py-3">{{ e.error_message }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No events.</td></tr>{% endfor %}</tbody></table></section>
+</div>
+{% endblock %}
