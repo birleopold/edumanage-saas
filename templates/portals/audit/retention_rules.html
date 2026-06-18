@@ -1,0 +1,14 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Rules{% endblock %}
+{% block page_title %}Rules{% endblock %}
+{% block content %}
+<form method="post" class="bg-white rounded-xl border p-6 space-y-3 mb-6">
+  {% csrf_token %}
+  <input name="module" placeholder="Module">
+  <input name="retention_days" placeholder="Days" value="2555">
+  <input name="action_after_retention" placeholder="ARCHIVE">
+  <label><input type="checkbox" name="is_active" checked> Active</label>
+  <button>Save</button>
+</form>
+{% for r in rules %}<p>{{ r.module }} - {{ r.retention_days }}</p>{% empty %}<p>No rules.</p>{% endfor %}
+{% endblock %}
