@@ -50,18 +50,7 @@ class InvoiceAdmin(admin.ModelAdmin):
 
 @admin.register(OutboundMessageLog)
 class OutboundMessageLogAdmin(admin.ModelAdmin):
-    list_display = (
-        "created_at",
-        "message_type",
-        "channel",
-        "status",
-        "phone_normalized",
-        "invoice",
-        "payment",
-        "provider_message_id",
-        "provider_delivery_status",
-        "provider_delivery_updated_at",
-    )
+    list_display = ("created_at", "message_type", "channel", "status", "phone_normalized", "invoice", "payment", "provider_message_id", "provider_delivery_status", "provider_delivery_updated_at")
     search_fields = ("phone_raw", "phone_normalized", "provider_message_id", "error_message")
     list_filter = ("message_type", "channel", "status", "created_at")
     readonly_fields = ("created_at",)
@@ -104,3 +93,6 @@ class InboundWebhookEventAdmin(admin.ModelAdmin):
     list_filter = ("provider", "signature_valid")
     search_fields = ("event_type", "error_message")
     readonly_fields = ("created_at",)
+
+
+import apps.tenant.finance.accounting_admin
