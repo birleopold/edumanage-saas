@@ -82,6 +82,16 @@ class InvoiceLine(models.Model):
     def line_total(self) -> Decimal:
         return (self.quantity or Decimal("0")) * (self.unit_amount or Decimal("0"))
 
+    def save(self, *args, **kwargs):
+        was_new = self._state.adding
+        super().save(*args, **kwargs)
+        if was_new:
+            try:
+                from .accounting_posting import post_invoice_to_ledger
+                post_invoice_to_ledger(self.invoice)
+            except Exception:
+                pass
+
 
 class Payment(models.Model):
     CASH = "CASH"
@@ -108,9 +118,16 @@ class Payment(models.Model):
         return f"{self.invoice} payment {self.amount}"
 
     def save(self, *args, **kwargs):
+        was_new = self._state.adding
         if self.method != self.MOBILE:
             self.mobile_network = ""
         super().save(*args, **kwargs)
+        if was_new:
+            try:
+                from .accounting_posting import post_payment_to_ledger
+                post_payment_to_ledger(self)
+            except Exception:
+                pass
 
 
 class MobilePaymentRequest(models.Model):
