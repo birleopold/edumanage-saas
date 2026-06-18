@@ -1,0 +1,9 @@
+{% extends 'portals/teacher/base.html' %}
+{% block title %}Teacher Analytics{% endblock %}
+{% block page_title %}Teacher Analytics{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">My Metrics</div><table class="min-w-full divide-y"><tbody>{% for m in metrics %}<tr><td class="px-4 py-3">{{ m.term }}</td><td class="px-4 py-3">{{ m.course }}</td><td class="px-4 py-3">{{ m.average_student_score }}</td><td class="px-4 py-3">{{ m.pass_rate }}%</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No metrics yet.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Learner Support Alerts</div><table class="min-w-full divide-y"><tbody>{% for alert in alerts %}<tr><td class="px-4 py-3">{{ alert.student }}</td><td class="px-4 py-3">{{ alert.severity }}</td><td class="px-4 py-3">{{ alert.title }}</td><td class="px-4 py-3">{{ alert.status }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No alerts.</td></tr>{% endfor %}</tbody></table></section>
+</div>
+{% endblock %}
