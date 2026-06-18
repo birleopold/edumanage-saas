@@ -1,0 +1,13 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="max-w-3xl bg-white rounded-xl border p-6">
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Send</button>
+  </form>
+</div>
+{% endblock %}
