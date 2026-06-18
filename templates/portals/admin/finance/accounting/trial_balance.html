@@ -1,0 +1,6 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Trial Balance{% endblock %}
+{% block page_title %}Trial Balance{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border overflow-hidden"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Code</th><th class="px-4 py-3 text-left">Account</th><th class="px-4 py-3 text-right">Debit</th><th class="px-4 py-3 text-right">Credit</th><th class="px-4 py-3 text-right">Balance</th></tr></thead><tbody>{% for row in rows %}<tr><td class="px-4 py-3 font-bold">{{ row.account.code }}</td><td class="px-4 py-3">{{ row.account.name }}</td><td class="px-4 py-3 text-right">{{ row.debit_total }}</td><td class="px-4 py-3 text-right">{{ row.credit_total }}</td><td class="px-4 py-3 text-right">{{ row.balance }}</td></tr>{% empty %}<tr><td colspan="5" class="p-6 text-center text-gray-500">No report data.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
