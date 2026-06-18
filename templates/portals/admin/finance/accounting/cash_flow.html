@@ -1,0 +1,7 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Cash Flow{% endblock %}
+{% block page_title %}Cash Flow{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">In</p><p class="text-2xl font-black">{{ report.total_in }}</p></div><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Out</p><p class="text-2xl font-black">{{ report.total_out }}</p></div><div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Net</p><p class="text-2xl font-black">{{ report.net_cash_flow }}</p></div></div>
+<div class="bg-white rounded-xl border overflow-hidden"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Account</th><th class="px-4 py-3 text-right">In</th><th class="px-4 py-3 text-right">Out</th><th class="px-4 py-3 text-right">Net</th></tr></thead><tbody>{% for row in report.rows %}<tr><td class="px-4 py-3">{{ row.cash_account }}</td><td class="px-4 py-3 text-right">{{ row.cash_in }}</td><td class="px-4 py-3 text-right">{{ row.cash_out }}</td><td class="px-4 py-3 text-right">{{ row.net }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No rows.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
