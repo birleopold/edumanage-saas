@@ -1,8 +1,9 @@
-from django.urls import path
+from django.urls import include, path
 
 from . import admin_views, bulk_views, communication_views
 
 urlpatterns = [
+    path("books/", include("apps.tenant.finance.books")),
     path(
         "payments/<int:pk>/receipt/",
         admin_views.payment_receipt_pdf,
