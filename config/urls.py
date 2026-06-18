@@ -9,6 +9,7 @@ urlpatterns = [
     path("dj-admin/", admin.site.urls),
     path("messages/", include("apps.tenant.messaging.urls")),
     path("message-ops/", include("apps.tenant.messaging.ops")),
+    path("analytics-portal/", include("apps.tenant.analytics.portal_urls")),
     path("", include("apps.tenant.portals.urls")),
     path("api/v1/", include("apps.tenant.portals.api_urls")),
 ]
