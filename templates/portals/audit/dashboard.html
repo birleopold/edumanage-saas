@@ -1,0 +1,12 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Security Audit{% endblock %}
+{% block page_title %}Security Audit{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="space-y-6">
+  <div class="flex flex-wrap gap-2"><a class="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold" href="{% url 'audit_permission_review' %}">Permission Review</a><a class="px-4 py-2 border rounded-lg font-semibold" href="{% url 'audit_retention_rules' %}">Retention Rules</a><a class="px-4 py-2 border rounded-lg font-semibold" href="{% url 'audit_backup_jobs' %}">Backups</a></div>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Recent Audit Events</div><table class="min-w-full divide-y"><tbody>{% for e in events %}<tr><td class="px-4 py-3">{{ e.created_at }}</td><td class="px-4 py-3 font-bold">{{ e.action }}</td><td class="px-4 py-3">{{ e.user }}</td><td class="px-4 py-3">{{ e.path }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No events.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Suspicious Login Alerts</div><table class="min-w-full divide-y"><tbody>{% for a in alerts %}<tr><td class="px-4 py-3">{{ a.created_at }}</td><td class="px-4 py-3">{{ a.username }}</td><td class="px-4 py-3">{{ a.ip_address }}</td><td class="px-4 py-3 font-bold">{{ a.reason }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No open alerts.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="bg-white rounded-xl border overflow-hidden"><div class="p-4 border-b font-bold">Recent Login History</div><table class="min-w-full divide-y"><tbody>{% for l in logins %}<tr><td class="px-4 py-3">{{ l.created_at }}</td><td class="px-4 py-3">{{ l.username }}</td><td class="px-4 py-3 font-bold">{{ l.status }}</td><td class="px-4 py-3">{{ l.ip_address }}</td></tr>{% empty %}<tr><td class="p-6 text-center text-gray-500">No login history.</td></tr>{% endfor %}</tbody></table></section>
+</div>
+{% endblock %}
