@@ -30,6 +30,7 @@ INSTALLED_APPS += [
     "apps.tenant.admissions",
     "apps.tenant.hr",
     "apps.tenant.grievances",
+    "apps.tenant.audit",
 ]
 
 AUTH_USER_MODEL = "users.User"
