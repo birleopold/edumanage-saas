@@ -1,0 +1,7 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Journal Entries{% endblock %}
+{% block page_title %}Journal Entries{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border overflow-hidden"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Date</th><th class="px-4 py-3 text-left">Reference</th><th class="px-4 py-3 text-left">Description</th><th class="px-4 py-3 text-left">Source</th><th class="px-4 py-3 text-right">Debit</th><th class="px-4 py-3 text-right">Credit</th></tr></thead><tbody>{% for entry in entries %}<tr><td class="px-4 py-3">{{ entry.entry_date }}</td><td class="px-4 py-3 font-bold">{{ entry.reference }}</td><td class="px-4 py-3">{{ entry.description }}</td><td class="px-4 py-3">{{ entry.source }}</td><td class="px-4 py-3 text-right">{{ entry.total_debit }}</td><td class="px-4 py-3 text-right">{{ entry.total_credit }}</td></tr>{% empty %}<tr><td colspan="6" class="p-6 text-center text-gray-500">No journal entries.</td></tr>{% endfor %}</tbody></table></div>
+{% if page_obj %}{% include 'components/ui_pagination.html' with page_obj=page_obj %}{% endif %}
+{% endblock %}
