@@ -1,0 +1,15 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}{{ box|default:'Inbox' }}{% endblock %}
+{% block page_title %}{{ box|default:'Inbox' }}{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="mb-4 flex flex-wrap gap-2">
+  <a class="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold" href="{% url 'messaging_conversation_new' %}">New Message</a>
+  <a class="px-4 py-2 border rounded-lg font-semibold" href="{% url 'messaging_outbox' %}">Outbox</a>
+  {% if user.has_role and user.has_role.ADMIN %}<a class="px-4 py-2 border rounded-lg font-semibold" href="{% url 'messaging_bulk_message' %}">Bulk Message</a>{% endif %}
+</div>
+<div class="bg-white rounded-xl border overflow-hidden">
+  <table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Subject</th><th class="px-4 py-3 text-left">Participants</th><th class="px-4 py-3 text-left">Unread</th><th class="px-4 py-3 text-left">Updated</th></tr></thead><tbody>{% for c in conversations %}<tr><td class="px-4 py-3 font-bold"><a class="text-primary-700" href="{% url 'messaging_conversation_detail' c.id %}">{{ c.subject }}</a></td><td class="px-4 py-3">{% for p in c.participants.all %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</td><td class="px-4 py-3">{{ c.get_unread_count }}</td><td class="px-4 py-3">{{ c.updated_at }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No conversations.</td></tr>{% endfor %}</tbody></table>
+</div>
+{% if page_obj %}{% include 'components/ui_pagination.html' with page_obj=page_obj %}{% endif %}
+{% endblock %}
