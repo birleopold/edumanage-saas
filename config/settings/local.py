@@ -29,6 +29,7 @@ INSTALLED_APPS += [
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",
+    "apps.tenant.messaging",
     "apps.tenant.grievances",
 ]
 

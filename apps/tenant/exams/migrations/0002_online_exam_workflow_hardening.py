@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("exams", "0001_initial"),
+        ("exams", "0002_exam_description_exam_exam_mode_exam_instructions_and_more"),
         ("teachers", "0001_initial"),
     ]
 

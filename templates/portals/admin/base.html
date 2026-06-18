@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <!-- Alpine.js for interactive components -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- Custom Theme Configuration -->
@@ -633,7 +634,7 @@
             <!-- Breadcrumbs / Page Title Context (Optional block) -->
             <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}Default Page{% endblock %}</h1>
+                        <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}{% endblock %}</h1>
                         {% if org_profile %}
                         <p class="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="inline-flex items-center gap-1 font-medium text-gray-700"><i class="ph ph-map-pin" aria-hidden="true"></i> {{ org_profile.name }}{% if current_campus %}<span class="font-normal text-gray-400">·</span><span>{{ current_campus.name }}</span>{% endif %}</span>

@@ -650,6 +650,10 @@ def annotate_invoice_calc_balance(qs):
     ).annotate(_calc_balance=F("opening_balance") + F("_lines_sum") - F("_paid_sum"))
 
 
+def filter_invoices_outstanding(qs):
+    return annotate_invoice_calc_balance(qs).filter(status="ACTIVE", _calc_balance__gt=0)
+
+
 def filter_invoices_overdue(qs):
     return annotate_invoice_calc_balance(qs).filter(status="ACTIVE", due_date__lt=timezone.localdate(), _calc_balance__gt=0)
 
