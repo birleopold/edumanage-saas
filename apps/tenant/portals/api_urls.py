@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
+from apps.tenant.finance.connector_views import BioIn, Events, GpsIn, MeetNew, Ready
+
 from .integration_api_views import (
     IntegrationHealth,
     IntegrationMessageLogs,
@@ -60,6 +62,11 @@ urlpatterns = [
     path("mobile/transport/", MobileTransport.as_view(), name="api_mobile_transport"),
     path("mobile/devices/register/", MobileDeviceRegister.as_view(), name="api_mobile_device_register"),
     path("finance/provider-updates/", include("apps.tenant.finance.pay_urls")),
+    path("integrations/ready/", Ready.as_view(), name="api_integrations_ready"),
+    path("integrations/biometric/attendance/", BioIn.as_view(), name="api_integrations_biometric_attendance"),
+    path("integrations/transport/gps/", GpsIn.as_view(), name="api_integrations_transport_gps"),
+    path("integrations/meetings/create/", MeetNew.as_view(), name="api_integrations_meetings_create"),
+    path("integrations/events/", Events.as_view(), name="api_integrations_events"),
     path("integrations/health/", IntegrationHealth.as_view(), name="api_integrations_health"),
     path("integrations/message-logs/", IntegrationMessageLogs.as_view(), name="api_integrations_message_logs"),
     path("integrations/webhook-deliveries/", IntegrationWebhookDeliveries.as_view(), name="api_integrations_webhook_deliveries"),
