@@ -1,0 +1,14 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Provider{% endblock %}
+{% block page_title %}Provider{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="max-w-4xl bg-white rounded-xl border p-6">
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Save Provider</button>
+    <a href="{% url 'admin_connectors_home' %}" class="ml-3 font-semibold text-gray-600">Cancel</a>
+  </form>
+</div>
+{% endblock %}
