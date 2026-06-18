@@ -1,0 +1,12 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Verification{% endblock %}
+{% block page_title %}Verification{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<form method="post" class="max-w-md bg-white rounded-xl border p-6 space-y-4">
+  {% csrf_token %}
+  <p>A verification code has been sent to your email address.</p>
+  <input class="border rounded p-2 w-full" name="code" placeholder="6 digit code">
+  <button class="px-4 py-2 bg-primary-600 text-white rounded">Verify</button>
+</form>
+{% endblock %}
