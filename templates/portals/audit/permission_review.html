@@ -1,0 +1,9 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Access{% endblock %}
+{% block page_title %}Access{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border p-6">
+  <h2 class="font-bold mb-4">Campus admin rows without campus</h2>
+  {% for r in campus_admin_without_campus %}<p>{{ r.user }} - {{ r.role }}</p>{% empty %}<p>No issues found.</p>{% endfor %}
+</div>
+{% endblock %}
