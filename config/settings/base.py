@@ -31,6 +31,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "apps.tenant.audit.request_log.RequestLogMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -115,6 +116,10 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
+
+AUDIT_LOG_ENABLED = config("AUDIT_LOG_ENABLED", default=True, cast=bool)
+ADMIN_2FA_REQUIRED = config("ADMIN_2FA_REQUIRED", default=False, cast=bool)
+PRIVACY_POLICY_VERSION = config("PRIVACY_POLICY_VERSION", default="1.0")
 
 FEE_REMINDER_CHANNEL = config("FEE_REMINDER_CHANNEL", default="SMS")
 FEE_REMINDER_HANDLER = config("FEE_REMINDER_HANDLER", default="apps.tenant.finance.communication_providers.send_fee_message_provider")

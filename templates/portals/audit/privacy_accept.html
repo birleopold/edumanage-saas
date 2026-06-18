@@ -1,0 +1,4 @@
+{% extends 'portals/admin/base.html' %}
+{% block content %}
+<form method="post">{% csrf_token %}<p>Please accept version {{ version }} to continue.</p><button>Continue</button></form>
+{% endblock %}

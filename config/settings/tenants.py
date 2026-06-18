@@ -47,6 +47,7 @@ TENANT_APPS = (
     "apps.tenant.polls",
     "apps.tenant.messaging",
     "apps.tenant.grievances",
+    "apps.tenant.audit",
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
@@ -71,5 +72,4 @@ DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
-
 AUTH_USER_MODEL = "users.User"

@@ -19,6 +19,7 @@ urlpatterns = [
     path("change-password/", custom_auth_views.change_password, name="change_password"),
     path("profile/", custom_auth_views.user_profile, name="user_profile"),
     path("admin/", views.admin_home, name="admin_home"),
+    path("admin/audit/", include("apps.tenant.audit.routes")),
     path("admin/communication/", experience_views.admin_communication_center, name="admin_communication_center"),
     path("admin/school-setup/", experience_views.admin_school_setup_guide, name="admin_school_setup_guide"),
     path("admin/system-status/", experience_views.admin_system_status, name="admin_system_status"),
