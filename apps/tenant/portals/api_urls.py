@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
@@ -59,6 +59,7 @@ urlpatterns = [
     path("mobile/messages/", MobileMessages.as_view(), name="api_mobile_messages"),
     path("mobile/transport/", MobileTransport.as_view(), name="api_mobile_transport"),
     path("mobile/devices/register/", MobileDeviceRegister.as_view(), name="api_mobile_device_register"),
+    path("finance/provider-updates/", include("apps.tenant.finance.pay_urls")),
     path("integrations/health/", IntegrationHealth.as_view(), name="api_integrations_health"),
     path("integrations/message-logs/", IntegrationMessageLogs.as_view(), name="api_integrations_message_logs"),
     path("integrations/webhook-deliveries/", IntegrationWebhookDeliveries.as_view(), name="api_integrations_webhook_deliveries"),
