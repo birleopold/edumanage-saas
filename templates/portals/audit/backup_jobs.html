@@ -1,0 +1,4 @@
+{% extends 'portals/admin/base.html' %}
+{% block content %}
+{% for b in backups %}<p>{{ b.created_at }} {{ b.status }}</p>{% empty %}<p>No records.</p>{% endfor %}
+{% endblock %}
