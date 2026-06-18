@@ -1,0 +1,11 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Financial Position{% endblock %}
+{% block page_title %}Financial Position{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Assets</p><p class="text-2xl font-black">{{ report.totals.ASSET }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Liabilities</p><p class="text-2xl font-black">{{ report.totals.LIABILITY }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Equity</p><p class="text-2xl font-black">{{ report.totals.EQUITY }}</p></div>
+</div>
+<div class="bg-white rounded-xl border p-5"><p class="text-sm text-gray-500 mb-4">As of {{ as_of }}</p></div>
+{% endblock %}
