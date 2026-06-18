@@ -1,0 +1,22 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Group Notice{% endblock %}
+{% block page_title %}Group Notice{% endblock %}
+{% block content %}
+{% include 'components/ui_toast.html' %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <form method="post" class="lg:col-span-2 bg-white rounded-xl border p-6 space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Send</button>
+  </form>
+  <div class="bg-white rounded-xl border p-6">
+    <h3 class="font-bold text-gray-900 mb-3">Result</h3>
+    {% if result %}
+      <p>Recipients: <b>{{ result.recipients }}</b></p>
+      <p>Sent: <b>{{ result.sent }}</b></p>
+      <p>Failed: <b>{{ result.failed }}</b></p>
+      <p>Skipped: <b>{{ result.skipped }}</b></p>
+    {% else %}<p class="text-gray-500">No notice sent yet.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}
