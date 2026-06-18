@@ -1,0 +1,16 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Intervention{% endblock %}
+{% block page_title %}Intervention{% endblock %}
+{% block content %}
+<div class="max-w-3xl bg-white rounded-xl border p-6">
+  <p class="text-sm text-gray-500 mb-4">Student: <b>{{ alert.student }}</b></p>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <p><label>Title</label><input class="w-full border rounded-lg p-2" name="title" value="{{ intervention.title|default:'Learner support intervention' }}"></p>
+    <p><label>Plan</label><textarea class="w-full border rounded-lg p-2" name="plan" rows="5">{{ intervention.plan|default:alert.recommended_actions }}</textarea></p>
+    <p><label>Target Date</label><input type="date" class="w-full border rounded-lg p-2" name="target_date" value="{{ intervention.target_date|date:'Y-m-d' }}"></p>
+    {% if intervention %}<p><label>Status</label><select name="status" class="w-full border rounded-lg p-2"><option>{{ intervention.status }}</option><option>ACTIVE</option><option>COMPLETED</option><option>CANCELLED</option></select></p><p><label>Progress Note</label><textarea class="w-full border rounded-lg p-2" name="progress_note" rows="3">{{ intervention.progress_note }}</textarea></p><p><label>Outcome</label><textarea class="w-full border rounded-lg p-2" name="outcome" rows="3">{{ intervention.outcome }}</textarea></p>{% endif %}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Save</button>
+  </form>
+</div>
+{% endblock %}
