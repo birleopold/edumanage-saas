@@ -1,9 +1,8 @@
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 
-from apps.tenant.academics.models import AcademicTerm, Stream
+from apps.tenant.academics.models import AcademicTerm
 from apps.tenant.portals.permissions import admin_portal_required, role_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
@@ -22,16 +21,7 @@ def intelligence_dashboard(request):
         messages.success(request, f"Analytics generated: {run.generated_snapshots} snapshots, {run.generated_alerts} alerts.")
         return redirect("admin_analytics_intelligence")
     snapshots = StudentPerformanceSnapshot.objects.filter(term=term) if term else StudentPerformanceSnapshot.objects.none()
-    context = {
-        "term": term,
-        "latest_run": AnalyticsRun.objects.first(),
-        "runs": AnalyticsRun.objects.all()[:10],
-        "at_risk": snapshots.filter(is_at_risk=True)[:20],
-        "recommendations": StudentRecommendation.objects.filter(status=StudentRecommendation.OPEN)[:20],
-        "correlation": attendance_performance_correlation(term) if term else None,
-        "class_reports": ClassPerformanceReport.objects.filter(term=term).select_related("stream") if term else [],
-        "teacher_metrics": TeacherPerformanceMetrics.objects.filter(term=term).select_related("teacher", "course")[:20] if term else [],
-    }
+    context = {"term": term, "latest_run": AnalyticsRun.objects.first(), "runs": AnalyticsRun.objects.all()[:10], "at_risk": snapshots.filter(is_at_risk=True)[:20], "recommendations": StudentRecommendation.objects.filter(status=StudentRecommendation.OPEN)[:20], "correlation": attendance_performance_correlation(term) if term else None, "class_reports": ClassPerformanceReport.objects.filter(term=term).select_related("stream") if term else [], "teacher_metrics": TeacherPerformanceMetrics.objects.filter(term=term).select_related("teacher", "course")[:20] if term else []}
     return render(request, "portals/admin/analytics/intelligence_dashboard.html", context)
 
 
@@ -89,7 +79,7 @@ def student_trends(request):
     student = StudentProfile.objects.filter(user=request.user).first()
     trends = PerformanceTrend.objects.filter(student=student, course__isnull=True).select_related("term") if student else []
     comments = ReportCardCommentSuggestion.objects.filter(student=student).select_related("term") if student else []
-    return render(request, "portals/student/analytics/trends.html", {"student": student, "trends": trends, "comments": comments})
+    return render(request, "portals/student/analytics/progress.html", {"student": student, "trends": trends, "comments": comments})
 
 
 @role_required(Role.PARENT)
@@ -100,4 +90,4 @@ def parent_trends(request):
     data = []
     for link in links:
         data.append({"student": link.student, "trends": PerformanceTrend.objects.filter(student=link.student, course__isnull=True).select_related("term"), "comments": ReportCardCommentSuggestion.objects.filter(student=link.student).select_related("term")})
-    return render(request, "portals/parent/analytics/trends.html", {"parent": parent, "children_data": data})
+    return render(request, "portals/parent/analytics/progress.html", {"parent": parent, "children_data": data})
