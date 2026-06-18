@@ -1,0 +1,22 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}{{ conversation.subject }}{% endblock %}
+{% block page_title %}{{ conversation.subject }}{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <a href="{% url 'messaging_inbox' %}" class="text-sm font-semibold text-primary-700">Back to inbox</a>
+  <div class="bg-white rounded-xl border p-5 space-y-4">
+    {% for msg in messages_list %}
+    <div class="border-b pb-3">
+      <p class="text-sm font-bold text-gray-900">{{ msg.sender.username }} <span class="font-normal text-gray-500">{{ msg.sent_at }}</span></p>
+      <p class="mt-2 text-gray-800 whitespace-pre-line">{{ msg.content }}</p>
+      {% if msg.attachment %}<a class="text-primary-700 font-semibold" href="{{ msg.attachment.url }}">Download attachment</a>{% endif %}
+    </div>
+    {% empty %}<p class="text-gray-500">No messages yet.</p>{% endfor %}
+  </div>
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl border p-5 space-y-3">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Reply</button>
+  </form>
+</div>
+{% endblock %}
