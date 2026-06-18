@@ -1,0 +1,7 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Message Templates{% endblock %}
+{% block page_title %}Message Templates{% endblock %}
+{% block content %}
+<div class="mb-4"><a class="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold" href="{% url 'msg_copy_new' %}">New Template</a></div>
+<div class="bg-white rounded-xl border overflow-hidden"><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Order</th><th class="px-4 py-3 text-left">Code</th><th class="px-4 py-3 text-left">Name</th><th class="px-4 py-3 text-left">Type</th><th class="px-4 py-3 text-left">Channel</th><th class="px-4 py-3 text-left">Active</th></tr></thead><tbody>{% for item in items %}<tr><td class="px-4 py-3">{{ item.sort_order }}</td><td class="px-4 py-3 font-bold"><a class="text-primary-700" href="{% url 'msg_copy_edit' item.id %}">{{ item.code }}</a></td><td class="px-4 py-3">{{ item.name }}</td><td class="px-4 py-3">{{ item.message_type }}</td><td class="px-4 py-3">{{ item.channel_hint }}</td><td class="px-4 py-3">{{ item.is_active|yesno:'Yes,No' }}</td></tr>{% empty %}<tr><td colspan="6" class="p-6 text-center text-gray-500">No templates.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
