@@ -1,6 +1,9 @@
 from django.conf import settings
+from django.shortcuts import redirect
 
+from .models import ConsentRecord
 from .services import log_audit
+from .twofactor import user_needs_2fa
 
 
 class RequestLogMiddleware:
@@ -8,6 +11,20 @@ class RequestLogMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        try:
+            user = getattr(request, "user", None)
+            if user and user.is_authenticated:
+                if request.path.startswith("/admin/") and not request.path.startswith("/admin/security/2fa/"):
+                    if user_needs_2fa(user) and not request.session.get("admin_2fa_verified"):
+                        return redirect("audit_verify_2fa")
+                exempt = ["/privacy/accept/", "/logout/", "/static/", "/media/", "/api/", "/admin/security/2fa/"]
+                if not any(request.path.startswith(x) for x in exempt):
+                    version = getattr(settings, "PRIVACY_POLICY_VERSION", "1.0")
+                    accepted = ConsentRecord.objects.filter(user=user, consent_type=ConsentRecord.PRIVACY, accepted=True, version=version).exists()
+                    if not accepted:
+                        return redirect("audit_privacy_accept")
+        except Exception:
+            pass
         response = self.get_response(request)
         try:
             if not getattr(settings, "AUDIT_LOG_ENABLED", True):
