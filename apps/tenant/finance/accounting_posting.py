@@ -57,6 +57,12 @@ def post_invoice_to_ledger(invoice: Invoice, *, created_by=None):
 
 
 @transaction.atomic
+def refresh_invoice_ledger(invoice: Invoice, *, created_by=None):
+    JournalEntry.objects.filter(source_invoice=invoice, source=JournalEntry.INVOICE).delete()
+    return post_invoice_to_ledger(invoice, created_by=created_by)
+
+
+@transaction.atomic
 def post_payment_to_ledger(payment: Payment, *, created_by=None):
     if JournalEntry.objects.filter(source_payment=payment, source=JournalEntry.PAYMENT).exists():
         return None
