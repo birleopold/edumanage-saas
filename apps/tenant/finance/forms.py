@@ -4,7 +4,7 @@ from apps.tenant.academics.models import AcademicTerm, AcademicYear, ClassGroup,
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.students.models import StudentProfile
 
-from .models import FeeItem, Invoice, InvoiceLine, Payment
+from .models import BankReconciliation, ExpenseCategory, FeeAdjustment, FeeItem, Invoice, InvoiceLine, Payment, PayrollItem, PayrollRun, SchoolExpense
 
 
 class FeeItemForm(forms.ModelForm):
@@ -16,18 +16,8 @@ class FeeItemForm(forms.ModelForm):
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = [
-            "student",
-            "academic_year",
-            "academic_term",
-            "reference",
-            "due_date",
-            "opening_balance",
-            "status",
-        ]
-        widgets = {
-            "due_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
-        }
+        fields = ["student", "academic_year", "academic_term", "reference", "due_date", "opening_balance", "status"]
+        widgets = {"due_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"})}
 
     def __init__(self, *args, **kwargs):
         campus = kwargs.pop("campus", None)
@@ -50,9 +40,7 @@ class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
         fields = ["amount", "method", "mobile_network", "reference", "received_at"]
-        widgets = {
-            "received_at": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
-        }
+        widgets = {"received_at": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"})}
 
     def clean(self):
         cleaned = super().clean()
@@ -65,23 +53,13 @@ class PaymentForm(forms.ModelForm):
 
 
 class CarryForwardForm(forms.Form):
-    target_year = forms.ModelChoiceField(
-        label="Target academic year",
-        queryset=AcademicYear.objects.none(),
-        required=True,
-    )
-    target_term = forms.ModelChoiceField(
-        label="Target term",
-        queryset=AcademicTerm.objects.select_related("year"),
-        required=True,
-    )
+    target_year = forms.ModelChoiceField(label="Target academic year", queryset=AcademicYear.objects.none(), required=True)
+    target_term = forms.ModelChoiceField(label="Target term", queryset=AcademicTerm.objects.select_related("year"), required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["target_year"].queryset = AcademicYear.objects.all().order_by("-name")
-        self.fields["target_term"].queryset = AcademicTerm.objects.select_related("year").order_by(
-            "-year__name", "order"
-        )
+        self.fields["target_term"].queryset = AcademicTerm.objects.select_related("year").order_by("-year__name", "order")
 
     def clean(self):
         cleaned = super().clean()
@@ -104,65 +82,31 @@ def _campus_scope_ids(campus_scope):
 
 
 class BulkInvoiceForm(forms.Form):
-    campus = forms.ModelChoiceField(
-        queryset=Campus.objects.none(),
-        required=False,
-        help_text="Optional: limit billing to one campus.",
-    )
-    class_group = forms.ModelChoiceField(
-        queryset=ClassGroup.objects.none(),
-        required=False,
-        help_text="Optional: limit billing to one class.",
-    )
-    stream = forms.ModelChoiceField(
-        queryset=Stream.objects.none(),
-        required=False,
-        help_text="Optional: limit billing to one stream.",
-    )
-    students = forms.ModelMultipleChoiceField(
-        queryset=StudentProfile.objects.none(),
-        required=False,
-        help_text="Optional: select specific students. Leave blank to bill all students matching the filters above.",
-    )
+    campus = forms.ModelChoiceField(queryset=Campus.objects.none(), required=False, help_text="Optional: limit billing to one campus.")
+    class_group = forms.ModelChoiceField(queryset=ClassGroup.objects.none(), required=False, help_text="Optional: limit billing to one class.")
+    stream = forms.ModelChoiceField(queryset=Stream.objects.none(), required=False, help_text="Optional: limit billing to one stream.")
+    students = forms.ModelMultipleChoiceField(queryset=StudentProfile.objects.none(), required=False, help_text="Optional: select specific students. Leave blank to bill all students matching the filters above.")
     academic_year = forms.ModelChoiceField(queryset=AcademicYear.objects.none(), required=True)
     academic_term = forms.ModelChoiceField(queryset=AcademicTerm.objects.none(), required=True)
     due_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
-    fee_items = forms.ModelMultipleChoiceField(
-        queryset=FeeItem.objects.none(),
-        required=True,
-        help_text="Select one or more fee items to appear as invoice line items.",
-    )
-    opening_balance = forms.DecimalField(
-        required=False,
-        min_value=0,
-        max_digits=12,
-        decimal_places=2,
-        initial=0,
-        help_text="Optional same opening balance to add to each generated invoice.",
-    )
+    fee_items = forms.ModelMultipleChoiceField(queryset=FeeItem.objects.none(), required=True, help_text="Select one or more fee items to appear as invoice line items.")
+    opening_balance = forms.DecimalField(required=False, min_value=0, max_digits=12, decimal_places=2, initial=0, help_text="Optional same opening balance to add to each generated invoice.")
     reference_prefix = forms.CharField(max_length=16, required=False, initial="INV")
-    skip_existing = forms.BooleanField(
-        required=False,
-        initial=True,
-        help_text="Skip students who already have an invoice for the selected academic year and term.",
-    )
+    skip_existing = forms.BooleanField(required=False, initial=True, help_text="Skip students who already have an invoice for the selected academic year and term.")
 
     def __init__(self, *args, **kwargs):
         campus_scope = kwargs.pop("campus_scope", None)
         super().__init__(*args, **kwargs)
-
         campus_qs = Campus.objects.filter(is_active=True).order_by("name")
         students_qs = StudentProfile.objects.filter(is_active=True).select_related("campus", "stream", "stream__class_group")
         class_qs = ClassGroup.objects.filter(is_active=True).select_related("campus", "level", "program").order_by("name")
         stream_qs = Stream.objects.filter(is_active=True).select_related("class_group").order_by("class_group__name", "name")
-
         campus_ids = _campus_scope_ids(campus_scope)
         if campus_ids is not None:
             campus_qs = campus_qs.filter(id__in=campus_ids)
             students_qs = students_qs.filter(campus_id__in=campus_ids)
             class_qs = class_qs.filter(campus_id__in=campus_ids)
             stream_qs = stream_qs.filter(class_group__campus_id__in=campus_ids)
-
         self.fields["campus"].queryset = campus_qs
         self.fields["students"].queryset = students_qs.order_by("last_name", "first_name")
         self.fields["class_group"].queryset = class_qs
@@ -178,19 +122,14 @@ class BulkInvoiceForm(forms.Form):
         campus = cleaned.get("campus")
         class_group = cleaned.get("class_group")
         stream = cleaned.get("stream")
-
         if year and term and term.year_id != year.pk:
             self.add_error("academic_term", "The selected term must belong to the selected academic year.")
-
         if campus and class_group and class_group.campus_id and class_group.campus_id != campus.id:
             self.add_error("class_group", "The selected class does not belong to the selected campus.")
-
         if class_group and stream and stream.class_group_id != class_group.id:
             self.add_error("stream", "The selected stream does not belong to the selected class.")
-
         if campus and stream and stream.class_group.campus_id and stream.class_group.campus_id != campus.id:
             self.add_error("stream", "The selected stream does not belong to the selected campus.")
-
         return cleaned
 
     def matching_students(self):
@@ -199,11 +138,9 @@ class BulkInvoiceForm(forms.Form):
             qs = selected_students
         else:
             qs = StudentProfile.objects.filter(is_active=True).select_related("campus", "stream", "stream__class_group")
-
         campus = self.cleaned_data.get("campus")
         class_group = self.cleaned_data.get("class_group")
         stream = self.cleaned_data.get("stream")
-
         if campus:
             qs = qs.filter(campus=campus)
         if class_group:
@@ -211,3 +148,52 @@ class BulkInvoiceForm(forms.Form):
         if stream:
             qs = qs.filter(stream=stream)
         return qs.order_by("last_name", "first_name")
+
+
+class SchoolExpenseForm(forms.ModelForm):
+    class Meta:
+        model = SchoolExpense
+        fields = ["expense_date", "category", "paid_from", "supplier", "description", "amount", "reference"]
+        widgets = {"expense_date": forms.DateInput(attrs={"type": "date"})}
+
+
+class PayrollRunForm(forms.ModelForm):
+    class Meta:
+        model = PayrollRun
+        fields = ["name", "period_start", "period_end", "payment_date", "paid_from", "status"]
+        widgets = {"period_start": forms.DateInput(attrs={"type": "date"}), "period_end": forms.DateInput(attrs={"type": "date"}), "payment_date": forms.DateInput(attrs={"type": "date"})}
+
+
+class PayrollItemForm(forms.ModelForm):
+    class Meta:
+        model = PayrollItem
+        fields = ["staff_name", "staff_reference", "gross_pay", "deductions", "note"]
+
+
+class FeeAdjustmentForm(forms.ModelForm):
+    class Meta:
+        model = FeeAdjustment
+        fields = ["adjustment_type", "description", "amount", "account"]
+
+
+class BankReconciliationForm(forms.ModelForm):
+    class Meta:
+        model = BankReconciliation
+        fields = ["cash_account", "statement_date", "statement_balance", "notes"]
+        widgets = {"statement_date": forms.DateInput(attrs={"type": "date"})}
+
+
+class StatementImportForm(forms.Form):
+    cash_account = forms.ModelChoiceField(queryset=None)
+    statement_file = forms.FileField(help_text="CSV with columns: date, description, amount, reference")
+
+    def __init__(self, *args, **kwargs):
+        from .models import CashAccount
+        super().__init__(*args, **kwargs)
+        self.fields["cash_account"].queryset = CashAccount.objects.filter(is_active=True).order_by("name")
+
+
+class ReportDateRangeForm(forms.Form):
+    start = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    end = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    as_of = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
