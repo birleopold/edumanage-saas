@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 from apps.tenant.finance.connector_views import BioIn, Events, GpsIn, MeetNew, Ready
+from apps.tenant.finance.public_api_docs import PublicIntegrationDocs
 
 from .integration_api_views import (
     IntegrationHealth,
@@ -62,6 +63,7 @@ urlpatterns = [
     path("mobile/transport/", MobileTransport.as_view(), name="api_mobile_transport"),
     path("mobile/devices/register/", MobileDeviceRegister.as_view(), name="api_mobile_device_register"),
     path("finance/provider-updates/", include("apps.tenant.finance.pay_urls")),
+    path("integrations/docs/", PublicIntegrationDocs.as_view(), name="api_integrations_docs"),
     path("integrations/ready/", Ready.as_view(), name="api_integrations_ready"),
     path("integrations/biometric/attendance/", BioIn.as_view(), name="api_integrations_biometric_attendance"),
     path("integrations/transport/gps/", GpsIn.as_view(), name="api_integrations_transport_gps"),
