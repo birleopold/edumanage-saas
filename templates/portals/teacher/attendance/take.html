@@ -5,123 +5,18 @@
 {% block page_title %}Take Attendance{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-  {% include "components/ui_toast.html" %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-green-50 p-6 shadow-sm"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><a href="{% url 'teacher_attendance_home' %}" class="inline-flex items-center gap-2 text-sm font-black text-primary-700 hover:text-primary-900 mb-3"><i class="ph ph-arrow-left"></i> Back to attendance</a><p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Class attendance</p><h2 class="mt-2 text-2xl font-black text-slate-950">Take attendance</h2><p class="mt-2 text-sm text-slate-600">Select the class and date, mark learners, add notes, and save the session.</p></div>{% if selected_offering %}<a href="{% url 'teacher_roll_call' %}?offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-lightning mr-1"></i> Roll Call</a>{% endif %}</div></section>
 
-  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-    <form method="get" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-      <div>
-        <label for="id_campus" class="block text-sm font-semibold text-gray-700 mb-1">Campus</label>
-        <select id="id_campus" name="campus" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
-          <option value="">All</option>
-          {% for c in campuses %}
-          <option value="{{ c.id }}" {% if selected_campus_id and selected_campus_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="md:col-span-2">
-        <label for="id_offering" class="block text-sm font-semibold text-gray-700 mb-1">Offering</label>
-        <select id="id_offering" name="offering" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
-          <option value="">-- select --</option>
-          {% for o in offerings %}
-          <option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>{{ o }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="id_date" class="block text-sm font-semibold text-gray-700 mb-1">Date</label>
-        <input id="id_date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" />
-      </div>
-      <div>
-        <label for="id_q" class="block text-sm font-semibold text-gray-700 mb-1">Search</label>
-        <input id="id_q" type="text" name="q" value="{{ q }}" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" />
-      </div>
-      <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
-        <i class="ph ph-funnel"></i> Load
-      </button>
-    </form>
-  </div>
+  <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5"><form method="get" class="grid grid-cols-1 xl:grid-cols-6 gap-3 items-end"><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold"><option value="">All</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and selected_campus_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div class="xl:col-span-2"><label for="id_offering" class="block text-sm font-black text-slate-700 mb-2">Offering</label><select id="id_offering" name="offering" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold"><option value="">-- select --</option>{% for o in offerings %}<option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div><div><label for="id_date" class="block text-sm font-black text-slate-700 mb-2">Date</label><input id="id_date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold"></div><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold"></div><button type="submit" class="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-funnel mr-1"></i> Load</button></form></section>
 
   {% if selected_offering %}
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-900">
-    <div><span class="font-semibold">Selected offering:</span> {{ selected_offering }}</div>
-    <a href="{% url 'teacher_roll_call' %}?offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-800 rounded-lg font-semibold hover:bg-blue-100">
-      <i class="ph ph-lightning"></i> Open roll call
-    </a>
-  </div>
+  <section class="rounded-2xl bg-blue-50 border border-blue-100 p-4 text-sm text-blue-900"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><span class="font-black">Selected offering:</span> {{ selected_offering }}</div><a href="{% url 'teacher_roll_call' %}?offering={{ selected_offering.id }}&date={{ selected_date|date:'Y-m-d' }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 font-black text-blue-800 border border-blue-200 hover:bg-blue-100"><i class="ph ph-lightning"></i> Open roll call</a></div></section>
 
-  {% if summary %}
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Marked</p><p class="text-xl font-black text-gray-900">{{ summary.marked }}/{{ summary.total }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Present</p><p class="text-xl font-black text-green-700">{{ summary.present }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Absent</p><p class="text-xl font-black text-red-700">{{ summary.absent }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Late</p><p class="text-xl font-black text-yellow-700">{{ summary.late }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Rate</p><p class="text-xl font-black text-primary-700">{{ summary.attendance_rate }}%</p></div>
-  </div>
-  {% endif %}
+  {% if summary %}<section class="grid grid-cols-2 md:grid-cols-5 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Marked</p><p class="text-xl font-black text-slate-900">{{ summary.marked }}/{{ summary.total }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Present</p><p class="text-xl font-black text-green-700">{{ summary.present }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Absent</p><p class="text-xl font-black text-red-700">{{ summary.absent }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Late</p><p class="text-xl font-black text-yellow-700">{{ summary.late }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Rate</p><p class="text-xl font-black text-primary-700">{{ summary.attendance_rate }}%</p></div></section>{% endif %}
 
-  <form method="post" class="space-y-4">
-    {% csrf_token %}
-    <input type="hidden" name="campus" value="{{ selected_campus_id }}" />
-    <input type="hidden" name="offering" value="{{ selected_offering.id }}" />
-    <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}" />
-
-    <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for e in enrollments %}
-          {% with entry=existing_entries|get_item:e.student.id %}
-          <tr>
-            <td class="px-6 py-4 text-sm text-gray-800">
-              {{ e.student }}
-              <input type="hidden" name="student_ids" value="{{ e.student.id }}" />
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-600">{{ e.student.student_id }}</td>
-            <td class="px-6 py-4 text-sm">
-              <select name="status_{{ e.student.id }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                {% for value,label in STATUS_CHOICES %}
-                <option value="{{ value }}" {% if entry and entry.status == value %}selected{% elif not entry and value == 'PRESENT' %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </td>
-            <td class="px-6 py-4 text-sm">
-              <input type="text" name="note_{{ e.student.id }}" value="{% if entry %}{{ entry.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            </td>
-          </tr>
-          {% endwith %}
-          {% empty %}
-          <tr><td colspan="4" class="px-6 py-6 text-sm text-center text-gray-500">No students found.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
-      <a href="{% url 'teacher_attendance_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900">
-        <i class="ph ph-arrow-left"></i> Back
-      </a>
-      <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">
-        <i class="ph ph-floppy-disk"></i> Save attendance
-      </button>
-    </div>
-  </form>
-
-  {% if page_obj %}
-  {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-  {% else %}
-  <div class="bg-white border border-gray-200 rounded-xl p-10 text-center">
-    <i class="ph ph-calendar-check text-5xl text-gray-300 mb-3"></i>
-    <p class="text-sm text-gray-600">Select an offering and click <span class="font-semibold">Load</span> to start attendance.</p>
-  </div>
-  {% endif %}
+  <form method="post" class="space-y-4">{% csrf_token %}<input type="hidden" name="campus" value="{{ selected_campus_id }}"><input type="hidden" name="offering" value="{{ selected_offering.id }}"><input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}"><section class="overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Note</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for e in enrollments %}{% with entry=existing_entries|get_item:e.student.id %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm font-black text-slate-900">{{ e.student }}<input type="hidden" name="student_ids" value="{{ e.student.id }}"></td><td class="px-6 py-4 text-sm text-slate-600">{{ e.student.student_id }}</td><td class="px-6 py-4 text-sm"><select name="status_{{ e.student.id }}" class="px-3 py-2 border-2 border-slate-200 rounded-xl text-sm font-bold bg-white">{% for value,label in STATUS_CHOICES %}<option value="{{ value }}" {% if entry and entry.status == value %}selected{% elif not entry and value == 'PRESENT' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></td><td class="px-6 py-4 text-sm"><input type="text" name="note_{{ e.student.id }}" value="{% if entry %}{{ entry.note }}{% endif %}" class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"></td></tr>{% endwith %}{% empty %}<tr><td colspan="4" class="px-6 py-8 text-sm text-center text-slate-500">No students found.</td></tr>{% endfor %}</tbody></table></section><div class="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><a href="{% url 'teacher_attendance_home' %}" class="inline-flex items-center gap-2 text-sm font-black text-slate-700 hover:text-slate-900"><i class="ph ph-arrow-left"></i> Back</a><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-sm font-black text-white hover:bg-green-700"><i class="ph ph-floppy-disk"></i> Save attendance</button></div></form>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+  {% else %}<div class="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm"><i class="ph ph-calendar-check text-5xl text-slate-300 mb-3"></i><p class="text-sm text-slate-600">Select an offering and click <span class="font-black">Load</span> to start attendance.</p></div>{% endif %}
 </div>
 {% endblock %}
