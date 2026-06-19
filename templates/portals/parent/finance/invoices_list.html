@@ -2,143 +2,22 @@
 {% load orgsettings_extras %}
 
 {% block title %}Children's Invoices{% endblock %}
-{% block page_title %}Children's Finance{% endblock %}
+{% block page_title %}Family Finance{% endblock %}
+{% block header_actions %}<a href="/messages/" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Contact School</a>{% endblock %}
 
 {% block content %}
-<div class="motion-fast space-y-6">
-  <div>
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Children's Invoices</h1>
-    <p class="text-gray-600">View billing statements, balances, payment history, and receipts for your children.</p>
-  </div>
+{% include "components/ui_toast.html" %}
+<div class="motion-fast space-y-7">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-emerald-50 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Parent finance</p><h2 class="mt-2 text-2xl font-black text-slate-950">Children's invoices and payments</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">View billing statements, balances, payment history and printable receipts for your children.</p></div><a href="/messages/" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-chats-circle mr-1"></i> Ask Finance Office</a></div>
+  </section>
 
-  {% include "components/ui_toast.html" %}
+  <section class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Total billed</p><p class="text-xl font-black text-slate-900 mt-1">{{ summary.total_billed|format_money_amount:org_profile.default_currency }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Paid</p><p class="text-xl font-black text-green-700 mt-1">{{ summary.total_paid|format_money_amount:org_profile.default_currency }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Balance</p><p class="text-xl font-black {% if summary.total_balance > 0 %}text-red-700{% else %}text-slate-900{% endif %} mt-1">{{ summary.total_balance|format_money_amount:org_profile.default_currency }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Overdue invoices</p><p class="text-xl font-black text-amber-700 mt-1">{{ summary.overdue_count }}</p></div></section>
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <p class="text-xs uppercase font-bold text-gray-500">Total billed</p>
-      <p class="text-xl font-black text-gray-900 mt-1">{{ summary.total_billed|format_money_amount:org_profile.default_currency }}</p>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <p class="text-xs uppercase font-bold text-gray-500">Paid</p>
-      <p class="text-xl font-black text-green-700 mt-1">{{ summary.total_paid|format_money_amount:org_profile.default_currency }}</p>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <p class="text-xs uppercase font-bold text-gray-500">Balance</p>
-      <p class="text-xl font-black {% if summary.total_balance > 0 %}text-red-700{% else %}text-gray-900{% endif %} mt-1">{{ summary.total_balance|format_money_amount:org_profile.default_currency }}</p>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <p class="text-xs uppercase font-bold text-gray-500">Overdue invoices</p>
-      <p class="text-xl font-black text-amber-700 mt-1">{{ summary.overdue_count }}</p>
-    </div>
-  </div>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:items-end"><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div><label for="id_student" class="block text-sm font-black text-slate-700 mb-2">Child</label><select id="id_student" name="student" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold"><option value="">All Children</option>{% for link in links %}<option value="{{ link.student.id }}" {% if selected_student_id and selected_student_id == link.student.id %}selected{% endif %}>{{ link.student }}</option>{% endfor %}</select></div><div><label for="id_status" class="block text-sm font-black text-slate-700 mb-2">Status</label><select id="id_status" name="status" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold"><option value="" {% if not status %}selected{% endif %}>All statuses</option>{% for option in status_options %}<option value="{{ option }}" {% if status == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}</select></div><button type="submit" class="rounded-xl bg-primary-600 px-6 py-2.5 font-black text-white hover:bg-primary-700"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'parent_invoices_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 text-center hover:bg-slate-50">Reset</a></form></section>
 
-  <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3 md:items-end">
-      <div>
-        <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
-        <select id="id_campus" name="campus" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-          <option value="">All Campuses</option>
-          {% for c in campuses %}
-            <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="id_student" class="block text-sm font-bold text-gray-700 mb-2">Child</label>
-        <select id="id_student" name="student" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-          <option value="">All Children</option>
-          {% for link in links %}
-            <option value="{{ link.student.id }}" {% if selected_student_id and selected_student_id == link.student.id %}selected{% endif %}>{{ link.student }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="id_status" class="block text-sm font-bold text-gray-700 mb-2">Status</label>
-        <select id="id_status" name="status" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-          <option value="" {% if not status %}selected{% endif %}>All statuses</option>
-          {% for option in status_options %}
-          <option value="{{ option }}" {% if status == option %}selected{% endif %}>{{ option|title }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold">
-        <i class="ph ph-funnel"></i> Apply
-      </button>
-      <a href="{% url 'parent_invoices_list' %}" class="px-6 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 text-center">Reset</a>
-    </form>
-  </div>
+  <section class="rounded-2xl border border-blue-100 bg-blue-50 p-4"><p class="text-sm text-blue-900"><span class="font-black">Tip:</span> Open an invoice to download printable statements and payment receipts.</p></section>
 
-  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-    <p class="text-sm text-blue-900">
-      <span class="font-semibold">Tip:</span> Open each invoice to download printable statements and payment receipts.
-    </p>
-  </div>
-
-  {% if invoices %}
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Due Date</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amounts</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for inv in invoices %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="font-semibold text-primary-700">{{ inv.reference|default:"-" }}</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="flex flex-col">
-                  <span class="font-semibold text-gray-900">{{ inv.student }}</span>
-                  <span class="text-xs text-gray-500">{{ inv.student.campus }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="flex flex-col">
-                  <span class="font-semibold text-gray-900">{{ inv.academic_year }}</span>
-                  <span class="text-xs text-gray-500">{{ inv.academic_term }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ inv.due_date|default:"-" }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="flex flex-col">
-                  <span class="text-gray-900 font-semibold">Total: {{ inv.total_amount_value|format_money_amount:org_profile.default_currency }}</span>
-                  <span class="text-xs text-green-600">Paid: {{ inv.total_paid_value|format_money_amount:org_profile.default_currency }}</span>
-                  <span class="text-xs font-medium {% if inv.balance_value > 0 %}text-red-600{% else %}text-gray-500{% endif %}">Balance: {{ inv.balance_value|format_money_amount:org_profile.default_currency }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                {% if inv.display_status == 'PAID' %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold"><i class="ph ph-check-circle"></i> Paid</span>
-                {% elif inv.display_status == 'PARTIAL' %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold"><i class="ph ph-coins"></i> Partial</span>
-                {% elif inv.display_status == 'OVERDUE' %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold"><i class="ph ph-warning"></i> Overdue</span>
-                {% elif inv.display_status == 'UNPAID' %}
-                  <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"><i class="ph ph-clock"></i> Unpaid</span>
-                {% else %}
-                  <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ inv.display_status }}</span>
-                {% endif %}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                <a href="{% url 'parent_invoices_detail' inv.id %}" class="font-semibold text-primary-600 hover:text-primary-800 mr-3">View</a>
-                <a href="{% url 'parent_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer" class="font-semibold text-gray-700 hover:text-gray-900">Print</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% else %}
-    {% include "components/ui_empty_state.html" with icon="wallet" title="No invoices" description="There are no invoices matching the selected filter" %}
-  {% endif %}
+  {% if invoices %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Reference</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Period</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Due Date</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Amounts</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for inv in invoices %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-black text-primary-700">{{ inv.reference|default:"-" }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-bold text-slate-900">{{ inv.student }}</div><div class="text-xs text-slate-500">{{ inv.student.campus }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-bold text-slate-900">{{ inv.academic_year }}</div><div class="text-xs text-slate-500">{{ inv.academic_term }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ inv.due_date|default:"-" }}</td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-bold text-slate-900">Total: {{ inv.total_amount_value|format_money_amount:org_profile.default_currency }}</div><div class="text-xs text-green-600">Paid: {{ inv.total_paid_value|format_money_amount:org_profile.default_currency }}</div><div class="text-xs font-black {% if inv.balance_value > 0 %}text-red-600{% else %}text-slate-500{% endif %}">Balance: {{ inv.balance_value|format_money_amount:org_profile.default_currency }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if inv.display_status == 'PAID' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i> Paid</span>{% elif inv.display_status == 'PARTIAL' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black"><i class="ph ph-coins"></i> Partial</span>{% elif inv.display_status == 'OVERDUE' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black"><i class="ph ph-warning"></i> Overdue</span>{% elif inv.display_status == 'UNPAID' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black"><i class="ph ph-clock"></i> Unpaid</span>{% else %}<span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-black">{{ inv.display_status }}</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><a href="{% url 'parent_invoices_detail' inv.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50 mr-2">View</a><a href="{% url 'parent_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Print</a></td></tr>{% endfor %}</tbody></table></section>{% include "components/ui_pagination.html" with page_obj=page_obj %}{% else %}{% include "components/ui_empty_state.html" with icon="wallet" title="No invoices" description="There are no invoices matching the selected filter" %}{% endif %}
 </div>
 {% endblock %}
