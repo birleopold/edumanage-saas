@@ -5,69 +5,20 @@
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-
-<div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-    <div>
-      <h1 class="text-2xl font-black text-gray-900">My Coursework Dashboard</h1>
-      <p class="text-sm text-gray-600">Notes, homework, video lessons, live class links, submissions, feedback, and progress.</p>
+<div class="space-y-7">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-indigo-50 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Learning workspace</p><h2 class="mt-2 text-2xl font-black text-slate-950">My Coursework Dashboard</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Notes, homework, lessons, live class links, submissions, feedback and progress in one place.</p></div>
+      <div class="rounded-2xl border border-primary-100 bg-white px-6 py-4 text-center shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Overall completion</p><p class="mt-1 text-4xl font-black text-primary-700">{{ summary.completion_rate }}%</p></div>
     </div>
-    <div class="text-right"><p class="text-xs uppercase font-bold text-gray-500">Overall completion</p><p class="text-3xl font-black text-primary-700">{{ summary.completion_rate }}%</p></div>
-  </div>
-</div>
+  </section>
 
-<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Items</p><p class="text-2xl font-black text-gray-900">{{ summary.total_items }}</p></div>
-  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Completed</p><p class="text-2xl font-black text-primary-700">{{ summary.completed_items }}</p></div>
-  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Pending</p><p class="text-2xl font-black text-yellow-700">{{ pending_count }}</p></div>
-  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Overdue</p><p class="text-2xl font-black text-red-700">{{ overdue_count }}</p></div>
-  <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Marked</p><p class="text-2xl font-black text-blue-700">{{ marked_count }}</p></div>
-</div>
+  <section class="grid grid-cols-2 md:grid-cols-5 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Items</p><p class="text-2xl font-black text-slate-900">{{ summary.total_items }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Completed</p><p class="text-2xl font-black text-primary-700">{{ summary.completed_items }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Pending</p><p class="text-2xl font-black text-yellow-700">{{ pending_count }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Overdue</p><p class="text-2xl font-black text-red-700">{{ overdue_count }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Marked</p><p class="text-2xl font-black text-blue-700">{{ marked_count }}</p></div></section>
 
-<div class="mb-8">
-  <h2 class="text-lg font-bold text-gray-900 mb-2">Materials / Lessons</h2>
-  <div class="space-y-3">
-    {% for m in materials %}
-      <div class="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-          <div>
-            <div class="text-xs font-bold text-gray-500 uppercase">{{ m.get_type_display }} · Progress {{ m.progress_percent }}%</div>
-            <div class="text-base font-bold text-gray-900">{{ m.title }}</div>
-            {% if m.description %}<div class="text-sm text-gray-600 mt-1">{{ m.description|truncatechars:180 }}</div>{% endif %}
-            <div class="text-xs text-gray-500 mt-2">{{ m.attachments.count }} attachment(s) · {{ m.comments.count }} comment(s) · Published {{ m.publish_at|date:'Y-m-d' }}</div>
-            {% if m.video_url or m.meeting_url or m.external_url %}<div class="text-xs text-primary-700 font-semibold mt-1">Online learning link available</div>{% endif %}
-          </div>
-          <a href="{% url 'student_coursework_material_detail' m.pk %}" class="inline-flex justify-center items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold">Open</a>
-        </div>
-      </div>
-    {% empty %}
-      <div class="text-sm text-gray-500 bg-white border border-gray-200 rounded-lg p-5">No materials available.</div>
-    {% endfor %}
-  </div>
-</div>
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div class="border-b border-slate-100 p-5 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Materials / Lessons</h3><p class="text-sm text-slate-500">Open, read and complete learning resources.</p></div><i class="ph ph-notebook text-2xl text-primary-600"></i></div><div class="p-5 space-y-3">{% for m in materials %}<article class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 hover:bg-white hover:shadow-sm"><div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3"><div><div class="flex flex-wrap gap-2 mb-2"><span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{{ m.get_type_display }}</span><span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">{{ m.progress_percent }}% progress</span></div><h4 class="font-black text-slate-900">{{ m.title }}</h4>{% if m.description %}<p class="mt-1 text-sm text-slate-600">{{ m.description|truncatechars:160 }}</p>{% endif %}<p class="mt-2 text-xs text-slate-500">{{ m.attachments.count }} attachment(s) · {{ m.comments.count }} comment(s) · Published {{ m.publish_at|date:'Y-m-d' }}</p>{% if m.video_url or m.meeting_url or m.external_url %}<p class="mt-1 text-xs font-black text-primary-700"><i class="ph ph-link-simple mr-1"></i> Online learning link available</p>{% endif %}</div><a href="{% url 'student_coursework_material_detail' m.pk %}" class="inline-flex justify-center items-center rounded-xl border border-slate-200 bg-white px-4 py-2 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Open</a></div></article>{% empty %}<div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500"><i class="ph ph-notebook text-4xl text-slate-300"></i><p class="mt-2 font-bold">No materials available.</p></div>{% endfor %}</div></div>
 
-<div>
-  <h2 class="text-lg font-bold text-gray-900 mb-2">Assignments</h2>
-  <div class="space-y-3">
-    {% for a in assignments %}
-      <div class="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-          <div>
-            <div class="text-base font-bold text-gray-900">{{ a.title }}</div>
-            {% if a.due_date %}<div class="text-sm text-gray-600">Due: {{ a.due_date|date:'Y-m-d H:i' }}</div>{% endif %}
-            {% if a.instructions %}<div class="text-sm text-gray-600 mt-1">{{ a.instructions|truncatechars:180 }}</div>{% endif %}
-            <div class="text-xs text-gray-500 mt-2">Progress {{ a.progress_percent }}% · {{ a.comments.count }} comment(s)</div>
-          </div>
-          <div class="flex flex-col items-start md:items-end gap-2">
-            {% if a.is_submitted %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Submitted</span>{% elif a.is_overdue %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Overdue</span>{% else %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Pending</span>{% endif %}
-            {% if a.is_marked %}<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Marked</span>{% endif %}
-            <a href="{% url 'student_coursework_assignment_detail' a.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold">View</a>
-          </div>
-        </div>
-      </div>
-    {% empty %}
-      <div class="text-sm text-gray-500 bg-white border border-gray-200 rounded-lg p-5">No assignments available.</div>
-    {% endfor %}
-  </div>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div class="border-b border-slate-100 p-5 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Assignments</h3><p class="text-sm text-slate-500">Track deadlines, submissions and feedback.</p></div><i class="ph ph-clipboard-text text-2xl text-primary-600"></i></div><div class="p-5 space-y-3">{% for a in assignments %}<article class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 hover:bg-white hover:shadow-sm"><div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3"><div><h4 class="font-black text-slate-900">{{ a.title }}</h4>{% if a.due_date %}<p class="mt-1 text-sm font-bold text-slate-600"><i class="ph ph-clock mr-1"></i> Due: {{ a.due_date|date:'Y-m-d H:i' }}</p>{% endif %}{% if a.instructions %}<p class="mt-1 text-sm text-slate-600">{{ a.instructions|truncatechars:160 }}</p>{% endif %}<p class="mt-2 text-xs text-slate-500">Progress {{ a.progress_percent }}% · {{ a.comments.count }} comment(s)</p></div><div class="flex flex-col items-start md:items-end gap-2">{% if a.is_submitted %}<span class="px-3 py-1 rounded-full text-xs font-black bg-green-100 text-green-800">Submitted</span>{% elif a.is_overdue %}<span class="px-3 py-1 rounded-full text-xs font-black bg-red-100 text-red-800">Overdue</span>{% else %}<span class="px-3 py-1 rounded-full text-xs font-black bg-yellow-100 text-yellow-800">Pending</span>{% endif %}{% if a.is_marked %}<span class="px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800">Marked</span>{% endif %}<a href="{% url 'student_coursework_assignment_detail' a.pk %}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">View</a></div></div></article>{% empty %}<div class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500"><i class="ph ph-clipboard-text text-4xl text-slate-300"></i><p class="mt-2 font-bold">No assignments available.</p></div>{% endfor %}</div></div>
+  </section>
 </div>
 {% endblock %}
