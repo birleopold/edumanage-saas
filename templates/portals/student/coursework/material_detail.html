@@ -5,45 +5,18 @@
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-
-<div class="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-  <div>
-    <a href="{% url 'student_coursework_home' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-900 mb-2">Back to coursework</a>
-    <div class="text-xs font-bold text-gray-500 uppercase">{{ material.get_type_display }} · Progress {{ progress.percent_complete }}%</div>
-    <h1 class="text-2xl font-bold text-gray-900">{{ material.title }}</h1>
-    <p class="text-sm text-gray-600 mt-1">Published {{ material.publish_at|date:'Y-m-d H:i' }}</p>
-  </div>
-  <form method="post" action="{% url 'student_coursework_material_complete' material.pk %}">{% csrf_token %}<button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">Mark Completed</button></form>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <section class="lg:col-span-2 space-y-6">
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 class="text-lg font-bold text-gray-900 mb-3">Description</h2>
-      {% if material.description %}<div class="text-sm text-gray-800 whitespace-pre-wrap">{{ material.description }}</div>{% else %}<p class="text-sm text-gray-500">No description provided.</p>{% endif %}
-    </div>
-
-    {% if material.external_url or material.video_url or material.meeting_url %}
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 class="text-lg font-bold text-gray-900 mb-3">Online Learning Links</h2>
-      <div class="space-y-2">
-        {% if material.video_url %}<a href="{{ material.video_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Open video lesson</a>{% endif %}
-        {% if material.meeting_url %}<a href="{{ material.meeting_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Join live class / meeting</a>{% endif %}
-        {% if material.external_url %}<a href="{{ material.external_url }}" target="_blank" rel="noopener" class="block p-3 border border-gray-200 rounded-lg text-primary-700 font-semibold hover:bg-gray-50">Open external resource</a>{% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 class="text-lg font-bold text-gray-900 mb-3">Discussion</h2>
-      <div class="space-y-3 mb-4">{% for comment in material.comments.all %}<div class="rounded-lg border border-gray-200 p-3 text-sm"><div class="flex justify-between gap-3"><span class="font-bold text-gray-900">{{ comment.user|default:'User' }}{% if comment.is_teacher_reply %} · Teacher{% endif %}</span><span class="text-xs text-gray-500">{{ comment.created_at|date:'Y-m-d H:i' }}</span></div><p class="mt-1 text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p></div>{% empty %}<p class="text-sm text-gray-500">No discussion yet.</p>{% endfor %}</div>
-      {% if material.allow_comments %}<form method="post" class="space-y-3">{% csrf_token %}{{ comment_form.as_p }}<button class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold">Post Comment</button></form>{% else %}<p class="text-sm text-gray-500">Comments are disabled for this material.</p>{% endif %}
-    </div>
+<div class="space-y-7">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-indigo-50 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5"><div><a href="{% url 'student_coursework_home' %}" class="inline-flex items-center gap-2 text-sm font-black text-primary-700 hover:text-primary-900 mb-3"><i class="ph ph-arrow-left"></i> Back to coursework</a><div class="flex flex-wrap gap-2 mb-2"><span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{{ material.get_type_display }}</span><span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">{{ progress.percent_complete }}% progress</span></div><h2 class="text-2xl font-black text-slate-950">{{ material.title }}</h2><p class="mt-2 text-sm text-slate-600">Published {{ material.publish_at|date:'Y-m-d H:i' }}</p></div><form method="post" action="{% url 'student_coursework_material_complete' material.pk %}">{% csrf_token %}<button type="submit" class="rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-700"><i class="ph ph-check-circle mr-1"></i> Mark Completed</button></form></div>
   </section>
 
-  <aside class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-fit">
-    <h2 class="text-lg font-bold text-gray-900 mb-3">Downloadable Files</h2>
-    <div class="space-y-2">{% for att in material.attachments.all %}<a href="{{ att.file.url }}" target="_blank" rel="noopener" class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm"><span class="font-semibold text-primary-700 truncate">{{ att.file.name }}</span></a>{% empty %}<p class="text-sm text-gray-500">No files attached.</p>{% endfor %}</div>
-  </aside>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <section class="lg:col-span-2 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"><h3 class="text-lg font-black text-slate-900 mb-3">Description</h3>{% if material.description %}<div class="text-sm leading-7 text-slate-800 whitespace-pre-wrap">{{ material.description }}</div>{% else %}<p class="text-sm text-slate-500">No description provided.</p>{% endif %}</div>
+      {% if material.external_url or material.video_url or material.meeting_url %}<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"><h3 class="text-lg font-black text-slate-900 mb-3">Online learning links</h3><div class="grid gap-2">{% if material.video_url %}<a href="{{ material.video_url }}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-primary-700 font-black hover:border-primary-300 hover:bg-primary-50"><span><i class="ph ph-play-circle mr-1"></i> Open video lesson</span><i class="ph ph-arrow-square-out"></i></a>{% endif %}{% if material.meeting_url %}<a href="{{ material.meeting_url }}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-primary-700 font-black hover:border-primary-300 hover:bg-primary-50"><span><i class="ph ph-video-camera mr-1"></i> Join live class / meeting</span><i class="ph ph-arrow-square-out"></i></a>{% endif %}{% if material.external_url %}<a href="{{ material.external_url }}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-primary-700 font-black hover:border-primary-300 hover:bg-primary-50"><span><i class="ph ph-link-simple mr-1"></i> Open external resource</span><i class="ph ph-arrow-square-out"></i></a>{% endif %}</div></div>{% endif %}
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"><h3 class="text-lg font-black text-slate-900 mb-3">Discussion</h3><div class="space-y-3 mb-4">{% for comment in material.comments.all %}<div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm"><div class="flex justify-between gap-3"><span class="font-black text-slate-900">{{ comment.user|default:'User' }}{% if comment.is_teacher_reply %} · Teacher{% endif %}</span><span class="text-xs text-slate-500">{{ comment.created_at|date:'Y-m-d H:i' }}</span></div><p class="mt-1 text-slate-700 whitespace-pre-wrap">{{ comment.body }}</p></div>{% empty %}<p class="text-sm text-slate-500">No discussion yet.</p>{% endfor %}</div>{% if material.allow_comments %}<form method="post" class="space-y-3">{% csrf_token %}{{ comment_form.as_p }}<button class="rounded-xl bg-primary-600 px-4 py-2 font-black text-white hover:bg-primary-700">Post Comment</button></form>{% else %}<p class="text-sm text-slate-500">Comments are disabled for this material.</p>{% endif %}</div>
+    </section>
+    <aside class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 h-fit"><h3 class="text-lg font-black text-slate-900 mb-3">Downloadable files</h3><div class="space-y-2">{% for att in material.attachments.all %}<a href="{{ att.file.url }}" target="_blank" rel="noopener" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 hover:border-primary-300 hover:bg-primary-50 text-sm"><span class="font-black text-primary-700 truncate"><i class="ph ph-paperclip mr-1"></i>{{ att.file.name }}</span><i class="ph ph-download-simple text-slate-400"></i></a>{% empty %}<p class="text-sm text-slate-500">No files attached.</p>{% endfor %}</div></aside>
+  </div>
 </div>
 {% endblock %}
