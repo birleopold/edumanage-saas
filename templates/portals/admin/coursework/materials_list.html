@@ -1,51 +1,27 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Coursework Materials{% endblock %}
+{% block page_title %}LMS Materials{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_coursework_assignments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assignments</a><a href="{{ materials_create_url }}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus-circle mr-1"></i> Add Material</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Coursework Materials</h1>
-  <p class="text-gray-600">Homework, notes, and holiday packages for students and parents</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Learning management</p><h2 class="mt-2 text-2xl font-black">Coursework materials</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Publish notes, homework, packages and learning files for students and parents.</p></div>
+      <div class="flex flex-wrap gap-2"><a href="{% url 'admin_coursework_assignments_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Assignments</a><a href="{{ materials_create_url }}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Add Material</a></div>
+    </div>
+  </section>
 
-{% include "components/ui_search_filter.html" with search_placeholder="Search materials..." create_url=materials_create_url create_text="Add Material" %}
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 md:items-end"><div><label class="block text-sm font-black text-slate-700 mb-2">Search materials</label><input type="text" name="q" value="{{ q }}" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900" placeholder="Search by title or description"></div><div><label class="block text-sm font-black text-slate-700 mb-2">Per page</label><input type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-28 rounded-xl border-2 border-slate-200 px-3 py-2.5 font-bold text-slate-900"></div><button class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button></form>
+  </section>
 
-<div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Class</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Offering</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Published</th>
-        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      {% for m in materials %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ m.get_type_display }}</td>
-        <td class="px-6 py-4 text-sm text-gray-900">{{ m.title }}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{% if m.class_group %}{{ m.class_group }}{% else %}-{% endif %}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{% if m.offering %}{{ m.offering }}{% else %}-{% endif %}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{{ m.publish_at|date:'Y-m-d' }}</td>
-        <td class="px-6 py-4 text-right">
-          <a href="{% url 'admin_coursework_materials_edit' m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
-            <i class="ph ph-pencil-simple mr-1"></i>Edit
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" class="px-6 py-10 text-center text-gray-500">No materials found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 p-5 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Material library</h3><p class="text-sm text-slate-500">Published and upcoming learning resources.</p></div><i class="ph ph-notebook text-2xl text-primary-600"></i></div>
+    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Type</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Title</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Class</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Offering</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Published</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for m in materials %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><span class="rounded-full bg-blue-50 px-3 py-1 font-black text-blue-700">{{ m.get_type_display }}</span></td><td class="px-6 py-4"><div class="text-sm font-black text-slate-900">{{ m.title }}</div><div class="text-xs text-slate-500">{{ m.attachments.count }} attachment(s)</div></td><td class="px-6 py-4 text-sm text-slate-600">{% if m.class_group %}{{ m.class_group }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-sm text-slate-600">{% if m.offering %}{{ m.offering }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-sm text-slate-600">{{ m.publish_at|date:'Y-m-d' }}</td><td class="px-6 py-4 text-right"><a href="{% url 'admin_coursework_materials_edit' m.pk %}" class="inline-flex items-center rounded-xl border-2 border-slate-200 bg-white px-3 py-1.5 text-sm font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></td></tr>{% empty %}<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500"><i class="ph ph-notebook text-4xl text-slate-300"></i><p class="mt-2 font-bold">No materials found.</p><a href="{{ materials_create_url }}" class="mt-3 inline-flex rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add Material</a></td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  {% include "components/ui_pagination.html" with page_obj=page_obj %}
 </div>
-
-{% include "components/ui_pagination.html" with page_obj=page_obj %}
 {% endblock %}
