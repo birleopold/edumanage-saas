@@ -1,118 +1,29 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Applicants{% endblock %}
+{% block page_title %}Admissions CRM{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_admissions_pipeline' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300"><i class="ph ph-kanban mr-1"></i> Pipeline</a><a href="{% url 'admin_admissions_applicant_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus-circle mr-1"></i> Add Applicant</a>{% endblock %}
 
 {% block content %}
-<div class="motion-fast space-y-6">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Applicants</h1>
-      <p class="text-gray-600">Manage student applications, admission decisions, and student conversion.</p>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <a href="{% url 'admin_admissions_pipeline' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50"><i class="ph ph-kanban"></i> Pipeline</a>
-      <a href="{% url 'admin_admissions_applicant_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"><i class="ph ph-plus-circle"></i> Add Applicant</a>
-    </div>
-  </div>
-
+<div class="motion-fast space-y-7">
   {% include "components/ui_toast.html" %}
-
-  <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Total</p><p class="text-2xl font-black text-gray-900">{{ summary.total }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">New</p><p class="text-2xl font-black text-blue-700">{{ summary.new }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Review</p><p class="text-2xl font-black text-yellow-700">{{ summary.in_review }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Admitted</p><p class="text-2xl font-black text-green-700">{{ summary.admitted }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Converted</p><p class="text-2xl font-black text-primary-700">{{ summary.converted }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-3"><p class="text-xs uppercase font-bold text-gray-500">Rejected</p><p class="text-2xl font-black text-red-700">{{ summary.rejected }}</p></div>
-  </div>
-
-  <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-    <form method="get" class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3 md:items-end">
-        <div class="md:col-span-2">
-          <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-          <input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg" placeholder="Reference, name, email, phone, guardian" />
-        </div>
-        <div>
-          <label for="id_status" class="block text-sm font-bold text-gray-700 mb-2">Status</label>
-          <select id="id_status" name="status" class="block w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-            <option value="">All</option>
-            {% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div>
-          <label for="id_source" class="block text-sm font-bold text-gray-700 mb-2">Source</label>
-          <select id="id_source" name="source" class="block w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-            <option value="">All</option>
-            {% for value,label in source_choices %}<option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select>
-        </div>
-        <div>
-          <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
-          <select id="id_campus" name="campus" class="block w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-            <option value="">All</option>
-            {% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}
-          </select>
-        </div>
-        <div>
-          <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-          <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg" />
-        </div>
-      </div>
-      <div class="flex justify-end gap-3 pt-3 border-t border-gray-100">
-        <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold border-2 border-gray-300"><i class="ph ph-funnel"></i> Apply</button>
-        <a href="{% url 'admin_admissions_applicants' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-semibold border-2 border-gray-300"><i class="ph ph-x"></i> Reset</a>
-      </div>
-    </form>
-  </div>
-
-  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-    <p class="text-sm text-blue-900"><span class="font-semibold">Admission flow:</span> receive application → review → decide → convert admitted applicant into a student → issue admission letter.</p>
-  </div>
-
-  {% if applicants %}
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reference</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Target</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Applied</th>
-            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for a in applicants %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-bold text-primary-700">{{ a.application_reference }}</span><div class="text-xs text-gray-500">{{ a.get_source_display }}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-semibold text-gray-900">{{ a.first_name }} {{ a.last_name }}</div><div class="text-xs text-gray-500">Guardian: {{ a.guardian_name|default:'-' }}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><div>{{ a.phone|default:'No phone' }}</div><div class="text-xs text-gray-500">{{ a.email|default:'No email' }}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><div>{{ a.campus|default:'No campus' }}</div><div class="text-xs text-gray-500">{{ a.target_class_group|default:'No class target' }}</div></td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                {% if a.status == 'NEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold"><i class="ph ph-circle"></i>New</span>
-                {% elif a.status == 'IN_REVIEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold"><i class="ph ph-clock"></i>In Review</span>
-                {% elif a.status == 'ADMITTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold"><i class="ph ph-check-circle"></i>Admitted</span>
-                {% elif a.status == 'REJECTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold"><i class="ph ph-x-circle"></i>Rejected</span>
-                {% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">{{ a.status }}</span>{% endif %}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                {% if a.created_student %}<a href="{% url 'admin_students_detail' a.created_student.id %}" class="text-primary-600 hover:text-primary-900 font-semibold">{{ a.created_student.student_id }}</a>{% else %}<span class="text-gray-400 italic">Not converted</span>{% endif %}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.created_at|date:'M d, Y' }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><div class="flex items-center justify-end gap-3"><a href="{% url 'admin_admissions_applicant_detail' a.id %}" class="text-blue-600 hover:text-blue-900 font-semibold">View</a><a href="{% url 'admin_admissions_applicant_edit' a.id %}" class="text-primary-600 hover:text-primary-900 font-semibold">Edit</a>{% if not a.created_student_id and a.status != 'REJECTED' %}<a href="{% url 'admin_admissions_applicant_admit' a.id %}" class="text-green-700 hover:text-green-900 font-semibold">Convert</a>{% endif %}</div></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-orange-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-orange-100">Admissions workflow</p><h2 class="mt-2 text-2xl font-black">Applicants and admissions pipeline</h2><p class="mt-2 max-w-2xl text-sm text-orange-100">Manage leads, online applications, interview/test review, admission decisions, invoices and student conversion.</p></div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center"><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Total</p><p class="text-2xl font-black">{{ summary.total }}</p></div><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Review</p><p class="text-2xl font-black">{{ summary.in_review }}</p></div><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Admitted</p><p class="text-2xl font-black">{{ summary.admitted }}</p></div></div>
     </div>
-    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
-  {% else %}
-    {% url 'admin_admissions_applicant_create' as create_url %}
-    {% include "components/ui_empty_state.html" with icon="user-plus" title="No applicants found" description="No applicants have been added yet or match your search criteria" action_url=create_url action_text="Add Applicant" %}
-  {% endif %}
+  </section>
+
+  <section class="grid grid-cols-2 md:grid-cols-6 gap-3">
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Total</p><p class="text-2xl font-black text-slate-900">{{ summary.total }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">New</p><p class="text-2xl font-black text-blue-700">{{ summary.new }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Review</p><p class="text-2xl font-black text-yellow-700">{{ summary.in_review }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Admitted</p><p class="text-2xl font-black text-green-700">{{ summary.admitted }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Converted</p><p class="text-2xl font-black text-primary-700">{{ summary.converted }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Rejected</p><p class="text-2xl font-black text-red-700">{{ summary.rejected }}</p></div>
+  </section>
+
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+    <form method="get" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-6 gap-3 md:items-end"><div class="md:col-span-2"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl" placeholder="Reference, name, email, phone, guardian" /></div><div><label for="id_status" class="block text-sm font-black text-slate-700 mb-2">Status</label><select id="id_status" name="status" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><label for="id_source" class="block text-sm font-black text-slate-700 mb-2">Source</label><select id="id_source" name="source" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for value,label in source_choices %}<option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl" /></div></div><div class="flex justify-end gap-3 pt-3 border-t border-slate-100"><button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-black border-2 border-slate-200"><i class="ph ph-funnel"></i> Apply</button><a href="{% url 'admin_admissions_applicants' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-black border-2 border-slate-200"><i class="ph ph-x"></i> Reset</a></div></form>
+  </section>
+
+  <section class="rounded-2xl border border-blue-100 bg-blue-50 p-4"><p class="text-sm text-blue-900"><span class="font-black">Admission flow:</span> receive application → review → decide → convert admitted applicant into a student → issue admission letter.</p></section>
+
+  {% if applicants %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Reference</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Name</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Contact</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Target</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Applied</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for a in applicants %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-black text-primary-700">{{ a.application_reference }}</span><div class="text-xs text-slate-500">{{ a.get_source_display }}</div></td><td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-bold text-slate-900">{{ a.first_name }} {{ a.last_name }}</div><div class="text-xs text-slate-500">Guardian: {{ a.guardian_name|default:'-' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div>{{ a.phone|default:'No phone' }}</div><div class="text-xs text-slate-500">{{ a.email|default:'No email' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div>{{ a.campus|default:'No campus' }}</div><div class="text-xs text-slate-500">{{ a.target_class_group|default:'No class target' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if a.status == 'NEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black"><i class="ph ph-circle"></i>New</span>{% elif a.status == 'IN_REVIEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black"><i class="ph ph-clock"></i>In Review</span>{% elif a.status == 'ADMITTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Admitted</span>{% elif a.status == 'REJECTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Rejected</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-black">{{ a.status }}</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{% if a.created_student %}<a href="{% url 'admin_students_detail' a.created_student.id %}" class="text-primary-600 hover:text-primary-900 font-bold">{{ a.created_student.student_id }}</a>{% else %}<span class="text-slate-400 italic">Not converted</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ a.created_at|date:'M d, Y' }}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><div class="flex items-center justify-end gap-3"><a href="{% url 'admin_admissions_applicant_detail' a.id %}" class="text-blue-600 hover:text-blue-900 font-bold">View</a><a href="{% url 'admin_admissions_applicant_edit' a.id %}" class="text-primary-600 hover:text-primary-900 font-bold">Edit</a>{% if not a.created_student_id and a.status != 'REJECTED' %}<a href="{% url 'admin_admissions_applicant_admit' a.id %}" class="text-green-700 hover:text-green-900 font-bold">Convert</a>{% endif %}</div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_admissions_applicant_create' as create_url %}{% include "components/ui_empty_state.html" with icon="user-plus" title="No applicants found" description="No applicants have been added yet or match your search criteria" action_url=create_url action_text="Add Applicant" %}{% endif %}
 </div>
 {% endblock %}
