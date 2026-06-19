@@ -1,12 +1,16 @@
 {% extends 'portals/admin/base.html' %}
-{% block title %}Notice{% endblock %}
-{% block page_title %}Notice{% endblock %}
+{% block title %}Group Message{% endblock %}
+{% block page_title %}Group Message{% endblock %}
+{% block header_actions %}<a href="{% url 'messaging_inbox' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Inbox</a><a href="/message-ops/delivery/" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Delivery Dashboard</a>{% endblock %}
 {% block content %}
 {% include 'components/ui_toast.html' %}
-<form method="post" class="max-w-4xl bg-white rounded-xl border p-6 space-y-4">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Send</button>
-</form>
-{% if result %}<div class="mt-6 bg-white rounded-xl border p-6"><p>Recipients: {{ result.recipients }}</p><p>Sent: {{ result.sent }}</p><p>Failed: {{ result.failed }}</p><p>Skipped: {{ result.skipped }}</p></div>{% endif %}
+<div class="grid grid-cols-1 xl:grid-cols-[1fr_.7fr] gap-6">
+  <form method="post" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+    {% csrf_token %}<div class="mb-2"><p class="text-xs font-black uppercase tracking-[0.16em] text-primary-600">Official notice</p><h2 class="mt-1 text-xl font-black text-slate-900">Send group message</h2><p class="mt-1 text-sm text-slate-500">Target recipients by class, campus, attendance, balance or role where the form supports it.</p></div>{{ form.as_p }}<button class="rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-paper-plane-tilt mr-1"></i> Send Notice</button>
+  </form>
+  <aside class="space-y-4">
+    <div class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-purple-900 p-6 text-white shadow-lg"><i class="ph ph-broadcast text-4xl"></i><h3 class="mt-4 text-xl font-black">Bulk communication</h3><p class="mt-2 text-sm text-blue-100">Use this for official school notices and follow delivery status from the dashboard.</p></div>
+    {% if result %}<div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><h3 class="font-black text-slate-900 mb-3">Processing result</h3><div class="grid grid-cols-2 gap-3 text-sm"><div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Recipients</p><p class="font-black">{{ result.recipients }}</p></div><div class="rounded-xl bg-green-50 p-3"><p class="text-green-700">Sent</p><p class="font-black">{{ result.sent }}</p></div><div class="rounded-xl bg-red-50 p-3"><p class="text-red-700">Failed</p><p class="font-black">{{ result.failed }}</p></div><div class="rounded-xl bg-amber-50 p-3"><p class="text-amber-700">Skipped</p><p class="font-black">{{ result.skipped }}</p></div></div></div>{% endif %}
+  </aside>
+</div>
 {% endblock %}
