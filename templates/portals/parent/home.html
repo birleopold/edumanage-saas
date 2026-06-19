@@ -1,206 +1,65 @@
 {% extends 'portals/parent/base.html' %}
 
 {% block title %}Parent Dashboard{% endblock %}
-{% block page_title %}My Dashboard{% endblock %}
+{% block page_title %}Parent Dashboard{% endblock %}
 
 {% block header_actions %}
-<form method="get" class="flex items-center space-x-2 bg-white rounded-lg border border-gray-200 px-3 py-1 shadow-sm">
-    <label for="id_campus" class="text-sm font-medium text-gray-500"><i class="ph ph-buildings mr-1" aria-hidden="true"></i> Campus Filter:</label>
-    <select id="id_campus" name="campus" class="border-none bg-transparent text-sm font-bold text-gray-900 py-1 pl-1 pr-6 focus:ring-0 cursor-pointer" onchange="this.form.submit()">
-        <option value="">All Campuses</option>
-        {% for c in campuses %}
-        <option value="{{ c.id }}" {% if selected_campus_id and c.id|stringformat:"s" == selected_campus_id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-    </select>
+<form method="get" class="flex items-center space-x-2 bg-white rounded-xl border border-gray-200 px-3 py-1.5 shadow-sm">
+  <label for="id_campus" class="text-sm font-bold text-gray-500"><i class="ph ph-buildings mr-1"></i> Campus</label>
+  <select id="id_campus" name="campus" class="border-none bg-transparent text-sm font-bold text-gray-900 py-1 pl-1 pr-6 focus:ring-0 cursor-pointer" onchange="this.form.submit()">
+    <option value="">All Campuses</option>
+    {% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id|stringformat:'s' == selected_campus_id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+  </select>
 </form>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-8 motion-rich">
-    <!-- Welcome Banner -->
-    <div class="bg-primary-50 rounded-xl p-6 border border-primary-100 flex flex-col md:flex-row md:items-center justify-between">
-        <div>
-            <h2 class="text-xl font-bold text-primary-900 mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}!</h2>
-            <p class="text-sm text-primary-700">Monitor your children's progress, activities, and finances.</p>
-        </div>
-        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3 sm:items-center">
-            {% if parent_invoices_outstanding or parent_invoices_overdue %}
-            <div class="flex flex-wrap gap-3 text-sm">
-                {% if parent_invoices_outstanding %}
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-100 font-semibold">
-                    <i class="ph ph-coins" aria-hidden="true"></i> {{ parent_invoices_outstanding }} with balance due
-                </span>
-                {% endif %}
-                {% if parent_invoices_overdue %}
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-900 border border-red-100 font-semibold">
-                    <i class="ph ph-warning" aria-hidden="true"></i> {{ parent_invoices_overdue }} overdue
-                </span>
-                {% endif %}
-            </div>
-            {% endif %}
-            <a href="{% url 'parent_invoices_list' %}{% if selected_campus_id %}?campus={{ selected_campus_id }}{% endif %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
-                <i class="ph ph-wallet mr-2" aria-hidden="true"></i> View Invoices
-            </a>
-        </div>
+<div class="space-y-7 motion-rich">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-rose-50 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Parent workspace</p>
+        <h2 class="mt-2 text-2xl font-black text-slate-950">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="mt-2 text-sm text-slate-600">Monitor fees, results, coursework, attendance, messages and child progress from one simple place.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% if parent_invoices_outstanding %}<span class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-sm font-bold text-amber-900"><i class="ph ph-coins"></i> {{ parent_invoices_outstanding }} balance due</span>{% endif %}
+        {% if parent_invoices_overdue %}<span class="rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-sm font-bold text-red-900"><i class="ph ph-warning"></i> {{ parent_invoices_overdue }} overdue</span>{% endif %}
+        <a href="{% url 'parent_invoices_list' %}{% if selected_campus_id %}?campus={{ selected_campus_id }}{% endif %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-wallet mr-1"></i> View Invoices</a>
+      </div>
     </div>
+  </section>
 
-    <!-- Quick Access Grid -->
-    <div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{% url 'parent_announcements_list' %}?campus={{ selected_campus_id }}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-megaphone text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Announcements</span>
-            </a>
-            <a href="{% url 'parent_transport_home' %}?campus={{ selected_campus_id }}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-bus text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Transport</span>
-            </a>
-            <a href="{% url 'parent_library_loans' %}?campus={{ selected_campus_id }}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-books text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Library</span>
-            </a>
-            <a href="{% url 'parent_incidents_list' %}?campus={{ selected_campus_id }}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-warning-circle text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Discipline</span>
-            </a>
-        </div>
+  <section>
+    <div class="mb-4"><h3 class="text-lg font-black text-slate-900">Family command center</h3><p class="text-sm text-slate-500">Quick access to the most important parent workflows.</p></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a href="{% url 'parent_invoices_list' %}?campus={{ selected_campus_id }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-wallet text-3xl text-green-600"></i><h4 class="mt-3 font-black">Invoices & Pay</h4><p class="mt-1 text-sm text-slate-500">View balances and initiate mobile money payment.</p></a>
+      <a href="{% url 'parent_results_home' %}?campus={{ selected_campus_id }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chart-bar text-3xl text-blue-600"></i><h4 class="mt-3 font-black">Results</h4><p class="mt-1 text-sm text-slate-500">Check academic performance and reports.</p></a>
+      <a href="/parent/exams/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-desktop text-3xl text-indigo-600"></i><h4 class="mt-3 font-black">Online Exams</h4><p class="mt-1 text-sm text-slate-500">Published exam results and report cards.</p></a>
+      <a href="{% url 'parent_coursework_home' %}?campus={{ selected_campus_id }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-notebook text-3xl text-purple-600"></i><h4 class="mt-3 font-black">Coursework</h4><p class="mt-1 text-sm text-slate-500">Assignments and learning material visibility.</p></a>
+      <a href="/analytics-portal/parent/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chart-line-up text-3xl text-cyan-600"></i><h4 class="mt-3 font-black">Progress Trends</h4><p class="mt-1 text-sm text-slate-500">See how each child is progressing over time.</p></a>
+      <a href="/messages/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chats-circle text-3xl text-pink-600"></i><h4 class="mt-3 font-black">Inbox</h4><p class="mt-1 text-sm text-slate-500">Read and reply to school messages.</p></a>
+      <a href="/messages/parent-teacher/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chat-teardrop-text text-3xl text-orange-600"></i><h4 class="mt-3 font-black">Teacher Chat</h4><p class="mt-1 text-sm text-slate-500">Start a parent-teacher conversation.</p></a>
+      <a href="{% url 'parent_communication_preferences' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-bell text-3xl text-slate-600"></i><h4 class="mt-3 font-black">Preferences</h4><p class="mt-1 text-sm text-slate-500">SMS and WhatsApp notification choices.</p></a>
     </div>
+  </section>
 
-    <!-- Message preferences -->
-    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
-            <h3 class="text-lg font-semibold text-gray-900">Communication preferences</h3>
-            <a href="{% url 'parent_communication_preferences' %}" class="text-sm font-semibold text-primary-600 hover:text-primary-800">Update</a>
-        </div>
-        {% if parent_profile %}
-        <p class="text-sm text-gray-600">SMS alerts: {% if parent_profile.allow_sms_alerts %}<span class="font-semibold text-green-700">On</span>{% else %}<span class="font-semibold text-gray-500">Off</span>{% endif %} · WhatsApp alerts: {% if parent_profile.allow_whatsapp_alerts %}<span class="font-semibold text-green-700">On</span>{% else %}<span class="font-semibold text-gray-500">Off</span>{% endif %}</p>
-        <p class="text-xs text-gray-500 mt-2">You can change these anytime. Critical notices may still be available in the portal.</p>
-        {% endif %}
+  {% if parent_profile %}
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 p-5 flex items-center justify-between"><h3 class="font-black text-slate-900">My children</h3><span class="text-xs text-slate-500">Linked learner records</span></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Student</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Campus</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Relationship</th><th class="px-6 py-3 text-right text-xs font-black uppercase text-slate-500">Actions</th></tr></thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% for campus_name, items in children_groups %}{% for link in items %}
+          <tr class="hover:bg-slate-50"><td class="px-6 py-4"><div class="font-bold text-slate-900">{{ link.student.first_name }} {{ link.student.last_name }}</div><div class="text-xs text-slate-500">ID: {{ link.student.registration_number|default:'N/A' }}</div></td><td class="px-6 py-4 text-sm text-slate-600">{{ campus_name }}</td><td class="px-6 py-4 text-sm text-slate-600">{{ link.get_relationship_display|default:link.relationship }}</td><td class="px-6 py-4 text-right text-sm"><a href="{% url 'parent_coursework_home' %}?campus={{ selected_campus_id }}" class="font-bold text-primary-600 hover:text-primary-800">Coursework</a><span class="mx-2 text-slate-300">|</span><a href="{% url 'parent_invoices_list' %}?campus={{ selected_campus_id }}" class="font-bold text-primary-600 hover:text-primary-800">Fees</a></td></tr>
+          {% endfor %}{% empty %}<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No children records found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
     </div>
-
-    <!-- Parent Action Center -->
-    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Action Center</h3>
-            <span class="text-xs text-gray-500">Recommended daily checks</span>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <a href="{% url 'parent_invoices_list' %}?campus={{ selected_campus_id }}" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                <span class="text-sm font-semibold text-gray-800">Review Fees</span>
-                <i class="ph ph-arrow-right text-primary-600" aria-hidden="true"></i>
-            </a>
-            <a href="{% url 'parent_coursework_home' %}?campus={{ selected_campus_id }}" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                <span class="text-sm font-semibold text-gray-800">Track Coursework</span>
-                <i class="ph ph-arrow-right text-primary-600" aria-hidden="true"></i>
-            </a>
-            <a href="{% url 'parent_announcements_list' %}?campus={{ selected_campus_id }}" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors">
-                <span class="text-sm font-semibold text-gray-800">Latest Updates</span>
-                <i class="ph ph-arrow-right text-primary-600" aria-hidden="true"></i>
-            </a>
-        </div>
-    </div>
-
-    <!-- Children Overview -->
-    {% if parent_profile %}
-    <div>
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">My Children</h3>
-        </div>
-        
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Campus</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Relationship</th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Primary Guardian</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Follow-up</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for campus_name, items in children_groups %}
-                        {% for link in items %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold border border-gray-200">
-                                        {{ link.student.first_name|make_list|first|upper }}
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ link.student.first_name }} {{ link.student.last_name }}</div>
-                                        <div class="text-sm text-gray-500">ID: {{ link.student.registration_number|default:"N/A" }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    <i class="ph ph-buildings mr-1" aria-hidden="true"></i> {{ campus_name }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ link.get_relationship_display|default:link.relationship }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                {% if link.is_primary %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="ph ph-check-circle mr-1" aria-hidden="true"></i> Yes
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        No
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                <div class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
-                                    <a href="{% url 'parent_child_id_card_pdf' link.student.pk %}{% if selected_campus_id %}?campus={{ selected_campus_id }}{% endif %}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-800 font-semibold">ID card</a>
-                                    <span class="text-gray-300">|</span>
-                                    <a href="{% url 'parent_coursework_home' %}?campus={{ selected_campus_id }}" class="text-primary-600 hover:text-primary-800 font-semibold">Coursework</a>
-                                    <span class="text-gray-300">|</span>
-                                    <a href="{% url 'parent_invoices_list' %}?campus={{ selected_campus_id }}" class="text-primary-600 hover:text-primary-800 font-semibold">Fees</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                                <div class="flex flex-col items-center justify-center">
-                                    <i class="ph ph-student text-4xl text-gray-300 mb-2" aria-hidden="true"></i>
-                                    <p>No children records found.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md" role="alert">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <i class="ph ph-warning text-yellow-400 text-xl" aria-hidden="true"></i>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-yellow-700 font-medium">
-                    No parent profile is linked to this account yet. Please contact the administration.
-                </p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+  </section>
+  {% else %}
+  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900"><i class="ph ph-warning mr-2"></i>No parent profile is linked to this account yet. Please contact the administration.</section>
+  {% endif %}
 </div>
 {% endblock %}
