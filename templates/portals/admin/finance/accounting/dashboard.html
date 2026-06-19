@@ -1,16 +1,44 @@
 {% extends 'portals/admin/base.html' %}
 {% block title %}Finance Books{% endblock %}
-{% block page_title %}Finance Books{% endblock %}
+{% block page_title %}Accounting Command Center{% endblock %}
+{% block header_actions %}<a href="{% url 'finance_books_chart' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Chart of Accounts</a><a href="{% url 'finance_books_cost_new' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Record Expense</a>{% endblock %}
 {% block content %}
 {% include 'components/ui_toast.html' %}
-<div class="space-y-6">
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Accounts</p><p class="text-3xl font-black">{{ summary.accounts }}</p></div>
-    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Money Accounts</p><p class="text-3xl font-black">{{ summary.cash_accounts }}</p></div>
-    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Journals</p><p class="text-3xl font-black">{{ summary.journal_entries }}</p></div>
-    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Unposted Expenses</p><p class="text-3xl font-black">{{ summary.unposted_expenses }}</p></div>
-    <div class="bg-white rounded-xl border p-4"><p class="text-xs font-bold text-gray-500 uppercase">Unposted Payroll</p><p class="text-3xl font-black">{{ summary.unposted_payrolls }}</p></div>
-  </div>
-  <div class="bg-white rounded-xl border overflow-hidden"><div class="px-5 py-4 border-b"><h2 class="font-bold">Recent Journal Entries</h2></div><table class="min-w-full divide-y"><thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left">Date</th><th class="px-4 py-3 text-left">Reference</th><th class="px-4 py-3 text-left">Description</th><th class="px-4 py-3 text-left">Source</th></tr></thead><tbody>{% for entry in recent_entries %}<tr><td class="px-4 py-3">{{ entry.entry_date }}</td><td class="px-4 py-3">{{ entry.reference }}</td><td class="px-4 py-3">{{ entry.description }}</td><td class="px-4 py-3">{{ entry.source }}</td></tr>{% empty %}<tr><td colspan="4" class="p-6 text-center text-gray-500">No journal entries yet.</td></tr>{% endfor %}</tbody></table></div>
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Full accounting layer</p><h2 class="mt-2 text-2xl font-black">Finance books and ledger control</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage chart of accounts, journals, cashbook, expenses, payroll, reconciliation and statutory reports.</p></div>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3"><p class="text-[10px] uppercase text-emerald-100">Accounts</p><p class="text-2xl font-black">{{ summary.accounts }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3"><p class="text-[10px] uppercase text-emerald-100">Money</p><p class="text-2xl font-black">{{ summary.cash_accounts }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3"><p class="text-[10px] uppercase text-emerald-100">Journals</p><p class="text-2xl font-black">{{ summary.journal_entries }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3"><p class="text-[10px] uppercase text-emerald-100">Expenses</p><p class="text-2xl font-black">{{ summary.unposted_expenses }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3"><p class="text-[10px] uppercase text-emerald-100">Payroll</p><p class="text-2xl font-black">{{ summary.unposted_payrolls }}</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <a href="{% url 'finance_books_chart' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-tree-structure text-3xl text-blue-600"></i><h3 class="mt-3 font-black">Chart of Accounts</h3><p class="mt-1 text-sm text-slate-500">Set up and review ledger accounts.</p></a>
+    <a href="{% url 'finance_books_journals' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-book-open-text text-3xl text-purple-600"></i><h3 class="mt-3 font-black">Journal Entries</h3><p class="mt-1 text-sm text-slate-500">View double-entry posting history.</p></a>
+    <a href="{% url 'finance_books_money' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-bank text-3xl text-green-600"></i><h3 class="mt-3 font-black">Cashbook</h3><p class="mt-1 text-sm text-slate-500">Cash, bank and mobile money accounts.</p></a>
+    <a href="{% url 'finance_books_payment_recon' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-arrows-clockwise text-3xl text-orange-600"></i><h3 class="mt-3 font-black">Reconciliation</h3><p class="mt-1 text-sm text-slate-500">Match payments and bank/provider references.</p></a>
+    <a href="{% url 'finance_books_cost_new' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-receipt text-3xl text-red-600"></i><h3 class="mt-3 font-black">School Expense</h3><p class="mt-1 text-sm text-slate-500">Record and post operational costs.</p></a>
+    <a href="{% url 'finance_books_staffpay_new' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-users text-3xl text-indigo-600"></i><h3 class="mt-3 font-black">Payroll Run</h3><p class="mt-1 text-sm text-slate-500">Create staff payroll posting workflow.</p></a>
+    <a href="{% url 'finance_books_upload' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-upload-simple text-3xl text-cyan-600"></i><h3 class="mt-3 font-black">Import Statement</h3><p class="mt-1 text-sm text-slate-500">Upload cashbook/bank statement rows.</p></a>
+    <a href="{% url 'finance_books_trial' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chart-bar text-3xl text-slate-600"></i><h3 class="mt-3 font-black">Financial Reports</h3><p class="mt-1 text-sm text-slate-500">Trial balance, income, position and cash flow.</p></a>
+  </section>
+
+  <section class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <a href="{% url 'finance_books_trial' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-scales mr-2 text-primary-600"></i>Trial Balance</a>
+    <a href="{% url 'finance_books_income' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-trend-up mr-2 text-primary-600"></i>Income Statement</a>
+    <a href="{% url 'finance_books_position' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-buildings mr-2 text-primary-600"></i>Balance Sheet</a>
+    <a href="{% url 'finance_books_cash_flow' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-currency-circle-dollar mr-2 text-primary-600"></i>Cash Flow</a>
+  </section>
+
+  <section class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><div><h2 class="font-black text-slate-900">Recent journal entries</h2><p class="text-sm text-slate-500">Latest ledger activity from invoices, payments, expenses and payroll.</p></div><a href="{% url 'finance_books_journals' %}" class="text-sm font-bold text-primary-600 hover:text-primary-800">View all</a></div>
+    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Date</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Reference</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Description</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Source</th></tr></thead><tbody class="divide-y divide-slate-100">{% for entry in recent_entries %}<tr class="hover:bg-slate-50"><td class="px-5 py-4 text-sm text-slate-600">{{ entry.entry_date }}</td><td class="px-5 py-4 font-bold text-slate-900">{{ entry.reference }}</td><td class="px-5 py-4 text-sm text-slate-700">{{ entry.description }}</td><td class="px-5 py-4 text-sm"><span class="rounded-full bg-slate-100 px-2 py-1 font-bold text-slate-600">{{ entry.source }}</span></td></tr>{% empty %}<tr><td colspan="4" class="p-8 text-center text-slate-500">No journal entries yet. Post invoices, payments, expenses or payroll to begin.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
 </div>
 {% endblock %}
