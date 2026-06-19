@@ -4,111 +4,18 @@
 {% block page_title %}Attendance{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Attendance</h1>
-  <p class="text-gray-600">Take attendance, run quick roll call, and review recent class sessions.</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-cyan-50 p-6 shadow-sm"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Daily attendance</p><h2 class="mt-2 text-2xl font-black text-slate-950">Attendance workspace</h2><p class="mt-2 max-w-2xl text-sm text-slate-600">Take attendance, run quick roll call, and review recent class sessions.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'teacher_roll_call' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-lightning mr-1"></i> Roll Call</a><a href="{% url 'teacher_attendance_take' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300"><i class="ph ph-check-square mr-1"></i> Take Attendance</a></div></div></section>
 
-{% if not teacher %}
-  <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-    <div class="flex items-center gap-3">
-      <i class="ph ph-warning-circle text-yellow-600 text-3xl"></i>
-      <div>
-        <h3 class="font-bold text-gray-900">No Teacher Profile</h3>
-        <p class="text-gray-600">No teacher profile is linked to this account yet.</p>
-      </div>
-    </div>
-  </div>
-{% else %}
-  <div class="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
-    <form method="get" class="flex gap-4 items-end">
-      <div class="w-48">
-        <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
-        <select id="id_campus" name="campus" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
-          <option value="">All Campuses</option>
-          {% for c in campuses %}
-            <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold">
-        <i class="ph ph-funnel"></i> Apply
-      </button>
-    </form>
-  </div>
-
-  <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-    <i class="ph ph-chalkboard-teacher text-gray-600"></i>
-    My Classes
-  </h2>
-  {% if offerings %}
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Class</th>
-            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for o in offerings %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm">
-                <div class="flex items-center gap-2">
-                  <i class="ph ph-book-open text-primary-600 text-xl"></i>
-                  <span class="font-semibold text-gray-900">{{ o }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="inline-flex items-center gap-2">
-                  <a href="{% url 'teacher_roll_call' %}?campus={{ selected_campus_id }}&offering={{ o.id }}" class="inline-flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    <i class="ph ph-lightning"></i><span>Roll Call</span>
-                  </a>
-                  <a href="{% url 'teacher_attendance_take' %}?campus={{ selected_campus_id }}&offering={{ o.id }}" class="inline-flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    <i class="ph ph-check-square"></i><span>Take Attendance</span>
-                  </a>
-                </div>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  {% if not teacher %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-6"><div class="flex items-center gap-3"><i class="ph ph-warning-circle text-yellow-600 text-3xl"></i><div><h3 class="font-black text-slate-900">No Teacher Profile</h3><p class="text-slate-600">No teacher profile is linked to this account yet.</p></div></div></div>
   {% else %}
-    {% include "components/ui_empty_state.html" with icon="chalkboard-teacher" title="No classes" description="No offerings are assigned to you" %}
-  {% endif %}
+    <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[auto_auto] gap-3 md:items-end"><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="w-64 px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button></form></section>
 
-  <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-    <i class="ph ph-clock-counter-clockwise text-gray-600"></i>
-    Recent Sessions
-  </h2>
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Offering</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Marked</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Absent</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Rate</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for session in recent_sessions %}
-        <tr>
-          <td class="px-6 py-4 text-sm text-gray-700">{{ session.date|date:'Y-m-d' }}</td>
-          <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ session.offering }}</td>
-          <td class="px-6 py-4 text-sm text-gray-700">{{ session.summary.marked }}/{{ session.summary.total }}</td>
-          <td class="px-6 py-4 text-sm text-red-700 font-semibold">{{ session.summary.absent }}</td>
-          <td class="px-6 py-4 text-sm text-primary-700 font-semibold">{{ session.summary.attendance_rate }}%</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No recent attendance sessions yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-{% endif %}
+    <section><div class="mb-4 flex items-center justify-between"><div><h3 class="text-lg font-black text-slate-900">My classes</h3><p class="text-sm text-slate-500">Select a class to run roll call or full attendance.</p></div><i class="ph ph-chalkboard-teacher text-2xl text-primary-600"></i></div>{% if offerings %}<div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Class</th><th scope="col" class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for o in offerings %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-book-open text-xl"></i></div><span class="font-black text-slate-900">{{ o }}</span></div></td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="inline-flex flex-wrap items-center justify-end gap-2"><a href="{% url 'teacher_roll_call' %}?campus={{ selected_campus_id }}&offering={{ o.id }}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-4 py-2 font-black text-white hover:bg-primary-700"><i class="ph ph-lightning"></i><span>Roll Call</span></a><a href="{% url 'teacher_attendance_take' %}?campus={{ selected_campus_id }}&offering={{ o.id }}" class="inline-flex items-center gap-1 rounded-xl bg-green-600 px-4 py-2 font-black text-white hover:bg-green-700"><i class="ph ph-check-square"></i><span>Take Attendance</span></a></div></td></tr>{% endfor %}</tbody></table></div>{% else %}{% include "components/ui_empty_state.html" with icon="chalkboard-teacher" title="No classes" description="No offerings are assigned to you" %}{% endif %}</section>
+
+    <section><div class="mb-4 flex items-center justify-between"><div><h3 class="text-lg font-black text-slate-900">Recent sessions</h3><p class="text-sm text-slate-500">Latest attendance sessions and rates.</p></div><i class="ph ph-clock-counter-clockwise text-2xl text-primary-600"></i></div><div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Date</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Offering</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Marked</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Absent</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Rate</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for session in recent_sessions %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm font-bold text-slate-700">{{ session.date|date:'Y-m-d' }}</td><td class="px-6 py-4 text-sm font-black text-slate-900">{{ session.offering }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-blue-50 px-3 py-1 font-black text-blue-700">{{ session.summary.marked }}/{{ session.summary.total }}</span></td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-red-50 px-3 py-1 font-black text-red-700">{{ session.summary.absent }}</span></td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-50 px-3 py-1 font-black text-green-700">{{ session.summary.attendance_rate }}%</span></td></tr>{% empty %}<tr><td colspan="5" class="px-6 py-10 text-center text-slate-500">No recent attendance sessions yet.</td></tr>{% endfor %}</tbody></table></div></section>
+  {% endif %}
+</div>
 {% endblock %}
