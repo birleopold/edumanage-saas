@@ -1,13 +1,11 @@
 {% extends 'portals/admin/base.html' %}
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
+{% block header_actions %}<a href="{% url 'messaging_inbox' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Inbox</a><a href="{% url 'messaging_bulk_message' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Group Message</a>{% endblock %}
 {% block content %}
 {% include 'components/ui_toast.html' %}
-<div class="max-w-3xl bg-white rounded-xl border p-6">
-  <form method="post" enctype="multipart/form-data" class="space-y-4">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="px-5 py-3 bg-primary-600 text-white rounded-lg font-bold">Send</button>
-  </form>
+<div class="grid grid-cols-1 lg:grid-cols-[.9fr_1.1fr] gap-6">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-purple-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Compose</p><h2 class="mt-2 text-2xl font-black">Send a message</h2><p class="mt-2 text-sm leading-6 text-blue-100">Start a secure conversation with a teacher, parent, student or staff user. Attachments can be included where needed.</p><div class="mt-5 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"><p class="text-sm font-bold"><i class="ph ph-lightbulb mr-1"></i> Tip</p><p class="mt-1 text-sm text-blue-100">Use group messages for official notices to many recipients.</p></div></section>
+  <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm"><form method="post" enctype="multipart/form-data" class="space-y-4">{% csrf_token %}{{ form.as_p }}<button class="rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-paper-plane-right mr-1"></i> Send Message</button></form></section>
 </div>
 {% endblock %}
