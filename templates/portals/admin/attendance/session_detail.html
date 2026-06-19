@@ -1,83 +1,18 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Attendance session{% endblock %}
+{% block title %}Attendance Session{% endblock %}
+{% block page_title %}Attendance Session{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_attendance_sessions_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Sessions</a>{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
-  {% include "components/ui_toast.html" %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-cyan-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-100">Attendance review</p><h2 class="mt-2 text-2xl font-black">{{ session.offering.course }} · {{ session.date|date:"M j, Y" }}</h2><p class="mt-2 text-sm text-cyan-100">Review attendance entries, sync missing learners and send absence alerts.</p></section>
 
-  <div>
-    <h1 class="text-3xl font-bold text-gray-900">Attendance session</h1>
-    <p class="text-gray-600 mt-1">{{ session.offering.course }} · {{ session.date }}</p>
-  </div>
+  <section class="grid grid-cols-1 sm:grid-cols-4 gap-4"><div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Session ID</p><p class="mt-2 text-xl font-black text-slate-900">#{{ session.id }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Present</p><p class="mt-2 text-xl font-black text-green-700">{{ summary.present|default:0 }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Absent</p><p class="mt-2 text-xl font-black text-red-700">{{ summary.absent|default:0 }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Late</p><p class="mt-2 text-xl font-black text-amber-700">{{ summary.late|default:0 }}</p></div></section>
 
-  <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6">
-    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">ID</dt><dd class="mt-1 font-mono text-gray-900">{{ session.id }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Date</dt><dd class="mt-1 text-gray-800">{{ session.date|date:"M j, Y" }}</dd></div>
-      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Offering</dt><dd class="mt-1 text-gray-900 font-medium">{{ session.offering }}</dd></div>
-      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Taken by</dt><dd class="mt-1 text-gray-800">{{ session.taken_by|default:"—" }}</dd></div>
-    </dl>
-  </div>
+  <section class="grid grid-cols-1 lg:grid-cols-[.8fr_1.2fr] gap-6"><div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm"><h3 class="font-black text-slate-900 mb-4">Session details</h3><dl class="grid grid-cols-1 gap-4 text-sm"><div><dt class="font-black text-slate-500 uppercase tracking-wide text-xs">Date</dt><dd class="mt-1 text-slate-800">{{ session.date|date:"M j, Y" }}</dd></div><div><dt class="font-black text-slate-500 uppercase tracking-wide text-xs">Offering</dt><dd class="mt-1 text-slate-900 font-bold">{{ session.offering }}</dd></div><div><dt class="font-black text-slate-500 uppercase tracking-wide text-xs">Taken by</dt><dd class="mt-1 text-slate-800">{{ session.taken_by|default:"—" }}</dd></div></dl></div><form method="post" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">{% csrf_token %}<input type="hidden" name="action" value="send_absence_alerts"><div><h3 class="font-black text-slate-900 flex items-center gap-2"><i class="ph ph-bell-ringing text-primary-600"></i> Absence alerts</h3><p class="mt-1 text-sm text-slate-500">Send SMS or configured notifications for learners marked absent.</p></div><div class="flex flex-col sm:flex-row gap-3"><label class="flex items-center gap-3 rounded-xl border-2 border-slate-200 p-3 cursor-pointer hover:border-primary-300"><input type="checkbox" name="include_late" value="1" class="h-5 w-5 rounded border-slate-300 text-primary-600"><span class="text-sm font-bold text-slate-800">Include late statuses</span></label><label class="flex items-center gap-3 rounded-xl border-2 border-slate-200 p-3 cursor-pointer hover:border-primary-300"><input type="checkbox" name="dry_run" value="1" class="h-5 w-5 rounded border-slate-300 text-primary-600"><span class="text-sm font-bold text-slate-800">Dry run only</span></label></div><div class="flex justify-end border-t border-slate-100 pt-4"><button type="submit" class="rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-paper-plane-tilt mr-1"></i> Send absence alerts</button></div></form></section>
 
-  <div>
-    <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-      <i class="ph ph-bell-ringing text-primary-600" aria-hidden="true"></i><span>Absence alerts</span>
-    </h2>
-    <form method="post" class="bg-white shadow-md rounded-xl border border-gray-300 p-6 space-y-4">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="send_absence_alerts" />
-      <p class="text-sm text-gray-600">Send SMS or configured notifications for students marked absent for this session.</p>
-      <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
-        <label class="relative flex items-start gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer max-w-md">
-          <input type="checkbox" name="include_late" value="1" class="mt-1 h-5 w-5 rounded border-2 border-gray-400 text-primary-600 focus:ring-primary-500" />
-          <span class="text-sm font-medium text-gray-800">Include <span class="font-bold">late</span> statuses</span>
-        </label>
-        <label class="relative flex items-start gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer max-w-md">
-          <input type="checkbox" name="dry_run" value="1" class="mt-1 h-5 w-5 rounded border-2 border-gray-400 text-primary-600 focus:ring-primary-500" />
-          <span class="text-sm font-medium text-gray-800">Dry run only (no messages sent)</span>
-        </label>
-      </div>
-      <div class="flex justify-end pt-2 border-t border-gray-200">
-        <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 border-2 border-transparent shadow-sm">
-          <i class="ph ph-paper-plane-tilt text-lg" aria-hidden="true"></i><span>Send absence alerts</span>
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <div>
-    <h2 class="text-xl font-bold text-gray-900 mb-3">Entries</h2>
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for e in entries %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ e.student }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700">{{ e.student.student_id }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ e.get_status_display|default:e.status }}</td>
-              <td class="px-6 py-4 text-sm text-gray-700">{{ e.note|default:"—" }}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">No entries recorded.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div>
-    <a href="{% url 'admin_attendance_sessions_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50">
-      <i class="ph ph-arrow-left text-lg" aria-hidden="true"></i><span>Back to sessions</span>
-    </a>
-  </div>
+  <section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><div class="p-5 border-b border-slate-100"><h3 class="font-black text-slate-900">Entries</h3><p class="text-sm text-slate-500">Student attendance marks for this session.</p></div><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Note</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for e in entries %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm font-bold text-slate-900">{{ e.student }}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700">{{ e.student.student_id }}</td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="rounded-full px-3 py-1 text-xs font-black {% if e.status == 'PRESENT' %}bg-green-50 text-green-700{% elif e.status == 'ABSENT' %}bg-red-50 text-red-700{% elif e.status == 'LATE' %}bg-amber-50 text-amber-700{% else %}bg-slate-100 text-slate-700{% endif %}">{{ e.get_status_display|default:e.status }}</span></td><td class="px-6 py-4 text-sm text-slate-700">{{ e.note|default:"—" }}</td></tr>{% empty %}<tr><td colspan="4" class="px-6 py-10 text-center text-slate-500 text-sm">No entries recorded.</td></tr>{% endfor %}</tbody></table></section>
 </div>
 {% endblock %}
