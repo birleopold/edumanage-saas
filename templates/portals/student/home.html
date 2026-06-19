@@ -1,92 +1,40 @@
 {% extends 'portals/student/base.html' %}
 
 {% block title %}Student Dashboard{% endblock %}
-{% block page_title %}My Dashboard{% endblock %}
+{% block page_title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6 motion-rich">
-    <!-- Welcome Banner -->
-    <div class="bg-primary-50 rounded-xl p-6 border border-primary-100 flex flex-col md:flex-row md:items-center justify-between">
-        <div>
-            <h2 class="text-xl font-bold text-primary-900 mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}!</h2>
-            <p class="text-sm text-primary-700">Here is an overview of your academic progress and activities.</p>
-        </div>
-        {% if student %}
-        <div class="mt-4 md:mt-0 flex gap-4">
-            <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-primary-100 flex items-center">
-                <div class="bg-primary-100 rounded-full p-2 mr-3 text-primary-600">
-                    <i class="ph ph-student text-lg" aria-hidden="true"></i>
-                </div>
-                <div>
-                    <span class="block text-xs text-gray-500 uppercase font-semibold">Student ID</span>
-                    <span class="block text-sm font-bold text-gray-900">{{ student.registration_number|default:"N/A" }}</span>
-                </div>
-            </div>
-            {% if student.campus %}
-            <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-primary-100 flex items-center">
-                <div class="bg-primary-100 rounded-full p-2 mr-3 text-primary-600">
-                    <i class="ph ph-buildings text-lg" aria-hidden="true"></i>
-                </div>
-                <div>
-                    <span class="block text-xs text-gray-500 uppercase font-semibold">Campus</span>
-                    <span class="block text-sm font-bold text-gray-900">{{ student.campus.name }}</span>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
+<div class="space-y-7 motion-rich">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-teal-50 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Student workspace</p>
+        <h2 class="mt-2 text-2xl font-black text-slate-950">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="mt-2 text-sm text-slate-600">Study materials, exams, results, timetable, messages and progress trends are now easy to reach.</p>
+      </div>
+      {% if student %}<div class="flex flex-wrap gap-3"><div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Student ID</p><p class="font-black text-slate-900">{{ student.registration_number|default:'N/A' }}</p></div>{% if student.campus %}<div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Campus</p><p class="font-black text-slate-900">{{ student.campus.name }}</p></div>{% endif %}</div>{% endif %}
     </div>
+  </section>
 
-    {% if student %}
-    {% if student_invoices_outstanding or student_invoices_overdue %}
-    <div class="flex flex-wrap gap-3">
-        {% if student_invoices_outstanding %}
-        <a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-900 text-sm font-semibold hover:bg-amber-100 transition-colors">
-            <i class="ph ph-coins text-lg" aria-hidden="true"></i>
-            <span>{{ student_invoices_outstanding }} fee statement(s) with a balance</span>
-            <i class="ph ph-arrow-right" aria-hidden="true"></i>
-        </a>
-        {% endif %}
-        {% if student_invoices_overdue %}
-        <a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-red-900 text-sm font-semibold hover:bg-red-100 transition-colors">
-            <i class="ph ph-warning text-lg" aria-hidden="true"></i>
-            <span>{{ student_invoices_overdue }} overdue (past due date)</span>
-            <i class="ph ph-arrow-right" aria-hidden="true"></i>
-        </a>
-        {% endif %}
-    </div>
-    {% endif %}
-    {% endif %}
+  {% if student_invoices_outstanding or student_invoices_overdue %}
+  <section class="flex flex-wrap gap-3">
+    {% if student_invoices_outstanding %}<a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm font-bold text-amber-900 hover:bg-amber-100"><i class="ph ph-coins"></i>{{ student_invoices_outstanding }} fee statement(s) with balance <i class="ph ph-arrow-right"></i></a>{% endif %}
+    {% if student_invoices_overdue %}<a href="{% url 'student_invoices_list' %}" class="inline-flex items-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm font-bold text-red-900 hover:bg-red-100"><i class="ph ph-warning"></i>{{ student_invoices_overdue }} overdue <i class="ph ph-arrow-right"></i></a>{% endif %}
+  </section>
+  {% endif %}
 
-    <!-- Quick Access Grid -->
-    <div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Access</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{% url 'student_timetable' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-calendar text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Timetable</span>
-            </a>
-            <a href="{% url 'student_results_home' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-exam text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Results</span>
-            </a>
-            <a href="{% url 'student_announcements_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-megaphone text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Announcements</span>
-            </a>
-            <a href="{% url 'student_invoices_list' %}" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary-300 transition-colors group shadow-sm">
-                <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="ph ph-wallet text-2xl" aria-hidden="true"></i>
-                </div>
-                <span class="text-sm font-bold text-gray-700">Invoices</span>
-            </a>
-        </div>
+  <section>
+    <div class="mb-4"><h3 class="text-lg font-black text-slate-900">My learning command center</h3><p class="text-sm text-slate-500">Everything important for daily learning in one place.</p></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a href="{% url 'student_coursework_home' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-notebook text-3xl text-purple-600"></i><h4 class="mt-3 font-black">Coursework</h4><p class="mt-1 text-sm text-slate-500">Assignments, notes and learning materials.</p></a>
+      <a href="{% url 'student_exam_results' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-desktop text-3xl text-indigo-600"></i><h4 class="mt-3 font-black">Online Exams</h4><p class="mt-1 text-sm text-slate-500">Start exams and view published results.</p></a>
+      <a href="{% url 'student_results_home' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chart-bar text-3xl text-green-600"></i><h4 class="mt-3 font-black">Results</h4><p class="mt-1 text-sm text-slate-500">Grades and academic performance.</p></a>
+      <a href="/analytics-portal/student/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chart-line-up text-3xl text-cyan-600"></i><h4 class="mt-3 font-black">Progress Trends</h4><p class="mt-1 text-sm text-slate-500">Track your performance over time.</p></a>
+      <a href="{% url 'student_timetable' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-calendar text-3xl text-blue-600"></i><h4 class="mt-3 font-black">Timetable</h4><p class="mt-1 text-sm text-slate-500">Today’s lessons and schedule.</p></a>
+      <a href="/messages/" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-chats-circle text-3xl text-pink-600"></i><h4 class="mt-3 font-black">Messages</h4><p class="mt-1 text-sm text-slate-500">Read school and teacher messages.</p></a>
+      <a href="{% url 'student_invoices_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-wallet text-3xl text-orange-600"></i><h4 class="mt-3 font-black">Finance</h4><p class="mt-1 text-sm text-slate-500">Invoices and payment records.</p></a>
+      <a href="{% url 'student_documents_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><i class="ph ph-file-doc text-3xl text-slate-600"></i><h4 class="mt-3 font-black">Documents</h4><p class="mt-1 text-sm text-slate-500">School files and ID card access.</p></a>
     </div>
+  </section>
 </div>
 {% endblock %}
