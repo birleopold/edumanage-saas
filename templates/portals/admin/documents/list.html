@@ -1,157 +1,16 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Documents{% endblock %}
+{% block page_title %}Document Center{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_documents_upload' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-upload-simple mr-1"></i> Upload Document</a>{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
-  <p class="text-gray-600">Manage and share documents with students, parents, and teachers</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Shared resources</p><h2 class="mt-2 text-2xl font-black">Document center</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Upload, manage and share official documents with students, parents, teachers or everyone.</p></div><a href="{% url 'admin_documents_upload' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Upload Document</a></div></section>
 
-<!-- Search and Filters -->
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <!-- Search Bar -->
-      <div class="flex-1 w-full md:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="ph ph-magnifying-glass text-gray-400"></i>
-          </div>
-          <input id="id_q" 
-                 type="text" 
-                 name="q" 
-                 value="{{ q }}" 
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Search by title or description..." />
-        </div>
-      </div>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="space-y-4"><div class="flex flex-col md:flex-row gap-4 items-start md:items-end"><div class="flex-1 w-full md:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="ph ph-magnifying-glass text-slate-400"></i></div><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 placeholder-slate-400" placeholder="Search by title or description..."></div></div><div class="w-full md:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button></div></form></section>
 
-      <!-- Per Page -->
-      <div class="w-full md:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" 
-               type="number" 
-               name="per_page" 
-               value="{{ per_page }}" 
-               min="1" 
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-      </div>
-
-      <!-- Apply Button -->
-      <button type="submit" 
-              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>
-        <span>Apply Filters</span>
-      </button>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_documents_upload' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-upload"></i>
-        <span>Upload Document</span>
-      </a>
-    </div>
-  </form>
+  {% if documents %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Title</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Audience</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Uploaded By</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Date</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for d in documents %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">#{{ d.id }}</td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-file-text text-xl"></i></div><div><p class="font-black text-slate-900">{{ d.title }}</p><p class="text-xs text-slate-500">{{ d.description|default:'No description'|truncatechars:70 }}</p></div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black {% if d.audience == 'STUDENT' %}bg-blue-100 text-blue-700{% elif d.audience == 'PARENT' %}bg-purple-100 text-purple-700{% elif d.audience == 'TEACHER' %}bg-green-100 text-green-700{% else %}bg-slate-100 text-slate-700{% endif %}"><i class="ph ph-users-three"></i>{{ d.get_audience_display|default:d.audience }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if d.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ d.uploaded_by }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ d.created_at|date:"M d, Y" }}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_documents_download' d.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-blue-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-download-simple mr-1"></i>Download</a><a href="{% url 'admin_documents_edit' d.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_documents_upload' as upload_document_url %}{% include "components/ui_empty_state.html" with icon="files" title="No documents found" description="No documents have been uploaded yet or match your search criteria" action_url=upload_document_url action_text="Upload Document" %}{% endif %}
 </div>
-
-<!-- Documents Table or Empty State -->
-{% if documents %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Audience</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Uploaded By</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for d in documents %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ d.id }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ d.title }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if d.audience == 'STUDENT' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-student"></i>
-                  Students
-                </span>
-              {% elif d.audience == 'PARENT' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-users"></i>
-                  Parents
-                </span>
-              {% elif d.audience == 'TEACHER' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-chalkboard-teacher"></i>
-                  Teachers
-                </span>
-              {% elif d.audience == 'ALL' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-users-three"></i>
-                  All
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                  {{ d.audience }}
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if d.is_active %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>
-                  Active
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle"></i>
-                  Inactive
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ d.uploaded_by }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ d.created_at|date:"M d, Y" }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <div class="flex items-center justify-end gap-3">
-                <a href="{% url 'admin_documents_download' d.id %}" 
-                   class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900 font-semibold transition-colors">
-                  <i class="ph ph-download"></i>
-                  <span>Download</span>
-                </a>
-                <a href="{% url 'admin_documents_edit' d.id %}" 
-                   class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                  <i class="ph ph-pencil-simple"></i>
-                  <span>Edit</span>
-                </a>
-              </div>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  <!-- Empty State -->
-  {% url 'admin_documents_upload' as upload_document_url %}
-  {% include "components/ui_empty_state.html" with icon="files" title="No documents found" description="No documents have been uploaded yet or match your search criteria" action_url=upload_document_url action_text="Upload Document" %}
-{% endif %}
 {% endblock %}
