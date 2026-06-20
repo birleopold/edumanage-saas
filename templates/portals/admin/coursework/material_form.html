@@ -1,71 +1,15 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}{% if mode == 'edit' %}Edit Material{% else %}Add Material{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Material{% else %}Add Material{% endif %}{% endblock %}
+{% block breadcrumbs %}Coursework materials, notes, packages and file attachments{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_coursework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Coursework Home</a><a href="{% url 'admin_coursework_materials_list' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Materials</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">{% if mode == 'edit' %}Edit Material{% else %}Add Material{% endif %}</h1>
-      <p class="text-gray-600">Create homework, notes, or holiday packages</p>
-    </div>
-    <button onclick="window.history.back();" class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700">
-      <i class="ph ph-arrow-left"></i>Back
-    </button>
-  </div>
-</div>
-
 {% include "components/ui_toast.html" %}
-
-{% include "components/ui_form.html" with form=form form_attributes="enctype='multipart/form-data'" %}
-
-{% if mode == 'edit' %}
-<div class="bg-white rounded-lg shadow-sm p-6 mt-6 border border-gray-200">
-  <h2 class="text-lg font-bold text-gray-900 mb-4">Attachments</h2>
-
-  <form method="post" action="{{ attachments_add_url }}" enctype="multipart/form-data" class="flex flex-col md:flex-row gap-3 md:items-end mb-6">
-    {% csrf_token %}
-    <div class="flex-1">
-      <label class="block text-sm font-bold text-gray-700 mb-2">Upload files</label>
-      <input type="file" name="files" multiple class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-    </div>
-    <div>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-upload"></i>Upload
-      </button>
-    </div>
-  </form>
-
-  <div class="overflow-x-auto bg-white rounded-xl border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">File</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Uploaded</th>
-          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for att in attachments %}
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 text-sm font-semibold text-gray-900">
-            <a href="{{ att.file.url }}" class="text-primary-700 hover:underline" target="_blank" rel="noopener">{{ att.file.name }}</a>
-          </td>
-          <td class="px-6 py-4 text-sm text-gray-600">{{ att.uploaded_at|date:'Y-m-d H:i' }}</td>
-          <td class="px-6 py-4 text-right">
-            <a href="{% url 'admin_coursework_materials_attachments_remove' material.pk att.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-red-300 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50">
-              <i class="ph ph-trash mr-1"></i>Remove
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="px-6 py-10 text-center text-gray-500">No attachments yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="max-w-4xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Learning materials</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit material{% else %}Add material{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Create notes, homework resources, holiday packages and class learning attachments.</p></section>
+  {% include "components/ui_form.html" with form=form form_attributes="enctype='multipart/form-data'" %}
+  {% if mode == 'edit' %}<section class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200"><h2 class="text-lg font-black text-slate-900 mb-4">Attachments</h2><form method="post" action="{{ attachments_add_url }}" enctype="multipart/form-data" class="flex flex-col md:flex-row gap-3 md:items-end mb-6">{% csrf_token %}<div class="flex-1"><label class="block text-sm font-black text-slate-700 mb-2">Upload files</label><input type="file" name="files" multiple class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-primary-600 px-6 py-2.5 font-black text-white hover:bg-primary-700">Upload</button></form><div class="overflow-x-auto bg-white rounded-2xl border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">File</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Uploaded</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for att in attachments %}<tr><td class="px-6 py-4 text-sm font-black text-slate-900"><a href="{{ att.file.url }}" class="text-primary-700 hover:underline" target="_blank" rel="noopener">{{ att.file.name }}</a></td><td class="px-6 py-4 text-sm text-slate-600">{{ att.uploaded_at|date:'Y-m-d H:i' }}</td><td class="px-6 py-4 text-right"><a href="{% url 'admin_coursework_materials_attachments_remove' material.pk att.pk %}" class="inline-flex items-center px-3 py-1.5 bg-red-50 rounded-xl text-sm font-black text-red-700 hover:bg-red-100">Remove</a></td></tr>{% empty %}<tr><td colspan="3" class="px-6 py-10 text-center text-slate-500">No attachments yet.</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
 </div>
-{% endif %}
 {% endblock %}
