@@ -1,160 +1,16 @@
 {% extends "portals/admin/base.html" %}
 
 {% block title %}Drivers{% endblock %}
+{% block page_title %}Transport Drivers{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Routes</a><a href="{% url 'admin_transport_vehicles_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Vehicles</a><a href="{% url 'admin_transport_driver_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Driver</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Transport drivers</h1>
-  <p class="text-gray-600">Manage bus and vehicle drivers, licenses, and contact details.</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Fleet team</p><h2 class="mt-2 text-2xl font-black">Transport drivers</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage drivers, license validity, contact information and operational status.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Routes</a><a href="{% url 'admin_transport_driver_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">Add Driver</a></div></div></section>
 
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
-      <div class="flex-1 w-full lg:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="ph ph-magnifying-glass text-gray-400 text-lg" aria-hidden="true"></i>
-          </div>
-          <input id="id_q"
-                 type="text"
-                 name="q"
-                 value="{{ q }}"
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Name or license number…" />
-        </div>
-      </div>
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5"><form method="get" class="space-y-4"><div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end"><div class="flex-1 w-full lg:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="ph ph-magnifying-glass text-slate-400"></i></div><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 placeholder-slate-400" placeholder="Name or license number..."></div></div><div class="w-full lg:w-44"><label for="id_status" class="block text-sm font-black text-slate-700 mb-2">Status</label><select id="id_status" name="status" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 bg-white"><option value="" {% if not status_filter %}selected{% endif %}>All statuses</option><option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option><option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>Inactive</option><option value="ON_LEAVE" {% if status_filter == 'ON_LEAVE' %}selected{% endif %}>On leave</option></select></div><div class="w-full lg:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><div class="flex flex-wrap gap-2 w-full lg:w-auto"><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_transport_drivers_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i> Clear</a></div></div></form></section>
 
-      <div class="w-full lg:w-44">
-        <label for="id_status" class="block text-sm font-bold text-gray-700 mb-2">Status</label>
-        <select id="id_status"
-                name="status"
-                class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 bg-white">
-          <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
-          <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
-          <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>Inactive</option>
-          <option value="ON_LEAVE" {% if status_filter == 'ON_LEAVE' %}selected{% endif %}>On leave</option>
-        </select>
-      </div>
-
-      <div class="w-full lg:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per page</label>
-        <input id="id_per_page"
-               type="number"
-               name="per_page"
-               value="{{ per_page }}"
-               min="1"
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-      </div>
-
-      <div class="flex flex-wrap gap-2 w-full lg:w-auto">
-        <button type="submit"
-                class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-          <i class="ph ph-funnel text-lg" aria-hidden="true"></i>
-          <span>Apply</span>
-        </button>
-        <a href="{% url 'admin_transport_drivers_list' %}"
-           class="inline-flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-300">
-          <i class="ph ph-x text-lg" aria-hidden="true"></i>
-          <span>Clear</span>
-        </a>
-      </div>
-    </div>
-
-    <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_transport_driver_create' %}"
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-plus text-lg" aria-hidden="true"></i>
-        <span>Add driver</span>
-      </a>
-    </div>
-  </form>
+  {% if drivers %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Driver</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">License</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Contact</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for driver in drivers %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4"><div class="flex items-center gap-4 min-w-0"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700"><i class="ph ph-steering-wheel text-xl"></i></div><div class="min-w-0"><div class="text-sm font-black text-slate-900 truncate">{{ driver.get_display_name }}</div>{% if driver.staff %}<div class="text-sm text-slate-500 truncate">Staff: {{ driver.staff.first_name }} {{ driver.staff.last_name }}</div>{% endif %}</div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-mono font-black text-slate-900">{{ driver.license_number }}</span>{% if driver.license_expiry %}<div class="text-slate-500 text-xs mt-0.5">Expires {{ driver.license_expiry|date:"M j, Y" }}</div>{% endif %}</td><td class="px-6 py-4 text-sm max-w-xs">{% if driver.phone %}<div class="text-slate-900 font-bold">{{ driver.phone }}</div>{% else %}<span class="text-slate-400">—</span>{% endif %}{% if driver.email %}<div class="text-slate-500 truncate" title="{{ driver.email }}">{{ driver.email }}</div>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if driver.status == 'ACTIVE' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% elif driver.status == 'INACTIVE' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-black"><i class="ph ph-pause-circle"></i>On leave</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><a href="{% url 'admin_transport_driver_edit' driver.pk %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_transport_driver_create' as add_driver_url %}{% include "components/ui_empty_state.html" with icon="steering-wheel" title="No drivers found" description="Add a driver or change your search or status filters." action_url=add_driver_url action_text="Add driver" %}{% endif %}
 </div>
-
-{% if drivers %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Driver</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">License</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for driver in drivers %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-4 min-w-0">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                  <i class="ph ph-steering-wheel text-primary-600 text-xl" aria-hidden="true"></i>
-                </div>
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-gray-900 truncate">{{ driver.get_display_name }}</div>
-                  {% if driver.staff %}
-                    <div class="text-sm text-gray-500 truncate">Staff: {{ driver.staff.first_name }} {{ driver.staff.last_name }}</div>
-                  {% endif %}
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span class="font-mono text-gray-900">{{ driver.license_number }}</span>
-              {% if driver.license_expiry %}
-                <div class="text-gray-500 text-xs mt-0.5">Expires {{ driver.license_expiry|date:"M j, Y" }}</div>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 text-sm max-w-xs">
-              {% if driver.phone %}
-                <div class="text-gray-900">{{ driver.phone }}</div>
-              {% else %}
-                <span class="text-gray-400">—</span>
-              {% endif %}
-              {% if driver.email %}
-                <div class="text-gray-500 truncate" title="{{ driver.email }}">{{ driver.email }}</div>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if driver.status == 'ACTIVE' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle" aria-hidden="true"></i>
-                  Active
-                </span>
-              {% elif driver.status == 'INACTIVE' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle" aria-hidden="true"></i>
-                  Inactive
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-semibold">
-                  <i class="ph ph-pause-circle" aria-hidden="true"></i>
-                  On leave
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'admin_transport_driver_edit' driver.pk %}"
-                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i>
-                <span>Edit</span>
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  {% url 'admin_transport_driver_create' as add_driver_url %}
-  {% include "components/ui_empty_state.html" with icon="steering-wheel" title="No drivers found" description="Add a driver or change your search or status filters." action_url=add_driver_url action_text="Add driver" %}
-{% endif %}
 {% endblock %}
