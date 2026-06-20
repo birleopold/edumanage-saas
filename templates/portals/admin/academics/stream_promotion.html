@@ -1,65 +1,14 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Stream promotion{% endblock %}
+{% block title %}Stream Promotion{% endblock %}
+{% block page_title %}Stream Promotion{% endblock %}
+{% block breadcrumbs %}Move active students from one stream to another safely{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_stream_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Streams</a><a href="{% url 'admin_enrollment_list' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Enrollments</a>{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6 motion-fast">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Stream promotion</h1>
-    <p class="text-sm text-gray-600 mt-1">
-      Move <strong>all active students</strong> from one stream to another on <strong>{{ campus.name }}</strong>
-      (for example after end-of-year placement). Review counts carefully before confirming.
-    </p>
-  </div>
-
-  {% if needs_confirm %}
-  <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-    <p class="font-semibold">Confirm promotion</p>
-    <p class="text-sm mt-2">
-      You are about to move <strong>{{ preview_count }}</strong> active student(s) from
-      <strong>{{ from_stream.class_group.name }} — {{ from_stream.name }}</strong>
-      to
-      <strong>{{ to_stream.class_group.name }} — {{ to_stream.name }}</strong>.
-    </p>
-    <form method="post" class="mt-4 flex flex-wrap gap-3">
-      {% csrf_token %}
-      <input type="hidden" name="from_stream" value="{{ from_stream.pk }}" />
-      <input type="hidden" name="to_stream" value="{{ to_stream.pk }}" />
-      <input type="hidden" name="confirm" value="1" />
-      <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
-        <i class="ph ph-check"></i> Execute promotion
-      </button>
-      <a href="{% url 'admin_stream_promotion' %}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
-        Cancel
-      </a>
-    </form>
-  </div>
-  {% else %}
-  <form method="post" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-    {% csrf_token %}
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">From stream</label>
-      <select name="from_stream" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-        <option value="">— Select —</option>
-        {% for s in streams %}
-        <option value="{{ s.pk }}">{{ s.class_group.name }} — {{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">To stream</label>
-      <select name="to_stream" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-        <option value="">— Select —</option>
-        {% for s in streams %}
-        <option value="{{ s.pk }}">{{ s.class_group.name }} — {{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <p class="text-xs text-gray-500">Only streams on the current campus are listed. No students are moved until you confirm on the next step.</p>
-    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
-      <i class="ph ph-arrow-right"></i> Preview
-    </button>
-  </form>
-  {% endif %}
+{% include "components/ui_toast.html" %}
+<div class="max-w-4xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Promotion workflow</p><h2 class="mt-2 text-2xl font-black">Stream promotion</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Move active students from one stream to another on {{ campus.name }}. Review the preview before confirming.</p></section>
+  {% if needs_confirm %}<section class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-950 shadow-sm"><div class="flex items-start gap-3"><i class="ph ph-warning-circle text-3xl text-amber-700"></i><div><h3 class="font-black text-lg">Confirm promotion</h3><p class="text-sm mt-2">You are about to move <strong>{{ preview_count }}</strong> active student(s) from <strong>{{ from_stream.class_group.name }} — {{ from_stream.name }}</strong> to <strong>{{ to_stream.class_group.name }} — {{ to_stream.name }}</strong>.</p><form method="post" class="mt-5 flex flex-wrap gap-3">{% csrf_token %}<input type="hidden" name="from_stream" value="{{ from_stream.pk }}"><input type="hidden" name="to_stream" value="{{ to_stream.pk }}"><input type="hidden" name="confirm" value="1"><button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-black hover:bg-primary-700"><i class="ph ph-check"></i>Execute promotion</button><a href="{% url 'admin_stream_promotion' %}" class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-300 rounded-xl text-sm font-black text-slate-700 bg-white hover:bg-slate-50">Cancel</a></form></div></div></section>{% else %}<form method="post" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">{% csrf_token %}<div><label class="block text-sm font-black text-slate-700 mb-2">From stream</label><select name="from_stream" required class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-bold text-slate-900"><option value="">— Select —</option>{% for s in streams %}<option value="{{ s.pk }}">{{ s.class_group.name }} — {{ s.name }}</option>{% endfor %}</select></div><div><label class="block text-sm font-black text-slate-700 mb-2">To stream</label><select name="to_stream" required class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-bold text-slate-900"><option value="">— Select —</option>{% for s in streams %}<option value="{{ s.pk }}">{{ s.class_group.name }} — {{ s.name }}</option>{% endfor %}</select></div><p class="rounded-xl bg-blue-50 border border-blue-100 p-3 text-sm text-blue-900 font-bold">Only streams on the current campus are listed. No students are moved until you confirm on the next step.</p><button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-black hover:bg-primary-700"><i class="ph ph-arrow-right"></i>Preview</button></form>{% endif %}
 </div>
 {% endblock %}
