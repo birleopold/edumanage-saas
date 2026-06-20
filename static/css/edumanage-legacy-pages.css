@@ -1,0 +1,251 @@
+/*
+ * EduManage legacy page upgrade layer
+ * This makes older portal templates visually consistent with the newer command-center pages.
+ */
+:root {
+  --legacy-accent: var(--ui-accent, var(--org-primary, #2563eb));
+  --legacy-accent-2: var(--ui-accent-2, var(--org-secondary, #4f46e5));
+  --legacy-border: var(--ui-border, #e2e8f0);
+  --legacy-text: var(--ui-text, #0f172a);
+  --legacy-muted: var(--ui-text-muted, #64748b);
+  --legacy-surface: #ffffff;
+}
+
+body.role-admin main,
+body.role-teacher main,
+body.role-student main,
+body.role-parent main {
+  isolation: isolate;
+}
+
+body.role-admin main > div,
+body.role-teacher main > div,
+body.role-student main > div,
+body.role-parent main > div {
+  max-width: 96rem;
+}
+
+/* Page headings on old templates */
+main h1,
+main h2,
+main h3 {
+  letter-spacing: -.025em;
+}
+
+main h1:first-child,
+main > div:first-child h1,
+main .page-title {
+  color: var(--legacy-text) !important;
+  font-weight: 850 !important;
+}
+
+main p.text-gray-500,
+main p.text-gray-600,
+main .text-gray-500,
+main .text-gray-600 {
+  color: var(--legacy-muted) !important;
+}
+
+/* Legacy cards and generic white panels */
+main .bg-white.rounded,
+main .bg-white.rounded-md,
+main .bg-white.rounded-lg,
+main .bg-white.rounded-xl,
+main .bg-white.shadow,
+main .bg-white.shadow-sm,
+main .bg-white.border,
+main .card,
+main .panel {
+  border: 1px solid rgba(226, 232, 240, .92) !important;
+  border-radius: 1rem !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 18px 42px -34px rgba(15, 23, 42, .34) !important;
+}
+
+main .rounded-md,
+main .rounded-lg {
+  border-radius: .85rem !important;
+}
+
+main .rounded-xl,
+main .rounded-2xl,
+main .rounded-3xl {
+  overflow-wrap: anywhere;
+}
+
+/* Old toolbar/filter bars */
+main form.bg-white,
+main .filter-bar,
+main .toolbar,
+main .search-bar,
+main div[class*="border-gray-200"].bg-white:has(form) {
+  border: 1px solid rgba(226, 232, 240, .95) !important;
+  border-radius: 1.15rem !important;
+  background: linear-gradient(180deg, #fff, #f8fafc) !important;
+  box-shadow: 0 14px 32px -28px rgba(15, 23, 42, .34) !important;
+}
+
+/* Forms */
+main label {
+  color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+main input:not([type="checkbox"]):not([type="radio"]),
+main select,
+main textarea {
+  min-height: 2.55rem;
+  border: 1px solid #dbe3ef !important;
+  border-radius: .85rem !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, .02);
+}
+
+main input:not([type="checkbox"]):not([type="radio"]):hover,
+main select:hover,
+main textarea:hover {
+  border-color: #cbd5e1 !important;
+}
+
+main input:not([type="checkbox"]):not([type="radio"]):focus,
+main select:focus,
+main textarea:focus {
+  border-color: var(--legacy-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--legacy-accent) 13%, transparent) !important;
+  outline: none !important;
+}
+
+main input[type="checkbox"],
+main input[type="radio"] {
+  border-color: #cbd5e1 !important;
+  color: var(--legacy-accent) !important;
+}
+
+/* Buttons and action links */
+main a[class*="bg-primary"],
+main button[class*="bg-primary"],
+main a[class*="bg-blue-600"],
+main button[class*="bg-blue-600"],
+main a[class*="bg-indigo-600"],
+main button[class*="bg-indigo-600"] {
+  border: 1px solid color-mix(in srgb, var(--legacy-accent) 35%, white) !important;
+  border-radius: .85rem !important;
+  background: linear-gradient(135deg, var(--legacy-accent), var(--legacy-accent-2)) !important;
+  box-shadow: 0 16px 34px -22px color-mix(in srgb, var(--legacy-accent) 80%, #0f172a) !important;
+  font-weight: 850 !important;
+}
+
+main a[class*="bg-primary"]:hover,
+main button[class*="bg-primary"]:hover,
+main a[class*="bg-blue-600"]:hover,
+main button[class*="bg-blue-600"]:hover,
+main a[class*="bg-indigo-600"]:hover,
+main button[class*="bg-indigo-600"]:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.05);
+}
+
+main a[class*="border"],
+main button[class*="border"] {
+  border-radius: .85rem !important;
+  font-weight: 800;
+}
+
+main a[class*="border"]:hover,
+main button[class*="border"]:hover {
+  border-color: color-mix(in srgb, var(--legacy-accent) 24%, #cbd5e1) !important;
+  background: color-mix(in srgb, var(--legacy-accent) 5%, #fff) !important;
+}
+
+/* Tables */
+main .overflow-x-auto {
+  border-radius: 1.05rem;
+}
+
+main table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100%;
+}
+
+main table thead,
+main table thead tr,
+main table thead th {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9) !important;
+}
+
+main table th {
+  color: #64748b !important;
+  font-size: .72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+main table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+main table tbody tr {
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+main table tbody tr:hover {
+  background: color-mix(in srgb, var(--legacy-accent) 4%, #fff) !important;
+}
+
+/* Badges */
+main span[class*="rounded-full"],
+main .badge,
+main .status-badge {
+  font-weight: 850 !important;
+  letter-spacing: -.01em;
+}
+
+/* Empty states */
+main .empty-state,
+main div[class*="text-center"][class*="text-gray-500"],
+main div[class*="text-center"][class*="text-slate-500"] {
+  border-radius: 1.15rem;
+}
+
+/* Legacy stats and dashboard tiles */
+main .stats-card,
+main .stat-card,
+main .metric-card,
+main div[class*="grid"] > a[class*="bg-white"],
+main div[class*="grid"] > div[class*="bg-white"] {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+main div[class*="grid"] > a[class*="bg-white"]:hover,
+main div[class*="grid"] > div[class*="bg-white"]:hover {
+  border-color: color-mix(in srgb, var(--legacy-accent) 20%, #e2e8f0) !important;
+  box-shadow: 0 24px 52px -36px rgba(15, 23, 42, .44) !important;
+}
+
+/* Legacy alerts */
+main .bg-red-50,
+main .bg-yellow-50,
+main .bg-blue-50,
+main .bg-green-50 {
+  border-radius: 1rem !important;
+}
+
+/* Breadcrumb/back links */
+main a[href]:has(.ph-arrow-left),
+main a[href]:has(.ph-caret-left) {
+  font-weight: 850 !important;
+}
+
+/* Keep printouts and documents practical */
+@media print {
+  main .bg-white,
+  main table,
+  main form {
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+}
