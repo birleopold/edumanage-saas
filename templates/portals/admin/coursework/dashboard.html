@@ -2,7 +2,7 @@
 
 {% block title %}Coursework Dashboard{% endblock %}
 {% block page_title %}Coursework Dashboard{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_coursework_materials_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Materials</a><a href="{% url 'admin_coursework_assignments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assignments</a><a href="{% url 'admin_coursework_assignment_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> New Assignment</a>{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_coursework_materials_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Materials</a><a href="{% url 'admin_coursework_assignments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assignments</a><a href="{% url 'admin_coursework_assignments_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> New Assignment</a>{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
