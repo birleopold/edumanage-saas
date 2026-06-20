@@ -1,84 +1,16 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Book Reservations{% endblock %}
+{% block page_title %}Book Reservations{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_library_books_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Catalog</a><a href="{% url 'admin_library_copies_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Copies</a><a href="{% url 'admin_library_loan_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">New Loan</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Book Reservations</h1>
-  <p class="text-gray-600">Manage student book reservations</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Reservation queue</p><h2 class="mt-2 text-2xl font-black">Book reservations</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Track students and staff waiting for unavailable books and review reservation status.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_library_books_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Catalog</a><a href="{% url 'admin_library_loans_list' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-indigo-50">Loans</a></div></div></section>
 
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="flex gap-2">
-    <input type="text" name="q" value="{{ q }}" placeholder="Search student or book..." 
-           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
-    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg">
-      <option value="">All Status</option>
-      <option value="ACTIVE">Active</option>
-      <option value="FULFILLED">Fulfilled</option>
-      <option value="CANCELLED">Cancelled</option>
-      <option value="EXPIRED">Expired</option>
-    </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-      <i class="ph ph-funnel"></i> Filter
-    </button>
-  </form>
-</div>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="flex flex-col md:flex-row gap-4 items-start md:items-end"><div class="flex-1 w-full md:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" placeholder="Search borrower or book..." class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div></div><div class="w-full md:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_library_reservations_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50">Clear</a></form></section>
 
-{% if reservations %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Book</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Reserved On</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Expires On</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      {% for reservation in reservations %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ reservation.student }}</td>
-        <td class="px-6 py-4 text-sm text-gray-700">{{ reservation.book.title }}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{{ reservation.reserved_at|date:"M d, Y" }}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{{ reservation.expires_at|date:"M d, Y" }}</td>
-        <td class="px-6 py-4 text-sm">
-          <span class="px-2 py-1 text-xs rounded-full 
-            {% if reservation.status == 'ACTIVE' %}bg-blue-100 text-blue-700
-            {% elif reservation.status == 'FULFILLED' %}bg-green-100 text-green-700
-            {% elif reservation.status == 'CANCELLED' %}bg-gray-100 text-gray-700
-            {% else %}bg-red-100 text-red-700{% endif %}">
-            {{ reservation.get_status_display }}
-          </span>
-        </td>
-        <td class="px-6 py-4 text-sm font-medium">
-          {% if reservation.status == 'ACTIVE' %}
-            <a href="#" class="text-green-600 hover:text-green-900">Fulfill</a>
-            <span class="text-gray-300">|</span>
-            <a href="#" class="text-red-600 hover:text-red-900">Cancel</a>
-          {% else %}
-            <span class="text-gray-400">-</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% if reservations %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Borrower</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Book</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Reserved</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Expires</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Status</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for reservation in reservations %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><div class="font-black text-slate-900">{% if reservation.student %}{{ reservation.student }}{% elif reservation.staff %}{{ reservation.staff }}{% else %}-{% endif %}</div><div class="text-xs text-slate-500">{{ reservation.get_borrower_type_display }}</div></td><td class="px-6 py-4 text-sm font-black text-primary-700">{{ reservation.book.title }}</td><td class="px-6 py-4 text-sm text-slate-600">{{ reservation.reserved_at|date:"M d, Y" }}</td><td class="px-6 py-4 text-sm text-slate-600">{% if reservation.expires_at %}{{ reservation.expires_at|date:"M d, Y" }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-sm"><span class="px-3 py-1 text-xs rounded-full font-black {% if reservation.status == 'PENDING' %}bg-blue-100 text-blue-700{% elif reservation.status == 'FULFILLED' %}bg-green-100 text-green-700{% elif reservation.status == 'CANCELLED' %}bg-slate-100 text-slate-700{% else %}bg-red-100 text-red-700{% endif %}">{{ reservation.get_status_display }}</span></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% include "components/ui_empty_state.html" with icon="bookmark" title="No reservations found" description="Reservations will appear here when borrowers wait for unavailable books" %}{% endif %}
 </div>
-
-{% if page_obj %}
-  {% include "components/ui_pagination.html" with page_obj=page_obj %}
-{% endif %}
-{% else %}
-<div class="bg-white rounded-xl shadow-sm p-12 text-center">
-  <i class="ph ph-bookmark text-5xl text-gray-400 mb-4"></i>
-  <p class="text-lg font-medium text-gray-900 mb-2">No reservations found</p>
-  <p class="text-sm text-gray-600">Student reservations will appear here</p>
-</div>
-{% endif %}
 {% endblock %}
