@@ -2,51 +2,13 @@
 
 {% block title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
-
-{% block breadcrumbs %}
-<div class="flex items-center text-sm">
-    <a href="{% url 'admin_students_list' %}" class="text-primary-600 hover:text-primary-800">Students</a>
-    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
-    <span class="text-gray-500">{% if mode == 'create' %}New{% else %}Edit{% endif %}</span>
-</div>
-{% endblock %}
+{% block breadcrumbs %}Student profile, stream, campus and portal account setup{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_students_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Students</a>{% if mode == 'edit' %}<a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">ID Card PDF</a>{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    {% if mode == 'edit' %}
-    <div class="mb-6 bg-white shadow-md rounded-xl border border-gray-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h3 class="text-lg font-bold text-gray-900">Student ID card</h3>
-        <p class="mt-1 text-sm text-gray-600">Printable card (PDF) for lanyards or records.</p>
-      </div>
-      <a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 border-2 border-primary-600 text-primary-700 rounded-lg text-sm font-bold hover:bg-primary-50">
-        <i class="ph ph-identification-card"></i> Download ID card (PDF)
-      </a>
-    </div>
-    {% endif %}
-    {% if mode == 'edit' and student.user_id and student.email %}
-    <div class="mb-6 bg-white shadow-md rounded-xl border border-gray-300 p-6">
-        <div class="flex items-start justify-between">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900">Password Reset</h3>
-                <p class="mt-1 text-sm text-gray-600">Send a secure password reset link to the student's email address.</p>
-            </div>
-            <form method="post" class="ml-4">
-                {% csrf_token %}
-                <button
-                    type="submit"
-                    name="reset_password"
-                    class="inline-flex items-center px-4 py-2 border-2 border-amber-500 rounded-lg shadow-sm text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all"
-                    onclick="return confirm('Send password reset link to {{ student.email }}?');"
-                >
-                    <i class="ph ph-key mr-2"></i>
-                    Reset Password
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endif %}
-    
-    {% include "components/ui_form.html" %}
+<div class="max-w-4xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Student records</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'create' %}Add student{% else %}Edit student{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Capture student details, campus, stream and optional portal account setup.</p></section>
+  {% if mode == 'edit' and student.user_id and student.email %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 p-6"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="text-lg font-black text-slate-900">Password Reset</h3><p class="mt-1 text-sm text-slate-600">Send a secure password reset link to the student's email address.</p></div><form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-black text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200" onclick="return confirm('Send password reset link to {{ student.email }}?');"><i class="ph ph-key mr-2"></i>Reset Password</button></form></div></section>{% endif %}
+  {% include "components/ui_form.html" %}
 </div>
 {% endblock %}
