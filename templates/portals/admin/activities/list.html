@@ -1,50 +1,18 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Activities & Clubs{% endblock %}
+{% block page_title %}Activities & Clubs{% endblock %}
+{% block breadcrumbs %}Clubs, sports, religious and co-curricular activity management{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_activities_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Activity</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Activities & Clubs</h1>
-  <p class="text-gray-600">Manage clubs, sports, religious and co-curricular activities</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-fuchsia-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-100">Co-curricular management</p><h2 class="mt-2 text-2xl font-black">Activities and clubs</h2><p class="mt-2 max-w-2xl text-sm text-fuchsia-100">Manage clubs, sports, societies, activity heads and student membership records.</p></div><a href="{% url 'admin_activities_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-fuchsia-50">Add Activity</a></div></section>
 
-{% include "components/ui_search_filter.html" with search_placeholder="Search activities..." create_url=activities_create_url create_text="Add Activity" %}
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search activities..."></div></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_activities_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i>Clear</a></form></section>
 
-<div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Head</th>
-        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      {% for a in activities %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ a.get_type_display }}</td>
-        <td class="px-6 py-4 text-sm text-gray-900">{{ a.name }}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{% if a.head %}{{ a.head }}{% else %}-{% endif %}</td>
-        <td class="px-6 py-4 text-right">
-          <a href="{% url 'admin_activities_members' a.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 mr-2">
-            <i class="ph ph-users-three mr-1"></i>Members
-          </a>
-          <a href="{% url 'admin_activities_edit' a.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
-            <i class="ph ph-pencil-simple mr-1"></i>Edit
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="px-6 py-10 text-center text-gray-500">No activities found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Type</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Name</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Head</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for a in activities %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm"><span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">{{ a.get_type_display }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-trophy text-xl"></i></div><span class="font-black text-slate-900">{{ a.name }}</span></div></td><td class="px-6 py-4 text-sm text-slate-700">{% if a.head %}{{ a.head }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_activities_members' a.pk %}" class="inline-flex items-center px-3 py-1.5 border border-slate-200 rounded-xl text-sm font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-users-three mr-1"></i>Members</a><a href="{% url 'admin_activities_edit' a.pk %}" class="inline-flex items-center px-3 py-1.5 bg-primary-600 rounded-xl text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></div></td></tr>{% empty %}<tr><td colspan="4" class="px-6 py-10 text-center text-slate-500">No activities found.</td></tr>{% endfor %}</tbody></table></section>
+  {% include "components/ui_pagination.html" with page_obj=page_obj %}
 </div>
-
-{% include "components/ui_pagination.html" with page_obj=page_obj %}
 {% endblock %}
