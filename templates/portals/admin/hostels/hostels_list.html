@@ -1,125 +1,16 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Hostels{% endblock %}
+{% block page_title %}Hostels{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_hostel_rooms_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Rooms</a><a href="{% url 'admin_bed_allocations_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Allocations</a><a href="{% url 'admin_hostels_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Hostel</a>{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Hostels</h1>
-  <p class="text-gray-600">Manage student accommodation and hostel facilities</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-violet-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-violet-100">Residence management</p><h2 class="mt-2 text-2xl font-black">Hostel facilities</h2><p class="mt-2 max-w-2xl text-sm text-violet-100">Manage student accommodation blocks, room inventory, beds and allocations.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_hostel_rooms_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Rooms</a><a href="{% url 'admin_hostel_beds_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Beds</a><a href="{% url 'admin_hostels_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-violet-50">Add Hostel</a></div></div></section>
 
-<!-- Search and Filters -->
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <!-- Search Bar -->
-      <div class="flex-1 w-full md:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="ph ph-magnifying-glass text-gray-400"></i>
-          </div>
-          <input id="id_q" 
-                 type="text" 
-                 name="q" 
-                 value="{{ q }}" 
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Search by hostel code or name..." />
-        </div>
-      </div>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="flex flex-col md:flex-row gap-4 items-start md:items-end"><div class="flex-1 w-full md:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search by hostel code or name..."></div></div><div class="w-full md:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_hostels_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50">Clear</a></form></section>
 
-      <!-- Per Page -->
-      <div class="w-full md:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" 
-               type="number" 
-               name="per_page" 
-               value="{{ per_page }}" 
-               min="1" 
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-      </div>
-
-      <!-- Apply Button -->
-      <button type="submit" 
-              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>
-        <span>Apply Filters</span>
-      </button>
-    </div>
-
-    <!-- Add Hostel Button -->
-    <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_hostels_create' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-plus"></i>
-        <span>Add Hostel</span>
-      </a>
-    </div>
-  </form>
+  {% if hostels %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Hostel</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Code</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Rooms</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for h in hostels %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-11 w-11 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-buildings text-xl"></i></div><span class="font-black text-slate-900">{{ h.name }}</span></div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ h.code|default:'-' }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm font-black text-primary-700">{{ h.rooms.count }}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if h.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><a href="{% url 'admin_hostels_edit' h.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_hostels_create' as create_hostel_url %}{% include "components/ui_empty_state.html" with icon="buildings" title="No hostels found" description="Add your first hostel facility or adjust your search filters" action_url=create_hostel_url action_text="Add Hostel" %}{% endif %}
 </div>
-
-<!-- Hostels Table or Empty State -->
-{% if hostels %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hostel Code</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hostel Name</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for h in hostels %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ h.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span class="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-                <i class="ph ph-buildings"></i>
-                {{ h.code }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ h.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if h.is_active %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>
-                  Active
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle"></i>
-                  Inactive
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'admin_hostels_edit' h.id %}" 
-                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                <i class="ph ph-pencil-simple"></i>
-                <span>Edit</span>
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  <!-- Empty State -->
-  {% url 'admin_hostels_create' as create_hostel_url %}
-  {% include "components/ui_empty_state.html" with icon="buildings" title="No hostels found" description="Get started by adding your first hostel facility or adjust your search filters" action_url=create_hostel_url action_text="Add Hostel" %}
-{% endif %}
 {% endblock %}
