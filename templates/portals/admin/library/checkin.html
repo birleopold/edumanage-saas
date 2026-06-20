@@ -1,82 +1,15 @@
 {% extends 'portals/admin/base.html' %}
+{% load widget_tweaks %}
 
 {% block title %}Quick Check-In{% endblock %}
+{% block page_title %}Quick Check-In{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_library_books_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Catalog</a><a href="{% url 'admin_library_loans_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Loans</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Quick Check-In</h1>
-  <p class="text-gray-600">Scan barcode or enter copy code to check in books</p>
-</div>
-
 {% include "components/ui_toast.html" %}
+<div class="space-y-7 max-w-5xl mx-auto">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg text-center"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Circulation desk</p><h2 class="mt-2 text-3xl font-black">Quick book check-in</h2><p class="mt-2 text-sm text-indigo-100">Scan a barcode or enter a copy code to record returns quickly.</p></section>
 
-<div class="max-w-2xl mx-auto">
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-    <form method="post" class="space-y-6" x-data="{ processing: false }">
-      {% csrf_token %}
-      
-      <div>
-        <label class="block text-lg font-medium text-gray-900 mb-3">Scan or Enter Copy Code</label>
-        <input type="text" 
-               name="copy_code" 
-               id="copy_code"
-               autofocus
-               class="w-full px-6 py-4 text-2xl border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-               placeholder="Enter copy code or scan barcode">
-      </div>
-
-      <button type="submit" 
-              @click="processing = true"
-              :disabled="processing"
-              class="w-full px-6 py-4 bg-primary-600 text-white text-lg font-semibold rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
-        <span x-show="!processing"><i class="ph ph-check-circle mr-2"></i>Check In</span>
-        <span x-show="processing"><i class="ph ph-circle-notch animate-spin mr-2"></i>Processing...</span>
-      </button>
-    </form>
-
-    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
-      <h3 class="font-medium text-blue-900 mb-2">Instructions</h3>
-      <ul class="text-sm text-blue-800 space-y-1 list-disc list-inside">
-        <li>Place cursor in the input field</li>
-        <li>Scan the book's barcode or manually enter the copy code</li>
-        <li>The system will automatically process the check-in</li>
-        <li>If overdue, a fine will be calculated automatically</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- Recent Check-ins -->
-  {% if recent_checkins %}
-  <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Check-ins</h2>
-    <div class="space-y-3">
-      {% for checkin in recent_checkins %}
-      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <div>
-          <p class="font-medium text-gray-900">{{ checkin.copy.book.title }}</p>
-          <p class="text-sm text-gray-600">{{ checkin.student }} • {{ checkin.returned_at|timesince }} ago</p>
-        </div>
-        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-          Returned
-        </span>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.7fr] gap-6"><div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8"><form method="post" class="space-y-6" x-data="{ processing: false }">{% csrf_token %}{% if form.non_field_errors %}<div class="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>{% endif %}<div><label for="id_copy_code_or_barcode" class="block text-lg font-black text-slate-900 mb-3">Copy code or barcode</label>{% render_field form.copy_code_or_barcode autofocus="autofocus" class="w-full px-6 py-4 text-2xl border-2 border-slate-200 rounded-2xl focus:ring-primary-500 focus:border-primary-500 font-black text-slate-900" placeholder="Scan barcode or enter copy code" %}{% if form.copy_code_or_barcode.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.copy_code_or_barcode.errors|join:', ' }}</p>{% endif %}</div><button type="submit" @click="processing = true" :disabled="processing" class="w-full px-6 py-4 bg-primary-600 text-white text-lg font-black rounded-2xl hover:bg-primary-700 disabled:bg-slate-400 disabled:cursor-not-allowed"><span x-show="!processing"><i class="ph ph-check-circle mr-2"></i>Check In Book</span><span x-show="processing"><i class="ph ph-circle-notch animate-spin mr-2"></i>Processing...</span></button></form></div><aside class="space-y-4"><div class="p-5 bg-blue-50 rounded-2xl border border-blue-100"><h3 class="font-black text-blue-950 mb-2">How to use</h3><ul class="text-sm text-blue-900 space-y-2 list-disc list-inside"><li>Keep the cursor in the input field.</li><li>Scan the barcode or type the copy code.</li><li>Submit to mark the active loan as returned.</li><li>Overdue returns can generate a fine automatically.</li></ul></div><div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm"><h3 class="font-black text-slate-900 mb-2">Shortcuts</h3><div class="space-y-2"><a href="{% url 'admin_library_loans_list' %}" class="block rounded-xl border border-slate-200 px-4 py-3 font-black text-primary-700 hover:bg-primary-50">Open Loans</a><a href="{% url 'admin_library_copies_list' %}" class="block rounded-xl border border-slate-200 px-4 py-3 font-black text-primary-700 hover:bg-primary-50">Book Copies</a></div></div></aside></section>
 </div>
-
-<script>
-  document.getElementById('copy_code').addEventListener('input', function(e) {
-    // Auto-submit after scanning (usually ends with Enter)
-    if (e.target.value.length > 5) {
-      // Optional: add delay for barcode scanner
-      setTimeout(() => {
-        if (e.target.value.length > 5) {
-          e.target.form.submit();
-        }
-      }, 100);
-    }
-  });
-</script>
 {% endblock %}
