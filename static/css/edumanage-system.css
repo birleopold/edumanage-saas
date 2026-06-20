@@ -42,16 +42,135 @@ button, [role="button"], select { -webkit-tap-highlight-color: transparent; }
 button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .62; }
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-accent) 28%, transparent); outline-offset: 2px; }
 
-body.role-admin > aside, body.role-teacher > aside, body.role-student > aside, body.role-parent > aside { border-color: var(--ui-border) !important; box-shadow: 14px 0 36px -32px rgba(15, 23, 42, .48); }
-body.role-teacher > aside, body.role-student > aside, body.role-parent > aside { background: linear-gradient(180deg, color-mix(in srgb, var(--ui-accent) 3%, white), #fff 11rem) !important; }
-body.role-admin > aside > div:first-child, body.role-teacher > aside > div:first-child, body.role-student > aside > div:first-child, body.role-parent > aside > div:first-child { min-height: 4.75rem; }
-aside nav { overscroll-behavior: contain; }
-aside nav h3 { color: #94a3b8 !important; font-size: .68rem !important; font-weight: 800 !important; letter-spacing: .13em !important; }
-aside nav a, aside nav button { min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--ui-radius-sm) !important; }
-aside nav a:hover, aside nav button:hover { border-color: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-border)); background: color-mix(in srgb, var(--ui-accent) 5%, white) !important; color: var(--ui-text) !important; transform: translateX(2px); }
-aside nav .bg-primary-50, aside nav .nav-active { border-color: color-mix(in srgb, var(--ui-accent) 18%, transparent) !important; background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2)) !important; box-shadow: 0 9px 20px -13px color-mix(in srgb, var(--ui-accent) 68%, transparent) !important; color: #fff !important; }
-aside nav .bg-primary-50 i, aside nav .nav-active i { color: #fff !important; opacity: 1 !important; }
-aside nav .bg-primary-50:hover, aside nav .nav-active:hover { color: #fff !important; filter: saturate(1.03); }
+/* Global portal sidebar refresh */
+body.role-admin > aside,
+body.role-teacher > aside,
+body.role-student > aside,
+body.role-parent > aside {
+  width: 19.5rem !important;
+  border-color: rgba(226, 232, 240, .86) !important;
+  background:
+    radial-gradient(circle at 35% -12%, color-mix(in srgb, var(--ui-accent) 13%, transparent), transparent 12.5rem),
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96) 52%, rgba(255,255,255,.98)) !important;
+  box-shadow: 16px 0 48px -34px rgba(15, 23, 42, .58) !important;
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+body.role-admin > aside { width: 20rem !important; }
+body.role-admin > aside > div:first-child,
+body.role-teacher > aside > div:first-child,
+body.role-student > aside > div:first-child,
+body.role-parent > aside > div:first-child {
+  min-height: 5.25rem !important;
+  height: 5.25rem !important;
+  border-bottom: 1px solid rgba(226, 232, 240, .75) !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 11%, white), rgba(255,255,255,.88)) !important;
+  color: var(--ui-text) !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.82);
+}
+body.role-admin > aside > div:first-child span:first-child,
+body.role-teacher > aside > div:first-child span:first-child,
+body.role-student > aside > div:first-child span:first-child,
+body.role-parent > aside > div:first-child span:first-child { color: var(--ui-text) !important; font-weight: 850 !important; letter-spacing: -.025em; }
+body.role-admin > aside > div:first-child span:nth-child(2),
+body.role-teacher > aside > div:first-child span:nth-child(2),
+body.role-student > aside > div:first-child span:nth-child(2),
+body.role-parent > aside > div:first-child span:nth-child(2) { color: var(--ui-accent) !important; font-weight: 800 !important; }
+body.role-admin > aside > div:first-child button,
+body.role-teacher > aside > div:first-child button,
+body.role-student > aside > div:first-child button,
+body.role-parent > aside > div:first-child button { color: #475569 !important; }
+aside nav { overscroll-behavior: contain; padding: 1.05rem .9rem 1.5rem !important; }
+aside nav > div { padding: .25rem 0 .65rem !important; }
+aside nav h3 {
+  display: flex !important;
+  align-items: center;
+  gap: .6rem;
+  margin: .55rem .35rem .7rem !important;
+  color: #64748b !important;
+  font-size: .66rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .16em !important;
+}
+aside nav h3::before,
+aside nav h3::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ui-accent) 18%, #e2e8f0));
+}
+aside nav h3::after { background: linear-gradient(90deg, color-mix(in srgb, var(--ui-accent) 18%, #e2e8f0), transparent); }
+aside nav h3 span { background: transparent !important; color: inherit !important; }
+aside nav a,
+aside nav button {
+  min-height: 2.85rem;
+  border: 1px solid transparent !important;
+  border-radius: .98rem !important;
+  font-weight: 760 !important;
+  letter-spacing: -.01em;
+  color: #334155 !important;
+}
+aside nav a > i:first-child,
+aside nav button > i:first-child,
+aside nav button div > i:first-child,
+aside nav a div > i:first-child {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 2.05rem;
+  height: 2.05rem;
+  margin-right: .72rem !important;
+  border-radius: .78rem;
+  background: color-mix(in srgb, var(--ui-accent) 10%, white);
+  color: var(--ui-accent) !important;
+  opacity: 1 !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent) 8%, transparent);
+}
+aside nav a:hover,
+aside nav button:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 15%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 6%, white) !important;
+  color: var(--ui-text) !important;
+  transform: translateX(3px);
+  box-shadow: 0 12px 24px -20px rgba(15, 23, 42, .45);
+}
+aside nav a:hover > i:first-child,
+aside nav button:hover > i:first-child,
+aside nav button:hover div > i:first-child,
+aside nav a:hover div > i:first-child { transform: scale(1.04); }
+aside nav .bg-primary-50,
+aside nav .nav-active {
+  border-color: color-mix(in srgb, var(--ui-accent) 32%, transparent) !important;
+  background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2)) !important;
+  box-shadow: 0 16px 32px -18px color-mix(in srgb, var(--ui-accent) 72%, #0f172a) !important;
+  color: #fff !important;
+}
+aside nav .bg-primary-50 i,
+aside nav .nav-active i,
+aside nav .bg-primary-50 > i:first-child,
+aside nav .nav-active > i:first-child,
+aside nav .nav-active div > i:first-child {
+  color: #fff !important;
+  opacity: 1 !important;
+  background: rgba(255,255,255,.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
+}
+aside nav .bg-primary-50:hover,
+aside nav .nav-active:hover { color: #fff !important; filter: saturate(1.04); }
+aside nav [x-show] a,
+aside nav div[id*="submenu"] a {
+  min-height: 2.35rem !important;
+  margin-left: .15rem;
+  border-radius: .82rem !important;
+  font-size: .82rem !important;
+  font-weight: 720 !important;
+}
+aside nav div[id*="submenu"] {
+  margin-top: .45rem !important;
+  margin-left: 1.1rem !important;
+  padding-left: .72rem !important;
+  border-left: 2px solid color-mix(in srgb, var(--ui-accent) 22%, transparent) !important;
+}
 
 body.role-admin > div.flex-1 > header, body.role-teacher > div.flex-1 > header, body.role-student > div.flex-1 > header, body.role-parent > div.flex-1 > header { height: 4.5rem !important; border-color: rgba(226, 232, 240, .86) !important; background: rgba(255, 255, 255, .88) !important; box-shadow: var(--ui-shadow-xs); backdrop-filter: blur(16px) saturate(1.35); }
 header input[type="search"] { height: 2.5rem; border: 1px solid var(--ui-border) !important; border-radius: .75rem !important; background: #f8fafc; }
@@ -79,5 +198,5 @@ header input[type="search"]:focus { border-color: var(--ui-accent) !important; b
 .edu-quick-launcher__link:hover { border-color: color-mix(in srgb, var(--ui-accent) 30%, #e2e8f0); background: color-mix(in srgb, var(--ui-accent) 5%, white); color: #0f172a; transform: translateY(-1px); }
 .edu-quick-launcher__link i { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: .75rem; background: color-mix(in srgb, var(--ui-accent) 10%, white); color: var(--ui-accent); font-size: 1.08rem; flex: 0 0 auto; }
 @keyframes launcherPop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-@media (max-width: 640px) { .edu-quick-launcher { right: .85rem; bottom: .85rem; } .edu-quick-launcher__button span { display: none; } .edu-quick-launcher__grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .edu-quick-launcher { right: .85rem; bottom: .85rem; } .edu-quick-launcher__button span { display: none; } .edu-quick-launcher__grid { grid-template-columns: 1fr; } body.role-admin > aside, body.role-teacher > aside, body.role-student > aside, body.role-parent > aside { width: min(19.25rem, 88vw) !important; } }
 @media print { .edu-quick-launcher { display: none !important; } }
