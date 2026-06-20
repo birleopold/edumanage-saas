@@ -1,28 +1,17 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Organization Settings{% endblock %}
+{% block page_title %}Organization Settings{% endblock %}
+{% block breadcrumbs %}School profile, branding and contact setup{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Campuses</a><a href="{% url 'admin_orgsettings_flags' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Feature Flags</a><a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Setup Guide</a>{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Organization Settings</h1>
-  <p class="text-gray-600">Configure your school's basic information, branding, and contact details</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
+<div class="space-y-7 max-w-6xl">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">School identity</p><h2 class="mt-2 text-2xl font-black">Organization profile</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Configure the school name, logo, branding, address and official contact details used across portals and documents.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Manage Campuses</a><a href="{% url 'admin_orgsettings_flags' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Feature Flags</a></div></div></section>
 
-<!-- Form Card -->
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-  {% include "components/ui_form.html" %}
-</div>
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.55fr] gap-6"><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">{% include "components/ui_form.html" %}</div><aside class="space-y-5"><div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h3 class="font-black text-slate-900">Settings checklist</h3><div class="mt-4 space-y-3 text-sm text-slate-600"><p class="flex gap-2"><i class="ph ph-check-circle text-green-600 mt-0.5"></i> Keep the school name and address accurate for official reports.</p><p class="flex gap-2"><i class="ph ph-image text-primary-600 mt-0.5"></i> Upload clear logos for branded documents and portals.</p><p class="flex gap-2"><i class="ph ph-phone text-primary-600 mt-0.5"></i> Add reliable email and phone contacts for parent communication.</p></div></div><div class="rounded-2xl border border-blue-100 bg-blue-50 p-5"><div class="flex items-start gap-3"><i class="ph ph-info text-2xl text-blue-700"></i><div><h3 class="font-black text-blue-950">Next setup steps</h3><p class="mt-1 text-sm text-blue-900">After saving organization settings, confirm campuses and feature flags so users see the correct modules.</p></div></div></div></aside></section>
 
-<!-- Back Link -->
-<div class="mt-6">
-  <a href="{% url 'admin_home' %}" 
-     class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-    <i class="ph ph-arrow-left"></i>
-    <span>Back to Dashboard</span>
-  </a>
+  <a href="{% url 'admin_home' %}" class="inline-flex items-center gap-2 font-black text-primary-700 hover:text-primary-900"><i class="ph ph-arrow-left"></i><span>Back to Dashboard</span></a>
 </div>
 {% endblock %}
