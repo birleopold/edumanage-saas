@@ -1,8 +1,9 @@
 from django.urls import include, path
 
-from . import admin_views, bulk_views, communication_views
+from . import admin_views, bulk_views, communication_views, dashboard_views
 
 urlpatterns = [
+    path("", dashboard_views.finance_dashboard, name="admin_finance_dashboard"),
     path("books/", include("apps.tenant.finance.books")),
     path(
         "payments/<int:pk>/receipt/",
