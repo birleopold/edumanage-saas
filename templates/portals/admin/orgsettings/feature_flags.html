@@ -2,158 +2,19 @@
 {% load orgsettings_extras %}
 
 {% block title %}Feature Flags{% endblock %}
+{% block page_title %}Feature Flags{% endblock %}
+{% block breadcrumbs %}Control global and campus-level feature availability{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_orgsettings_org' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Organization</a><a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Campuses</a>{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Feature Flags</h1>
-  <p class="text-gray-600">Enable or disable system features globally or per campus</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">Module control</p><h2 class="mt-2 text-2xl font-black">Feature flag center</h2><p class="mt-2 max-w-2xl text-sm text-purple-100">Enable or disable selected system features globally, then override them for individual campuses when needed.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-purple-50">Manage Campuses</a><a href="{% url 'admin_system_status' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">System Status</a></div></div></section>
 
-<!-- Global Feature Flags -->
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-  <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-    <i class="ph ph-globe text-primary-600"></i>
-    <span>Global Settings</span>
-  </h2>
-  <p class="text-sm text-gray-600 mb-4">These settings apply to all campuses unless overridden below</p>
-  
-  <form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="scope" value="global" />
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Feature Codes</p><p class="mt-1 text-3xl font-black text-slate-900">{{ codes|length }}</p></div><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Campuses</p><p class="mt-1 text-3xl font-black text-primary-700">{{ campuses|length }}</p></div><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Scope</p><p class="mt-1 text-lg font-black text-green-700">Global + Campus</p></div></section>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Feature</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for code in codes %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center gap-2">
-                  <i class="ph ph-flag text-gray-400"></i>
-                  <span class="text-sm font-medium text-gray-900">{{ code }}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <label class="inline-flex items-center cursor-pointer">
-                  <input type="checkbox" 
-                         name="flag_{{ code }}" 
-                         {% if global_flags|get_item:code %}checked{% endif %}
-                         class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2" />
-                  <span class="ml-2 text-sm font-medium text-gray-700">
-                    {% if global_flags|get_item:code %}Enabled{% else %}Disabled{% endif %}
-                  </span>
-                </label>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Global feature settings</h3><p class="text-sm text-slate-500">These settings apply to all campuses unless a campus-specific override is saved.</p></div><i class="ph ph-globe text-2xl text-primary-600"></i></div><form method="post">{% csrf_token %}<input type="hidden" name="scope" value="global"><div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Feature</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for code in codes %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><span class="h-9 w-9 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-flag"></i></span><span class="font-black text-slate-900">{{ code }}</span></div></td><td class="px-6 py-4 text-sm"><label class="inline-flex items-center gap-3 cursor-pointer"><input type="checkbox" name="flag_{{ code }}" {% if global_flags|get_item:code %}checked{% endif %} class="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"><span class="rounded-full px-3 py-1 text-xs font-black {% if global_flags|get_item:code %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-700{% endif %}">{% if global_flags|get_item:code %}Enabled{% else %}Disabled{% endif %}</span></label></td></tr>{% endfor %}</tbody></table></div><div class="p-5 border-t border-slate-100 flex justify-end"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save Global Settings</button></div></form></section>
 
-    <div class="mt-6 flex justify-end">
-      <button type="submit" 
-              class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-floppy-disk"></i>
-        <span>Save Global Settings</span>
-      </button>
-    </div>
-  </form>
-</div>
-
-<!-- Campus-Specific Overrides -->
-<div class="space-y-6">
-  <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-    <i class="ph ph-buildings text-primary-600"></i>
-    <span>Campus Overrides</span>
-  </h2>
-  <p class="text-sm text-gray-600 -mt-4">Override global settings for specific campuses</p>
-
-  {% for c in campuses %}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <i class="ph ph-building text-primary-600"></i>
-        <span>{{ c.name }}</span>
-      </h3>
-      
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="scope" value="campus" />
-        <input type="hidden" name="campus_id" value="{{ c.id }}" />
-
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Feature</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              {% for code in codes %}
-                <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center gap-2">
-                      <i class="ph ph-flag text-gray-400"></i>
-                      <span class="text-sm font-medium text-gray-900">{{ code }}</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {% with flags=campus_flags|get_item:c.id %}
-                    <label class="inline-flex items-center cursor-pointer">
-                      <input type="checkbox" 
-                             name="flag_{{ code }}" 
-                             {% if flags and flags|get_item:code %}checked{% endif %}
-                             class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2" />
-                      <span class="ml-2 text-sm font-medium text-gray-700">
-                        {% if flags and flags|get_item:code %}Enabled{% else %}Disabled{% endif %}
-                      </span>
-                    </label>
-                    {% endwith %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mt-6 flex justify-end">
-          <button type="submit" 
-                  class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-            <i class="ph ph-floppy-disk"></i>
-            <span>Save {{ c.name }} Settings</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  {% empty %}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-      <i class="ph ph-buildings text-gray-300 text-6xl mb-4"></i>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No Campuses</h3>
-      <p class="text-gray-600 mb-4">Create campuses to configure campus-specific feature flags</p>
-      <a href="{% url 'admin_orgsettings_campus_create' %}" 
-         class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold">
-        <i class="ph ph-plus-circle"></i>
-        <span>Add Campus</span>
-      </a>
-    </div>
-  {% endfor %}
-</div>
-
-<!-- Back Link -->
-<div class="mt-6">
-  <a href="{% url 'admin_home' %}" 
-     class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-    <i class="ph ph-arrow-left"></i>
-    <span>Back to Dashboard</span>
-  </a>
+  <section class="space-y-5"><div><h3 class="text-lg font-black text-slate-900">Campus overrides</h3><p class="text-sm text-slate-500">Override global feature settings for individual campuses.</p></div>{% for c in campuses %}<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100 flex items-center gap-3"><span class="h-10 w-10 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-building"></i></span><div><h4 class="font-black text-slate-900">{{ c.name }}</h4><p class="text-xs text-slate-500">Campus-level flags</p></div></div><form method="post">{% csrf_token %}<input type="hidden" name="scope" value="campus"><input type="hidden" name="campus_id" value="{{ c.id }}"><div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Feature</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for code in codes %}{% with flags=campus_flags|get_item:c.id %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm font-black text-slate-900"><i class="ph ph-flag text-slate-400 mr-2"></i>{{ code }}</td><td class="px-6 py-4 text-sm"><label class="inline-flex items-center gap-3 cursor-pointer"><input type="checkbox" name="flag_{{ code }}" {% if flags and flags|get_item:code %}checked{% endif %} class="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"><span class="rounded-full px-3 py-1 text-xs font-black {% if flags and flags|get_item:code %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-700{% endif %}">{% if flags and flags|get_item:code %}Enabled{% else %}Disabled{% endif %}</span></label></td></tr>{% endwith %}{% endfor %}</tbody></table></div><div class="p-5 border-t border-slate-100 flex justify-end"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save {{ c.name }}</button></div></form></div>{% empty %}<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center"><i class="ph ph-buildings text-slate-300 text-6xl mb-4"></i><h3 class="text-lg font-black text-slate-900 mb-2">No campuses</h3><p class="text-slate-600 mb-4">Create campuses to configure campus-specific feature flags.</p><a href="{% url 'admin_orgsettings_campus_create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-black"><i class="ph ph-plus-circle"></i>Add Campus</a></div>{% endfor %}</section>
 </div>
 {% endblock %}
