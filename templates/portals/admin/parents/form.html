@@ -3,126 +3,14 @@
 
 {% block title %}{% if mode == 'create' %}Add Parent{% else %}Edit Parent{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Parent{% else %}Edit Parent{% endif %}{% endblock %}
-
-{% block breadcrumbs %}
-<div class="flex items-center text-sm">
-    <a href="{% url 'admin_parents_list' %}" class="text-primary-600 hover:text-primary-800">Parents</a>
-    <i class="ph ph-caret-right mx-2 text-gray-400"></i>
-    <span class="text-gray-500">{% if mode == 'create' %}New{% else %}Edit{% endif %}</span>
-</div>
-{% endblock %}
+{% block breadcrumbs %}Parent profile, guardian account and linked students{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_parents_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Parents</a>{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
-    {% if mode == 'edit' and parent.user_id and parent.email %}
-    <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6">
-        <div class="flex items-start justify-between">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900">Password Reset</h3>
-                <p class="mt-1 text-sm text-gray-600">Send a secure password reset link to the parent's email address.</p>
-            </div>
-            <form method="post" class="ml-4">
-                {% csrf_token %}
-                <button
-                    type="submit"
-                    name="reset_password"
-                    class="inline-flex items-center px-4 py-2 border-2 border-amber-500 rounded-lg shadow-sm text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all"
-                    onclick="return confirm('Send password reset link to {{ parent.email }}?');"
-                >
-                    <i class="ph ph-key mr-2"></i>
-                    Reset Password
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endif %}
-    <!-- Parent Profile Form -->
-    {% include "components/ui_form.html" %}
-
-    {% if mode == 'edit' %}
-    <!-- Linked Students Section -->
-    <div class="bg-white shadow-md rounded-xl border border-gray-300 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <h2 class="text-lg font-bold text-gray-900"><i class="ph ph-users-three mr-2" aria-hidden="true"></i>Linked Students</h2>
-        </div>
-        
-        <div class="p-6">
-            <!-- Link New Student Form -->
-            <form method="post" action="{% url 'admin_parents_add_student' parent.id %}" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                {% csrf_token %}
-                <h3 class="text-sm font-bold text-gray-700 mb-4">Link a new student to this parent</h3>
-                <div class="flex flex-col sm:flex-row items-end gap-4">
-                    {% for field in link_form %}
-                    <div class="w-full sm:flex-1">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-800 mb-1.5">{{ field.label }}</label>
-                        {% render_field field class="block w-full border-2 border-gray-300 rounded-lg text-gray-900 focus:ring-0 focus:border-primary-500 sm:text-sm px-3 py-2 bg-white transition-all shadow-sm" %}
-                    </div>
-                    {% endfor %}
-                    <button type="submit" class="w-full sm:w-auto inline-flex justify-center items-center py-2 px-4 border border-transparent shadow-sm text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                        <i class="ph ph-link mr-2"></i>
-                        Link Student
-                    </button>
-                </div>
-            </form>
-
-            <!-- Linked Students List -->
-            <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Relationship</th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Primary Guardian</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for link in links %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3 border border-blue-200">
-                                        {{ link.student.first_name|make_list|first|upper }}
-                                    </div>
-                                    <span class="text-sm font-medium text-gray-900">{{ link.student }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
-                                {{ link.get_relationship_display|default:link.relationship }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                {% if link.is_primary %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">
-                                        <i class="ph ph-check-circle mr-1"></i> Yes
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                                        No
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <form method="post" action="{% url 'admin_parents_remove_student' parent.id link.id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this link?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors font-bold inline-flex items-center">
-                                        <i class="ph ph-trash mr-1.5"></i> Remove
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                <i class="ph ph-link-break text-3xl text-gray-300 mb-2 block"></i>
-                                <span class="font-medium">No students linked to this parent yet.</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+<div class="max-w-4xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-rose-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-rose-100">Parent records</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'create' %}Add parent{% else %}Edit parent{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-rose-100">Capture parent details, portal access and linked student relationships.</p></section>
+  {% if mode == 'edit' and parent.user_id and parent.email %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 p-6"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="text-lg font-black text-slate-900">Password Reset</h3><p class="mt-1 text-sm text-slate-600">Send a secure password reset link to the parent's email address.</p></div><form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-black text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200" onclick="return confirm('Send password reset link to {{ parent.email }}?');"><i class="ph ph-key mr-2"></i>Reset Password</button></form></div></section>{% endif %}
+  {% include "components/ui_form.html" %}
+  {% if mode == 'edit' %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 overflow-hidden"><div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center"><h2 class="text-lg font-black text-slate-900"><i class="ph ph-users-three mr-2"></i>Linked Students</h2></div><div class="p-6"><form method="post" action="{% url 'admin_parents_add_student' parent.id %}" class="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-200">{% csrf_token %}<h3 class="text-sm font-black text-slate-700 mb-4">Link a new student to this parent</h3><div class="flex flex-col sm:flex-row items-end gap-4">{% for field in link_form %}<div class="w-full sm:flex-1"><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-700 mb-1.5">{{ field.label }}</label>{% render_field field class="block w-full border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-0 focus:border-primary-500 sm:text-sm px-3 py-2 bg-white font-bold" %}</div>{% endfor %}<button type="submit" class="w-full sm:w-auto inline-flex justify-center items-center py-2 px-4 rounded-xl text-sm font-black text-white bg-primary-600 hover:bg-primary-700"><i class="ph ph-link mr-2"></i>Link Student</button></div></form><div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Relationship</th><th class="px-6 py-3 text-center text-xs font-black text-slate-500 uppercase">Primary Guardian</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for link in links %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-black text-slate-900">{{ link.student }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-bold">{{ link.get_relationship_display|default:link.relationship }}</td><td class="px-6 py-4 whitespace-nowrap text-center">{% if link.is_primary %}<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-green-100 text-green-700">Yes</span>{% else %}<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600">No</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right"><form method="post" action="{% url 'admin_parents_remove_student' parent.id link.id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this link?');">{% csrf_token %}<button type="submit" class="text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl font-black inline-flex items-center"><i class="ph ph-trash mr-1.5"></i>Remove</button></form></td></tr>{% empty %}<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No students linked to this parent yet.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endif %}
 </div>
 {% endblock %}
