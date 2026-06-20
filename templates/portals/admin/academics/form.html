@@ -1,11 +1,13 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumbs %}Academic setup form{% endblock %}
 
 {% block content %}
-  <h1>{{ title }}</h1>
-
+<div class="max-w-4xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-sky-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-sky-100">Academic setup</p><h2 class="mt-2 text-2xl font-black">{{ title }}</h2><p class="mt-2 max-w-2xl text-sm text-sky-100">Complete the required fields below, then save your changes.</p></section>
   {% include "components/ui_form.html" %}
-
-  <p><a href="{% url list_url_name %}">Back</a></p>
+  <a href="{% url list_url_name %}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">Back to list</a>
+</div>
 {% endblock %}
