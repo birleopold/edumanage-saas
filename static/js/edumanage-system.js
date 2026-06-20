@@ -44,10 +44,56 @@
     document.body.style.overflow = sidebarIsOpen() ? "hidden" : "";
   }
 
+  function normalizePath(pathname) {
+    return (pathname || "").replace(/\/+$/, "") + "/";
+  }
+
+  function upgradeSidebarDestinations(sidebar) {
+    if (!sidebar) return;
+    if (!document.body.classList.contains("role-admin")) return;
+    var destinationMap = {
+      "/admin/finance/invoices/": "/admin/finance/",
+      "/admin/coursework/materials/": "/admin/coursework/"
+    };
+    sidebar.querySelectorAll("nav a[href]").forEach(function (link) {
+      var url;
+      try {
+        url = new URL(link.getAttribute("href"), window.location.origin);
+      } catch (error) {
+        return;
+      }
+      var normalized = normalizePath(url.pathname);
+      if (destinationMap[normalized]) {
+        link.href = destinationMap[normalized];
+        link.dataset.eduDashboardLink = "true";
+      }
+    });
+  }
+
+  function markSidebarActive(sidebar) {
+    if (!sidebar) return;
+    var current = normalizePath(window.location.pathname);
+    sidebar.querySelectorAll("nav a[href]").forEach(function (link) {
+      var url;
+      try {
+        url = new URL(link.getAttribute("href"), window.location.origin);
+      } catch (error) {
+        return;
+      }
+      var target = normalizePath(url.pathname);
+      if (target !== "/" && current.indexOf(target) === 0 && !link.classList.contains("nav-active")) {
+        link.classList.add("edu-nav-current");
+      }
+    });
+  }
+
   function enhanceSidebar() {
     var elements = sidebarElements();
     if (!elements.sidebar) return;
+    elements.sidebar.classList.add("edu-sidebar-upgraded");
     elements.sidebar.setAttribute("aria-label", elements.sidebar.getAttribute("aria-label") || "Portal navigation");
+    upgradeSidebarDestinations(elements.sidebar);
+    markSidebarActive(elements.sidebar);
     if (typeof window.toggleSidebar === "function" && !window.toggleSidebar.__eduManageEnhanced) {
       var originalToggle = window.toggleSidebar;
       var enhancedToggle = function () {
@@ -62,7 +108,7 @@
         if (isMobileShell()) closeSidebar();
       });
     });
-    var active = elements.sidebar.querySelector(".nav-active, .bg-primary-50");
+    var active = elements.sidebar.querySelector(".nav-active, .bg-primary-50, .edu-nav-current");
     if (active) {
       active.setAttribute("aria-current", "page");
       window.requestAnimationFrame(function () {
