@@ -1,67 +1,15 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Scheduled reports{% endblock %}
-{% block page_title %}Scheduled reports{% endblock %}
-{% block breadcrumbs %}
-<span class="text-gray-500">Automated CSV snapshots and manual runs</span>
-{% endblock %}
+{% block title %}Scheduled Reports{% endblock %}
+{% block page_title %}Scheduled Reports{% endblock %}
+{% block breadcrumbs %}Automated CSV snapshots and manual report runs{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_reports_overview' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Reports Overview</a><form method="post" action="{% url 'admin_reports_scheduled_run' %}" class="inline">{% csrf_token %}<button type="submit" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-file-arrow-down mr-1"></i> Run Export</button></form>{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
-  <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
-    <p class="font-semibold mb-1">Automation</p>
-    <p>Run <code class="text-xs bg-white px-1 rounded border">python manage.py run_scheduled_reports</code> nightly via <strong>cron</strong> or <strong>Windows Task Scheduler</strong> (use your project <code class="text-xs bg-white px-1 rounded border">.venv</code> interpreter). Files are stored under <code class="text-xs bg-white px-1 rounded border">MEDIA_ROOT/generated_reports/</code>.</p>
-  </div>
-
-  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-    <h3 class="text-base font-semibold text-gray-900 mb-3">Generate now</h3>
-    <p class="text-sm text-gray-600 mb-4">Exports the same metrics as <a href="{% url 'admin_reports_overview' %}" class="text-primary-600 font-semibold">reports overview</a> for the <strong>last 30 days</strong> and the <strong>campus filter from your admin session</strong> (adjust campus in the header before running).</p>
-    <form method="post" action="{% url 'admin_reports_scheduled_run' %}">
-      {% csrf_token %}
-      <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">
-        <i class="ph ph-file-arrow-down"></i> Run overview export
-      </button>
-    </form>
-  </div>
-
-  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-    <div class="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">Recent runs</div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase">
-          <tr>
-            <th class="px-4 py-2">When</th>
-            <th class="px-4 py-2">Type</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2 text-right">File</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for r in runs %}
-          <tr>
-            <td class="px-4 py-2 text-gray-700">{{ r.created_at }}</td>
-            <td class="px-4 py-2">{{ r.get_report_type_display }}</td>
-            <td class="px-4 py-2">
-              {% if r.status == 'success' %}
-              <span class="text-green-700 font-medium">Success</span>
-              {% else %}
-              <span class="text-red-700 font-medium">Failed</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-2 text-right">
-              {% if r.status == 'success' and r.file_path %}
-              <a href="{% url 'admin_reports_run_download' r.pk %}" class="text-primary-600 font-semibold hover:text-primary-800">Download</a>
-              {% else %}
-              <span class="text-gray-400 text-xs">{{ r.detail|truncatechars:48 }}</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">No runs yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+<div class="max-w-5xl mx-auto space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Scheduled reporting</p><h2 class="mt-2 text-2xl font-black">Automated report runs</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Run CSV snapshots manually and review recent generated reports for download.</p></section>
+  <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-blue-900"><p class="font-black mb-1">Automation</p><p class="text-sm">Run <code class="text-xs bg-white px-1 rounded border">python manage.py run_scheduled_reports</code> nightly via cron or Windows Task Scheduler. Files are stored under <code class="text-xs bg-white px-1 rounded border">MEDIA_ROOT/generated_reports/</code>.</p></section>
+  <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm"><h3 class="text-base font-black text-slate-900 mb-3">Generate now</h3><p class="text-sm text-slate-600 mb-4">Exports the same metrics as <a href="{% url 'admin_reports_overview' %}" class="text-primary-700 font-black">reports overview</a> for the last 30 days and the campus filter from your admin session.</p><form method="post" action="{% url 'admin_reports_scheduled_run' %}">{% csrf_token %}<button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-black hover:bg-primary-700"><i class="ph ph-file-arrow-down"></i>Run overview export</button></form></section>
+  <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm"><div class="px-5 py-4 border-b border-slate-100 font-black text-slate-900">Recent runs</div><div class="overflow-x-auto"><table class="min-w-full text-sm"><thead class="bg-slate-50 text-left text-xs font-black text-slate-500 uppercase"><tr><th class="px-5 py-3">When</th><th class="px-5 py-3">Type</th><th class="px-5 py-3">Status</th><th class="px-5 py-3 text-right">File</th></tr></thead><tbody class="divide-y divide-slate-100">{% for r in runs %}<tr class="hover:bg-slate-50"><td class="px-5 py-3 text-slate-700">{{ r.created_at }}</td><td class="px-5 py-3 font-bold text-slate-900">{{ r.get_report_type_display }}</td><td class="px-5 py-3">{% if r.status == 'success' %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Success</span>{% else %}<span class="rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">Failed</span>{% endif %}</td><td class="px-5 py-3 text-right">{% if r.status == 'success' and r.file_path %}<a href="{% url 'admin_reports_run_download' r.pk %}" class="rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-black text-white">Download</a>{% else %}<span class="text-slate-400 text-xs">{{ r.detail|truncatechars:48 }}</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="px-5 py-8 text-center text-slate-500">No runs yet.</td></tr>{% endfor %}</tbody></table></div></section>
 </div>
 {% endblock %}
