@@ -1,9 +1,13 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}{% if mode == 'edit' %}Edit Loan{% else %}Add Loan{% endif %}{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Loan{% else %}New Loan{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Loan{% else %}New Loan{% endif %}{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_library_loans_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Loans</a>{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Loan{% else %}Add Loan{% endif %}</h1>
-
-  {% include 'components/ui_form.html' %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-7 max-w-5xl">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><a href="{% url 'admin_library_loans_list' %}" class="inline-flex items-center gap-2 text-sm font-black text-indigo-100 hover:text-white mb-3"><i class="ph ph-arrow-left"></i> Library Loans</a><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Circulation desk</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit loan record{% else %}Create a new book loan{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Select an available copy, borrower type and due date for controlled book circulation.</p></section>
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.55fr] gap-6"><div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">{% include 'components/ui_form.html' %}</div><aside class="space-y-4"><div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm"><h3 class="font-black text-slate-900 mb-3">Loan checklist</h3><div class="space-y-3 text-sm text-slate-600"><p class="flex gap-2"><i class="ph ph-check-circle text-green-600 mt-0.5"></i> Only available copies can be loaned out.</p><p class="flex gap-2"><i class="ph ph-user text-primary-600 mt-0.5"></i> Choose student or staff, not both.</p><p class="flex gap-2"><i class="ph ph-calendar text-primary-600 mt-0.5"></i> Set a valid future due date.</p></div></div><div class="bg-blue-50 rounded-2xl border border-blue-100 p-5 text-sm text-blue-900"><p class="font-black">Tip</p><p class="mt-1">Use Quick Check-in when returned books come back to the library desk.</p></div></aside></section>
+</div>
 {% endblock %}
