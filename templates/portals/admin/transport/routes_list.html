@@ -1,132 +1,16 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Transport Routes{% endblock %}
+{% block page_title %}Transport Routes{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_transport_vehicles_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Vehicles</a><a href="{% url 'admin_transport_drivers_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Drivers</a><a href="{% url 'admin_transport_route_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Route</a>{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Transport Routes</h1>
-  <p class="text-gray-600">Manage school bus routes and vehicle assignments</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">School transport</p><h2 class="mt-2 text-2xl font-black">Routes and bus assignments</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage bus routes, assigned vehicles, drivers, stops and active student route allocations.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_transport_assignments_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Student Assignments</a><a href="{% url 'admin_transport_stops_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Stops</a><a href="{% url 'admin_transport_route_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">Add Route</a></div></div></section>
 
-<!-- Search and Filters -->
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <!-- Search Bar -->
-      <div class="flex-1 w-full md:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="ph ph-magnifying-glass text-gray-400"></i>
-          </div>
-          <input id="id_q" 
-                 type="text" 
-                 name="q" 
-                 value="{{ q }}" 
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Search by route code or name..." />
-        </div>
-      </div>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="space-y-4"><div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end"><div class="flex-1 w-full lg:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="ph ph-magnifying-glass text-slate-400"></i></div><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 placeholder-slate-400" placeholder="Route code, name or vehicle..."></div></div><div class="w-full lg:w-48"><label for="id_shift" class="block text-sm font-black text-slate-700 mb-2">Shift</label><select id="id_shift" name="shift" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 bg-white"><option value="" {% if not shift_filter %}selected{% endif %}>All shifts</option><option value="MORNING" {% if shift_filter == 'MORNING' %}selected{% endif %}>Morning</option><option value="AFTERNOON" {% if shift_filter == 'AFTERNOON' %}selected{% endif %}>Afternoon</option><option value="BOTH" {% if shift_filter == 'BOTH' %}selected{% endif %}>Both</option></select></div><div class="w-full lg:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><div class="flex flex-wrap gap-2 w-full lg:w-auto"><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i> Clear</a></div></div></form></section>
 
-      <!-- Per Page -->
-      <div class="w-full md:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" 
-               type="number" 
-               name="per_page" 
-               value="{{ per_page }}" 
-               min="1" 
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-      </div>
-
-      <!-- Apply Button -->
-      <button type="submit" 
-              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>
-        <span>Apply Filters</span>
-      </button>
-    </div>
-
-    <!-- Add Route Button -->
-    <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_transport_route_create' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-plus"></i>
-        <span>Add Route</span>
-      </a>
-    </div>
-  </form>
+  {% if routes %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Route</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Vehicle / Driver</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Shift</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for r in routes %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-11 w-11 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-signpost text-xl"></i></div><div><p class="font-black text-slate-900">{{ r.name }}</p><p class="text-xs font-black text-blue-700">{{ r.code }}</p></div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div class="font-bold text-slate-900"><i class="ph ph-bus mr-1 text-slate-400"></i>{{ r.vehicle|default:'No vehicle' }}</div><div class="text-xs text-slate-500"><i class="ph ph-steering-wheel mr-1"></i>{{ r.driver|default:'No driver' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{{ r.get_shift_display|default:r.shift }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if r.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_transport_route_detail' r.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">View</a><a href="{% url 'admin_transport_route_edit' r.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700">Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_transport_route_create' as create_route_url %}{% include "components/ui_empty_state.html" with icon="bus" title="No routes found" description="Get started by creating your first transport route or adjust your search filters" action_url=create_route_url action_text="Add Route" %}{% endif %}
 </div>
-
-<!-- Routes Table or Empty State -->
-{% if routes %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Route Code</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Route Name</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned Vehicle</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for r in routes %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ r.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                <i class="ph ph-signpost"></i>
-                {{ r.code }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ r.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              <div class="flex items-center gap-2">
-                <i class="ph ph-bus text-gray-400"></i>
-                <span class="text-gray-900">{{ r.vehicle|default:"Not assigned" }}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if r.is_active %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>
-                  Active
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle"></i>
-                  Inactive
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <a href="{% url 'admin_transport_route_edit' r.id %}" 
-                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                <i class="ph ph-pencil-simple"></i>
-                <span>Edit</span>
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  <!-- Empty State -->
-  {% url 'admin_transport_route_create' as create_route_url %}
-  {% include "components/ui_empty_state.html" with icon="bus" title="No routes found" description="Get started by creating your first transport route or adjust your search filters" action_url=create_route_url action_text="Add Route" %}
-{% endif %}
 {% endblock %}
