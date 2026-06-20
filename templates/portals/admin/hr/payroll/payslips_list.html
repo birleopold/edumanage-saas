@@ -1,101 +1,15 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Payslips{% endblock %}
+{% block page_title %}Payslips{% endblock %}
+{% block breadcrumbs %}Staff payslips, payroll period, salary totals and approval status{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_hr_payroll_salary_structures_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Salary Structures</a><a href="{% url 'admin_hr_payroll_pay_grades_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Pay Grades</a><a href="{% url 'admin_hr_payroll_payslip_generate' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-file-plus mr-1"></i> Generate Payslips</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Payslips</h1>
-  <p class="text-gray-600">Manage employee payslips</p>
-</div>
-
 {% include "components/ui_toast.html" %}
-
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <div class="flex-1 w-full md:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Search by staff name or ID..." />
-      </div>
-      <div class="w-full md:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-      </div>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>Apply Filters
-      </button>
-    </div>
-    <div class="flex justify-end pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_hr_payroll_payslip_generate' %}" class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm">
-        <i class="ph ph-file-plus"></i>Generate Payslips
-      </a>
-    </div>
-  </form>
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Payroll processing</p><h2 class="mt-2 text-2xl font-black">Payslips</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Manage staff payslips, payroll periods, net salaries and approval status.</p></div><a href="{% url 'admin_hr_payroll_payslip_generate' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Generate Payslips</a></div></section>
+  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_8rem_auto_auto] gap-4 items-end"><div><label class="block text-sm font-black text-slate-700 mb-2">Search</label><input type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search by staff name or ID..."></div><div><label class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200">Apply</button><a href="{% url 'admin_hr_payroll_payslips_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50">Clear</a></form></section>
+  {% if payslips %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Staff</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Period</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Base Salary</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Net Salary</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for ps in payslips %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><div class="flex flex-col"><span class="font-black text-slate-900">{{ ps.staff }}</span><span class="text-xs text-slate-500">{{ ps.staff.staff_id|default:"-" }}</span></div></td><td class="px-6 py-4 text-sm font-black text-slate-900">{{ ps.period_year }}/{{ ps.period_month|stringformat:"02d" }}</td><td class="px-6 py-4 text-sm text-slate-700">{{ ps.base_salary|floatformat:2 }}</td><td class="px-6 py-4 text-sm font-black text-slate-900">{{ ps.net_salary|floatformat:2 }}</td><td class="px-6 py-4 text-sm">{% if ps.status == 'DRAFT' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-black"><i class="ph ph-file-dashed"></i>Draft</span>{% elif ps.status == 'PENDING_APPROVAL' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black"><i class="ph ph-clock"></i>Pending</span>{% elif ps.status == 'APPROVED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Approved</span>{% elif ps.status == 'REJECTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Rejected</span>{% elif ps.status == 'PAID' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Paid</span>{% endif %}</td><td class="px-6 py-4 text-right"><a href="{% url 'admin_hr_payroll_payslip_detail' ps.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-eye"></i>View</a></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_hr_payroll_payslip_generate' as create_url %}{% include "components/ui_empty_state.html" with icon="file-text" title="No payslips generated" description="Generate payslips for staff members" action_url=create_url action_text="Generate Payslips" %}{% endif %}
 </div>
-
-{% if payslips %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Staff</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Period</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Base Salary</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Net Salary</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
-          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for ps in payslips %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <div class="flex flex-col">
-                <span class="font-semibold text-gray-900">{{ ps.staff }}</span>
-                <span class="text-xs text-gray-500">{{ ps.staff.staff_id|default:"-" }}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ ps.period_year }}/{{ ps.period_month|stringformat:"02d" }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ ps.base_salary|floatformat:2 }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ ps.net_salary|floatformat:2 }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if ps.status == 'DRAFT' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-file-dashed"></i>Draft
-                </span>
-              {% elif ps.status == 'PENDING_APPROVAL' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-clock"></i>Pending
-                </span>
-              {% elif ps.status == 'APPROVED' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>Approved
-                </span>
-              {% elif ps.status == 'REJECTED' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle"></i>Rejected
-                </span>
-              {% elif ps.status == 'PAID' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>Paid
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-              <a href="{% url 'admin_hr_payroll_payslip_detail' ps.id %}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900 font-semibold">
-                <i class="ph ph-eye"></i>View
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  {% url 'admin_hr_payroll_payslip_generate' as create_url %}
-  {% include "components/ui_empty_state.html" with icon="file-text" title="No payslips generated" description="Generate payslips for staff members" action_url=create_url action_text="Generate Payslips" %}
-{% endif %}
 {% endblock %}
