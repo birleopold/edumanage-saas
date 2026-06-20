@@ -1,174 +1,33 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Vehicle Tracking - {{ vehicle.name }}{% endblock %}
+{% block page_title %}Vehicle Tracking{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_transport_vehicles_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Vehicles</a><a href="{% url 'admin_transport_vehicle_edit' vehicle.id %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i> Edit Vehicle</a>{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <a href="{% url 'admin_transport_vehicles_list' %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
-    <i class="ph ph-arrow-left mr-2"></i>Back to Vehicles
-  </a>
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ vehicle.name }} - Live Tracking</h1>
-  <p class="text-gray-600">{{ vehicle.plate_number }}</p>
-</div>
+{% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-emerald-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5"><div><a href="{% url 'admin_transport_vehicles_list' %}" class="inline-flex items-center gap-2 text-sm font-black text-emerald-100 hover:text-white mb-3"><i class="ph ph-arrow-left"></i> Vehicles</a><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">{{ vehicle.plate_number }}</p><h2 class="mt-2 text-2xl font-black">{{ vehicle.name }} live tracking</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Monitor latest GPS data, route history and integration readiness for this vehicle.</p></div><button onclick="refreshLocation()" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50"><i class="ph ph-arrows-clockwise mr-1"></i> Refresh</button></div></section>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div class="lg:col-span-2">
-    <!-- Map Container -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-900">Current Location</h2>
-        <button onclick="refreshLocation()" class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <i class="ph ph-arrows-clockwise mr-1"></i>Refresh
-        </button>
-      </div>
-      
-      <!-- Map Placeholder -->
-      <div id="map" class="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <div class="text-center text-gray-500">
-          <i class="ph ph-map-trifold text-5xl mb-2"></i>
-          <p class="text-sm">Map integration required</p>
-          <p class="text-xs mt-1">Connect GPS tracking device or integrate with mapping service</p>
-        </div>
-      </div>
+  <section class="grid grid-cols-1 md:grid-cols-4 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Last Update</p><p class="mt-1 text-lg font-black text-slate-900">{% if latest_tracking %}{{ latest_tracking.timestamp|date:"M j, H:i" }}{% else %}No data{% endif %}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Speed</p><p class="mt-1 text-3xl font-black text-primary-700">{% if latest_tracking.speed %}{{ latest_tracking.speed }}{% else %}0{% endif %}</p><p class="text-xs text-slate-500">km/h</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Movement</p><p class="mt-1 text-lg font-black {% if latest_tracking and latest_tracking.is_moving %}text-green-700{% else %}text-slate-700{% endif %}">{% if latest_tracking %}{% if latest_tracking.is_moving %}Moving{% else %}Stopped{% endif %}{% else %}Unknown{% endif %}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Status</p><p class="mt-1 text-lg font-black text-slate-900">{{ vehicle.get_status_display }}</p></div></section>
 
-      <!-- Location Info -->
-      <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-        <dl class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt class="text-gray-500">Last Updated</dt>
-            <dd class="font-medium text-gray-900">{{ last_updated|default:"Not available" }}</dd>
-          </div>
-          <div>
-            <dt class="text-gray-500">Current Speed</dt>
-            <dd class="font-medium text-gray-900">{{ current_speed|default:"0" }} km/h</dd>
-          </div>
-          <div>
-            <dt class="text-gray-500">Engine Status</dt>
-            <dd class="font-medium text-gray-900">
-              <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                {{ engine_status|default:"Unknown" }}
-              </span>
-            </dd>
-          </div>
-          <div>
-            <dt class="text-gray-500">Driver</dt>
-            <dd class="font-medium text-gray-900">{{ vehicle.driver|default:"-" }}</dd>
-          </div>
-        </dl>
-      </div>
-    </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><main class="lg:col-span-2 space-y-6"><section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5"><div class="flex justify-between items-center mb-4"><div><h3 class="font-black text-slate-900">Current location</h3><p class="text-sm text-slate-500">GPS coordinates and map integration placeholder.</p></div><button onclick="refreshLocation()" class="rounded-xl bg-primary-600 px-3 py-2 text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-arrows-clockwise mr-1"></i>Refresh</button></div><div id="map" class="w-full h-96 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200"><div class="text-center text-slate-500"><i class="ph ph-map-trifold text-5xl mb-2"></i>{% if latest_tracking %}<p class="text-sm font-black text-slate-700">Lat {{ latest_tracking.latitude }}, Lng {{ latest_tracking.longitude }}</p><p class="text-xs mt-1">Connect map provider to render live position.</p>{% else %}<p class="text-sm font-black">No GPS data yet</p><p class="text-xs mt-1">Connect a GPS provider or device to start tracking.</p>{% endif %}</div></div>{% if latest_tracking %}<div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm"><div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs uppercase font-black text-slate-500">Latitude</p><p class="font-black text-slate-900">{{ latest_tracking.latitude }}</p></div><div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs uppercase font-black text-slate-500">Longitude</p><p class="font-black text-slate-900">{{ latest_tracking.longitude }}</p></div><div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs uppercase font-black text-slate-500">Heading</p><p class="font-black text-slate-900">{{ latest_tracking.heading|default:"-" }}</p></div></div>{% endif %}</section>
 
-    <!-- Route History -->
-    <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Today's Route History</h2>
-      <div class="space-y-3">
-        {% if route_history %}
-        {% for entry in route_history %}
-        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-          <div class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-          <div class="flex-1">
-            <p class="font-medium text-gray-900">{{ entry.location }}</p>
-            <p class="text-sm text-gray-600">{{ entry.timestamp|date:"g:i A" }}</p>
-          </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        <p class="text-sm text-gray-600 text-center py-4">No route history for today</p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100"><h3 class="font-black text-slate-900">Recent GPS history</h3><p class="text-sm text-slate-500">Latest tracking records for this vehicle.</p></div><div class="divide-y divide-slate-100">{% for entry in tracking_history %}<div class="p-4 hover:bg-slate-50"><div class="flex items-start gap-3"><div class="mt-1 h-3 w-3 rounded-full {% if entry.is_moving %}bg-green-500{% else %}bg-slate-400{% endif %}"></div><div class="flex-1"><p class="font-black text-slate-900">Lat {{ entry.latitude }}, Lng {{ entry.longitude }}</p><p class="text-sm text-slate-600">{{ entry.timestamp|date:"M j, Y H:i" }} · Speed: {{ entry.speed|default:"0" }} km/h{% if entry.route %} · {{ entry.route }}{% endif %}</p></div></div></div>{% empty %}<div class="p-10 text-center text-slate-500"><i class="ph ph-map-pin text-4xl text-slate-300"></i><p class="mt-2 font-bold">No tracking history yet.</p></div>{% endfor %}</div></section></main>
 
-  <!-- Sidebar -->
-  <div class="space-y-6">
-    <!-- Vehicle Info -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Vehicle Information</h3>
-      <dl class="space-y-3">
-        <div>
-          <dt class="text-sm text-gray-500">Name</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ vehicle.name }}</dd>
-        </div>
-        <div>
-          <dt class="text-sm text-gray-500">Plate Number</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ vehicle.plate_number }}</dd>
-        </div>
-        <div>
-          <dt class="text-sm text-gray-500">Capacity</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ vehicle.capacity }} students</dd>
-        </div>
-        <div>
-          <dt class="text-sm text-gray-500">Driver</dt>
-          <dd class="text-sm font-medium text-gray-900">{{ vehicle.driver|default:"-" }}</dd>
-        </div>
-        <div>
-          <dt class="text-sm text-gray-500">Status</dt>
-          <dd class="text-sm">
-            <span class="px-2 py-1 text-xs rounded-full {% if vehicle.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-700{% endif %}">
-              {% if vehicle.is_active %}Active{% else %}Inactive{% endif %}
-            </span>
-          </dd>
-        </div>
-      </dl>
-    </div>
+  <aside class="space-y-6"><section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h3 class="font-black text-slate-900 mb-4">Vehicle information</h3><dl class="space-y-3 text-sm"><div><dt class="text-xs uppercase font-black text-slate-500">Name</dt><dd class="font-bold text-slate-900">{{ vehicle.name }}</dd></div><div><dt class="text-xs uppercase font-black text-slate-500">Plate</dt><dd class="font-mono font-black text-slate-900">{{ vehicle.plate_number }}</dd></div><div><dt class="text-xs uppercase font-black text-slate-500">Capacity</dt><dd class="font-bold text-slate-900">{{ vehicle.capacity }} students</dd></div><div><dt class="text-xs uppercase font-black text-slate-500">GPS Device</dt><dd class="font-bold text-slate-900">{{ vehicle.gps_device_id|default:"Not configured" }}</dd></div><div><dt class="text-xs uppercase font-black text-slate-500">Listed</dt><dd>{% if vehicle.is_active %}<span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-black">Active</span>{% else %}<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Inactive</span>{% endif %}</dd></div></dl></section>
 
-    <!-- Assigned Route -->
-    {% if vehicle.current_route %}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Assigned Route</h3>
-      <p class="font-medium text-gray-900 mb-2">{{ vehicle.current_route.name }}</p>
-      <p class="text-sm text-gray-600 mb-3">{{ vehicle.current_route.description }}</p>
-      <a href="{% url 'admin_transport_route_detail' vehicle.current_route.id %}" 
-         class="text-sm text-blue-600 hover:text-blue-900">
-        View Route Details
-      </a>
-    </div>
-    {% endif %}
+  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h3 class="font-black text-slate-900 mb-4">Assigned routes</h3><div class="space-y-2">{% for route in vehicle.routes.all %}<a href="{% url 'admin_transport_route_detail' route.id %}" class="block rounded-xl border border-slate-200 px-4 py-3 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50">{{ route }}</a>{% empty %}<p class="text-sm text-slate-500">No route assigned to this vehicle.</p>{% endfor %}</div></section>
 
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-      <div class="space-y-2">
-        <a href="{% url 'admin_transport_vehicle_edit' vehicle.id %}" 
-           class="block w-full px-4 py-2 text-center bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <i class="ph ph-pencil mr-2"></i>Edit Vehicle
-        </a>
-        <button onclick="sendAlert()" 
-                class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
-          <i class="ph ph-warning mr-2"></i>Send Alert to Driver
-        </button>
-      </div>
-    </div>
-
-    <!-- Integration Note -->
-    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-      <div class="flex items-start gap-2">
-        <i class="ph-fill ph-warning text-yellow-600 mt-0.5"></i>
-        <div class="text-sm text-yellow-900">
-          <p class="font-medium mb-1">GPS Integration Required</p>
-          <p class="text-xs">To enable real-time tracking, integrate with a GPS tracking service or install GPS devices in vehicles.</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <section class="bg-yellow-50 border border-yellow-200 rounded-2xl p-5"><div class="flex items-start gap-3"><i class="ph-fill ph-warning text-yellow-600 mt-0.5"></i><div class="text-sm text-yellow-900"><p class="font-black mb-1">GPS Integration Required</p><p>To enable live maps, connect a GPS tracking provider and push tracking logs into this module.</p></div></div></section></aside></div>
 </div>
 
 <script>
 function refreshLocation() {
-  // Implement GPS refresh logic
   if (typeof window.showToast === 'function') {
     window.showToast('Refreshing', 'Refreshing location data...', 'info');
   }
   location.reload();
-}
-
-function sendAlert() {
-  if (confirm('Send alert to driver?')) {
-    // Implement alert sending logic
-    if (typeof window.showToast === 'function') {
-      window.showToast('Alert sent', 'Alert sent to driver successfully!', 'success');
-    }
-  }
 }
 </script>
 {% endblock %}
