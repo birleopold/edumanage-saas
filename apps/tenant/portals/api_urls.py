@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.tenant.finance.connector_views import BioIn, Events, GpsIn, MeetNew, Ready
 from apps.tenant.finance.public_api_docs import PublicIntegrationDocs
+from apps.tenant.users.mobile_device_api import UserDeviceDisable, UserDeviceList, UserDeviceRegister, UserDeviceTokenUpdate
 
 from .integration_api_views import (
     IntegrationHealth,
@@ -16,7 +17,6 @@ from .mobile_api_views import (
     MobileAttendance,
     MobileCoursework,
     MobileDashboard,
-    MobileDeviceRegister,
     MobileDocs,
     MobileExams,
     MobileFinance,
@@ -61,7 +61,10 @@ urlpatterns = [
     path("mobile/coursework/", MobileCoursework.as_view(), name="api_mobile_coursework"),
     path("mobile/messages/", MobileMessages.as_view(), name="api_mobile_messages"),
     path("mobile/transport/", MobileTransport.as_view(), name="api_mobile_transport"),
-    path("mobile/devices/register/", MobileDeviceRegister.as_view(), name="api_mobile_device_register"),
+    path("mobile/devices/", UserDeviceList.as_view(), name="api_mobile_device_list"),
+    path("mobile/devices/register/", UserDeviceRegister.as_view(), name="api_mobile_device_register"),
+    path("mobile/devices/token/", UserDeviceTokenUpdate.as_view(), name="api_mobile_device_token_update"),
+    path("mobile/devices/<int:pk>/disable/", UserDeviceDisable.as_view(), name="api_mobile_device_disable"),
     path("finance/provider-updates/", include("apps.tenant.finance.pay_urls")),
     path("integrations/docs/", PublicIntegrationDocs.as_view(), name="api_integrations_docs"),
     path("integrations/ready/", Ready.as_view(), name="api_integrations_ready"),
