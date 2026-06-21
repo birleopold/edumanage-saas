@@ -16,4 +16,4 @@ def payment_detail(request, pk: int):
         ),
         pk=pk,
     )
-    return render(request, "portals/admin/finance/payment_detail.html", {"payment": payment, "invoice": payment.invoice})
+    return render(request, "portals/admin/finance/transaction_detail.html", {"payment": payment, "invoice": payment.invoice})
