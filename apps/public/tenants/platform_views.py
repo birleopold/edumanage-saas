@@ -150,7 +150,7 @@ def tenant_create(request):
         form = TenantForm(request.POST)
         if form.is_valid():
             tenant = form.save()
-            messages.success(request, f"Tenant '{tenant.name}' created. Add a primary domain next.")
+            messages.success(request, f"Tenant '{tenant.name}' created with its primary custom domain.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
         form = TenantForm()
