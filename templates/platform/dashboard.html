@@ -1,0 +1,64 @@
+{% extends 'platform/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Platform Dashboard{% endblock %}
+{% block breadcrumbs %}Overview of SaaS tenants, domains and verification status{% endblock %}
+{% block header_actions %}
+  <a href="{% url 'platform_tenant_create' %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-plus mr-1"></i> New Tenant</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+  <section class="rounded-[2rem] bg-gradient-to-br from-blue-950 via-slate-950 to-blue-800 p-7 text-white shadow-xl">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Public schema command center</p>
+        <h2 class="mt-3 text-3xl font-black">Manage every school tenant from one secure place.</h2>
+        <p class="mt-3 max-w-2xl text-sm font-semibold leading-6 text-blue-100">Create schools, review schema readiness, manage domains, verify hostnames and suspend or reactivate tenants without entering each school's Django admin.</p>
+      </div>
+      <a href="{% url 'platform_tenant_list' %}" class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-950 hover:bg-blue-50">Open tenants <i class="ph ph-arrow-right ml-2"></i></a>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenants</p><p class="mt-3 text-3xl font-black">{{ tenant_count }}</p></div>
+    <div class="rounded-3xl border border-green-100 bg-green-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-green-700">Active</p><p class="mt-3 text-3xl font-black text-green-800">{{ active_count }}</p></div>
+    <div class="rounded-3xl border border-red-100 bg-red-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-red-700">Suspended</p><p class="mt-3 text-3xl font-black text-red-800">{{ suspended_count }}</p></div>
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Domains</p><p class="mt-3 text-3xl font-black">{{ domain_count }}</p></div>
+    <div class="rounded-3xl border border-blue-100 bg-blue-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-blue-700">Verified</p><p class="mt-3 text-3xl font-black text-blue-800">{{ verified_domain_count }}</p></div>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-2">
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-black">Recent tenants</h3><a href="{% url 'platform_tenant_list' %}" class="text-sm font-black text-blue-700 hover:text-blue-900">View all</a></div>
+      <div class="space-y-3">
+        {% for tenant in tenants %}
+          <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="flex items-center justify-between rounded-2xl border border-slate-100 p-4 hover:border-blue-200 hover:bg-blue-50">
+            <span><span class="block font-black text-slate-950">{{ tenant.name }}</span><span class="text-xs font-bold text-slate-500">{{ tenant.schema_name }}</span></span>
+            <span class="rounded-full px-3 py-1 text-xs font-black {% if tenant.status == 'active' %}bg-green-100 text-green-700{% elif tenant.status == 'suspended' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-700{% endif %}">{{ tenant.status|title }}</span>
+          </a>
+        {% empty %}
+          <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500">No tenants created yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-lg font-black">Domain snapshot</h3>
+      <div class="space-y-3">
+        {% for domain in domains %}
+          <a href="{% url 'platform_tenant_detail' domain.tenant.pk %}" class="flex items-center justify-between rounded-2xl border border-slate-100 p-4 hover:border-blue-200 hover:bg-blue-50">
+            <span><span class="block font-black text-slate-950">{{ domain.domain }}</span><span class="text-xs font-bold text-slate-500">{{ domain.tenant.name }}</span></span>
+            <span class="flex gap-2">
+              {% if domain.is_primary %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">Primary</span>{% endif %}
+              {% if domain.verified_at %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Verified</span>{% else %}<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">Pending</span>{% endif %}
+            </span>
+          </a>
+        {% empty %}
+          <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500">No domains attached yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
