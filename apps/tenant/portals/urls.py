@@ -9,6 +9,7 @@ urlpatterns = [
     path("manifest.webmanifest", views.pwa_manifest, name="pwa_manifest"),
     path("apply/", include("apps.tenant.admissions.public_urls")),
     path("messages/", include("apps.tenant.messaging.urls")),
+    path("notifications/", include("apps.tenant.orgsettings.alert_urls")),
     path("", views.landing_page, name="landing_page"),
     path("login/", custom_auth_views.CustomLoginView.as_view(), name="login"),
     path("logout/", custom_auth_views.logout_view, name="logout"),
