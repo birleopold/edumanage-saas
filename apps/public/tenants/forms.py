@@ -120,7 +120,10 @@ class DomainForm(StyledFormMixin, forms.ModelForm):
 
 
 class TenantStatusForm(forms.Form):
-    status = forms.ChoiceField(choices=STATUS_CHOICES)
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.Select(attrs={"class": StyledFormMixin.default_input_class}),
+    )
     reason = forms.CharField(
         required=False,
         widget=forms.Textarea(
