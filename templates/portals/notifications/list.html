@@ -4,7 +4,7 @@
 {% block page_title %}Notification Center{% endblock %}
 {% block breadcrumbs %}Your alerts, reminders, exam notices, transport updates and system notices{% endblock %}
 {% block header_actions %}
-  {% if can_compose_notifications %}
+  {% if is_global_admin %}
     <a href="{% url 'notifications_compose' %}" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
       <i class="ph ph-plus mr-2"></i> Compose
     </a>
