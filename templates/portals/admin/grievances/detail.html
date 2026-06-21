@@ -1,4 +1,5 @@
 {% extends 'portals/admin/base.html' %}
+{% load history_tags %}
 
 {% block title %}Grievance{% endblock %}
 
@@ -20,6 +21,8 @@
     <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Description</h2>
     <div class="text-gray-900 whitespace-pre-wrap">{{ grievance.body }}</div>
   </div>
+
+  {% history_timeline grievance "Grievance Timeline" %}
 
   <form method="post" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
     {% csrf_token %}
