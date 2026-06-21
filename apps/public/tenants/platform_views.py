@@ -1,4 +1,5 @@
 from functools import wraps
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -9,6 +10,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import DomainForm, TenantForm, TenantStatusForm
@@ -18,13 +20,29 @@ from .models import Domain, Tenant
 PLATFORM_PAGE_SIZE = 25
 
 
+def _login_redirect_url(request):
+    query = urlencode({"next": request.get_full_path()})
+    return f"{reverse('platform_admin_login')}?{query}"
+
+
+def _safe_next_url(request):
+    next_url = request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return None
+
+
 def platform_admin_required(view_func):
     """Allow only authenticated platform superusers to use the public SaaS console."""
 
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('platform_admin_login')}?next={request.get_full_path()}")
+            return redirect(_login_redirect_url(request))
         if not request.user.is_superuser:
             messages.error(request, "Only platform super administrators can access the SaaS console.")
             return redirect("platform_admin_login")
@@ -72,7 +90,7 @@ def platform_login(request):
             else:
                 login(request, user)
                 messages.success(request, "Welcome to the Platform Admin Console.")
-                return redirect(request.GET.get("next") or "platform_dashboard")
+                return redirect(_safe_next_url(request) or "platform_dashboard")
         else:
             messages.error(request, "Please check your username and password.")
 
