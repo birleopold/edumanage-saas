@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.db import transaction
 from django.utils import timezone
 
 from .models import Domain, Tenant
@@ -20,6 +21,12 @@ DOMAIN_TYPE_CHOICES = (
 
 _RESERVED_SCHEMA_NAMES = {"public", "information_schema", "pg_catalog", "pg_toast"}
 _SCHEMA_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+def normalize_domain(value):
+    domain = (value or "").strip().lower()
+    domain = domain.replace("https://", "").replace("http://", "").strip("/")
+    return domain
 
 
 class StyledFormMixin:
@@ -44,6 +51,11 @@ class StyledFormMixin:
 
 class TenantForm(StyledFormMixin, forms.ModelForm):
     status = forms.ChoiceField(choices=STATUS_CHOICES)
+    primary_domain = forms.CharField(
+        required=True,
+        label="Client domain name",
+        help_text="Buy the client's domain, point its DNS to the EduManage server, then enter it here. Example: schoolname.ac.ug",
+    )
 
     class Meta:
         model = Tenant
@@ -59,6 +71,7 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
         if self.instance and self.instance.pk:
             self.fields["schema_name"].disabled = True
             self.fields["schema_name"].help_text = "Schema name is locked after tenant creation to protect tenant data."
+            self.fields.pop("primary_domain", None)
 
     def clean_schema_name(self):
         schema_name = (self.cleaned_data.get("schema_name") or "").strip().lower()
@@ -75,6 +88,33 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError("A tenant with this schema name already exists.")
         return schema_name
+
+    def clean_primary_domain(self):
+        domain = normalize_domain(self.cleaned_data.get("primary_domain"))
+        if not domain or "." not in domain:
+            raise forms.ValidationError("Enter a valid domain name.")
+        if "/" in domain:
+            raise forms.ValidationError("Enter the domain only, without paths.")
+        if Domain.objects.filter(domain=domain).exists():
+            raise forms.ValidationError("This domain is already assigned to another tenant.")
+        return domain
+
+    def save(self, commit=True):
+        if self.instance and self.instance.pk:
+            return super().save(commit=commit)
+
+        if not commit:
+            return super().save(commit=False)
+
+        with transaction.atomic():
+            tenant = super().save(commit=True)
+            Domain.objects.create(
+                tenant=tenant,
+                domain=self.cleaned_data["primary_domain"],
+                type="CUSTOM",
+                is_primary=True,
+            )
+            return tenant
 
 
 class DomainForm(StyledFormMixin, forms.ModelForm):
@@ -94,8 +134,7 @@ class DomainForm(StyledFormMixin, forms.ModelForm):
         self._style_fields()
 
     def clean_domain(self):
-        domain = (self.cleaned_data.get("domain") or "").strip().lower()
-        domain = domain.replace("https://", "").replace("http://", "").strip("/")
+        domain = normalize_domain(self.cleaned_data.get("domain"))
         if "/" in domain:
             raise forms.ValidationError("Enter the domain only, without paths.")
         if not domain or "." not in domain:
