@@ -54,15 +54,19 @@ INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in S
 
 MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",
+    "apps.public.tenants.middleware.TenantStatusMiddleware",
     *MIDDLEWARE,
 ]
+
+TENANT_STATUS_UNAVAILABLE_STATUSES = ("suspended", "archived")
+TENANT_STATUS_EXEMPT_PATH_PREFIXES = (f"/{STATIC_URL.lstrip('/')}", f"/{MEDIA_URL.lstrip('/')}", "/health/")
 
 DATABASES = {
     "default": {
         "ENGINE": "django_tenants.postgresql_backend",
         "NAME": config("POSTGRES_DB", default="edumanage_saas"),
         "USER": config("POSTGRES_USER", default="postgres"),
-        "PASSWORD": config("POSTGRES_PASSWORD", default="postgres"),
+        "PASSWORD": config("POSTGRES_PASSWORD", default=""),
         "HOST": config("POSTGRES_HOST", default="127.0.0.1"),
         "PORT": config("POSTGRES_PORT", default="5432"),
     }
