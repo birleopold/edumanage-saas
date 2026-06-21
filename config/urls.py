@@ -5,6 +5,7 @@ from django.urls import include, path
 
 from apps.tenant.finance import login_links
 from apps.tenant.portals import error_handlers
+from apps.tenant.users import device_portal
 
 urlpatterns = [
     path("dj-admin/", admin.site.urls),
@@ -13,6 +14,8 @@ urlpatterns = [
     path("analytics-portal/", include("apps.tenant.analytics.portal_urls")),
     path("external-login/<str:provider_type>/", login_links.external_login_start, name="external_login_start"),
     path("external-login/callback/", login_links.external_login_callback, name="external_login_callback"),
+    path("profile/devices/", device_portal.my_devices, name="my_devices"),
+    path("profile/devices/<int:pk>/disable/", device_portal.deactivate_my_device, name="my_device_deactivate"),
     path("", include("apps.tenant.portals.urls")),
     path("api/v1/", include("apps.tenant.portals.api_urls")),
 ]
