@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, override_settings
 
+from .forms import normalize_domain
 from .middleware import TenantStatusMiddleware
 from .platform_views import _login_redirect_url, _safe_next_url
 
@@ -81,3 +82,9 @@ class PlatformRedirectSafetyTests(SimpleTestCase):
         request = self.factory.get("/platform/login/?next=https://evil.example/phish", HTTP_HOST="example.com")
 
         self.assertIsNone(_safe_next_url(request))
+
+
+class DomainInputTests(SimpleTestCase):
+    def test_domain_input_is_normalized_for_non_technical_entry(self):
+        self.assertEqual(normalize_domain("HTTPS://School.Example.Com/"), "school.example.com")
+        self.assertEqual(normalize_domain("  http://portal.school.ac.ug  "), "portal.school.ac.ug")
