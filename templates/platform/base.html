@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Platform Admin{% endblock %} | EduManage</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-full bg-slate-50 text-slate-900">
+  <div class="min-h-screen lg:flex">
+    <aside class="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-80 lg:border-b-0 lg:border-r">
+      <div class="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-slate-950 text-white shadow-lg">
+          <i class="ph-fill ph-buildings text-2xl"></i>
+        </div>
+        <div>
+          <p class="text-lg font-black leading-tight">EduManage</p>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Platform Console</p>
+        </div>
+      </div>
+
+      <nav class="space-y-2 px-4 py-6">
+        <a href="{% url 'platform_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if request.resolver_match.url_name == 'platform_dashboard' %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-gauge text-xl"></i> Dashboard
+        </a>
+        <a href="{% url 'platform_tenant_list' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if 'tenant' in request.resolver_match.url_name or 'domain' in request.resolver_match.url_name %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-tree-structure text-xl"></i> Tenants & Domains
+        </a>
+        <a href="/dj-admin/" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-800">
+          <i class="ph ph-database text-xl"></i> Django Admin
+        </a>
+      </nav>
+
+      <div class="mx-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950">
+        <p class="font-black">Access safeguard</p>
+        <p class="mt-1 text-xs font-semibold leading-5 text-blue-800">Only authenticated superusers can manage SaaS tenants, domains and public-schema platform operations.</p>
+      </div>
+    </aside>
+
+    <main class="lg:ml-80 flex-1">
+      <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div class="flex min-h-20 flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-700">{% block eyebrow %}SaaS Operations{% endblock %}</p>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-slate-950">{% block page_title %}Platform Admin{% endblock %}</h1>
+            <p class="mt-1 text-sm font-semibold text-slate-500">{% block breadcrumbs %}Public-schema management console{% endblock %}</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            {% block header_actions %}{% endblock %}
+            {% if request.user.is_authenticated %}
+              <a href="{% url 'platform_admin_logout' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700">
+                <i class="ph ph-sign-out mr-1"></i> Sign out
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <section class="px-5 py-6 lg:px-8">
+        {% if messages %}
+          <div class="mb-6 space-y-3">
+            {% for message in messages %}
+              <div class="rounded-2xl border px-4 py-3 text-sm font-bold {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-800{% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>
