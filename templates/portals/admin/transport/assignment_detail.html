@@ -1,0 +1,25 @@
+{% extends 'portals/admin/base.html' %}
+{% load history_tags %}
+
+{% block title %}Transport Assignment{% endblock %}
+{% block page_title %}Transport Assignment Detail{% endblock %}
+{% block header_actions %}
+  <a href="{% url 'admin_transport_assignments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Back</a>
+  <a href="{% url 'admin_transport_assignment_edit' assignment.id %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Edit</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 class="text-lg font-black text-slate-950">{{ assignment.student }}</h2>
+    <div class="mt-4 grid gap-3 md:grid-cols-2 text-sm">
+      <div><p class="text-xs font-black uppercase text-slate-500">Route</p><p class="font-bold text-slate-900">{{ assignment.route }}</p></div>
+      <div><p class="text-xs font-black uppercase text-slate-500">Stop</p><p class="font-bold text-slate-900">{{ assignment.stop|default:'-' }}</p></div>
+      <div><p class="text-xs font-black uppercase text-slate-500">Service</p><p class="font-bold text-slate-900">{{ assignment.get_service_type_display }}</p></div>
+      <div><p class="text-xs font-black uppercase text-slate-500">Status</p><p class="font-bold text-slate-900">{% if assignment.is_active %}Active{% else %}Inactive{% endif %}</p></div>
+    </div>
+  </section>
+
+  {% history_timeline assignment "Transport Assignment Timeline" %}
+</div>
+{% endblock %}
