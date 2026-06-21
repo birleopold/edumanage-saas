@@ -1,9 +1,26 @@
 {% extends 'portals/admin/base.html' %}
+{% load history_tags %}
 
 {% block title %}{% if mode == 'edit' %}Edit Assignment{% else %}Add Assignment{% endif %}{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Assignment{% else %}Add Assignment{% endif %}</h1>
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-black text-slate-950">{% if mode == 'edit' %}Edit Transport Assignment{% else %}Add Transport Assignment{% endif %}</h1>
+        <p class="mt-1 text-sm text-slate-500">Manage the student's route, stop, service type and active status.</p>
+      </div>
+      <a href="{% url 'admin_transport_assignments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Back to assignments</a>
+    </div>
+  </section>
 
-  {% include 'components/ui_form.html' %}
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    {% include 'components/ui_form.html' %}
+  </section>
+
+  {% if assignment %}
+    {% history_timeline assignment "Transport Assignment Timeline" %}
+  {% endif %}
+</div>
 {% endblock %}
