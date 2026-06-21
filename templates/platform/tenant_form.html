@@ -2,13 +2,21 @@
 
 {% block title %}{% if mode == 'create' %}New Tenant{% else %}Edit Tenant{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Create Tenant{% else %}Edit Tenant{% endif %}{% endblock %}
-{% block breadcrumbs %}{% if mode == 'create' %}Provision a new school tenant and schema{% else %}Update tenant name and operating status{% endif %}{% endblock %}
+{% block breadcrumbs %}{% if mode == 'create' %}One simple setup: school details + client domain{% else %}Update tenant name and operating status{% endif %}{% endblock %}
 {% block header_actions %}
   <a href="{% if tenant %}{% url 'platform_tenant_detail' tenant.pk %}{% else %}{% url 'platform_tenant_list' %}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back</a>
 {% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-3xl space-y-6">
+  {% if mode == 'create' %}
+    <section class="rounded-[2rem] bg-gradient-to-br from-blue-950 to-slate-900 p-6 text-white shadow-xl">
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Non-technical setup</p>
+      <h2 class="mt-3 text-2xl font-black">Buy the client domain, enter it here, and the tenant is provisioned with that domain.</h2>
+      <p class="mt-3 text-sm font-semibold leading-6 text-blue-100">The form creates the school tenant and attaches the domain as the primary custom domain automatically. DNS/SSL should be handled by your hosting, reverse proxy, or DNS provider setup.</p>
+    </section>
+  {% endif %}
+
   <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
     <form method="post" class="space-y-6">
       {% csrf_token %}
@@ -24,15 +32,15 @@
         <div class="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>
       {% endif %}
       <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-        <button type="submit" class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-check-circle mr-1"></i> Save Tenant</button>
+        <button type="submit" class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-check-circle mr-1"></i> {% if mode == 'create' %}Create Tenant & Attach Domain{% else %}Save Tenant{% endif %}</button>
         <a href="{% if tenant %}{% url 'platform_tenant_detail' tenant.pk %}{% else %}{% url 'platform_tenant_list' %}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">Cancel</a>
       </div>
     </form>
   </section>
 
   <section class="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
-    <h3 class="font-black">Provisioning note</h3>
-    <p class="mt-2 font-semibold leading-6">When using PostgreSQL tenant mode, creating a tenant will use django-tenants automatic schema creation. Keep schema names stable because changing them after creation can disconnect tenant data.</p>
+    <h3 class="font-black">Easy domain note</h3>
+    <p class="mt-2 font-semibold leading-6">For the easiest workflow, buy the client's domain from any registrar, point it to the EduManage server or proxy, then type that domain in this form. EduManage will create the tenant and save that domain as the primary custom domain.</p>
   </section>
 </div>
 {% endblock %}
