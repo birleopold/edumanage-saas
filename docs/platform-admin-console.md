@@ -33,4 +33,4 @@ This module exposes public-schema SaaS tenant and domain management outside raw 
 
 ## Suggested verification before merge
 
-Run Django checks and the public tenant tests using tenant settings, then smoke-test platform routes and tenant availability behavior in a tenant-aware PostgreSQL environment.
+Run Django checks and the public tenant tests using tenant settings, then smoke-test platform routes and tenant availability behavior in a tenant-aware PostgreSQL environment. Local execution was not performed in the ChatGPT tool environment.
