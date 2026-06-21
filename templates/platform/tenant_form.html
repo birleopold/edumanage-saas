@@ -1,0 +1,38 @@
+{% extends 'platform/base.html' %}
+
+{% block title %}{% if mode == 'create' %}New Tenant{% else %}Edit Tenant{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'create' %}Create Tenant{% else %}Edit Tenant{% endif %}{% endblock %}
+{% block breadcrumbs %}{% if mode == 'create' %}Provision a new school tenant and schema{% else %}Update tenant name and operating status{% endif %}{% endblock %}
+{% block header_actions %}
+  <a href="{% if tenant %}{% url 'platform_tenant_detail' tenant.pk %}{% else %}{% url 'platform_tenant_list' %}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-2 text-xs font-semibold text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-2 text-xs font-black text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}
+        <div class="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
+        <button type="submit" class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-check-circle mr-1"></i> Save Tenant</button>
+        <a href="{% if tenant %}{% url 'platform_tenant_detail' tenant.pk %}{% else %}{% url 'platform_tenant_list' %}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">Cancel</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
+    <h3 class="font-black">Provisioning note</h3>
+    <p class="mt-2 font-semibold leading-6">When using PostgreSQL tenant mode, creating a tenant will use django-tenants automatic schema creation. Keep schema names stable because changing them after creation can disconnect tenant data.</p>
+  </section>
+</div>
+{% endblock %}
