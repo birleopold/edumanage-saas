@@ -4,7 +4,6 @@ from .base import *
 DEBUG = True
 
 INSTALLED_APPS = [
-    "django_tenants",
     "apps.public.tenants",
     *INSTALLED_APPS,
 ]
@@ -48,4 +47,3 @@ TENANT_DOMAIN_MODEL = "tenants.Domain"
 PUBLIC_SCHEMA_NAME = "public"
 SHARED_APPS = tuple(app for app in INSTALLED_APPS if not app.startswith("apps.tenant."))
 TENANT_APPS = tuple(app for app in INSTALLED_APPS if app.startswith("apps.tenant."))
-DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
