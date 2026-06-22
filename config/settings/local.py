@@ -43,3 +43,6 @@ INSTALLED_APPS += [
 ]
 
 AUTH_USER_MODEL = "users.User"
+TENANT_MODEL = "tenants.Tenant"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
+PUBLIC_SCHEMA_NAME = "public"
