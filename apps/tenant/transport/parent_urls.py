@@ -4,4 +4,5 @@ from . import parent_views
 
 urlpatterns = [
     path("", parent_views.children_transport, name="parent_transport_home"),
+    path("assignments/<int:pk>/", parent_views.assignment_detail, name="parent_transport_assignment_detail"),
 ]
