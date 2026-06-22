@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views
+from . import admin_views, assignment_history_views
 
 urlpatterns = [
     # Drivers
@@ -28,5 +28,6 @@ urlpatterns = [
     # Student Assignments
     path("assignments/", admin_views.assignment_list, name="admin_transport_assignments_list"),
     path("assignments/create/", admin_views.assignment_create, name="admin_transport_assignment_create"),
+    path("assignments/<int:pk>/", assignment_history_views.assignment_detail, name="admin_transport_assignment_detail"),
     path("assignments/<int:pk>/edit/", admin_views.assignment_edit, name="admin_transport_assignment_edit"),
 ]

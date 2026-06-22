@@ -1,4 +1,5 @@
 {% extends 'portals/admin/base.html' %}
+{% load history_tags %}
 
 {% block title %}Applicant {{ applicant.application_reference }}{% endblock %}
 {% block page_title %}Applicant Detail{% endblock %}
@@ -81,6 +82,7 @@
 
   <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Custom Application Responses</h2>{% if applicant.custom_responses %}<div class="grid grid-cols-1 md:grid-cols-2 gap-3">{% for key,row in applicant.custom_responses.items %}<div class="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm"><p class="text-xs uppercase font-bold text-gray-500">{{ row.label }}</p><p class="font-semibold text-gray-900">{{ row.value }}</p></div>{% endfor %}</div>{% else %}<p class="text-sm text-gray-500">No custom responses recorded.</p>{% endif %}</section>
   <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h2><div class="space-y-3">{% for document in applicant.documents.all %}<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 rounded-lg border border-gray-200 bg-gray-50"><div><p class="text-sm font-semibold text-gray-900">{{ document.title }}</p><p class="text-xs text-gray-500">Uploaded {{ document.uploaded_at }}</p></div><a href="{{ document.file.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100">Open file</a></div>{% empty %}<p class="text-sm text-gray-500">No supporting documents uploaded.</p>{% endfor %}</div></section>
+  {% history_timeline applicant "Applicant Timeline" %}
   <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Notes</h2><p class="text-sm text-gray-800 whitespace-pre-wrap">{{ applicant.note|default:'No notes yet.' }}</p></section>
 </div>
 {% endblock %}

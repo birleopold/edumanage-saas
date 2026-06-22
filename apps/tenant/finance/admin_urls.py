@@ -1,10 +1,11 @@
 from django.urls import include, path
 
-from . import admin_views, bulk_views, communication_views, dashboard_views
+from . import admin_views, bulk_views, communication_views, dashboard_views, payment_history_views
 
 urlpatterns = [
     path("", dashboard_views.finance_dashboard, name="admin_finance_dashboard"),
     path("books/", include("apps.tenant.finance.books")),
+    path("payments/<int:pk>/", payment_history_views.payment_detail, name="admin_payments_detail"),
     path(
         "payments/<int:pk>/receipt/",
         admin_views.payment_receipt_pdf,
