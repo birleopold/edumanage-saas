@@ -23,27 +23,20 @@ def _parent_student_ids(parent, campus_id=None):
 @role_required(Role.PARENT)
 def children_transport(request):
     update_current_campus_from_request(request)
-
     parent = ParentProfile.objects.filter(user=request.user).first()
     if not parent:
         return HttpResponseForbidden("No parent profile linked to this account.")
-
     campuses = campus_queryset()
     campus_id = selected_campus_id_from_request(request)
-    student_ids = _parent_student_ids(parent, campus_id)
-
     assignments = (
         StudentTransportAssignment.objects.select_related("student", "route", "stop", "route__vehicle", "route__driver")
-        .prefetch_related("route__schedules", "notifications")
-        .filter(student_id__in=student_ids)
+        .filter(student_id__in=_parent_student_ids(parent, campus_id))
         .order_by("student__last_name", "student__first_name", "-created_at")
     )
-
     notices = ParentNotification.objects.select_related("assignment", "assignment__student", "assignment__route").filter(assignment__in=assignments).order_by("-sent_at")[:20]
-
     return render(
         request,
-        "portals/parent/transport/home.html",
+        "portals/parent/transport/overview.html",
         {"parent": parent, "assignments": assignments, "notices": notices, "campuses": campuses, "selected_campus_id": campus_id},
     )
 
