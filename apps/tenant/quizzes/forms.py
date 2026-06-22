@@ -44,7 +44,7 @@ class QuizForm(StyledFormMixin, forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 3}),
             "available_from": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "available_until": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "students": forms.CheckboxSelectMultiple,
+            "students": forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, teacher=None, **kwargs):
