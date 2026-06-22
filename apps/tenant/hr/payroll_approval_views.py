@@ -11,11 +11,13 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 from apps.tenant.orgsettings.models import Notification
-from apps.tenant.portals.permissions import admin_portal_required
+from apps.tenant.portals.permissions import roles_required
 from apps.tenant.users.models import Role
 
 from .payroll_models import Payslip, PayrollApproval
 
+
+PAYROLL_REVIEW_ROLES = (Role.ADMIN, Role.CAMPUS_ADMIN, Role.PRINCIPAL)
 
 ROLE_ALIASES = {
     "BURSAR": (Role.ADMIN, Role.CAMPUS_ADMIN),
@@ -67,7 +69,7 @@ def _approval_queryset_for_user(user):
     return qs.filter(approver_role__in=allowed)
 
 
-@admin_portal_required
+@roles_required(*PAYROLL_REVIEW_ROLES)
 def approval_dashboard(request):
     status = request.GET.get("status") or "pending"
     q = (request.GET.get("q") or "").strip()
@@ -97,7 +99,7 @@ def approval_dashboard(request):
     return render(request, "portals/admin/hr/payroll/approval_dashboard.html", {"approvals": approvals[:200], "counts": counts, "grouped": grouped, "status": status, "q": q})
 
 
-@admin_portal_required
+@roles_required(*PAYROLL_REVIEW_ROLES)
 def approval_detail(request, pk):
     approval = get_object_or_404(_approval_queryset_for_user(request.user), pk=pk)
     payslip = get_object_or_404(
@@ -108,7 +110,7 @@ def approval_detail(request, pk):
     return render(request, "portals/admin/hr/payroll/approval_detail.html", {"approval": approval, "payslip": payslip, "can_act": can_act})
 
 
-@admin_portal_required
+@roles_required(*PAYROLL_REVIEW_ROLES)
 @require_POST
 def approval_action(request, pk):
     approval = get_object_or_404(PayrollApproval.objects.select_related("payslip"), pk=pk)
@@ -147,7 +149,7 @@ def approval_action(request, pk):
     return redirect("admin_hr_payroll_approval_detail", pk=approval.pk)
 
 
-@admin_portal_required
+@roles_required(*PAYROLL_REVIEW_ROLES)
 @require_POST
 def mark_paid(request, pk):
     payslip = get_object_or_404(Payslip, pk=pk)
@@ -203,7 +205,7 @@ def _render_payslip_pdf(payslip):
     return buffer
 
 
-@admin_portal_required
+@roles_required(*PAYROLL_REVIEW_ROLES)
 def payslip_pdf(request, pk):
     payslip = get_object_or_404(Payslip.objects.select_related("staff").prefetch_related("approvals__approver"), pk=pk)
     buffer = _render_payslip_pdf(payslip)
