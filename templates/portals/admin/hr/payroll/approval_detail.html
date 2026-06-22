@@ -1,0 +1,26 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Payroll Approval{% endblock %}
+{% block page_title %}Payroll Approval{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_hr_payroll_approval_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Back</a><a href="{% url 'admin_hr_payroll_payslip_pdf' payslip.id %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Download PDF</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Staff</p><p class="mt-2 font-black text-slate-950">{{ payslip.staff }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Period</p><p class="mt-2 font-black text-slate-950">{{ payslip.period_year }}/{{ payslip.period_month|stringformat:'02d' }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Status</p><p class="mt-2 font-black text-slate-950">{{ payslip.get_status_display }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Net pay</p><p class="mt-2 font-black text-green-700">{{ payslip.net_salary }}</p></div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 class="font-black text-slate-950">Approval chain</h2>
+    <div class="mt-4 space-y-3">{% for item in payslip.approvals.all %}<div class="rounded-xl border border-slate-100 p-4"><p class="font-bold text-slate-900">{{ item.approver_role }} - {{ item.get_status_display }}</p><p class="text-xs text-slate-500">By {{ item.approver|default:'-' }} · {{ item.approved_at|date:'M d, Y H:i'|default:'Pending' }}</p>{% if item.comments %}<p class="mt-2 text-sm text-slate-600">{{ item.comments }}</p>{% endif %}</div>{% empty %}<p class="text-sm text-slate-500">No approval chain created yet.</p>{% endfor %}</div>
+  </section>
+
+  {% if can_act %}<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-black text-slate-950">Take action as {{ approval.approver_role }}</h2><form method="post" action="{% url 'admin_hr_payroll_approval_action' approval.id %}" class="mt-4 space-y-4">{% csrf_token %}<textarea name="comments" rows="3" class="block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Approval comment"></textarea><div class="flex gap-3"><button name="action" value="approve" class="rounded-xl bg-green-600 px-5 py-2.5 text-sm font-black text-white">Approve</button><button name="action" value="reject" class="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white">Reject</button></div></form></section>{% endif %}
+
+  {% if payslip.status == 'APPROVED' %}<section class="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm"><h2 class="font-black text-blue-950">Payment confirmation</h2><form method="post" action="{% url 'admin_hr_payroll_payslip_mark_paid' payslip.id %}" class="mt-4 space-y-4">{% csrf_token %}<textarea name="comments" rows="2" class="block w-full rounded-xl border border-blue-200 px-3 py-2 text-sm" placeholder="Payment reference or comment"></textarea><button class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white">Mark as paid</button></form></section>{% endif %}
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-black text-slate-950">Audit notes</h2><p class="mt-3 whitespace-pre-wrap text-sm text-slate-600">{{ payslip.notes|default:'No notes yet.' }}</p></section>
+</div>
+{% endblock %}
