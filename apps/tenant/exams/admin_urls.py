@@ -1,12 +1,19 @@
 from django.urls import path
 
-from . import admin_views
+from . import admin_views, review_views
 
 urlpatterns = [
     # Exams
     path("", admin_views.exam_list, name="admin_exams_list"),
     path("create/", admin_views.exam_create, name="admin_exams_create"),
     path("<int:pk>/edit/", admin_views.exam_edit, name="admin_exams_edit"),
+
+    # Exam review console
+    path("review/", review_views.review_dashboard, name="admin_exam_review_dashboard"),
+    path("review/export/", review_views.export_review_csv, name="admin_exam_review_export"),
+    path("review/attempts/<int:pk>/", review_views.attempt_review, name="admin_exam_review_attempt"),
+    path("review/events/<int:pk>/", review_views.event_detail, name="admin_exam_review_event"),
+    path("review/events/<int:pk>/resolve/", review_views.resolve_event, name="admin_exam_review_event_resolve"),
 
     # Exam Papers
     path("papers/", admin_views.paper_list, name="admin_exam_papers_list"),
