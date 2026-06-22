@@ -1,0 +1,68 @@
+{% extends "portals/admin/base.html" %}
+
+{% block title %}Device Monitor{% endblock %}
+{% block page_title %}Device Monitor{% endblock %}
+{% block breadcrumbs %}Monitor registered mobile and PWA devices{% endblock %}
+{% block header_actions %}
+  <a href="{% url 'admin_users_list' %}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+    <i class="ph ph-users mr-2"></i> Users
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total devices</p><p class="mt-2 text-3xl font-black text-slate-950">{{ total_devices }}</p></div>
+    <div class="rounded-2xl border border-green-100 bg-green-50 p-5 shadow-sm"><p class="text-xs font-bold uppercase tracking-wider text-green-700">Active</p><p class="mt-2 text-3xl font-black text-green-800">{{ active_devices }}</p></div>
+    <div class="rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm"><p class="text-xs font-bold uppercase tracking-wider text-blue-700">Alert-ready</p><p class="mt-2 text-3xl font-black text-blue-800">{{ ready_devices }}</p></div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid gap-4 md:grid-cols-[1fr_160px_180px_auto] md:items-end">
+      <div>
+        <label class="mb-2 block text-sm font-bold text-slate-700">Search</label>
+        <input type="search" name="q" value="{{ q }}" placeholder="User, email, device ID or app version..." class="block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-bold text-slate-700">Platform</label>
+        <select name="platform" class="block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
+          <option value="">All</option>
+          {% for value,label in platform_choices %}<option value="{{ value }}" {% if platform == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-bold text-slate-700">Status</label>
+        <select name="status" class="block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
+          <option value="" {% if not status %}selected{% endif %}>All</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="ready" {% if status == 'ready' %}selected{% endif %}>Alert-ready</option>
+          <option value="missing_token" {% if status == 'missing_token' %}selected{% endif %}>Not alert-ready</option>
+        </select>
+      </div>
+      <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Filter</button>
+    </form>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">User</th><th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Platform</th><th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Device</th><th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Last seen</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for device in devices %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-6 py-4"><p class="font-bold text-slate-950">{{ device.user.get_full_name|default:device.user.username }}</p><p class="text-xs text-slate-500">{{ device.user.email|default:device.user.username }}</p></td>
+              <td class="px-6 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">{{ device.get_platform_display }}</span></td>
+              <td class="px-6 py-4"><p class="font-mono text-xs text-slate-700">{{ device.device_id|default:'Not provided' }}</p><p class="mt-1 text-xs text-slate-500">Version {{ device.app_version|default:'Unknown' }}</p></td>
+              <td class="px-6 py-4">{% if device.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Inactive</span>{% endif %}</td>
+              <td class="px-6 py-4 text-sm text-slate-600">{{ device.last_seen_at|date:'M d, Y H:i' }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500">No devices found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
