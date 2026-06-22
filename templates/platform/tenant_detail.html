@@ -1,0 +1,89 @@
+{% extends 'platform/base.html' %}
+
+{% block title %}{{ tenant.name }}{% endblock %}
+{% block page_title %}{{ tenant.name }}{% endblock %}
+{% block breadcrumbs %}Tenant detail, schema readiness, status controls and domains{% endblock %}
+{% block header_actions %}
+  <a href="{% url 'platform_domain_create' tenant.pk %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-globe mr-1"></i> Add Domain</a>
+  <a href="{% url 'platform_tenant_edit' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-pencil-simple mr-1"></i> Edit</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+  <section class="grid gap-4 lg:grid-cols-4">
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenant identity</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-950">{{ tenant.name }}</h2>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Schema</p><p class="mt-1 font-mono text-sm font-black text-slate-900">{{ tenant.schema_name }}</p></div>
+        <div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Created</p><p class="mt-1 text-sm font-black text-slate-900">{{ tenant.created_at|date:'M d, Y H:i' }}</p></div>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenant status</p>
+      <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black {% if tenant.status == 'active' %}bg-green-100 text-green-700{% elif tenant.status == 'suspended' %}bg-red-100 text-red-700{% elif tenant.status == 'pending' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-700{% endif %}">{{ tenant.status|title }}</span>
+      <form method="post" action="{% url 'platform_tenant_status_update' tenant.pk %}" class="mt-4 space-y-3">
+        {% csrf_token %}
+        {{ status_form.status }}
+        <button class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Update status</button>
+      </form>
+    </div>
+
+    <div class="rounded-3xl border {% if schema_status.exists == True %}border-green-100 bg-green-50{% elif schema_status.exists == False %}border-red-100 bg-red-50{% else %}border-blue-100 bg-blue-50{% endif %} p-5 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-wider {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">Schema status</p>
+      <p class="mt-3 text-2xl font-black {% if schema_status.exists == True %}text-green-800{% elif schema_status.exists == False %}text-red-800{% else %}text-blue-800{% endif %}">{{ schema_status.label }}</p>
+      <p class="mt-2 text-xs font-bold leading-5 {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">{{ schema_status.detail }}</p>
+    </div>
+  </section>
+
+  <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="text-lg font-black">Domains</h3>
+        <p class="text-sm font-semibold text-slate-500">Manage access hostnames, primary routing and verification.</p>
+      </div>
+      <a href="{% url 'platform_domain_create' tenant.pk %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-plus mr-1"></i> Add Domain</a>
+    </div>
+
+    {% if domains %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Domain</th>
+              <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Primary</th>
+              <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Verification</th>
+              <th class="px-6 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for domain in domains %}
+              <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4"><p class="font-black text-slate-950">{{ domain.domain }}</p></td>
+                <td class="px-6 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{{ domain.type }}</span></td>
+                <td class="px-6 py-4">{% if domain.is_primary %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">Primary</span>{% else %}<form method="post" action="{% url 'platform_domain_mark_primary' domain.pk %}">{% csrf_token %}<button class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-700 hover:border-blue-200 hover:bg-blue-50">Make primary</button></form>{% endif %}</td>
+                <td class="px-6 py-4">{% if domain.verified_at %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Verified {{ domain.verified_at|date:'M d, Y' }}</span>{% else %}<form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<button class="rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-800 hover:bg-amber-200">Mark verified</button></form>{% endif %}</td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex flex-wrap justify-end gap-2">
+                    <a href="{% url 'platform_domain_edit' domain.pk %}" class="rounded-xl bg-blue-700 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-800">Edit</a>
+                    <form method="post" action="{% url 'platform_domain_delete' domain.pk %}" onsubmit="return confirm('Remove this domain from the tenant?');">{% csrf_token %}<button class="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button></form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="p-10 text-center"><div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700"><i class="ph ph-globe text-3xl"></i></div><h3 class="text-lg font-black">No domains yet</h3><p class="mt-1 text-sm font-semibold text-slate-500">Add a primary domain so this school can be accessed through the tenant router.</p><a href="{% url 'platform_domain_create' tenant.pk %}" class="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800">Add domain</a></div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm text-red-900">
+    <h3 class="font-black">Suspension guidance</h3>
+    <p class="mt-2 font-semibold leading-6">Changing a tenant to suspended or archived is recorded on the tenant status field. Use this status in future tenant middleware or portal guards to block school access where required.</p>
+  </section>
+</div>
+{% endblock %}
