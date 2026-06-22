@@ -3,6 +3,12 @@ from .base import *
 
 DEBUG = True
 
+INSTALLED_APPS = [
+    "django_tenants",
+    "apps.public.tenants",
+    *INSTALLED_APPS,
+]
+
 INSTALLED_APPS += [
     "apps.tenant.users",
     "apps.tenant.portals",
