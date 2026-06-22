@@ -1,0 +1,29 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}{{ mode }} {{ config.label }}{% endblock %}
+{% block page_title %}{{ mode }} {{ config.label }}{% endblock %}
+{% block breadcrumbs %}<a class="text-primary-700 hover:underline" href="{% url 'admin_analytics_records_setup' %}">Analytics Records</a> / <a class="text-primary-700 hover:underline" href="{% url 'admin_analytics_records_list' config.slug %}">{{ config.label }}</a> / {{ mode }}{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_analytics_records_list' config.slug %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Back to {{ config.label }}</a>
+{% endblock %}
+{% block content %}
+<form method="post" class="space-y-6">
+  {% csrf_token %}
+  <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p class="mb-5 text-sm font-semibold text-slate-500">{{ config.description }}</p>
+    <div class="grid gap-4 md:grid-cols-2">
+      {% for field in form %}
+        <div class="{% if field.field.widget.input_type == 'textarea' or field.name == 'risk_factors' or field.name == 'best_performing_subjects' or field.name == 'worst_performing_subjects' %}md:col-span-2{% endif %}">
+          <label class="mb-1 block text-sm font-black text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-bold text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'admin_analytics_records_list' config.slug %}" class="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</a>
+    <button type="submit" class="rounded-xl bg-primary-600 px-5 py-2 text-sm font-bold text-white hover:bg-primary-700">Save</button>
+  </div>
+</form>
+{% endblock %}
