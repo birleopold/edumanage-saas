@@ -1,0 +1,12 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Event Review{% endblock %}
+{% block page_title %}Event Review{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_exam_review_attempt' event.attempt.id %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Back to attempt</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h1 class="text-2xl font-black text-slate-950">{{ event.get_event_type_display }}</h1><p class="mt-2 text-sm text-slate-600">{{ event.attempt.student }} · {{ event.attempt.paper }}</p><div class="mt-4 grid gap-3 md:grid-cols-2 text-sm"><p><strong>Time:</strong> {{ event.created_at|date:'M d, Y H:i:s' }}</p><p><strong>IP:</strong> {{ event.ip_address|default:'-' }}</p><p><strong>Status:</strong> {{ event.metadata.review_status|default:'unresolved' }}</p><p><strong>Reviewed by:</strong> {{ event.metadata.reviewed_by|default:'-' }}</p></div></section>
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-black text-slate-950">Event metadata</h2><pre class="mt-3 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-50">{{ event.metadata }}</pre><h2 class="mt-5 font-black text-slate-950">User agent</h2><p class="mt-2 text-sm text-slate-600 break-words">{{ event.user_agent|default:'-' }}</p></section>
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-black text-slate-950">Resolution</h2><form method="post" action="{% url 'admin_exam_review_event_resolve' event.id %}" class="mt-4 space-y-4">{% csrf_token %}<select name="status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="resolved">Resolved</option><option value="needs_follow_up">Needs follow-up</option><option value="false_alarm">False alarm</option></select><textarea name="note" rows="3" class="block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Review note">{{ event.metadata.review_note }}</textarea><button class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white">Save review</button></form></section>
+</div>
+{% endblock %}
