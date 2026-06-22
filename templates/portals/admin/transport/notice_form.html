@@ -1,0 +1,17 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Transport Notice{% endblock %}
+{% block content %}
+<h1>Transport Notice</h1>
+<p><a href="{% url 'admin_transport_notices_list' %}">Back to notices</a></p>
+<p>
+  <a href="?template=departed">Departed template</a> |
+  <a href="?template=arrived">Arrived template</a> |
+  <a href="?template=delay">Delay template</a> |
+  <a href="?template=route_change">Route change template</a>
+</p>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save Notice</button>
+</form>
+{% endblock %}
