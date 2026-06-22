@@ -1,0 +1,10 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Transport Schedule{% endblock %}
+{% block content %}
+<h1>{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Schedule</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
