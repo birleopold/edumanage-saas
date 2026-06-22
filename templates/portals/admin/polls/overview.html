@@ -1,0 +1,14 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Poll{% endblock %}
+{% block content %}
+<h1>{{ poll.title }}</h1>
+<p>{{ poll.description }}</p>
+<p><a href="{% url 'admin_poll_edit' poll.id %}">Edit</a> | <a href="{% url 'admin_poll_option_add' poll.id %}">Add option</a></p>
+<form method="post" action="{% url 'admin_poll_toggle' poll.id %}">{% csrf_token %}<button type="submit">Change publication</button></form>
+<h2>Results</h2>
+{% for row in results %}
+  <div>{{ row.option.option_text }} - {{ row.votes }} - {{ row.percentage }}%</div>
+{% empty %}
+  <p>No options yet.</p>
+{% endfor %}
+{% endblock %}
