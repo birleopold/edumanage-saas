@@ -1,8 +1,9 @@
 from django.urls import path
 
-from . import promotion_views, views
+from . import promotion_views, setup_views, views
 
 urlpatterns = [
+    path("", setup_views.academics_setup, name="admin_academics_setup"),
     path("context/", views.academic_context, name="admin_academic_context"),
 
     path("years/", views.year_list, name="admin_academic_year_list"),
