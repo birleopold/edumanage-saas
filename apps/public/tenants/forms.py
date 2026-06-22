@@ -29,6 +29,36 @@ def normalize_domain(value):
     return domain
 
 
+def seed_organization_profile_from_tenant(tenant):
+    """Create or update the school profile from the platform tenant record.
+
+    Tenant is the SaaS/platform routing record. OrganizationProfile is the
+    school-facing profile used inside the school portal. They remain separate
+    because one controls routing and the other controls school branding, but the
+    first tenant creation should seed the school profile so users do not type the
+    same school name twice.
+    """
+    try:
+        from apps.tenant.orgsettings.models import Campus, OrganizationProfile
+    except Exception:
+        return
+
+    profile = OrganizationProfile.objects.order_by("id").first()
+    if profile is None:
+        profile = OrganizationProfile.objects.create(name=tenant.name, legal_name=tenant.name)
+    else:
+        profile.name = tenant.name
+        if not profile.legal_name:
+            profile.legal_name = tenant.name
+        profile.save(update_fields=["name", "legal_name", "updated_at"])
+
+    Campus.objects.get_or_create(
+        organization=profile,
+        is_default=True,
+        defaults={"name": "Main Campus", "is_active": True},
+    )
+
+
 class StyledFormMixin:
     """Apply consistent Tailwind-friendly classes to platform console forms."""
 
@@ -101,7 +131,10 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
 
     def save(self, commit=True):
         if self.instance and self.instance.pk:
-            return super().save(commit=commit)
+            tenant = super().save(commit=commit)
+            if commit:
+                seed_organization_profile_from_tenant(tenant)
+            return tenant
 
         if not commit:
             return super().save(commit=False)
@@ -114,6 +147,7 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
                 type="CUSTOM",
                 is_primary=True,
             )
+            seed_organization_profile_from_tenant(tenant)
             return tenant
 
 
