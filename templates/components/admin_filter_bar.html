@@ -1,0 +1,11 @@
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <form method="get" class="flex flex-col gap-3 md:flex-row md:items-end">
+    <div class="flex-1">
+      <label class="mb-1 block text-xs font-black uppercase tracking-wide text-slate-500">Search</label>
+      <input name="q" value="{{ q }}" placeholder="Search records" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-100">
+    </div>
+    {% if status_choices %}<div><label class="mb-1 block text-xs font-black uppercase tracking-wide text-slate-500">Status</label><select name="status" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>{% endif %}
+    <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">Apply</button>
+    {% if export_url %}<a href="{{ export_url }}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">Export</a>{% endif %}
+  </form>
+</section>
