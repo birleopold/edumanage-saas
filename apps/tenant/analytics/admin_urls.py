@@ -1,9 +1,13 @@
 from django.urls import include, path
 
-from . import admin_views
+from . import admin_views, record_views
 
 urlpatterns = [
     path("intelligence/", include("apps.tenant.analytics.intelligence_urls")),
+    path("records/", record_views.analytics_records_setup, name="admin_analytics_records_setup"),
+    path("records/<slug:slug>/", record_views.analytics_records_list, name="admin_analytics_records_list"),
+    path("records/<slug:slug>/add/", record_views.analytics_records_create, name="admin_analytics_records_create"),
+    path("records/<slug:slug>/<int:pk>/edit/", record_views.analytics_records_edit, name="admin_analytics_records_edit"),
     path("charts/", admin_views.charts_overview, name="admin_analytics_charts"),
     path("api/charts-overview/", admin_views.charts_overview_data, name="admin_analytics_api_charts_overview"),
     path("", admin_views.analytics_dashboard, name="admin_analytics_dashboard"),
