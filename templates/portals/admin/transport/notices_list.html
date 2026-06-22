@@ -1,0 +1,10 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Transport Notices{% endblock %}
+{% block page_title %}Transport Notices{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_transport_notice_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Create Notice</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+  <div class="divide-y divide-slate-100">{% for item in notices %}<div class="p-5"><p class="font-black text-slate-950">{{ item.get_notification_type_display }} - {{ item.assignment.student }}</p><p class="mt-1 text-sm text-slate-600">{{ item.message }}</p><p class="mt-2 text-xs text-slate-500">{{ item.assignment.route }} · {{ item.sent_at|date:'M d, Y H:i' }}</p></div>{% empty %}<div class="p-8 text-center text-slate-500">No transport notices yet.</div>{% endfor %}</div>
+</section>
+{% endblock %}
