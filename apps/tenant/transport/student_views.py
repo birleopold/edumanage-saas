@@ -13,14 +13,12 @@ def my_transport(request):
     student = StudentProfile.objects.filter(user=request.user).select_related("campus").first()
     if not student:
         return HttpResponseForbidden("No student profile linked to this account.")
-
     assignments = (
         StudentTransportAssignment.objects.select_related("route", "stop", "route__vehicle", "route__driver")
         .filter(student=student)
         .order_by("-created_at")
     )
-
-    return render(request, "portals/student/transport/home.html", {"student": student, "assignments": assignments})
+    return render(request, "portals/student/transport/overview.html", {"student": student, "assignments": assignments})
 
 
 @role_required(Role.STUDENT)
