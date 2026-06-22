@@ -1,13 +1,12 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.tenant.academics.models import CourseOffering, Enrollment
+from apps.tenant.academics.models import Enrollment
 from apps.tenant.portals.permissions import admin_portal_required, role_required, roles_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
@@ -97,6 +96,10 @@ def quiz_create(request):
         quiz.save()
         form.instance = quiz
         form.save_m2m()
+        class_group = form.cleaned_data.get("assign_class_group")
+        if class_group:
+            students = StudentProfile.objects.filter(stream__class_group=class_group, is_active=True)
+            quiz.students.add(*students)
         messages.success(request, "Quiz created. Add questions before publishing.")
         return redirect("teacher_quiz_detail", pk=quiz.pk)
     return render(request, "portals/teacher/quizzes/form.html", {"form": form, "mode": "create"})
@@ -160,7 +163,7 @@ def choice_create(request, question_pk):
         choice.save()
         messages.success(request, "Choice added.")
         return redirect("teacher_quiz_detail", pk=question.quiz.pk)
-    return render(request, "portals/teacher/quizzes/choice_form.html", {"form": form, "question": question})
+    return render(request, "portals/teacher/quizzes/option_form.html", {"form": form, "question": question})
 
 
 @roles_required(Role.TEACHER, Role.ADMIN, Role.CAMPUS_ADMIN)
