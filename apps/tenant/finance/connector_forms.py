@@ -6,8 +6,23 @@ from .models import IntegrationProviderConfig, IntegrationScope
 class ProviderForm(forms.ModelForm):
     class Meta:
         model = IntegrationProviderConfig
-        fields = ["name", "provider_type", "base_url", "client_id", "access_token", "webhook_secret", "settings", "is_active"]
-        widgets = {"settings": forms.Textarea(attrs={"rows": 4})}
+        fields = [
+            "name",
+            "provider_type",
+            "base_url",
+            "client_id",
+            "client_secret",
+            "access_token",
+            "webhook_secret",
+            "settings",
+            "is_active",
+        ]
+        widgets = {
+            "client_secret": forms.PasswordInput(render_value=True),
+            "access_token": forms.PasswordInput(render_value=True),
+            "webhook_secret": forms.PasswordInput(render_value=True),
+            "settings": forms.Textarea(attrs={"rows": 4}),
+        }
 
 
 class ScopePickerForm(forms.Form):
