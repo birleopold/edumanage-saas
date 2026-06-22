@@ -1,0 +1,27 @@
+{% extends 'portals/teacher/base.html' %}
+{% block title %}Quizzes{% endblock %}
+{% block page_title %}Quizzes{% endblock %}
+{% block breadcrumbs %}Build, publish, and review quiz attempts{% endblock %}
+{% block header_actions %}<a href="{% url 'teacher_quiz_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Create Quiz</a>{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  {% include "components/ui_toast.html" %}
+  {% for quiz in quizzes %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-lg font-black text-slate-950">{{ quiz.name }}</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ quiz.course_offering }} · {{ quiz.get_question_count }} question(s) · {{ quiz.get_difficulty_display }}</p>
+          <div class="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+            {% if quiz.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-green-700">Published</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Draft</span>{% endif %}
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-blue-700">{{ quiz.attempts.count }} attempt(s)</span>
+          </div>
+        </div>
+        <a href="{% url 'teacher_quiz_detail' quiz.id %}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Open</a>
+      </div>
+    </section>
+  {% empty %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm"><h3 class="font-black text-slate-950">No quizzes yet</h3><p class="mt-1 text-sm text-slate-500">Create your first quiz and add questions.</p></section>
+  {% endfor %}
+</div>
+{% endblock %}

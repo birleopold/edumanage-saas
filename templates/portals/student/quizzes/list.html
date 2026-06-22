@@ -1,0 +1,17 @@
+{% extends 'portals/student/base.html' %}
+{% block title %}Quizzes{% endblock %}
+{% block page_title %}My Quizzes{% endblock %}
+{% block breadcrumbs %}Available quizzes and submitted results{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 px-6 py-4"><h2 class="text-lg font-black text-slate-950">Available Quizzes</h2></div>
+    <div class="divide-y divide-slate-100">{% for quiz in quizzes %}<div class="p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p class="font-black text-slate-950">{{ quiz.name }}</p><p class="text-sm text-slate-500">{{ quiz.course_offering }} · {{ quiz.time_limit_minutes }} minutes · {{ quiz.get_question_count }} question(s)</p></div><a href="{% url 'student_quiz_take' quiz.id %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Start / Continue</a></div>{% empty %}<div class="p-8 text-center text-slate-500">No available quizzes right now.</div>{% endfor %}</div>
+  </section>
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 px-6 py-4"><h2 class="text-lg font-black text-slate-950">My Attempts</h2></div>
+    <div class="divide-y divide-slate-100">{% for attempt in attempts %}<div class="p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p class="font-black text-slate-950">{{ attempt.quiz.name }}</p><p class="text-sm text-slate-500">{{ attempt.get_status_display }} · {{ attempt.percentage|default:'-' }}%</p></div><a href="{% url 'student_quiz_result' attempt.id %}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">View result</a></div>{% empty %}<div class="p-8 text-center text-slate-500">No attempts yet.</div>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}
