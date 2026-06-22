@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import PollForm, PollOptionForm, PollVoteForm
-from .models import Poll, PollOption, PollVote
+from .models import Poll, PollVote
 from .portal_services import current_vote, polls_for_user, request_key, results_allowed
 
 
@@ -45,7 +45,7 @@ def admin_poll_edit(request, pk):
 @admin_portal_required
 def admin_poll_detail(request, pk):
     poll = get_object_or_404(Poll.objects.prefetch_related("options", "votes", "specific_students", "specific_teachers"), pk=pk)
-    return render(request, "portals/admin/polls/detail.html", {"poll": poll, "results": poll.get_results()})
+    return render(request, "portals/admin/polls/overview.html", {"poll": poll, "results": poll.get_results()})
 
 
 @admin_portal_required
