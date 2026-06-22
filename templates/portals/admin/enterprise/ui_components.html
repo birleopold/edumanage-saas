@@ -1,0 +1,21 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}UI Components{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  {% include "components/admin_section_header.html" with eyebrow="Design System" title="Shared Admin UI Components" subtitle="Reusable patterns for list pages, detail pages, filters and audit timelines." %}
+  <section class="grid gap-4 md:grid-cols-2">
+    {% for sample in samples %}
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="font-black text-slate-950">{{ sample.title }}</h2>
+        <p class="mt-2 text-sm text-slate-500">{{ sample.description }}</p>
+      </div>
+    {% endfor %}
+  </section>
+  {% include "components/admin_filter_bar.html" with q="" %}
+  <section class="grid gap-4 md:grid-cols-3">
+    {% include "components/admin_metric_card.html" with label="Example Records" value="24" description="Reusable dashboard card" url="#" %}
+    {% include "components/admin_metric_card.html" with label="Pending Items" value="8" description="Status card pattern" url="#" %}
+    {% include "components/admin_metric_card.html" with label="Exports" value="3" description="Operational metric" url="#" %}
+  </section>
+</div>
+{% endblock %}
