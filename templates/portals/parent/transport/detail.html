@@ -1,0 +1,18 @@
+{% extends 'portals/parent/base.html' %}
+{% block title %}Transport Detail{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h1 class="text-2xl font-black text-slate-950">{{ assignment.student }}</h1>
+    <p class="mt-2 text-sm text-slate-600">{{ assignment.route }} · {{ assignment.get_service_type_display }}</p>
+  </section>
+  <section class="grid gap-4 md:grid-cols-2">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Stop</h2><p class="mt-2 text-sm text-slate-700">{{ assignment.stop|default:'Not assigned' }}</p>{% if assignment.stop %}<p class="text-xs text-slate-500">Pickup {{ assignment.stop.pickup_time|default:'-' }} · Drop-off {{ assignment.stop.dropoff_time|default:'-' }}</p>{% endif %}</div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Vehicle</h2><p class="mt-2 text-sm text-slate-700">{{ assignment.route.vehicle|default:'Not assigned' }}</p><p class="text-xs text-slate-500">Driver: {{ assignment.route.driver|default:'Not assigned' }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Latest tracking</h2>{% if latest_tracking %}<p class="mt-2 text-sm text-slate-700">{{ latest_tracking.latitude }}, {{ latest_tracking.longitude }}</p><p class="text-xs text-slate-500">{{ latest_tracking.timestamp|date:'M d, Y H:i' }} · {% if latest_tracking.is_moving %}Moving{% else %}Stopped{% endif %}</p>{% else %}<p class="mt-2 text-sm text-slate-500">No tracking update yet.</p>{% endif %}</div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Emergency contact</h2><p class="mt-2 text-sm text-slate-700">{{ assignment.emergency_contact|default:'-' }}</p><p class="text-xs text-slate-500">{{ assignment.emergency_phone|default:'-' }}</p></div>
+  </section>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Schedule</h2><div class="mt-3 space-y-2">{% for s in schedules %}<p class="text-sm text-slate-700">{{ s.get_day_of_week_display }} at {{ s.start_time }}{% if s.notes %} · {{ s.notes }}{% endif %}</p>{% empty %}<p class="text-sm text-slate-500">No schedule published.</p>{% endfor %}</div></section>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-black text-slate-950">Notification history</h2><div class="mt-3 space-y-3">{% for n in notices %}<div class="rounded-xl bg-slate-50 p-3"><p class="text-sm font-bold text-slate-900">{{ n.get_notification_type_display }}</p><p class="text-sm text-slate-600">{{ n.message }}</p><p class="text-xs text-slate-500">{{ n.sent_at|date:'M d, Y H:i' }}</p></div>{% empty %}<p class="text-sm text-slate-500">No notifications yet.</p>{% endfor %}</div></section>
+</div>
+{% endblock %}
