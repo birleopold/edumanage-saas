@@ -29,6 +29,8 @@ INSTALLED_APPS += [
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",
+    "apps.tenant.quizzes",
+    "apps.tenant.polls",
     "apps.tenant.messaging",
     "apps.tenant.grievances",
     "apps.tenant.audit",
