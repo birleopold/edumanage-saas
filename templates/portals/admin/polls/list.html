@@ -1,0 +1,22 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Polls{% endblock %}
+{% block page_title %}Polls{% endblock %}
+{% block breadcrumbs %}Manage targeted polls and review response progress{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_poll_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Create Poll</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+  <div class="divide-y divide-slate-100">
+    {% for poll in polls %}
+      <div class="p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="font-black text-slate-950">{{ poll.title }}</h2>
+          <p class="mt-1 text-sm text-slate-500">{{ poll.get_audience_display }} · {{ poll.campus|default:'All campuses' }} · {{ poll.vote_total }} response(s)</p>
+          <div class="mt-2 flex flex-wrap gap-2 text-xs font-bold">{% if poll.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-green-700">Published</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Draft</span>{% endif %}{% if poll.is_anonymous %}<span class="rounded-full bg-indigo-100 px-3 py-1 text-indigo-700">Anonymous</span>{% endif %}</div>
+        </div>
+        <a href="{% url 'admin_poll_detail' poll.id %}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">Open</a>
+      </div>
+    {% empty %}<div class="p-10 text-center text-slate-500">No polls yet.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

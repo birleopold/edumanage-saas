@@ -1,0 +1,10 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Add Poll Option{% endblock %}
+{% block page_title %}Add Poll Option{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_poll_detail' poll.id %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Back</a>{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <h2 class="mb-4 text-lg font-black text-slate-950">{{ poll.title }}</h2>
+  <form method="post" class="space-y-4">{% csrf_token %}{{ form.as_p }}<button class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white">Save option</button></form>
+</section>
+{% endblock %}

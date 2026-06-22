@@ -18,6 +18,7 @@ from apps.tenant.finance.services import filter_invoices_outstanding, filter_inv
 from apps.tenant.grievances.models import Grievance
 from apps.tenant.parents.forms import ParentResultsPinSelfServiceForm
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
+from apps.tenant.polls.portal_services import polls_for_user
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.users.models import Role
@@ -25,6 +26,13 @@ from apps.tenant.users.models import Role
 from .campus_permissions import get_user_campus_scope
 from .experience_services import school_setup_progress
 from .permissions import admin_portal_required, role_required
+
+
+def _poll_items(request):
+    try:
+        return list(polls_for_user(request)[:3])
+    except Exception:
+        return []
 
 
 def landing_page(request):
@@ -113,6 +121,7 @@ def admin_home(request):
             "grievances_open_count": grievances_open_count,
             "grievances_in_progress_count": grievances_in_progress_count,
             "school_setup": school_setup,
+            "poll_dashboard_items": _poll_items(request),
         },
     )
 
@@ -164,6 +173,7 @@ def teacher_home(request):
             "teacher_offerings_active": offerings_active,
             "teacher_current_year": current_year,
             "teacher_current_term": current_term,
+            "poll_dashboard_items": _poll_items(request),
         },
     )
 
@@ -184,6 +194,7 @@ def student_home(request):
             "student": student,
             "student_invoices_outstanding": student_invoices_outstanding,
             "student_invoices_overdue": student_invoices_overdue,
+            "poll_dashboard_items": _poll_items(request),
         },
     )
 
@@ -234,6 +245,7 @@ def parent_home(request):
             "selected_campus_id": selected_campus_id,
             "parent_invoices_outstanding": parent_invoices_outstanding,
             "parent_invoices_overdue": parent_invoices_overdue,
+            "poll_dashboard_items": _poll_items(request),
         },
     )
 
