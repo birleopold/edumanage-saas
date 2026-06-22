@@ -129,4 +129,4 @@ def poll_results(request, pk):
     if not results_allowed(poll, request):
         messages.warning(request, "Results will be visible after you vote.")
         return redirect("poll_detail", pk=poll.pk)
-    return render(request, "portals/polls/results.html", {"poll": poll, "results": poll.get_results()})
+    return render(request, "portals/polls/outcome.html", {"poll": poll, "results": poll.get_results()})
