@@ -4,6 +4,7 @@
 {% block page_title %}Admin Command Center{% endblock %}
 
 {% block header_actions %}
+<a href="/admin/academics/" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-books"></i> Academics Setup</a>
 <a href="/admin/audit/" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-shield-check"></i> Security</a>
 <a href="/admin/integrations/" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-700"><i class="ph ph-plugs-connected"></i> Integrations</a>
 {% endblock %}
@@ -34,7 +35,7 @@
       <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="ph ph-clipboard-text text-xl"></i></div>
       <div><h2 class="font-black text-amber-950">Finish getting started</h2><p class="text-sm text-amber-900 mt-1">{{ school_setup.done_count }} of {{ school_setup.total }} setup items complete.</p></div>
     </div>
-    <div class="flex flex-wrap gap-2"><a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-amber-800 px-4 py-2 text-sm font-bold text-white hover:bg-amber-900">Open checklist</a><a href="/admin/integrations/" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100">Integration setup</a></div>
+    <div class="flex flex-wrap gap-2"><a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-amber-800 px-4 py-2 text-sm font-bold text-white hover:bg-amber-900">Open checklist</a><a href="/admin/academics/" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100">Academic setup</a><a href="/admin/integrations/" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100">Integration setup</a></div>
   </section>
   {% endif %}
 
@@ -44,6 +45,7 @@
       <span class="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 border border-green-200"><i class="ph ph-check-circle"></i> Workflow-ready</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <a href="/admin/academics/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center"><i class="ph ph-books text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Academics Setup</h3><p class="mt-1 text-sm text-slate-500">Years, terms, levels, programs, classes, courses, offerings and enrollments.</p></a>
       <a href="/admin/coursework/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center"><i class="ph ph-notebook text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">LMS & Coursework</h3><p class="mt-1 text-sm text-slate-500">Materials, assignments, submissions and parent visibility.</p></a>
       <a href="/admin/exams/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center"><i class="ph ph-desktop text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Online Exams</h3><p class="mt-1 text-sm text-slate-500">Student attempt workflow, marking, publishing and PDFs.</p></a>
       <a href="/admin/finance/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-green-50 text-green-700 flex items-center justify-center"><i class="ph ph-wallet text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Fees & Payments</h3><p class="mt-1 text-sm text-slate-500">Invoices, parent payments, receipts and mobile money.</p></a>
@@ -69,6 +71,7 @@
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div class="flex items-center justify-between mb-4"><h2 class="font-black text-slate-900">Daily quick actions</h2><i class="ph ph-lightning text-xl text-primary-600"></i></div>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <a href="/admin/academics/" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Academics Setup</a>
         <a href="{% url 'admin_students_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Student</a>
         <a href="{% url 'admin_teachers_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Teacher</a>
         <a href="{% url 'admin_parents_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Parent</a>
