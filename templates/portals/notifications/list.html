@@ -1,0 +1,81 @@
+{% extends base_template %}
+
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notification Center{% endblock %}
+{% block breadcrumbs %}Your alerts, reminders, exam notices, transport updates and system notices{% endblock %}
+{% block header_actions %}
+  {% if is_global_admin %}
+    <a href="{% url 'notifications_compose' %}" class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+      <i class="ph ph-plus mr-2"></i> Compose
+    </a>
+  {% endif %}
+  <form method="post" action="{% url 'notifications_mark_all_read' %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+      <i class="ph ph-checks mr-2"></i> Mark all read
+    </button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <form method="get" class="grid gap-3 md:grid-cols-[1fr_160px_auto] md:items-end">
+    <div>
+      <label class="mb-2 block text-sm font-semibold text-slate-700">Search notifications</label>
+      <input type="search" name="q" value="{{ q }}" placeholder="Search title or message..." class="block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
+    </div>
+    <div>
+      <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+      <select name="state" class="block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100">
+        <option value="all" {% if state == 'all' %}selected{% endif %}>All</option>
+        <option value="unread" {% if state == 'unread' %}selected{% endif %}>Unread</option>
+        <option value="read" {% if state == 'read' %}selected{% endif %}>Read</option>
+      </select>
+    </div>
+    <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Filter</button>
+  </form>
+
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    {% for item in notifications %}
+      <div class="border-b border-slate-100 p-5 {% if not item.is_read %}bg-blue-50/60{% endif %}">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="font-bold text-slate-950">{{ item.title }}</h3>
+              {% if not item.is_read %}<span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700">Unread</span>{% endif %}
+              <span class="rounded-full px-2.5 py-1 text-xs font-bold {% if item.priority == 'CRITICAL' %}bg-red-100 text-red-700{% elif item.priority == 'URGENT' %}bg-amber-100 text-amber-800{% else %}bg-slate-100 text-slate-700{% endif %}">{{ item.priority|title }}</span>
+              {% if item.campus %}<span class="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700">{{ item.campus.name }}</span>{% endif %}
+            </div>
+            <p class="mt-2 text-sm leading-6 text-slate-600">{{ item.message }}</p>
+            <p class="mt-3 text-xs font-semibold text-slate-400">{{ item.created_at|date:'M d, Y H:i' }}{% if item.created_by %} · by {{ item.created_by.get_full_name|default:item.created_by.username }}{% endif %}</p>
+          </div>
+          <div class="flex shrink-0 flex-wrap gap-2">
+            {% if item.link %}
+              <a href="{{ item.link }}" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Open link</a>
+            {% endif %}
+            {% if not item.is_read %}
+              <a href="{% url 'notifications_read' item.pk %}" class="rounded-lg bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-700">Mark read</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="p-10 text-center">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-bell-slash text-3xl"></i></div>
+        <h3 class="font-bold text-slate-900">No notifications found</h3>
+        <p class="mt-1 text-sm text-slate-500">You are all caught up.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex items-center justify-between text-sm font-semibold text-slate-600">
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex gap-2">
+        {% if page_obj.has_previous %}<a class="rounded-lg border border-slate-200 px-3 py-2" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&state={{ state }}">Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a class="rounded-lg border border-slate-200 px-3 py-2" href="?page={{ page_obj.next_page_number }}&q={{ q }}&state={{ state }}">Next</a>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

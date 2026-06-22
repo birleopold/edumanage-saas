@@ -1,6 +1,7 @@
 from django.db import connection
 from django.db.models import Q
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.tenant.portals.campus_permissions import get_accessible_campuses
@@ -8,6 +9,17 @@ from apps.tenant.users.models import Role
 
 from .models import Notification
 from .services import get_current_campus, get_feature_flags, get_or_create_organization
+
+
+def _notification_preview(item):
+    return {
+        "title": item.title,
+        "message": item.message,
+        "priority": item.priority,
+        "is_read": item.is_read,
+        "created_at": item.created_at,
+        "link": reverse("notifications_read", args=[item.pk]),
+    }
 
 
 def orgsettings(request):
@@ -61,7 +73,7 @@ def orgsettings(request):
             base_notifications = base_notifications.filter(campus__isnull=True)
 
         unread_notifications_count = base_notifications.filter(is_read=False).count()
-        notification_items = list(base_notifications.select_related("campus")[:8])
+        notification_items = [_notification_preview(item) for item in base_notifications.select_related("campus")[:8]]
 
     is_global_admin = bool(
         getattr(request, "user", None)
