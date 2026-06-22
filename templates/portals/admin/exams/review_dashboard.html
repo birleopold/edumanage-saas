@@ -1,0 +1,38 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Exam Security Dashboard{% endblock %}
+{% block page_title %}Exam Security Dashboard{% endblock %}
+{% block breadcrumbs %}Review suspicious online exam attempts, events, warnings and locked sessions{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_exam_review_export' %}?{{ request.GET.urlencode }}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Export CSV</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Events</p><p class="mt-2 text-3xl font-black text-slate-950">{{ total_events }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Unresolved</p><p class="mt-2 text-3xl font-black text-amber-700">{{ unresolved_events }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Locked attempts</p><p class="mt-2 text-3xl font-black text-red-700">{{ locked_attempts }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">High warnings</p><p class="mt-2 text-3xl font-black text-purple-700">{{ high_warning_attempts }}</p></div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid gap-3 md:grid-cols-6">
+      <select name="exam" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All exams</option>{% for exam in exams %}<option value="{{ exam.id }}" {% if filters.exam == exam.id|stringformat:'s' %}selected{% endif %}>{{ exam.name }}</option>{% endfor %}</select>
+      <select name="paper" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All papers</option>{% for paper in papers %}<option value="{{ paper.id }}" {% if filters.paper == paper.id|stringformat:'s' %}selected{% endif %}>{{ paper }}</option>{% endfor %}</select>
+      <input name="student" value="{{ filters.student }}" placeholder="Student" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+      <select name="event_type" class="rounded-xl border border-slate-200 px-3 py-2 text-sm"><option value="">All events</option>{% for value,label in event_choices %}<option value="{{ value }}" {% if filters.event_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <input name="ip" value="{{ filters.ip }}" placeholder="IP address" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+      <input name="warnings" value="{{ filters.warnings }}" placeholder="Min warnings" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+      <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white md:col-span-1">Filter</button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 px-6 py-4"><h2 class="font-black text-slate-950">Attempts for review</h2></div>
+    <div class="divide-y divide-slate-100">{% for attempt in attempts %}<div class="p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><p class="font-black text-slate-950">{{ attempt.student }} - {{ attempt.paper }}</p><p class="text-xs text-slate-500">{{ attempt.get_status_display }} · Started {{ attempt.started_at|date:'M d, Y H:i' }} · IP {{ attempt.ip_address|default:'-' }}</p><p class="text-xs text-slate-500">Warnings: {{ attempt.browser_focus_warnings }} · Events: {{ attempt.event_count }}{% if attempt.locked_reason %} · Lock: {{ attempt.locked_reason }}{% endif %}</p></div><a href="{% url 'admin_exam_review_attempt' attempt.id %}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">Review</a></div>{% empty %}<div class="p-8 text-center text-slate-500">No matching attempts.</div>{% endfor %}</div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div class="border-b border-slate-100 px-6 py-4"><h2 class="font-black text-slate-950">Latest security events</h2></div>
+    <div class="divide-y divide-slate-100">{% for event in events %}<div class="p-5 flex justify-between gap-3"><div><p class="font-bold text-slate-900">{{ event.get_event_type_display }} - {{ event.attempt.student }}</p><p class="text-xs text-slate-500">{{ event.created_at|date:'M d, Y H:i' }} · {{ event.ip_address|default:'No IP' }} · {{ event.metadata.review_status|default:'unresolved' }}</p></div><a href="{% url 'admin_exam_review_event' event.id %}" class="text-sm font-bold text-primary-700">Open</a></div>{% empty %}<div class="p-8 text-center text-slate-500">No events.</div>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}
