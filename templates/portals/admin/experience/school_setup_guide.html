@@ -1,15 +1,86 @@
 {% extends "portals/admin/base.html" %}
 {% block title %}Getting Started{% endblock %}
-{% block page_title %}Getting Started Checklist{% endblock %}
-{% block breadcrumbs %}Finish core setup steps so the school workspace runs smoothly{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_home' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Dashboard</a><a href="{% url 'admin_system_status' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">System Status</a><a href="{% url 'admin_orgsettings_org' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Organization Settings</a>{% endblock %}
+{% block page_title %}New School Setup Checklist{% endblock %}
+{% block breadcrumbs %}Complete the first-run setup steps before handing the portal to live users{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_home' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Dashboard</a>
+<a href="{% url 'admin_orgsettings_org' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">School Profile</a>
+{% endblock %}
 
 {% block content %}
 <div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Setup progress</p><h2 class="mt-2 text-2xl font-black">Getting started checklist</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Complete the essential configuration steps for profiles, campuses, academics, finance and communication.</p></div><div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15"><p class="text-xs uppercase font-black text-emerald-100">Completed</p><p class="mt-1 text-3xl font-black">{{ done_count }} / {{ total }}</p></div></div></section>
+  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <div class="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/10 blur-2xl"></div>
+    <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">First login setup</p>
+        <h2 class="mt-2 text-2xl font-black">Prepare this school for real use</h2>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-emerald-100">Use this checklist to finish the core school profile, campus, academic structure, people, fees and user access setup.</p>
+      </div>
+      <div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
+        <p class="text-xs uppercase font-black text-emerald-100">Completed</p>
+        <p class="mt-1 text-3xl font-black">{{ done_count }} / {{ total }}</p>
+        <div class="mt-3 h-2 w-44 rounded-full bg-white/15">
+          <div class="h-2 rounded-full bg-emerald-300" style="width: {{ percent }}%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="font-black text-slate-900">Setup completion</h3><p class="mt-1 text-sm text-slate-500">Open each incomplete step and finish the required configuration.</p></div><a href="{% url 'admin_home' %}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Back to dashboard</a></div></section>
+  {% if all_done %}
+  <section class="rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-sm">
+    <div class="flex items-start gap-3">
+      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white"><i class="ph ph-check-bold text-xl"></i></div>
+      <div>
+        <h3 class="font-black">All core setup items are complete.</h3>
+        <p class="mt-1 text-sm font-semibold text-green-800">The school can now start using the portal with live users, records and reports.</p>
+      </div>
+    </div>
+  </section>
+  {% else %}
+  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="font-black text-amber-950">{{ remaining_count }} setup item{{ remaining_count|pluralize }} remaining</h3>
+        <p class="mt-1 text-sm font-semibold text-amber-900">Open each incomplete item and finish it before inviting the whole school community.</p>
+      </div>
+      <a href="{% url 'admin_home' %}" class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-black text-amber-900 hover:bg-amber-100">Back to Dashboard</a>
+    </div>
+  </section>
+  {% endif %}
 
-  <ol class="space-y-4">{% for row in items %}<li class="rounded-2xl border {% if row.done %}border-green-200 bg-green-50{% else %}border-slate-200 bg-white{% endif %} p-5 shadow-sm"><div class="flex gap-4"><div class="shrink-0 mt-0.5">{% if row.done %}<span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-600 text-white" aria-label="Complete"><i class="ph ph-check-bold"></i></span>{% else %}<span class="flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-black text-sm">{{ forloop.counter }}</span>{% endif %}</div><div class="flex-1 min-w-0"><div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"><div><h3 class="text-base font-black text-slate-900">{{ row.title }}</h3><p class="text-sm text-slate-600 mt-1">{{ row.description }}</p></div>{% if row.done %}<span class="inline-flex w-fit rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-800">Complete</span>{% else %}<span class="inline-flex w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-900">Needs setup</span>{% endif %}</div>{% if row.url %}<a href="{{ row.url }}" class="inline-flex items-center gap-1 mt-4 rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white hover:bg-primary-700">Open this step <i class="ph ph-arrow-right"></i></a>{% elif row.key == 'portal_base' %}<p class="mt-4 rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm text-slate-600">Set environment variable <code class="text-xs bg-white px-1 py-0.5 rounded">FEE_REMINDER_PORTAL_BASE_URL</code> to your public site URL, then restart the app.</p>{% endif %}</div></div></li>{% endfor %}</ol>
+  <ol class="grid gap-4 lg:grid-cols-2">
+    {% for row in items %}
+      <li class="rounded-2xl border {% if row.done %}border-green-200 bg-green-50{% else %}border-slate-200 bg-white{% endif %} p-5 shadow-sm">
+        <div class="flex gap-4">
+          <div class="shrink-0 mt-0.5">
+            {% if row.done %}
+              <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-600 text-white" aria-label="Complete"><i class="ph ph-check-bold text-lg"></i></span>
+            {% else %}
+              <span class="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-500"><i class="ph {{ row.icon }} text-xl"></i></span>
+            {% endif %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 class="text-base font-black text-slate-900">{{ row.title }}</h3>
+                <p class="mt-1 text-sm leading-6 text-slate-600">{{ row.description }}</p>
+              </div>
+              {% if row.done %}
+                <span class="inline-flex w-fit rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-800">Complete</span>
+              {% else %}
+                <span class="inline-flex w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-900">Needs setup</span>
+              {% endif %}
+            </div>
+            {% if row.url %}
+              <a href="{{ row.url }}" class="mt-4 inline-flex items-center gap-1 rounded-xl {% if row.done %}border border-green-200 bg-white text-green-800 hover:bg-green-100{% else %}bg-primary-600 text-white hover:bg-primary-700{% endif %} px-4 py-2 text-sm font-black">
+                {{ row.cta }} <i class="ph ph-arrow-right"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
 </div>
 {% endblock %}
