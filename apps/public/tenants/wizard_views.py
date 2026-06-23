@@ -12,9 +12,9 @@ from .wizard_forms import (
     DomainDetailsStepForm,
     FEATURE_LABELS,
     FEATURE_PACKAGES,
-    OwnerAdminStepForm,
     PackageFeaturesStepForm,
     SchoolDetailsStepForm,
+    OwnerAdminStepForm,
 )
 
 
@@ -75,7 +75,10 @@ def _first_missing_step(data: dict, requested_step: str) -> str | None:
 
 def _cleaned_for_session(cleaned_data: dict) -> dict:
     session_data = {}
+    sensitive_fields = {"owner_temporary_password", "owner_temporary_password_confirm"}
     for key, value in cleaned_data.items():
+        if key in sensitive_fields:
+            continue
         if isinstance(value, tuple):
             value = list(value)
         session_data[key] = value
@@ -108,19 +111,27 @@ def _wizard_summary(wizard_data: dict) -> dict:
     }
 
 
+def _owner_step_ready(owner_data: dict) -> bool:
+    return bool(
+        owner_data
+        and owner_data.get("owner_email")
+        and owner_data.get("owner_username")
+        and owner_data.get("owner_password_hash")
+    )
+
+
 def _validate_all_steps(wizard_data: dict):
     school_form = SchoolDetailsStepForm(data=wizard_data.get("school") or {})
     domain_form = DomainDetailsStepForm(data=wizard_data.get("domain") or {})
-    owner_form = OwnerAdminStepForm(data=wizard_data.get("owner") or {}, schema_name=(wizard_data.get("school") or {}).get("schema_name"))
     features_form = PackageFeaturesStepForm(data=wizard_data.get("features") or {})
     forms = {
         "school": school_form,
         "domain": domain_form,
-        "owner": owner_form,
         "features": features_form,
     }
     validities = [form.is_valid() for form in forms.values()]
-    return all(validities), forms
+    owner_ok = _owner_step_ready(wizard_data.get("owner") or {})
+    return all(validities) and owner_ok, forms, owner_ok
 
 
 @platform_admin_required
@@ -147,8 +158,11 @@ def create_school_wizard(request):
         form = _form_for_step(step, data=request.POST, wizard_data=wizard_data)
         if form.is_valid():
             if step == "confirm":
-                is_valid, forms = _validate_all_steps(wizard_data)
+                is_valid, forms, owner_ok = _validate_all_steps(wizard_data)
                 if not is_valid:
+                    if not owner_ok:
+                        messages.error(request, "Please review the owner/admin account step before activation.")
+                        return redirect(_wizard_url("owner"))
                     for broken_step, broken_form in forms.items():
                         if broken_form.errors:
                             messages.error(request, f"Please review the {broken_step} step before activation.")
@@ -156,7 +170,7 @@ def create_school_wizard(request):
                 with transaction.atomic():
                     school = forms["school"].cleaned_data
                     domain_data = forms["domain"].cleaned_data
-                    owner = forms["owner"].cleaned_data
+                    owner = wizard_data["owner"]
                     features = forms["features"].cleaned_data
                     tenant = Tenant.objects.create(
                         name=school["name"],
@@ -180,7 +194,7 @@ def create_school_wizard(request):
                         owner_email=owner["owner_email"],
                         owner_phone=owner.get("owner_phone", ""),
                         owner_username=owner["owner_username"],
-                        owner_temporary_password=owner["owner_temporary_password"],
+                        owner_password_hash=owner["owner_password_hash"],
                         enabled_feature_codes=features["feature_flags"],
                     )
                 _clear_wizard_data(request)
