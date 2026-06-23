@@ -108,6 +108,26 @@
     }
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function safeHref(value) {
+    var url;
+    try {
+      url = new URL(value, window.location.origin);
+    } catch (error) {
+      return "#";
+    }
+    if (url.origin !== window.location.origin) return "#";
+    return url.pathname + url.search + url.hash;
+  }
+
   function currentModule() {
     var path = window.location.pathname;
     for (var i = 0; i < MODULES.length; i += 1) {
@@ -120,10 +140,10 @@
   }
 
   function actionHtml(action) {
-    var label = action[0];
-    var url = action[1];
-    var icon = action[2];
-    var style = action[3] || "secondary";
+    var label = escapeHtml(action[0]);
+    var url = safeHref(action[1]);
+    var icon = escapeHtml(action[2]);
+    var style = escapeHtml(action[3] || "secondary");
     return [
       '<a class="edu-module-actions__button edu-module-actions__button--' + style + '" href="' + url + '">',
       '<i class="ph ' + icon + '" aria-hidden="true"></i>',
@@ -140,8 +160,8 @@
     section.innerHTML = [
       '<div class="edu-module-actions__copy">',
       '<p class="edu-module-actions__eyebrow">Module shortcuts</p>',
-      '<h2>' + module.title + '</h2>',
-      '<p>' + module.description + '</p>',
+      '<h2>' + escapeHtml(module.title) + '</h2>',
+      '<p>' + escapeHtml(module.description) + '</p>',
       '</div>',
       '<div class="edu-module-actions__buttons">',
       module.actions.map(actionHtml).join(""),
