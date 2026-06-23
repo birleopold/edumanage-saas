@@ -30,12 +30,38 @@
   </section>
 
   {% if school_setup and not school_setup.all_done %}
-  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <div class="flex items-start gap-3">
-      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="ph ph-clipboard-text text-xl"></i></div>
-      <div><h2 class="font-black text-amber-950">Finish getting started</h2><p class="text-sm text-amber-900 mt-1">{{ school_setup.done_count }} of {{ school_setup.total }} setup items complete.</p></div>
+  <section class="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start gap-3">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><i class="ph ph-clipboard-text text-2xl"></i></div>
+        <div>
+          <p class="text-xs font-black uppercase tracking-[0.16em] text-amber-700">New school setup</p>
+          <h2 class="mt-1 text-xl font-black text-amber-950">Finish first-login setup</h2>
+          <p class="mt-1 text-sm font-semibold text-amber-900">{{ school_setup.done_count }} of {{ school_setup.total }} setup items complete. Finish the remaining steps before inviting live users.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-amber-800 px-4 py-2 text-sm font-black text-white hover:bg-amber-900">Open full checklist</a>
+        <a href="{% url 'admin_home' %}" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-black text-amber-900 hover:bg-amber-100">Back to Dashboard</a>
+      </div>
     </div>
-    <div class="flex flex-wrap gap-2"><a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-amber-800 px-4 py-2 text-sm font-bold text-white hover:bg-amber-900">Open checklist</a><a href="/admin/academics/" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100">Academic setup</a><a href="/admin/integrations/" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100">Integration setup</a></div>
+    <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {% for row in school_setup.items %}
+        <a href="{{ row.url|default:'#' }}" class="rounded-2xl border p-4 {% if row.done %}border-green-200 bg-green-50 text-green-950{% else %}border-slate-200 bg-white text-slate-900 hover:border-primary-300 hover:bg-primary-50{% endif %}">
+          <div class="flex items-start gap-3">
+            {% if row.done %}
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white"><i class="ph ph-check-bold"></i></span>
+            {% else %}
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i class="ph {{ row.icon }}"></i></span>
+            {% endif %}
+            <div class="min-w-0">
+              <h3 class="text-sm font-black">{{ row.title }}</h3>
+              <p class="mt-1 text-xs font-semibold {% if row.done %}text-green-800{% else %}text-slate-500{% endif %}">{% if row.done %}Complete{% else %}Needs setup{% endif %}</p>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
   </section>
   {% endif %}
 
