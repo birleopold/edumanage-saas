@@ -1,11 +1,10 @@
-{% load orgsettings_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {% include "components/pwa_meta.html" %}
-  <title>{% if org_profile %}{{ org_profile.name }}{% else %}EduManage{% endif %} | School Portal</title>
+  <title>EduManage | School Management System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
@@ -25,8 +24,8 @@
   <header class="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
       <a href="/" class="flex items-center gap-3">
-        {% if org_profile and org_profile.logo %}<img src="{{ org_profile.logo.url }}" alt="{{ org_profile.name }} logo" class="h-12 w-auto rounded-2xl bg-white/15 p-2 ring-1 ring-white/15" />{% else %}<div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15"><i class="ph ph-graduation-cap text-2xl"></i></div>{% endif %}
-        <div><h1 class="text-xl font-black tracking-tight">{% if org_profile %}{{ org_profile.name }}{% else %}EduManage{% endif %}</h1><p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/80">School management system</p></div>
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15"><i class="ph ph-graduation-cap text-2xl"></i></div>
+        <div><h1 class="text-xl font-black tracking-tight">EduManage</h1><p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/80">School management system</p></div>
       </a>
       <div class="hidden md:flex items-center gap-2 text-sm text-white/75"><span class="rounded-full border border-white/15 px-3 py-1">Secure portal</span><span class="rounded-full border border-white/15 px-3 py-1">Online admissions</span><span class="rounded-full border border-white/15 px-3 py-1">Multi-tenant SaaS</span></div>
       <div class="flex items-center gap-2"><a href="/platform/" class="hidden lg:inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-black text-white shadow-lg hover:-translate-y-0.5 hover:bg-white/15"><i class="ph ph-buildings"></i> Platform</a><a href="{% url 'public_admissions_apply' %}" class="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-2.5 text-sm font-black text-white shadow-lg hover:-translate-y-0.5 hover:bg-blue-400"><i class="ph ph-pencil-simple-line"></i> Apply</a><a href="{% url 'login' %}" class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-sm font-black text-slate-900 shadow-lg hover:-translate-y-0.5 hover:shadow-xl"><i class="ph ph-sign-in"></i> Sign In</a></div>
