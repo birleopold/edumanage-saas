@@ -8,6 +8,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=32, blank=True)
     must_change_password = models.BooleanField(default=False)
     roles = models.ManyToManyField("Role", through="UserRole", related_name="users", blank=True)
 
