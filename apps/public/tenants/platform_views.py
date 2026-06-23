@@ -150,7 +150,21 @@ def tenant_create(request):
         form = TenantForm(request.POST)
         if form.is_valid():
             tenant = form.save()
-            messages.success(request, f"Tenant '{tenant.name}' created with its primary custom domain.")
+            onboarding = getattr(form, "onboarding_result", None)
+            if onboarding:
+                messages.success(
+                    request,
+                    (
+                        f"School '{tenant.name}' fully onboarded: tenant, primary domain, organization profile, "
+                        "main campus, school admin, feature flags, and current academic period were created."
+                    ),
+                )
+                messages.info(
+                    request,
+                    f"Admin username: {onboarding.admin_user.username}. Login domain: {onboarding.login_domain}.",
+                )
+            else:
+                messages.success(request, f"Tenant '{tenant.name}' created with its primary custom domain.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
         form = TenantForm()
