@@ -87,7 +87,15 @@ def _seed_roles():
     return roles
 
 
-def _seed_owner_user(*, email: str, username: str, first_name: str = "", last_name: str = ""):
+def _seed_owner_user(
+    *,
+    email: str,
+    username: str,
+    phone: str = "",
+    temporary_password: str = "",
+    first_name: str = "",
+    last_name: str = "",
+):
     from apps.tenant.users.models import PasswordSetupToken, Role, User, UserRole
 
     roles = _seed_roles()
@@ -97,6 +105,7 @@ def _seed_owner_user(*, email: str, username: str, first_name: str = "", last_na
         username=username,
         defaults={
             "email": email,
+            "phone": phone,
             "first_name": first_name,
             "last_name": last_name,
             "is_staff": True,
@@ -108,25 +117,30 @@ def _seed_owner_user(*, email: str, username: str, first_name: str = "", last_na
     changed_fields = []
     for field, value in {
         "email": email,
+        "phone": phone,
         "first_name": first_name,
         "last_name": last_name,
         "is_staff": True,
         "is_active": True,
         "must_change_password": True,
     }.items():
-        if getattr(user, field) != value:
+        if getattr(user, field, None) != value:
             setattr(user, field, value)
             changed_fields.append(field)
 
-    if created:
+    setup_token = None
+    if temporary_password:
+        user.set_password(temporary_password)
+        changed_fields.append("password")
+    elif created:
         user.set_unusable_password()
         changed_fields.append("password")
+        setup_token = PasswordSetupToken.create_for_user(user)
 
     if changed_fields:
-        user.save(update_fields=changed_fields)
+        user.save(update_fields=sorted(set(changed_fields)))
 
     UserRole.objects.get_or_create(user=user, role=admin_role, campus=None)
-    setup_token = PasswordSetupToken.create_for_user(user)
     return user, setup_token
 
 
@@ -201,6 +215,8 @@ def provision_school_tenant(
     domain,
     owner_email: str,
     owner_username: str,
+    owner_phone: str = "",
+    owner_temporary_password: str = "",
     owner_first_name: str = "",
     owner_last_name: str = "",
     organization_email: str = "",
@@ -224,7 +240,7 @@ def provision_school_tenant(
             "tenant_domain": domain.domain,
             "tenant_status": tenant.status,
             "email": organization_email or owner_email,
-            "phone": organization_phone,
+            "phone": organization_phone or owner_phone,
             "address": organization_address,
         }
         if profile is None:
@@ -249,7 +265,7 @@ def provision_school_tenant(
                 "name": "Main Campus",
                 "code": "MAIN",
                 "email": organization_email or owner_email,
-                "phone": organization_phone,
+                "phone": organization_phone or owner_phone,
                 "address": organization_address,
                 "is_active": True,
             },
@@ -259,7 +275,7 @@ def provision_school_tenant(
             "name": "Main Campus",
             "code": campus.code or "MAIN",
             "email": organization_email or owner_email,
-            "phone": organization_phone,
+            "phone": organization_phone or owner_phone,
             "address": organization_address,
             "is_active": True,
             "is_default": True,
@@ -273,6 +289,8 @@ def provision_school_tenant(
         admin_user, setup_token = _seed_owner_user(
             email=owner_email,
             username=owner_username,
+            phone=owner_phone,
+            temporary_password=owner_temporary_password,
             first_name=owner_first_name,
             last_name=owner_last_name,
         )
