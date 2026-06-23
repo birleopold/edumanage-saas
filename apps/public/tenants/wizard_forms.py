@@ -1,6 +1,8 @@
 import re
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .forms import STATUS_CHOICES, normalize_domain
 from .models import Domain, Tenant
@@ -148,13 +150,23 @@ class DomainDetailsStepForm(WizardStyledFormMixin, forms.Form):
 
 
 class OwnerAdminStepForm(WizardStyledFormMixin, forms.Form):
-    owner_first_name = forms.CharField(required=False, label="Owner/admin first name")
-    owner_last_name = forms.CharField(required=False, label="Owner/admin last name")
-    owner_email = forms.EmailField(label="Owner/admin email")
+    owner_first_name = forms.CharField(required=False, label="School owner/admin first name")
+    owner_last_name = forms.CharField(required=False, label="School owner/admin last name")
+    owner_email = forms.EmailField(label="School owner/admin email")
+    owner_phone = forms.CharField(required=False, max_length=32, label="School owner/admin phone")
     owner_username = forms.CharField(
         required=False,
-        label="Owner/admin username",
+        label="School owner/admin username",
         help_text="Leave blank to use schema_admin, for example greenhill_school_admin.",
+    )
+    owner_temporary_password = forms.CharField(
+        label="Temporary password",
+        widget=forms.PasswordInput,
+        help_text="Give this temporary password to the school owner. They must change it after first login.",
+    )
+    owner_temporary_password_confirm = forms.CharField(
+        label="Confirm temporary password",
+        widget=forms.PasswordInput,
     )
 
     def __init__(self, *args, schema_name=None, **kwargs):
@@ -169,6 +181,22 @@ class OwnerAdminStepForm(WizardStyledFormMixin, forms.Form):
         if username and not _USERNAME_RE.match(username):
             raise forms.ValidationError("Use letters, numbers and @/./+/-/_ characters only.")
         return username
+
+    def clean_owner_temporary_password(self):
+        password = self.cleaned_data.get("owner_temporary_password") or ""
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            raise forms.ValidationError(exc.messages)
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("owner_temporary_password")
+        confirm_password = cleaned_data.get("owner_temporary_password_confirm")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("owner_temporary_password_confirm", "Temporary passwords do not match.")
+        return cleaned_data
 
 
 class PackageFeaturesStepForm(WizardStyledFormMixin, forms.Form):
