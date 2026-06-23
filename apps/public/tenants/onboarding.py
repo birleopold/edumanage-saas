@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date
+from typing import Iterable
 
 from django.db import connection
 from django.utils import timezone
@@ -129,18 +130,23 @@ def _seed_owner_user(*, email: str, username: str, first_name: str = "", last_na
     return user, setup_token
 
 
-def _seed_feature_flags() -> tuple[int, int]:
+def _seed_feature_flags(enabled_feature_codes: Iterable[str] | None = None) -> tuple[int, int]:
     from apps.tenant.orgsettings.models import FeatureFlag
 
+    enabled_codes = None if enabled_feature_codes is None else set(enabled_feature_codes)
     created_count = 0
-    for code, enabled in DEFAULT_FEATURE_FLAGS:
-        _flag, created = FeatureFlag.objects.get_or_create(
+    for code, default_enabled in DEFAULT_FEATURE_FLAGS:
+        is_enabled = default_enabled if enabled_codes is None else code in enabled_codes
+        flag, created = FeatureFlag.objects.get_or_create(
             code=code,
             campus=None,
-            defaults={"is_enabled": enabled},
+            defaults={"is_enabled": is_enabled},
         )
         if created:
             created_count += 1
+        elif flag.is_enabled != is_enabled:
+            flag.is_enabled = is_enabled
+            flag.save(update_fields=["is_enabled", "updated_at"])
     return created_count, len(DEFAULT_FEATURE_FLAGS)
 
 
@@ -200,6 +206,7 @@ def provision_school_tenant(
     organization_email: str = "",
     organization_phone: str = "",
     organization_address: str = "",
+    enabled_feature_codes: Iterable[str] | None = None,
 ) -> TenantOnboardingResult:
     """Create all tenant-side defaults for a newly added school/client."""
     with tenant_data_context(tenant) as tenant_schema_used:
@@ -269,7 +276,7 @@ def provision_school_tenant(
             first_name=owner_first_name,
             last_name=owner_last_name,
         )
-        feature_flags_created, feature_flags_total = _seed_feature_flags()
+        feature_flags_created, feature_flags_total = _seed_feature_flags(enabled_feature_codes)
         academic_year, academic_term = _seed_current_academic_period()
 
     return TenantOnboardingResult(
