@@ -93,6 +93,7 @@ def _seed_owner_user(
     username: str,
     phone: str = "",
     temporary_password: str = "",
+    password_hash: str = "",
     first_name: str = "",
     last_name: str = "",
 ):
@@ -129,7 +130,10 @@ def _seed_owner_user(
             changed_fields.append(field)
 
     setup_token = None
-    if temporary_password:
+    if password_hash:
+        user.password = password_hash
+        changed_fields.append("password")
+    elif temporary_password:
         user.set_password(temporary_password)
         changed_fields.append("password")
     elif created:
@@ -217,6 +221,7 @@ def provision_school_tenant(
     owner_username: str,
     owner_phone: str = "",
     owner_temporary_password: str = "",
+    owner_password_hash: str = "",
     owner_first_name: str = "",
     owner_last_name: str = "",
     organization_email: str = "",
@@ -291,6 +296,7 @@ def provision_school_tenant(
             username=owner_username,
             phone=owner_phone,
             temporary_password=owner_temporary_password,
+            password_hash=owner_password_hash,
             first_name=owner_first_name,
             last_name=owner_last_name,
         )
