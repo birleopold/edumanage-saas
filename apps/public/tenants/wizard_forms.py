@@ -1,6 +1,7 @@
 import re
 
 from django import forms
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
@@ -196,6 +197,8 @@ class OwnerAdminStepForm(WizardStyledFormMixin, forms.Form):
         confirm_password = cleaned_data.get("owner_temporary_password_confirm")
         if password and confirm_password and password != confirm_password:
             self.add_error("owner_temporary_password_confirm", "Temporary passwords do not match.")
+        elif password and confirm_password:
+            cleaned_data["owner_password_hash"] = make_password(password)
         return cleaned_data
 
 
