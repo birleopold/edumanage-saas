@@ -1,13 +1,14 @@
 from django.urls import path
 
-from . import platform_views
+from . import platform_views, wizard_views
 
 urlpatterns = [
     path("login/", platform_views.platform_login, name="platform_admin_login"),
     path("logout/", platform_views.platform_logout, name="platform_admin_logout"),
     path("", platform_views.dashboard, name="platform_dashboard"),
     path("tenants/", platform_views.tenant_list, name="platform_tenant_list"),
-    path("tenants/create/", platform_views.tenant_create, name="platform_tenant_create"),
+    path("tenants/create/", wizard_views.create_school_wizard, name="platform_tenant_create"),
+    path("tenants/create/classic/", platform_views.tenant_create, name="platform_tenant_create_classic"),
     path("tenants/<int:pk>/", platform_views.tenant_detail, name="platform_tenant_detail"),
     path("tenants/<int:pk>/edit/", platform_views.tenant_edit, name="platform_tenant_edit"),
     path("tenants/<int:pk>/status/", platform_views.tenant_status_update, name="platform_tenant_status_update"),
