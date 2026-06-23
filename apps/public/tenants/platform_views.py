@@ -156,7 +156,7 @@ def tenant_create(request):
                     request,
                     (
                         f"School '{tenant.name}' fully onboarded: tenant, primary domain, organization profile, "
-                        "main campus, school admin, feature flags, and current academic period were created."
+                        "main campus, owner admin account, feature flags, and current academic period were created."
                     ),
                 )
                 messages.info(
@@ -178,25 +178,22 @@ def tenant_edit(request, pk):
         form = TenantForm(request.POST, instance=tenant)
         if form.is_valid():
             tenant = form.save()
-            messages.success(request, "Tenant details updated.")
+            messages.success(request, f"Tenant '{tenant.name}' updated.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
         form = TenantForm(instance=tenant)
-    return render(request, "platform/tenant_form.html", {"form": form, "tenant": tenant, "mode": "edit"})
+    return render(request, "platform/tenant_form.html", {"form": form, "mode": "edit", "tenant": tenant})
 
 
 @platform_admin_required
 def tenant_detail(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
-    domains = Domain.objects.filter(tenant=tenant).order_by("-is_primary", "domain")
-    status_form = TenantStatusForm(initial={"status": tenant.status})
-    context = {
-        "tenant": tenant,
-        "domains": domains,
-        "status_form": status_form,
-        "schema_status": _schema_status(tenant.schema_name),
-    }
-    return render(request, "platform/tenant_detail.html", context)
+    domains = tenant.domains.order_by("-is_primary", "domain")
+    return render(
+        request,
+        "platform/tenant_detail.html",
+        {"tenant": tenant, "domains": domains, "schema_status": _schema_status(tenant.schema_name)},
+    )
 
 
 @platform_admin_required
@@ -207,9 +204,9 @@ def tenant_status_update(request, pk):
     if form.is_valid():
         tenant.status = form.cleaned_data["status"]
         tenant.save(update_fields=["status"])
-        messages.success(request, f"Tenant status changed to {tenant.status}.")
+        messages.success(request, f"Tenant status updated to {tenant.status}.")
     else:
-        messages.error(request, "Status could not be updated.")
+        messages.error(request, "Invalid status update.")
     return redirect("platform_tenant_detail", pk=tenant.pk)
 
 
@@ -220,55 +217,58 @@ def domain_create(request, tenant_id):
         form = DomainForm(request.POST, tenant=tenant)
         if form.is_valid():
             domain = form.save()
-            messages.success(request, f"Domain {domain.domain} added.")
+            messages.success(request, f"Domain '{domain.domain}' added.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
         form = DomainForm(tenant=tenant)
-    return render(request, "platform/domain_form.html", {"form": form, "tenant": tenant, "mode": "create"})
+    return render(request, "platform/domain_form.html", {"form": form, "tenant": tenant})
 
 
 @platform_admin_required
 def domain_edit(request, pk):
-    domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
+    domain = get_object_or_404(Domain, pk=pk)
     if request.method == "POST":
         form = DomainForm(request.POST, instance=domain)
         if form.is_valid():
             domain = form.save()
-            messages.success(request, "Domain updated.")
-            return redirect("platform_tenant_detail", pk=domain.tenant.pk)
+            messages.success(request, f"Domain '{domain.domain}' updated.")
+            return redirect("platform_tenant_detail", pk=domain.tenant_id)
     else:
         form = DomainForm(instance=domain)
-    return render(request, "platform/domain_form.html", {"form": form, "domain": domain, "tenant": domain.tenant, "mode": "edit"})
+    return render(request, "platform/domain_form.html", {"form": form, "tenant": domain.tenant, "domain": domain})
 
 
 @platform_admin_required
 @require_POST
 def domain_mark_primary(request, pk):
-    domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
-    with transaction.atomic():
-        Domain.objects.filter(tenant=domain.tenant).update(is_primary=False)
-        domain.is_primary = True
-        domain.save(update_fields=["is_primary"])
-    messages.success(request, f"{domain.domain} is now the primary domain for {domain.tenant.name}.")
-    return redirect("platform_tenant_detail", pk=domain.tenant.pk)
+    domain = get_object_or_404(Domain, pk=pk)
+    Domain.objects.filter(tenant=domain.tenant).exclude(pk=domain.pk).update(is_primary=False)
+    domain.is_primary = True
+    domain.save(update_fields=["is_primary"])
+    messages.success(request, f"'{domain.domain}' is now the primary domain.")
+    return redirect("platform_tenant_detail", pk=domain.tenant_id)
 
 
 @platform_admin_required
 @require_POST
 def domain_verify(request, pk):
-    domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
-    domain.verified_at = timezone.now()
-    domain.save(update_fields=["verified_at"])
-    messages.success(request, f"{domain.domain} marked as verified.")
-    return redirect("platform_tenant_detail", pk=domain.tenant.pk)
+    domain = get_object_or_404(Domain, pk=pk)
+    form = DomainVerificationForm(request.POST)
+    if form.is_valid() and form.cleaned_data.get("mark_verified"):
+        domain.verified_at = timezone.now()
+        domain.save(update_fields=["verified_at"])
+        messages.success(request, f"Domain '{domain.domain}' marked as verified.")
+    return redirect("platform_tenant_detail", pk=domain.tenant_id)
 
 
 @platform_admin_required
 @require_POST
 def domain_delete(request, pk):
-    domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
-    tenant_pk = domain.tenant.pk
-    domain_name = domain.domain
+    domain = get_object_or_404(Domain, pk=pk)
+    tenant_id = domain.tenant_id
+    if domain.is_primary and domain.tenant.domains.count() > 1:
+        messages.error(request, "Set another primary domain before deleting this one.")
+        return redirect("platform_tenant_detail", pk=tenant_id)
+    messages.success(request, f"Domain '{domain.domain}' deleted.")
     domain.delete()
-    messages.success(request, f"Domain {domain_name} removed.")
-    return redirect("platform_tenant_detail", pk=tenant_pk)
+    return redirect("platform_tenant_detail", pk=tenant_id)
