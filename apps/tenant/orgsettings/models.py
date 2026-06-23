@@ -20,6 +20,18 @@ class OrganizationProfile(models.Model):
     phone = models.CharField(max_length=32, blank=True)
     address = models.TextField(blank=True)
 
+    tenant_schema_name = models.CharField(
+        max_length=63,
+        blank=True,
+        help_text="SaaS tenant schema/slug for this school, for example green_valley_school.",
+    )
+    tenant_domain = models.CharField(
+        max_length=253,
+        blank=True,
+        help_text="School domain used to access this tenant, for example greenvalley.ac.ug.",
+    )
+    tenant_status = models.CharField(max_length=32, default="active", blank=True)
+
     logo = models.FileField(upload_to=branding_upload_to, blank=True)
 
     primary_color = models.CharField(max_length=32, blank=True)
@@ -253,5 +265,3 @@ class Notification(models.Model):
         if self.expires_at:
             return timezone.now() > self.expires_at
         return False
-
-
