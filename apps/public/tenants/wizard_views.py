@@ -119,8 +119,8 @@ def _validate_all_steps(wizard_data: dict):
         "owner": owner_form,
         "features": features_form,
     }
-    is_valid = all(form.is_valid() for form in forms.values())
-    return is_valid, forms
+    validities = [form.is_valid() for form in forms.values()]
+    return all(validities), forms
 
 
 @platform_admin_required
