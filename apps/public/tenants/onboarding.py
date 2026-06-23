@@ -46,6 +46,7 @@ class TenantOnboardingResult:
     organization: object
     campus: object
     admin_user: object
+    setup_token: object | None
     academic_year: object
     academic_term: object
     feature_flags_created: int
@@ -85,8 +86,8 @@ def _seed_roles():
     return roles
 
 
-def _seed_owner_user(*, email: str, username: str, password: str, first_name: str = "", last_name: str = ""):
-    from apps.tenant.users.models import Role, User, UserRole
+def _seed_owner_user(*, email: str, username: str, first_name: str = "", last_name: str = ""):
+    from apps.tenant.users.models import PasswordSetupToken, Role, User, UserRole
 
     roles = _seed_roles()
     admin_role = roles[Role.ADMIN]
@@ -116,18 +117,16 @@ def _seed_owner_user(*, email: str, username: str, password: str, first_name: st
             setattr(user, field, value)
             changed_fields.append(field)
 
-    # Platform-created school owners must start with a known initial password and
-    # change it after the first login.
-    if created or password:
-        user.set_password(password)
-        if "password" not in changed_fields:
-            changed_fields.append("password")
+    if created:
+        user.set_unusable_password()
+        changed_fields.append("password")
 
     if changed_fields:
         user.save(update_fields=changed_fields)
 
     UserRole.objects.get_or_create(user=user, role=admin_role, campus=None)
-    return user
+    setup_token = PasswordSetupToken.create_for_user(user)
+    return user, setup_token
 
 
 def _seed_feature_flags() -> tuple[int, int]:
@@ -196,7 +195,6 @@ def provision_school_tenant(
     domain,
     owner_email: str,
     owner_username: str,
-    owner_password: str,
     owner_first_name: str = "",
     owner_last_name: str = "",
     organization_email: str = "",
@@ -265,10 +263,9 @@ def provision_school_tenant(
         if campus_updates:
             campus.save(update_fields=campus_updates)
 
-        admin_user = _seed_owner_user(
+        admin_user, setup_token = _seed_owner_user(
             email=owner_email,
             username=owner_username,
-            password=owner_password,
             first_name=owner_first_name,
             last_name=owner_last_name,
         )
@@ -281,6 +278,7 @@ def provision_school_tenant(
         organization=profile,
         campus=campus,
         admin_user=admin_user,
+        setup_token=setup_token,
         academic_year=academic_year,
         academic_term=academic_term,
         feature_flags_created=feature_flags_created,
