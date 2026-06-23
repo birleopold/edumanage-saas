@@ -30,27 +30,31 @@ def normalize_domain(value):
 
 
 def seed_organization_profile_from_tenant(tenant):
-    """Create or update the school profile from the platform tenant record.
+    """Create the school-facing profile for this tenant.
 
-    Tenant is the SaaS/platform routing record. OrganizationProfile is the
-    school-facing profile used inside the school portal. They remain separate
-    because one controls routing and the other controls school branding, but the
-    first tenant creation should seed the school profile so users do not type the
-    same school name twice.
+    Tenant is the platform SaaS record. OrganizationProfile is the school record
+    used inside that tenant. In full PostgreSQL tenant mode every tenant has its
+    own schema and therefore its own OrganizationProfile table. In local SQLite
+    development there is one shared database, so we create one profile per tenant
+    name to make the relationship visible in dj-admin without overwriting the
+    previous school profile.
     """
     try:
         from apps.tenant.orgsettings.models import Campus, OrganizationProfile
     except Exception:
         return
 
-    profile = OrganizationProfile.objects.order_by("id").first()
+    profile = OrganizationProfile.objects.filter(name=tenant.name).order_by("id").first()
     if profile is None:
         profile = OrganizationProfile.objects.create(name=tenant.name, legal_name=tenant.name)
     else:
-        profile.name = tenant.name
+        changed_fields = []
         if not profile.legal_name:
             profile.legal_name = tenant.name
-        profile.save(update_fields=["name", "legal_name", "updated_at"])
+            changed_fields.append("legal_name")
+        if changed_fields:
+            changed_fields.append("updated_at")
+            profile.save(update_fields=changed_fields)
 
     Campus.objects.get_or_create(
         organization=profile,
