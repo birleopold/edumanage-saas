@@ -178,11 +178,13 @@ def create_school_wizard(request):
                         owner_first_name=owner.get("owner_first_name", ""),
                         owner_last_name=owner.get("owner_last_name", ""),
                         owner_email=owner["owner_email"],
+                        owner_phone=owner.get("owner_phone", ""),
                         owner_username=owner["owner_username"],
+                        owner_temporary_password=owner["owner_temporary_password"],
                         enabled_feature_codes=features["feature_flags"],
                     )
                 _clear_wizard_data(request)
-                messages.success(request, f"{tenant.name} has been activated with tenant, domain, organization profile, campus, admin user, features and academic period.")
+                messages.success(request, f"{tenant.name} has been activated with tenant, domain, organization profile, campus, owner admin account, features and academic period.")
                 messages.info(request, f"School admin username: {onboarding.admin_user.username}. Login domain: {onboarding.login_domain}.")
                 return redirect("platform_tenant_detail", pk=tenant.pk)
 
