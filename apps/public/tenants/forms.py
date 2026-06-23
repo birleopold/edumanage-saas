@@ -44,14 +44,25 @@ def seed_organization_profile_from_tenant(tenant):
     except Exception:
         return
 
+    primary_domain = Domain.objects.filter(tenant=tenant, is_primary=True).order_by("id").first()
+    if primary_domain is None:
+        primary_domain = Domain.objects.filter(tenant=tenant).order_by("id").first()
+
     profile = OrganizationProfile.objects.filter(name=tenant.name).order_by("id").first()
+    defaults = {
+        "legal_name": tenant.name,
+        "tenant_schema_name": tenant.schema_name,
+        "tenant_domain": primary_domain.domain if primary_domain else "",
+        "tenant_status": tenant.status,
+    }
     if profile is None:
-        profile = OrganizationProfile.objects.create(name=tenant.name, legal_name=tenant.name)
+        profile = OrganizationProfile.objects.create(name=tenant.name, **defaults)
     else:
         changed_fields = []
-        if not profile.legal_name:
-            profile.legal_name = tenant.name
-            changed_fields.append("legal_name")
+        for field, value in defaults.items():
+            if value and getattr(profile, field, None) != value:
+                setattr(profile, field, value)
+                changed_fields.append(field)
         if changed_fields:
             changed_fields.append("updated_at")
             profile.save(update_fields=changed_fields)
