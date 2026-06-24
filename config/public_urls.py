@@ -1,10 +1,14 @@
 from django.urls import include, path
 
 from apps.public.tenants import views
-from apps.tenant.portals import error_handlers
+from apps.tenant.portals import error_handlers, pwa
+from apps.tenant.portals.views import pwa_manifest
 
 urlpatterns = [
     path("health/", views.health, name="health"),
+    path("manifest.webmanifest", pwa_manifest, name="pwa_manifest"),
+    path("service-worker.js", pwa.service_worker, name="pwa_service_worker"),
+    path("pwa/push-readiness/", pwa.push_readiness, name="pwa_push_readiness"),
     path("platform/", include("apps.public.tenants.platform_urls")),
     path("system-unavailable/", error_handlers.system_unavailable, name="system_unavailable"),
     path("tenant-suspended/", error_handlers.tenant_suspended, name="tenant_suspended"),
