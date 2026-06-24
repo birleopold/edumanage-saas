@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EduManage">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path d="M95 180 256 94l161 86-161 86L95 180Z" fill="#fff" opacity=".96"/>
+  <path d="M154 229v83c0 34 46 70 102 70s102-36 102-70v-83l-102 55-102-55Z" fill="#dbeafe"/>
+  <path d="M406 207v113" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="406" cy="350" r="25" fill="#fff"/>
+</svg>
