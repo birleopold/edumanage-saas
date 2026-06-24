@@ -1,3 +1,4 @@
+from decouple import config
 from django.conf import settings
 from django.db import connection
 from django.shortcuts import render
@@ -32,7 +33,7 @@ PRIORITY_SECTIONS = [
             "DJANGO_SECRET_KEY is strong and private.",
             "DJANGO_DEBUG is false.",
             "DJANGO_ALLOWED_HOSTS contains production domains only.",
-            "DATABASE, email, SMS, webhook and web-push variables are configured.",
+            "Database, email, SMS, webhook and web-push variables are configured.",
             "No real passwords or API keys are committed to Git.",
         ],
     },
@@ -151,11 +152,27 @@ PRIORITY_SECTIONS = [
 ]
 
 
-def _env_check(name, *, required=True):
+def _env_value(name):
     value = getattr(settings, name, None)
-    configured = bool(value) and value not in {"*", "unsafe-dev-key", "YOUR_EDUMANAGE_SERVER_IP"}
-    if name == "DEBUG":
-        configured = value is False
+    if value in (None, ""):
+        value = config(name, default="")
+    return value
+
+
+def _env_check(name, *, required=True):
+    value = _env_value(name)
+    configured = bool(value)
+    if name == "SECRET_KEY":
+        configured = configured and value != "unsafe-dev-key" and len(str(value)) >= 32
+    elif name == "DEBUG":
+        configured = value is False or str(value).lower() in {"false", "0", "no"}
+    elif name == "ALLOWED_HOSTS":
+        hosts = value if isinstance(value, (list, tuple, set)) else [item.strip() for item in str(value).split(",") if item.strip()]
+        configured = bool(hosts) and "*" not in hosts
+    elif name in {"EMAIL_HOST", "DEFAULT_FROM_EMAIL"}:
+        configured = configured and value not in {"localhost", "noreply@edumanage.local"}
+    elif name in {"SMS_GATEWAY_URL", "WEB_PUSH_PUBLIC_KEY"}:
+        configured = bool(value)
     return {"name": name, "configured": configured, "required": required, "value": "Configured" if configured else "Needs attention"}
 
 
