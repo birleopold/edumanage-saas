@@ -7,29 +7,43 @@ from .models import Campus, FeatureFlag, OrganizationProfile
 
 SESSION_CURRENT_CAMPUS_ID = "orgsettings_current_campus_id"
 
-DEFAULT_FLAG_CODES = [
-    "ATTENDANCE",
-    "ASSESSMENTS",
-    "FINANCE",
-    "EXAMS",
-    "REPORTS",
-    "DOCUMENTS",
-    "ANNOUNCEMENTS",
-    "DISCIPLINE",
-    "TIMETABLE",
-    "TRANSPORT",
-    "LIBRARY",
-    "HOSTELS",
-    "INVENTORY",
-    "ADMISSIONS",
-    "HR",
+FEATURE_CATALOG = [
+    {"code": "ACADEMICS", "label": "Academics", "description": "Academic years, terms, classes, courses, offerings and enrollments."},
+    {"code": "ADMISSIONS", "label": "Admissions", "description": "Leads, applicants, admissions pipeline and application tracking."},
+    {"code": "ATTENDANCE", "label": "Attendance", "description": "Student attendance sessions and attendance reports."},
+    {"code": "ASSESSMENTS", "label": "Assessments", "description": "Assessments, marks, grading and tabulation."},
+    {"code": "ANNOUNCEMENTS", "label": "Announcements", "description": "School announcements and notices."},
+    {"code": "COURSEWORK", "label": "Coursework", "description": "Learning materials, assignments and submissions."},
+    {"code": "FINANCE", "label": "Finance", "description": "Fees, invoices, payments, receipts and balances."},
+    {"code": "EXAMS", "label": "Online Exams", "description": "Exam papers, schedules, attempts and publishing."},
+    {"code": "REPORTS", "label": "Reports", "description": "Finance, attendance, academic and operational reports."},
+    {"code": "DOCUMENTS", "label": "Documents", "description": "School document management and files."},
+    {"code": "TIMETABLE", "label": "Timetable", "description": "Class timetable and teaching schedule entries."},
+    {"code": "TRANSPORT", "label": "Transport", "description": "Drivers, vehicles, routes, stops, schedules and assignments."},
+    {"code": "LIBRARY", "label": "Library", "description": "Books, copies, checkouts, returns, fines and reservations."},
+    {"code": "HOSTELS", "label": "Hostels", "description": "Dormitories, rooms, bed allocations and boarding records."},
+    {"code": "INVENTORY", "label": "Inventory", "description": "Items, stock, issue logs and school stores."},
+    {"code": "HR", "label": "Human Resources", "description": "Staff, departments, payroll, pay grades and allowances."},
+    {"code": "DISCIPLINE", "label": "Discipline", "description": "Incidents, consequences and discipline records."},
+    {"code": "MESSAGING", "label": "Messaging", "description": "Inbox, chat, delivery dashboard and parent communication."},
+    {"code": "ANALYTICS", "label": "Analytics", "description": "Performance analytics, charts and learner intelligence."},
+    {"code": "AUDIT", "label": "Security & Audit", "description": "Activity tracking, exports, backups, permissions and audit logs."},
+    {"code": "INTEGRATIONS", "label": "Integrations", "description": "External providers such as SMS, WhatsApp, GPS, payments and APIs."},
+    {"code": "MOBILE_API", "label": "Mobile/API", "description": "Mobile API documentation and app/API readiness."},
 ]
+
+DEFAULT_FLAG_CODES = [item["code"] for item in FEATURE_CATALOG]
+FEATURE_LABELS = {item["code"]: item["label"] for item in FEATURE_CATALOG}
+FEATURE_DESCRIPTIONS = {item["code"]: item["description"] for item in FEATURE_CATALOG}
+
+
+def normalize_feature_code(code: str) -> str:
+    return (code or "").strip().upper()
 
 
 def get_organization() -> Optional[OrganizationProfile]:
     if getattr(connection, "schema_name", None) == "public":
         return None
-    # Use select_related to avoid N+1 queries and ensure fresh data
     return OrganizationProfile.objects.select_related().order_by("id").first()
 
 
@@ -108,6 +122,14 @@ def selected_campus_id_from_request(request) -> Optional[int]:
     return current.id if current else None
 
 
+def _apply_flag_rows(flags: Dict[str, bool], queryset) -> Dict[str, bool]:
+    for ff in queryset:
+        code = normalize_feature_code(ff.code)
+        if code in flags:
+            flags[code] = bool(ff.is_enabled)
+    return flags
+
+
 def get_feature_flags(org: Optional[OrganizationProfile], campus: Optional[Campus]) -> Dict[str, bool]:
     if getattr(connection, "schema_name", None) == "public":
         return {}
@@ -117,11 +139,14 @@ def get_feature_flags(org: Optional[OrganizationProfile], campus: Optional[Campu
     if org is None:
         return flags
 
-    for ff in FeatureFlag.objects.filter(campus__isnull=True):
-        flags[ff.code] = bool(ff.is_enabled)
+    _apply_flag_rows(flags, FeatureFlag.objects.filter(campus__isnull=True))
 
     if campus is not None:
-        for ff in FeatureFlag.objects.filter(campus=campus):
-            flags[ff.code] = bool(ff.is_enabled)
+        _apply_flag_rows(flags, FeatureFlag.objects.filter(campus=campus))
 
     return flags
+
+
+def is_feature_enabled(code: str, campus: Optional[Campus] = None) -> bool:
+    org = get_organization()
+    return get_feature_flags(org, campus).get(normalize_feature_code(code), True)
