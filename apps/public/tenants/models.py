@@ -31,8 +31,44 @@ class Tenant(TenantMixin):
 
 
 class Domain(DomainMixin):
-    type = models.CharField(max_length=16, default="SUBDOMAIN")
+    SUBDOMAIN = "SUBDOMAIN"
+    CUSTOM = "CUSTOM"
+    TYPE_CHOICES = ((SUBDOMAIN, "Subdomain"), (CUSTOM, "Custom domain"))
+
+    DNS_PENDING = "PENDING"
+    DNS_VERIFIED = "VERIFIED"
+    DNS_FAILED = "FAILED"
+    DNS_STATUS_CHOICES = (
+        (DNS_PENDING, "Pending"),
+        (DNS_VERIFIED, "Verified"),
+        (DNS_FAILED, "Failed"),
+    )
+
+    SSL_PENDING = "PENDING"
+    SSL_ACTIVE = "ACTIVE"
+    SSL_FAILED = "FAILED"
+    SSL_EXPIRED = "EXPIRED"
+    SSL_STATUS_CHOICES = (
+        (SSL_PENDING, "Pending"),
+        (SSL_ACTIVE, "Active"),
+        (SSL_FAILED, "Failed"),
+        (SSL_EXPIRED, "Expired"),
+    )
+
+    type = models.CharField(max_length=16, choices=TYPE_CHOICES, default=SUBDOMAIN)
     verified_at = models.DateTimeField(null=True, blank=True)
+    dns_status = models.CharField(max_length=16, choices=DNS_STATUS_CHOICES, default=DNS_PENDING)
+    ssl_status = models.CharField(max_length=16, choices=SSL_STATUS_CHOICES, default=SSL_PENDING)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    dns_notes = models.TextField(blank=True)
+
+    @property
+    def is_verified(self) -> bool:
+        return self.verified_at is not None or self.dns_status == self.DNS_VERIFIED
+
+    @property
+    def is_ssl_active(self) -> bool:
+        return self.ssl_status == self.SSL_ACTIVE
 
     def __str__(self) -> str:
         return self.domain
