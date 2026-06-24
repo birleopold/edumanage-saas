@@ -7,9 +7,9 @@
       items: [
         ["Home", "/platform/", "ph-gauge"],
         ["Schools", "/platform/tenants/", "ph-buildings"],
-        ["Activity", "/platform/activity/", "ph-clock-counter-clockwise"],
-        ["Admin", "/dj-admin/", "ph-database"],
-        ["Login", "/platform/login/", "ph-user-circle"]
+        ["Plans", "/platform/subscriptions/", "ph-credit-card"],
+        ["Ready", "/platform/deployment-readiness/", "ph-rocket-launch"],
+        ["Activity", "/platform/activity/", "ph-clock-counter-clockwise"]
       ]
     },
     {
