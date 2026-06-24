@@ -51,7 +51,6 @@ def get_or_create_organization() -> OrganizationProfile:
     org = get_organization()
     if org:
         return org
-
     org = OrganizationProfile.objects.create(name="Organization")
     Campus.objects.create(organization=org, name="Main Campus", is_default=True, is_active=True)
     return org
@@ -60,21 +59,17 @@ def get_or_create_organization() -> OrganizationProfile:
 def get_current_campus(request) -> Optional[Campus]:
     if getattr(connection, "schema_name", None) == "public":
         return None
-
     org = get_organization()
     if not org:
         return None
-
     campus_id = request.session.get(SESSION_CURRENT_CAMPUS_ID)
     if campus_id:
         campus = Campus.objects.select_related('organization').filter(organization=org, id=campus_id, is_active=True).first()
         if campus:
             return campus
-
     campus = Campus.objects.select_related('organization').filter(organization=org, is_default=True, is_active=True).first()
     if campus:
         return campus
-
     return Campus.objects.select_related('organization').filter(organization=org, is_active=True).order_by("name").first()
 
 
@@ -90,17 +85,14 @@ def campus_queryset():
 def update_current_campus_from_request(request) -> None:
     if "campus" not in request.GET:
         return
-
     raw = request.GET.get("campus")
     if raw == "":
         request.session.pop(SESSION_CURRENT_CAMPUS_ID, None)
         return
-
     try:
         campus_id = int(raw)
     except (TypeError, ValueError):
         return
-
     org = get_or_create_organization()
     campus = Campus.objects.filter(organization=org, id=campus_id, is_active=True).first()
     if campus:
@@ -109,7 +101,6 @@ def update_current_campus_from_request(request) -> None:
 
 def selected_campus_id_from_request(request) -> Optional[int]:
     current = get_current_campus(request)
-
     if "campus" in request.GET:
         raw = request.GET.get("campus")
         if raw == "":
@@ -118,12 +109,11 @@ def selected_campus_id_from_request(request) -> Optional[int]:
             return int(raw)
         except (TypeError, ValueError):
             return None
-
     return current.id if current else None
 
 
 def _apply_flag_rows(flags: Dict[str, bool], queryset) -> Dict[str, bool]:
-    for ff in queryset:
+    for ff in queryset.order_by("updated_at", "id"):
         code = normalize_feature_code(ff.code)
         if code in flags:
             flags[code] = bool(ff.is_enabled)
@@ -133,17 +123,12 @@ def _apply_flag_rows(flags: Dict[str, bool], queryset) -> Dict[str, bool]:
 def get_feature_flags(org: Optional[OrganizationProfile], campus: Optional[Campus]) -> Dict[str, bool]:
     if getattr(connection, "schema_name", None) == "public":
         return {}
-
     flags: Dict[str, bool] = {code: True for code in DEFAULT_FLAG_CODES}
-
     if org is None:
         return flags
-
     _apply_flag_rows(flags, FeatureFlag.objects.filter(campus__isnull=True))
-
     if campus is not None:
         _apply_flag_rows(flags, FeatureFlag.objects.filter(campus=campus))
-
     return flags
 
 
