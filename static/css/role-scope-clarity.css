@@ -1,0 +1,157 @@
+.edu-role-scope {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(226, 232, 240, .95);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--org-primary, var(--ui-accent, #2563eb)) 11%, transparent), transparent 20rem),
+    linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(248, 250, 252, .96));
+  box-shadow: 0 16px 34px -28px rgba(15, 23, 42, .45);
+}
+
+.edu-role-scope__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--org-primary, var(--ui-accent, #2563eb)), var(--org-secondary, var(--ui-accent-2, #1e40af)));
+  color: #fff;
+  box-shadow: 0 18px 34px -24px rgba(15, 23, 42, .65);
+}
+
+.edu-role-scope__icon i {
+  font-size: 1.45rem;
+}
+
+.edu-role-scope__content {
+  min-width: 0;
+}
+
+.edu-role-scope__eyebrow {
+  margin: 0 0 .25rem;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--org-primary, var(--ui-accent, #2563eb));
+}
+
+.edu-role-scope h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 950;
+  letter-spacing: -.025em;
+}
+
+.edu-role-scope__description {
+  margin: .35rem 0 0;
+  color: #475569;
+  font-size: .86rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.edu-role-scope__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .75rem;
+}
+
+.edu-role-scope__pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--org-primary, var(--ui-accent, #2563eb)) 18%, #e2e8f0);
+  border-radius: 999px;
+  background: #fff;
+  padding: .35rem .65rem;
+  color: #334155;
+  font-size: .72rem;
+  font-weight: 850;
+}
+
+.edu-role-scope__guardrail {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  padding: .75rem;
+  color: #475569;
+  font-size: .78rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.edu-role-scope__guardrail i {
+  margin-top: .1rem;
+  color: var(--org-primary, var(--ui-accent, #2563eb));
+}
+
+.edu-role-scope--platform {
+  --ui-accent: #1d4ed8;
+  --ui-accent-2: #0f172a;
+}
+
+.edu-role-scope--admin {
+  --ui-accent: #2563eb;
+  --ui-accent-2: #4f46e5;
+}
+
+.edu-role-scope--teacher {
+  --ui-accent: #7c3aed;
+  --ui-accent-2: #6d28d9;
+}
+
+.edu-role-scope--student {
+  --ui-accent: #0d9488;
+  --ui-accent-2: #0f766e;
+}
+
+.edu-role-scope--parent {
+  --ui-accent: #e11d48;
+  --ui-accent-2: #be123c;
+}
+
+.edu-role-scope-mini {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: .2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .16);
+  padding: .12rem .45rem;
+  color: rgba(255, 255, 255, .9);
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 900px) {
+  .edu-role-scope {
+    grid-template-columns: auto minmax(0, 1fr) minmax(16rem, .55fr);
+    align-items: center;
+  }
+
+  .edu-role-scope__guardrail {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .edu-role-scope {
+    grid-template-columns: 1fr;
+  }
+
+  .edu-role-scope__icon {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+}
