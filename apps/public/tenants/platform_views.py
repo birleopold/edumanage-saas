@@ -14,7 +14,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import DomainForm, TenantForm, TenantStatusForm
-from .models import Domain, Tenant
+from .models import Domain, PlatformAuditEvent, Tenant
 
 
 PLATFORM_PAGE_SIZE = 25
@@ -36,6 +36,28 @@ def _safe_next_url(request):
     ):
         return next_url
     return None
+
+
+def _client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR") or None
+
+
+def _record_platform_event(request, action, *, tenant=None, domain=None, object_label="", before=None, after=None, metadata=None):
+    PlatformAuditEvent.objects.create(
+        actor=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+        tenant=tenant,
+        domain=domain,
+        action=action,
+        object_label=object_label or str(domain or tenant or ""),
+        before=before or {},
+        after=after or {},
+        metadata=metadata or {},
+        ip_address=_client_ip(request),
+        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+    )
 
 
 def platform_admin_required(view_func):
@@ -111,6 +133,28 @@ def _domain_management_rows(domains):
     ]
 
 
+def _platform_activity_queryset(request):
+    qs = PlatformAuditEvent.objects.select_related("actor", "tenant", "domain").order_by("-created_at")
+    action = request.GET.get("action") or ""
+    tenant_id = request.GET.get("tenant") or ""
+    q = (request.GET.get("q") or "").strip()
+    if action:
+        qs = qs.filter(action=action)
+    if tenant_id:
+        qs = qs.filter(tenant_id=tenant_id)
+    if q:
+        qs = qs.filter(
+            Q(actor__username__icontains=q)
+            | Q(actor__first_name__icontains=q)
+            | Q(actor__last_name__icontains=q)
+            | Q(tenant__name__icontains=q)
+            | Q(domain__domain__icontains=q)
+            | Q(object_label__icontains=q)
+            | Q(metadata__icontains=q)
+        )
+    return qs
+
+
 def platform_login(request):
     if request.user.is_authenticated and request.user.is_superuser:
         return redirect("platform_dashboard")
@@ -152,8 +196,26 @@ def dashboard(request):
         "status_counts": status_counts,
         "tenants": tenants,
         "domains": domains,
+        "recent_platform_events": PlatformAuditEvent.objects.select_related("actor", "tenant", "domain")[:10],
     }
     return render(request, "platform/dashboard.html", context)
+
+
+@platform_admin_required
+def platform_activity(request):
+    events = _platform_activity_queryset(request)[:200]
+    return render(
+        request,
+        "platform/activity.html",
+        {
+            "events": events,
+            "tenants": Tenant.objects.order_by("name"),
+            "action_choices": PlatformAuditEvent.ACTION_CHOICES,
+            "active_action": request.GET.get("action") or "",
+            "active_tenant": request.GET.get("tenant") or "",
+            "q": (request.GET.get("q") or "").strip(),
+        },
+    )
 
 
 @platform_admin_required
@@ -185,6 +247,15 @@ def tenant_create(request):
         if form.is_valid():
             tenant = form.save()
             onboarding = getattr(form, "onboarding_result", None)
+            primary_domain = tenant.domains.filter(is_primary=True).first()
+            _record_platform_event(
+                request,
+                PlatformAuditEvent.TENANT_CREATED,
+                tenant=tenant,
+                domain=primary_domain,
+                object_label=tenant.name,
+                after={"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status, "primary_domain": getattr(primary_domain, "domain", "")},
+            )
             if onboarding:
                 messages.success(
                     request,
@@ -208,10 +279,19 @@ def tenant_create(request):
 @platform_admin_required
 def tenant_edit(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
+    before = {"name": tenant.name, "status": tenant.status, "schema_name": tenant.schema_name}
     if request.method == "POST":
         form = TenantForm(request.POST, instance=tenant)
         if form.is_valid():
             tenant = form.save()
+            _record_platform_event(
+                request,
+                PlatformAuditEvent.TENANT_STATUS_CHANGED,
+                tenant=tenant,
+                object_label=tenant.name,
+                before=before,
+                after={"name": tenant.name, "status": tenant.status, "schema_name": tenant.schema_name},
+            )
             messages.success(request, f"Tenant '{tenant.name}' updated.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
@@ -232,6 +312,7 @@ def tenant_detail(request, pk):
             "domain_management": _domain_management_rows(domains),
             "schema_status": _schema_status(tenant.schema_name),
             "status_form": TenantStatusForm(initial={"status": tenant.status}),
+            "recent_platform_events": PlatformAuditEvent.objects.select_related("actor", "tenant", "domain").filter(tenant=tenant)[:20],
         },
     )
 
@@ -240,10 +321,27 @@ def tenant_detail(request, pk):
 @require_POST
 def tenant_status_update(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
+    old_status = tenant.status
     form = TenantStatusForm(request.POST)
     if form.is_valid():
-        tenant.status = form.cleaned_data["status"]
+        new_status = form.cleaned_data["status"]
+        tenant.status = new_status
         tenant.save(update_fields=["status"])
+        if new_status == "suspended":
+            audit_action = PlatformAuditEvent.TENANT_SUSPENDED
+        elif old_status == "suspended" and new_status == "active":
+            audit_action = PlatformAuditEvent.TENANT_REACTIVATED
+        else:
+            audit_action = PlatformAuditEvent.TENANT_STATUS_CHANGED
+        _record_platform_event(
+            request,
+            audit_action,
+            tenant=tenant,
+            object_label=tenant.name,
+            before={"status": old_status},
+            after={"status": new_status},
+            metadata={"reason": form.cleaned_data.get("reason", "")},
+        )
         messages.success(request, f"Tenant status updated to {tenant.status}.")
     else:
         messages.error(request, "Invalid status update.")
@@ -257,6 +355,14 @@ def domain_create(request, tenant_id):
         form = DomainForm(request.POST, tenant=tenant)
         if form.is_valid():
             domain = form.save()
+            _record_platform_event(
+                request,
+                PlatformAuditEvent.DOMAIN_CREATED,
+                tenant=tenant,
+                domain=domain,
+                object_label=domain.domain,
+                after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary},
+            )
             messages.success(request, f"Domain '{domain.domain}' added.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
@@ -267,10 +373,20 @@ def domain_create(request, tenant_id):
 @platform_admin_required
 def domain_edit(request, pk):
     domain = get_object_or_404(Domain, pk=pk)
+    before = {"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary, "dns_status": domain.dns_status, "ssl_status": domain.ssl_status}
     if request.method == "POST":
         form = DomainForm(request.POST, instance=domain)
         if form.is_valid():
             domain = form.save()
+            _record_platform_event(
+                request,
+                PlatformAuditEvent.DOMAIN_UPDATED,
+                tenant=domain.tenant,
+                domain=domain,
+                object_label=domain.domain,
+                before=before,
+                after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary, "dns_status": domain.dns_status, "ssl_status": domain.ssl_status},
+            )
             messages.success(request, f"Domain '{domain.domain}' updated.")
             return redirect("platform_tenant_detail", pk=domain.tenant_id)
     else:
@@ -282,9 +398,20 @@ def domain_edit(request, pk):
 @require_POST
 def domain_mark_primary(request, pk):
     domain = get_object_or_404(Domain, pk=pk)
+    old_primary = domain.tenant.domains.filter(is_primary=True).exclude(pk=domain.pk).first()
     Domain.objects.filter(tenant=domain.tenant).exclude(pk=domain.pk).update(is_primary=False)
     domain.is_primary = True
     domain.save(update_fields=["is_primary"])
+    _record_platform_event(
+        request,
+        PlatformAuditEvent.DOMAIN_UPDATED,
+        tenant=domain.tenant,
+        domain=domain,
+        object_label=domain.domain,
+        before={"primary_domain": getattr(old_primary, "domain", "")},
+        after={"primary_domain": domain.domain},
+        metadata={"change": "primary_domain"},
+    )
     messages.success(request, f"'{domain.domain}' is now the primary domain.")
     return redirect("platform_tenant_detail", pk=domain.tenant_id)
 
@@ -294,28 +421,43 @@ def domain_mark_primary(request, pk):
 def domain_verify(request, pk):
     domain = get_object_or_404(Domain, pk=pk)
     action = request.POST.get("action") or "dns_verified"
+    before = {"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")}
     update_fields = ["last_checked_at"]
     domain.last_checked_at = timezone.now()
 
     if action == "dns_failed":
         domain.dns_status = Domain.DNS_FAILED
         update_fields.append("dns_status")
+        audit_action = PlatformAuditEvent.DOMAIN_VERIFIED
         messages.error(request, f"DNS check failed for '{domain.domain}'.")
     elif action == "ssl_active":
         domain.ssl_status = Domain.SSL_ACTIVE
         update_fields.append("ssl_status")
+        audit_action = PlatformAuditEvent.DOMAIN_SSL_UPDATED
         messages.success(request, f"SSL marked active for '{domain.domain}'.")
     elif action == "ssl_failed":
         domain.ssl_status = Domain.SSL_FAILED
         update_fields.append("ssl_status")
+        audit_action = PlatformAuditEvent.DOMAIN_SSL_UPDATED
         messages.error(request, f"SSL marked failed for '{domain.domain}'.")
     else:
         domain.dns_status = Domain.DNS_VERIFIED
         domain.verified_at = timezone.now()
         update_fields.extend(["dns_status", "verified_at"])
+        audit_action = PlatformAuditEvent.DOMAIN_VERIFIED
         messages.success(request, f"Domain '{domain.domain}' marked as DNS verified.")
 
     domain.save(update_fields=sorted(set(update_fields)))
+    _record_platform_event(
+        request,
+        audit_action,
+        tenant=domain.tenant,
+        domain=domain,
+        object_label=domain.domain,
+        before=before,
+        after={"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or ""), "last_checked_at": str(domain.last_checked_at or "")},
+        metadata={"action": action},
+    )
     return redirect("platform_tenant_detail", pk=domain.tenant_id)
 
 
@@ -323,10 +465,22 @@ def domain_verify(request, pk):
 @require_POST
 def domain_delete(request, pk):
     domain = get_object_or_404(Domain, pk=pk)
+    tenant = domain.tenant
     tenant_id = domain.tenant_id
     if domain.is_primary and domain.tenant.domains.count() > 1:
         messages.error(request, "Set another primary domain before deleting this one.")
         return redirect("platform_tenant_detail", pk=tenant_id)
+    label = domain.domain
+    _record_platform_event(
+        request,
+        PlatformAuditEvent.DOMAIN_UPDATED,
+        tenant=tenant,
+        domain=domain,
+        object_label=label,
+        before={"domain": label, "type": domain.type, "is_primary": domain.is_primary},
+        after={"deleted": True},
+        metadata={"change": "domain_deleted"},
+    )
     messages.success(request, f"Domain '{domain.domain}' deleted.")
     domain.delete()
     return redirect("platform_tenant_detail", pk=tenant_id)
