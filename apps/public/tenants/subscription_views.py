@@ -36,9 +36,21 @@ def _subscription_context(subscription: TenantSubscription):
     }
 
 
+def _backfill_missing_subscriptions():
+    ensure_default_plans()
+    missing = Tenant.objects.filter(subscription__isnull=True)
+    created = 0
+    for tenant in missing:
+        create_subscription_for_tenant(tenant)
+        created += 1
+    return created
+
+
 @platform_admin_required
 def subscription_dashboard(request):
-    ensure_default_plans()
+    created = _backfill_missing_subscriptions()
+    if created:
+        messages.info(request, f"Created default subscription records for {created} existing tenant(s).")
     subscriptions = TenantSubscription.objects.select_related("tenant", "plan").all()
     plans = SubscriptionPlan.objects.filter(is_active=True).order_by("sort_order", "monthly_price")
     context = {
