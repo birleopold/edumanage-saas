@@ -97,7 +97,7 @@ def _fee_balance_rows():
 
     headers = ["invoice_id", "reference", "student", "student_id", "academic_year", "academic_term", "due_date", "status", "total_amount", "total_paid", "balance", "created_at"]
     rows = []
-    for invoice in Invoice.objects.select_related("student", "academic_year", "academic_term").prefetch_related("lines", "payments", "adjustments").order_by("-created_at"):
+    for invoice in Invoice.objects.select_related("student", "academic_year", "academic_term").prefetch_related("lines", "payments").order_by("-created_at"):
         rows.append(
             {
                 "invoice_id": invoice.id,
