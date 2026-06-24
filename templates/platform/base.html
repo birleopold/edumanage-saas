@@ -58,6 +58,9 @@
         <a href="{% url 'platform_activity' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/activity' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
           <i class="ph ph-clock-counter-clockwise text-xl"></i> Platform Activity
         </a>
+        <a href="{% url 'platform_deployment_readiness' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/deployment-readiness' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-rocket-launch text-xl"></i> Deployment Readiness
+        </a>
         <a href="/dj-admin/" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-800">
           <i class="ph ph-database text-xl"></i> Django Admin
         </a>
