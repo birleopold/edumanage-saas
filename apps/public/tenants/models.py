@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import connection, models
 from django_tenants.models import DomainMixin, TenantMixin
 
@@ -95,7 +96,7 @@ class PlatformAuditEvent(models.Model):
     )
 
     actor = models.ForeignKey(
-        "auth.User",
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
