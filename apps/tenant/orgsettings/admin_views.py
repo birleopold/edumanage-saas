@@ -10,7 +10,7 @@ from apps.tenant.users.models import Role
 
 from .forms import CampusForm, OrganizationProfileForm
 from .models import Campus, FeatureFlag
-from .services import DEFAULT_FLAG_CODES, get_feature_flags, get_or_create_organization, set_current_campus
+from .services import FEATURE_CATALOG, DEFAULT_FLAG_CODES, get_feature_flags, get_or_create_organization, normalize_feature_code, set_current_campus
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -127,7 +127,6 @@ def campus_select(request, pk: int):
 def feature_flags(request):
     org = get_or_create_organization()
     campuses = list(Campus.objects.filter(organization=org).order_by("name"))
-
     default_codes = DEFAULT_FLAG_CODES
 
     if request.method == "POST":
@@ -139,19 +138,19 @@ def feature_flags(request):
             campus = Campus.objects.filter(organization=org, id=campus_id).first()
 
         for code in default_codes:
-            key = f"flag_{code}"
+            normalized_code = normalize_feature_code(code)
+            key = f"flag_{normalized_code}"
             enabled = key in request.POST
             FeatureFlag.objects.update_or_create(
-                code=code,
+                code=normalized_code,
                 campus=campus,
                 defaults={"is_enabled": enabled},
             )
 
-        messages.success(request, "Feature flags saved.")
+        messages.success(request, "Feature flags saved. Disabled modules are hidden from the interface immediately.")
         return redirect("admin_orgsettings_flags")
 
     global_flags = get_feature_flags(org, None)
-
     campus_flags = {}
     for c in campuses:
         campus_flags[c.id] = get_feature_flags(org, c)
@@ -159,5 +158,11 @@ def feature_flags(request):
     return render(
         request,
         "portals/admin/orgsettings/feature_flags.html",
-        {"codes": default_codes, "campuses": campuses, "global_flags": global_flags, "campus_flags": campus_flags},
+        {
+            "codes": default_codes,
+            "feature_catalog": FEATURE_CATALOG,
+            "campuses": campuses,
+            "global_flags": global_flags,
+            "campus_flags": campus_flags,
+        },
     )
