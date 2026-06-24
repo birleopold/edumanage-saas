@@ -6,6 +6,7 @@ urlpatterns = [
     path("login/", platform_views.platform_login, name="platform_admin_login"),
     path("logout/", platform_views.platform_logout, name="platform_admin_logout"),
     path("", platform_views.dashboard, name="platform_dashboard"),
+    path("activity/", platform_views.platform_activity, name="platform_activity"),
     path("tenants/", platform_views.tenant_list, name="platform_tenant_list"),
     path("tenants/create/", wizard_views.create_school_wizard, name="platform_tenant_create"),
     path("tenants/create/classic/", platform_views.tenant_create, name="platform_tenant_create_classic"),
