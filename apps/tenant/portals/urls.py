@@ -9,6 +9,8 @@ urlpatterns = [
     path("manifest.webmanifest", pwa.manifest, name="pwa_manifest"),
     path("service-worker.js", pwa.service_worker, name="pwa_service_worker"),
     path("pwa/push-readiness/", pwa.push_readiness, name="pwa_push_readiness"),
+    path("pwa/push-subscribe/", pwa.push_subscribe, name="pwa_push_subscribe"),
+    path("pwa/push-unsubscribe/", pwa.push_unsubscribe, name="pwa_push_unsubscribe"),
     path("platform/", include("apps.public.tenants.platform_urls")),
     path("apply/", include("apps.tenant.admissions.public_urls")),
     path("messages/", include("apps.tenant.messaging.urls")),
