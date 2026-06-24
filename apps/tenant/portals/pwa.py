@@ -20,7 +20,9 @@ const STATIC_ASSETS = [
   "/static/js/edumanage-system.js",
   "/static/js/admin-module-actions.js",
   "/static/js/role-scope-clarity.js",
-  "/static/js/pwa-lite.js"
+  "/static/js/mobile-bottom-nav.js",
+  "/static/js/pwa-lite.js",
+  "/static/img/pwa-icon.svg"
 ];
 
 const OFFLINE_HTML = `<!doctype html>
@@ -72,8 +74,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title || "EduManage", {
       body: payload.body || "You have a new school notification.",
-      icon: "/manifest.webmanifest",
-      badge: "/manifest.webmanifest",
+      icon: "/static/img/pwa-icon.svg",
+      badge: "/static/img/pwa-icon.svg",
       data: payload.url || "/"
     })
   );
@@ -92,6 +94,26 @@ def service_worker(request):
     response = HttpResponse(SERVICE_WORKER_JS, content_type="application/javascript; charset=utf-8")
     response["Service-Worker-Allowed"] = "/"
     return response
+
+
+def manifest(request):
+    return JsonResponse(
+        {
+            "name": "EduManage School System",
+            "short_name": "EduManage",
+            "description": "EduManage mobile school management portal",
+            "start_url": "/",
+            "scope": "/",
+            "display": "standalone",
+            "orientation": "portrait-primary",
+            "background_color": "#f8fafc",
+            "theme_color": "#2563eb",
+            "categories": ["education", "productivity"],
+            "icons": [
+                {"src": "/static/img/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"},
+            ],
+        }
+    )
 
 
 def push_readiness(request):
