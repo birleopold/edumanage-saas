@@ -242,14 +242,15 @@ def _backup_payload():
 @admin_portal_required
 @require_POST
 def request_backup(request):
+    started_at = timezone.now()
     notes = request.POST.get("notes") or "Manual school data backup requested"
     payload = _backup_payload()
     job = BackupJob.objects.create(
         requested_by=request.user,
         status=BackupJob.SUCCESS,
         notes=f"{notes}. Included datasets: {', '.join(payload['datasets'].keys())}",
-        file_path=f"school_backup_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json",
-        started_at=timezone.now(),
+        file_path=f"school_backup_{started_at.strftime('%Y%m%d_%H%M%S')}.json",
+        started_at=started_at,
         finished_at=timezone.now(),
     )
     log_audit(
