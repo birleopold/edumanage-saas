@@ -8,8 +8,8 @@ from .services import get_current_campus, get_feature_flags, get_organization, n
 FEATURE_ROUTE_PREFIXES = {
     "ACADEMICS": ("/admin/academics/",),
     "ADMISSIONS": ("/admin/admissions/",),
-    "ATTENDANCE": ("/admin/attendance/",),
-    "ASSESSMENTS": ("/admin/assessments/",),
+    "ATTENDANCE": ("/admin/attendance/", "/teacher/attendance/", "/parent/attendance/"),
+    "ASSESSMENTS": ("/admin/assessments/", "/teacher/assessments/"),
     "ANNOUNCEMENTS": ("/admin/announcements/",),
     "COURSEWORK": ("/admin/coursework/", "/teacher/coursework/", "/student/coursework/"),
     "FINANCE": ("/admin/finance/", "/parent/finance/", "/student/finance/"),
@@ -30,8 +30,8 @@ FEATURE_ROUTE_PREFIXES = {
     "MOBILE_API": ("/api/v1/mobile/",),
 }
 
-ALWAYS_ALLOWED_PREFIXES = (
-    "/admin/",
+SAFE_PREFIXES = (
+    "/admin/settings/feature-flags/",
     "/admin/settings/",
     "/admin/school-setup/",
     "/admin/system-status/",
@@ -39,15 +39,23 @@ ALWAYS_ALLOWED_PREFIXES = (
     "/health/",
     "/static/",
     "/media/",
+    "/manifest.webmanifest",
+    "/service-worker.js",
+)
+
+PORTAL_HOME_BY_PREFIX = (
+    ("/teacher/", "teacher_home"),
+    ("/student/", "student_home"),
+    ("/parent/", "parent_home"),
+    ("/admin/", "admin_home"),
 )
 
 
 class FeatureGateMiddleware:
     """Hide/deny tenant modules that the school owner has disabled.
 
-    The feature flags only remove access to selected modules. They do not change
-    tenant data, migrations, or the rest of the system, so enabled modules keep
-    working normally.
+    Feature flags only remove access to selected modules. They do not delete data,
+    change migrations, or affect enabled modules.
     """
 
     def __init__(self, get_response):
@@ -57,8 +65,15 @@ class FeatureGateMiddleware:
         blocked_feature = self._blocked_feature(request)
         if blocked_feature:
             messages.warning(request, f"{blocked_feature.replace('_', ' ').title()} is turned off for this school.")
-            return redirect("admin_home")
+            return redirect(self._fallback_home_name(request))
         return self.get_response(request)
+
+    def _fallback_home_name(self, request):
+        path = request.path or ""
+        for prefix, route_name in PORTAL_HOME_BY_PREFIX:
+            if path.startswith(prefix):
+                return route_name
+        return "admin_home"
 
     def _blocked_feature(self, request):
         schema_name = getattr(connection, "schema_name", "public") or "public"
@@ -68,11 +83,7 @@ class FeatureGateMiddleware:
         path = request.path or ""
         if path in {"/admin/", "/teacher/", "/student/", "/parent/"}:
             return None
-        if path.startswith("/admin/settings/feature-flags/"):
-            return None
-        if path.startswith("/admin/settings/") or path.startswith("/admin/school-setup/") or path.startswith("/admin/system-status/"):
-            return None
-        if path.startswith("/static/") or path.startswith("/media/") or path.startswith("/health/"):
+        if any(path.startswith(prefix) for prefix in SAFE_PREFIXES):
             return None
 
         org = get_organization()
