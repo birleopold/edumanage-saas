@@ -6,7 +6,7 @@ front-end build step are required.
 
 import json
 
-from django.conf import settings
+from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
@@ -130,7 +130,7 @@ def _active_subscription_count(user):
 
 
 def push_readiness(request):
-    public_key = getattr(settings, "WEB_PUSH_PUBLIC_KEY", "")
+    public_key = config("WEB_PUSH_PUBLIC_KEY", default="")
     return JsonResponse(
         {
             "service_worker": True,
