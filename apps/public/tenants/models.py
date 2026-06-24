@@ -72,3 +72,53 @@ class Domain(DomainMixin):
 
     def __str__(self) -> str:
         return self.domain
+
+
+class PlatformAuditEvent(models.Model):
+    TENANT_CREATED = "TENANT_CREATED"
+    TENANT_STATUS_CHANGED = "TENANT_STATUS_CHANGED"
+    TENANT_SUSPENDED = "TENANT_SUSPENDED"
+    TENANT_REACTIVATED = "TENANT_REACTIVATED"
+    DOMAIN_CREATED = "DOMAIN_CREATED"
+    DOMAIN_UPDATED = "DOMAIN_UPDATED"
+    DOMAIN_VERIFIED = "DOMAIN_VERIFIED"
+    DOMAIN_SSL_UPDATED = "DOMAIN_SSL_UPDATED"
+    ACTION_CHOICES = (
+        (TENANT_CREATED, "Tenant created"),
+        (TENANT_STATUS_CHANGED, "Tenant status changed"),
+        (TENANT_SUSPENDED, "Tenant suspended"),
+        (TENANT_REACTIVATED, "Tenant reactivated"),
+        (DOMAIN_CREATED, "Domain created"),
+        (DOMAIN_UPDATED, "Domain updated"),
+        (DOMAIN_VERIFIED, "Domain verified"),
+        (DOMAIN_SSL_UPDATED, "Domain SSL updated"),
+    )
+
+    actor = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="platform_audit_events",
+    )
+    tenant = models.ForeignKey(Tenant, on_delete=models.SET_NULL, null=True, blank=True, related_name="platform_audit_events")
+    domain = models.ForeignKey(Domain, on_delete=models.SET_NULL, null=True, blank=True, related_name="platform_audit_events")
+    action = models.CharField(max_length=40, choices=ACTION_CHOICES, db_index=True)
+    object_label = models.CharField(max_length=255, blank=True)
+    before = models.JSONField(default=dict, blank=True)
+    after = models.JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["action", "created_at"]),
+            models.Index(fields=["tenant", "created_at"]),
+            models.Index(fields=["actor", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.actor or '-'} {self.object_label or self.tenant or '-'}"
