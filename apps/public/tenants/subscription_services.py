@@ -9,15 +9,14 @@ from .models import SubscriptionInvoice, SubscriptionPlan, TenantSubscription
 from .onboarding import tenant_data_context
 
 
-DEFAULT_PLAN_CODES = (SubscriptionPlan.STARTER, SubscriptionPlan.STANDARD, SubscriptionPlan.ENTERPRISE)
+DEFAULT_PLAN_CODES = (SubscriptionPlan.STARTER, SubscriptionPlan.STANDARD, SubscriptionPlan.ENTERPRISE, SubscriptionPlan.CUSTOM)
 
 
 def ensure_default_plans():
-    """Keep plan records available even if migrations were skipped in preview."""
     defaults = {
         SubscriptionPlan.STARTER: {
             "name": "Starter",
-            "description": "Entry package for small schools starting with core records.",
+            "description": "Core records package for small schools.",
             "monthly_price": Decimal("150000"),
             "annual_price": Decimal("1500000"),
             "trial_days": 14,
@@ -30,7 +29,7 @@ def ensure_default_plans():
         },
         SubscriptionPlan.STANDARD: {
             "name": "Standard",
-            "description": "Recommended package for most schools with finance, reports, exams and communication.",
+            "description": "Recommended package for finance, reports, exams and communication.",
             "monthly_price": Decimal("300000"),
             "annual_price": Decimal("3000000"),
             "trial_days": 14,
@@ -43,7 +42,7 @@ def ensure_default_plans():
         },
         SubscriptionPlan.ENTERPRISE: {
             "name": "Enterprise",
-            "description": "Full package for large or multi-campus schools needing all modules and higher limits.",
+            "description": "Full feature package for large or multi-campus schools.",
             "monthly_price": Decimal("650000"),
             "annual_price": Decimal("6500000"),
             "trial_days": 14,
@@ -53,6 +52,19 @@ def ensure_default_plans():
             "max_storage_mb": 0,
             "features": ["academics", "admissions", "attendance", "assessments", "announcements", "coursework", "students", "teachers", "parents", "finance", "library", "transport", "hostels", "inventory", "documents", "timetable", "exams", "reports", "messaging", "hr", "analytics", "audit"],
             "sort_order": 3,
+        },
+        SubscriptionPlan.CUSTOM: {
+            "name": "Custom",
+            "description": "Custom commercial terms and manually selected modules.",
+            "monthly_price": Decimal("0"),
+            "annual_price": Decimal("0"),
+            "trial_days": 14,
+            "max_students": 0,
+            "max_staff": 0,
+            "max_campuses": 0,
+            "max_storage_mb": 0,
+            "features": [],
+            "sort_order": 4,
         },
     }
     plans = {}
@@ -110,15 +122,7 @@ def subscription_usage(subscription: TenantSubscription) -> dict:
             from apps.tenant.orgsettings.models import Campus
             from apps.tenant.students.models import StudentProfile
             from apps.tenant.teachers.models import TeacherProfile
-
-            usage.update(
-                {
-                    "students": StudentProfile.objects.filter(is_active=True).count(),
-                    "staff": TeacherProfile.objects.filter(is_active=True).count(),
-                    "campuses": Campus.objects.filter(is_active=True).count(),
-                    "tenant_schema_used": schema_used,
-                }
-            )
+            usage.update({"students": StudentProfile.objects.filter(is_active=True).count(), "staff": TeacherProfile.objects.filter(is_active=True).count(), "campuses": Campus.objects.filter(is_active=True).count(), "tenant_schema_used": schema_used})
     except Exception:
         usage["error"] = "Usage counts unavailable in this environment."
     return usage
@@ -134,13 +138,4 @@ def create_subscription_invoice(subscription: TenantSubscription, *, issued_on=N
     issued_on = issued_on or timezone.localdate()
     due_on = due_on or subscription.next_billing_date
     invoice_number = f"SUB-{subscription.tenant_id}-{issued_on.strftime('%Y%m%d')}-{SubscriptionInvoice.objects.filter(subscription=subscription).count() + 1}"
-    return SubscriptionInvoice.objects.create(
-        subscription=subscription,
-        invoice_number=invoice_number,
-        amount=subscription.amount,
-        currency=subscription.currency,
-        status=SubscriptionInvoice.OPEN,
-        issued_on=issued_on,
-        due_on=due_on,
-        notes=notes,
-    )
+    return SubscriptionInvoice.objects.create(subscription=subscription, invoice_number=invoice_number, amount=subscription.amount, currency=subscription.currency, status=SubscriptionInvoice.OPEN, issued_on=issued_on, due_on=due_on, notes=notes)
