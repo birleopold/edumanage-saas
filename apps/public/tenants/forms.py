@@ -1,10 +1,13 @@
 import re
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from .models import Domain, Tenant
+from .onboarding import provision_school_tenant
 
 
 STATUS_CHOICES = (
@@ -23,55 +26,25 @@ _RESERVED_SCHEMA_NAMES = {"public", "information_schema", "pg_catalog", "pg_toas
 _SCHEMA_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
+ONBOARDING_ONLY_FIELDS = (
+    "primary_domain",
+    "organization_email",
+    "organization_phone",
+    "organization_address",
+    "owner_first_name",
+    "owner_last_name",
+    "owner_email",
+    "owner_phone",
+    "owner_username",
+    "owner_temporary_password",
+    "owner_temporary_password_confirm",
+)
+
+
 def normalize_domain(value):
     domain = (value or "").strip().lower()
     domain = domain.replace("https://", "").replace("http://", "").strip("/")
     return domain
-
-
-def seed_organization_profile_from_tenant(tenant):
-    """Create the school-facing profile for this tenant.
-
-    Tenant is the platform SaaS record. OrganizationProfile is the school record
-    used inside that tenant. In full PostgreSQL tenant mode every tenant has its
-    own schema and therefore its own OrganizationProfile table. In local SQLite
-    development there is one shared database, so we create one profile per tenant
-    name to make the relationship visible in dj-admin without overwriting the
-    previous school profile.
-    """
-    try:
-        from apps.tenant.orgsettings.models import Campus, OrganizationProfile
-    except Exception:
-        return
-
-    primary_domain = Domain.objects.filter(tenant=tenant, is_primary=True).order_by("id").first()
-    if primary_domain is None:
-        primary_domain = Domain.objects.filter(tenant=tenant).order_by("id").first()
-
-    profile = OrganizationProfile.objects.filter(name=tenant.name).order_by("id").first()
-    defaults = {
-        "legal_name": tenant.name,
-        "tenant_schema_name": tenant.schema_name,
-        "tenant_domain": primary_domain.domain if primary_domain else "",
-        "tenant_status": tenant.status,
-    }
-    if profile is None:
-        profile = OrganizationProfile.objects.create(name=tenant.name, **defaults)
-    else:
-        changed_fields = []
-        for field, value in defaults.items():
-            if value and getattr(profile, field, None) != value:
-                setattr(profile, field, value)
-                changed_fields.append(field)
-        if changed_fields:
-            changed_fields.append("updated_at")
-            profile.save(update_fields=changed_fields)
-
-    Campus.objects.get_or_create(
-        organization=profile,
-        is_default=True,
-        defaults={"name": "Main Campus", "is_active": True},
-    )
 
 
 class StyledFormMixin:
@@ -101,6 +74,49 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
         label="Client domain name",
         help_text="Buy the client's domain, point its DNS to the EduManage server, then enter it here. Example: schoolname.ac.ug",
     )
+    organization_email = forms.EmailField(
+        required=False,
+        label="School email",
+        help_text="Optional official school email saved on the organization profile.",
+    )
+    organization_phone = forms.CharField(
+        required=False,
+        label="School phone",
+        help_text="Optional school contact number saved on the organization profile and main campus.",
+    )
+    organization_address = forms.CharField(
+        required=False,
+        label="School address",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Optional physical address saved on the organization profile and main campus.",
+    )
+    owner_first_name = forms.CharField(required=False, label="School owner first name")
+    owner_last_name = forms.CharField(required=False, label="School owner last name")
+    owner_email = forms.EmailField(
+        required=True,
+        label="School owner/admin email",
+        help_text="This account becomes the first admin inside the school's own tenant.",
+    )
+    owner_phone = forms.CharField(
+        required=False,
+        max_length=32,
+        label="School owner/admin phone",
+        help_text="Saved on the owner admin user account for contact and support.",
+    )
+    owner_username = forms.CharField(
+        required=False,
+        label="School owner/admin username",
+        help_text="Leave blank to use schema_admin, for example greenhill_school_admin.",
+    )
+    owner_temporary_password = forms.CharField(
+        label="Temporary password",
+        widget=forms.PasswordInput,
+        help_text="Give this temporary password to the school owner. They must change it after first login.",
+    )
+    owner_temporary_password_confirm = forms.CharField(
+        label="Confirm temporary password",
+        widget=forms.PasswordInput,
+    )
 
     class Meta:
         model = Tenant
@@ -112,11 +128,13 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.onboarding_result = None
         self._style_fields()
         if self.instance and self.instance.pk:
             self.fields["schema_name"].disabled = True
             self.fields["schema_name"].help_text = "Schema name is locked after tenant creation to protect tenant data."
-            self.fields.pop("primary_domain", None)
+            for field_name in ONBOARDING_ONLY_FIELDS:
+                self.fields.pop(field_name, None)
 
     def clean_schema_name(self):
         schema_name = (self.cleaned_data.get("schema_name") or "").strip().lower()
@@ -144,25 +162,62 @@ class TenantForm(StyledFormMixin, forms.ModelForm):
             raise forms.ValidationError("This domain is already assigned to another tenant.")
         return domain
 
+    def clean_owner_username(self):
+        username = (self.cleaned_data.get("owner_username") or "").strip().lower()
+        if username and not re.match(r"^[a-zA-Z0-9_@.+-]+$", username):
+            raise forms.ValidationError("Use letters, numbers and @/./+/-/_ characters only.")
+        return username
+
+    def clean_owner_temporary_password(self):
+        password = self.cleaned_data.get("owner_temporary_password") or ""
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            raise forms.ValidationError(exc.messages)
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not (self.instance and self.instance.pk):
+            schema_name = cleaned_data.get("schema_name")
+            owner_username = cleaned_data.get("owner_username")
+            if schema_name and not owner_username:
+                cleaned_data["owner_username"] = f"{schema_name}_admin"
+
+            password = cleaned_data.get("owner_temporary_password")
+            confirm_password = cleaned_data.get("owner_temporary_password_confirm")
+            if password and confirm_password and password != confirm_password:
+                self.add_error("owner_temporary_password_confirm", "Temporary passwords do not match.")
+        return cleaned_data
+
     def save(self, commit=True):
         if self.instance and self.instance.pk:
-            tenant = super().save(commit=commit)
-            if commit:
-                seed_organization_profile_from_tenant(tenant)
-            return tenant
+            return super().save(commit=commit)
 
         if not commit:
             return super().save(commit=False)
 
         with transaction.atomic():
             tenant = super().save(commit=True)
-            Domain.objects.create(
+            domain = Domain.objects.create(
                 tenant=tenant,
                 domain=self.cleaned_data["primary_domain"],
                 type="CUSTOM",
                 is_primary=True,
             )
-            seed_organization_profile_from_tenant(tenant)
+            self.onboarding_result = provision_school_tenant(
+                tenant=tenant,
+                domain=domain,
+                organization_email=self.cleaned_data.get("organization_email", ""),
+                organization_phone=self.cleaned_data.get("organization_phone", ""),
+                organization_address=self.cleaned_data.get("organization_address", ""),
+                owner_first_name=self.cleaned_data.get("owner_first_name", ""),
+                owner_last_name=self.cleaned_data.get("owner_last_name", ""),
+                owner_email=self.cleaned_data["owner_email"],
+                owner_phone=self.cleaned_data.get("owner_phone", ""),
+                owner_username=self.cleaned_data["owner_username"],
+                owner_temporary_password=self.cleaned_data["owner_temporary_password"],
+            )
             return tenant
 
 

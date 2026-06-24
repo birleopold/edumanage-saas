@@ -1,4 +1,14 @@
 {% load static %}
+{% include "components/pwa_meta.html" %}
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://cdn.tailwindcss.com">
 <link rel="stylesheet" href="{% static 'css/edumanage-system.css' %}">
 <link rel="stylesheet" href="{% static 'css/edumanage-legacy-pages.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
+<link rel="stylesheet" href="{% static 'css/role-scope-clarity.css' %}">
+<link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
 <script defer src="{% static 'js/edumanage-system.js' %}"></script>
+<script defer src="{% static 'js/admin-module-actions.js' %}"></script>
+<script defer src="{% static 'js/role-scope-clarity.js' %}"></script>
+<script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
+<script defer src="{% static 'js/pwa-lite.js' %}"></script>

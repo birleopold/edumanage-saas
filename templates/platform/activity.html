@@ -1,0 +1,75 @@
+{% extends 'platform/base.html' %}
+{% block title %}Platform Activity{% endblock %}
+{% block page_title %}Platform Activity{% endblock %}
+{% block breadcrumbs %}Who changed tenants, domains, status and SaaS-level settings{% endblock %}
+{% block header_actions %}
+<a href="{% url 'platform_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">Dashboard</a>
+<a href="{% url 'platform_tenant_list' %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Tenants</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Platform trust log</p>
+        <h2 class="mt-2 text-2xl font-black">Who changed a tenant or domain?</h2>
+        <p class="mt-2 max-w-2xl text-sm text-blue-100">Tracks platform-owner actions such as tenant creation, tenant status changes, suspension/reactivation, domain verification and SSL updates.</p>
+      </div>
+      <div class="rounded-2xl bg-white/10 px-5 py-4 text-center ring-1 ring-white/15"><p class="text-xs uppercase font-black text-blue-100">Displayed logs</p><p class="mt-1 text-3xl font-black">{{ events|length }}</p></div>
+    </div>
+  </section>
+
+  <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid gap-3 lg:grid-cols-4">
+      <div>
+        <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Action</label>
+        <select name="action" class="w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-sm font-bold">
+          <option value="">Any action</option>
+          {% for value, label in action_choices %}<option value="{{ value }}" {% if active_action == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Tenant</label>
+        <select name="tenant" class="w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-sm font-bold">
+          <option value="">All tenants</option>
+          {% for tenant in tenants %}<option value="{{ tenant.id }}" {% if active_tenant == tenant.id|stringformat:'s' %}selected{% endif %}>{{ tenant.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Search</label>
+        <input type="search" name="q" value="{{ q }}" placeholder="Actor, school, domain..." class="w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-sm font-bold">
+      </div>
+      <div class="flex items-end gap-2">
+        <button class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Filter</button>
+        <a href="{% url 'platform_activity' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 p-5"><h3 class="font-black text-slate-950">Platform activity timeline</h3><p class="mt-1 text-sm font-semibold text-slate-500">Includes actor, tenant, domain, before/after changes, IP and timestamp.</p></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-black uppercase tracking-wider text-slate-500">
+          <tr><th class="px-5 py-3">When</th><th class="px-5 py-3">Who</th><th class="px-5 py-3">Action</th><th class="px-5 py-3">Tenant / Domain</th><th class="px-5 py-3">Change</th><th class="px-5 py-3">IP</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for event in events %}
+            <tr>
+              <td class="px-5 py-4 whitespace-nowrap text-slate-500">{{ event.created_at|date:'M d, Y H:i' }}</td>
+              <td class="px-5 py-4 font-black text-slate-950">{{ event.actor.get_full_name|default:event.actor.username|default:'Unknown user' }}</td>
+              <td class="px-5 py-4"><span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{{ event.get_action_display }}</span></td>
+              <td class="px-5 py-4 min-w-[14rem]"><p class="font-bold text-slate-800">{{ event.tenant.name|default:event.object_label|default:'Platform item' }}</p><p class="mt-1 font-mono text-xs text-slate-500">{{ event.domain.domain|default:'-' }}</p></td>
+              <td class="px-5 py-4 min-w-[18rem]"><p class="text-xs font-bold text-slate-500">Before: {{ event.before|default:'{}' }}</p><p class="mt-1 text-xs font-bold text-slate-700">After: {{ event.after|default:'{}' }}</p></td>
+              <td class="px-5 py-4 font-mono text-xs text-slate-500">{{ event.ip_address|default:'-' }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="p-10 text-center text-slate-500">No platform activity yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

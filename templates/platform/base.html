@@ -4,9 +4,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% include "components/pwa_meta.html" %}
   <title>{% block title %}Platform Admin{% endblock %} | EduManage</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
+  <link rel="stylesheet" href="{% static 'css/role-scope-clarity.css' %}">
+  <link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
+  <script defer src="{% static 'js/admin-module-actions.js' %}"></script>
+  <script defer src="{% static 'js/role-scope-clarity.js' %}"></script>
+  <script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
+  <script defer src="{% static 'js/pwa-lite.js' %}"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -25,7 +35,7 @@
     }
   </script>
 </head>
-<body class="min-h-full bg-slate-50 text-slate-900">
+<body class="min-h-full bg-slate-50 text-slate-900 role-platform">
   <div class="min-h-screen lg:flex">
     <aside class="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-80 lg:border-b-0 lg:border-r">
       <div class="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
@@ -42,8 +52,17 @@
         <a href="{% url 'platform_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if request.resolver_match.url_name == 'platform_dashboard' %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
           <i class="ph ph-gauge text-xl"></i> Dashboard
         </a>
-        <a href="{% url 'platform_tenant_list' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if 'tenant' in request.resolver_match.url_name or 'domain' in request.resolver_match.url_name %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+        <a href="{% url 'platform_tenant_list' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/tenants' in request.path or '/platform/domains' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
           <i class="ph ph-tree-structure text-xl"></i> Tenants & Domains
+        </a>
+        <a href="{% url 'platform_subscription_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/subscriptions' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-credit-card text-xl"></i> Subscriptions
+        </a>
+        <a href="{% url 'platform_activity' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/activity' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-clock-counter-clockwise text-xl"></i> Platform Activity
+        </a>
+        <a href="{% url 'platform_deployment_readiness' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/deployment-readiness' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-rocket-launch text-xl"></i> Deployment Readiness
         </a>
         <a href="/dj-admin/" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-800">
           <i class="ph ph-database text-xl"></i> Django Admin
@@ -65,6 +84,8 @@
             <p class="mt-1 text-sm font-semibold text-slate-500">{% block breadcrumbs %}Public-schema management console{% endblock %}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <span data-push-readiness></span>
+            <button type="button" data-pwa-install class="edu-pwa-install-button">Install app</button>
             {% block header_actions %}{% endblock %}
             {% if request.user.is_authenticated %}
               <a href="{% url 'platform_admin_logout' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700">

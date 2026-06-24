@@ -1,5 +1,6 @@
 from django.conf import settings
-from django.shortcuts import render
+
+from apps.tenant.portals import error_handlers
 
 
 DEFAULT_UNAVAILABLE_STATUSES = ("suspended", "archived")
@@ -18,12 +19,7 @@ class TenantStatusMiddleware:
         status = (getattr(tenant, "status", "") or "").lower()
 
         if tenant and schema_name != "public" and self._is_unavailable(status) and not self._is_exempt(request.path):
-            return render(
-                request,
-                "errors/tenant_unavailable.html",
-                {"tenant": tenant, "tenant_status": status},
-                status=403,
-            )
+            return error_handlers.tenant_suspended(request)
 
         return self.get_response(request)
 

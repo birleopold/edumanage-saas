@@ -21,6 +21,9 @@ urlpatterns = [
     path("external-login/callback/", login_links.external_login_callback, name="external_login_callback"),
     path("profile/devices/", device_portal.my_devices, name="my_devices"),
     path("profile/devices/<int:pk>/disable/", device_portal.deactivate_my_device, name="my_device_deactivate"),
+    path("system-unavailable/", error_handlers.system_unavailable, name="system_unavailable"),
+    path("tenant-suspended/", error_handlers.tenant_suspended, name="tenant_suspended"),
+    path("invalid-domain/", error_handlers.invalid_domain, name="invalid_domain"),
     path("", include("apps.tenant.portals.urls")),
     path("api/v1/", include("apps.tenant.portals.api_urls")),
 ]
@@ -29,6 +32,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Custom error handlers
+handler400 = error_handlers.handler400
 handler404 = error_handlers.handler404
 handler500 = error_handlers.handler500
 handler403 = error_handlers.handler403
