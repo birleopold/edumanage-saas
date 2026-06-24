@@ -2,8 +2,9 @@
 
 {% block title %}{{ tenant.name }}{% endblock %}
 {% block page_title %}{{ tenant.name }}{% endblock %}
-{% block breadcrumbs %}Tenant detail, schema readiness, status controls and domain management{% endblock %}
+{% block breadcrumbs %}Tenant detail, schema readiness, subscription controls, status controls and domain management{% endblock %}
 {% block header_actions %}
+  <a href="{% url 'platform_tenant_subscription' tenant.pk %}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700"><i class="ph ph-credit-card mr-1"></i> Subscription</a>
   <a href="{% url 'platform_domain_create' tenant.pk %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-globe mr-1"></i> Add Domain</a>
   <a href="{% url 'platform_tenant_edit' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-pencil-simple mr-1"></i> Edit</a>
 {% endblock %}
@@ -34,6 +35,17 @@
       <p class="text-xs font-black uppercase tracking-wider {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">Schema status</p>
       <p class="mt-3 text-2xl font-black {% if schema_status.exists == True %}text-green-800{% elif schema_status.exists == False %}text-red-800{% else %}text-blue-800{% endif %}">{{ schema_status.label }}</p>
       <p class="mt-2 text-xs font-bold leading-5 {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">{{ schema_status.detail }}</p>
+    </div>
+  </section>
+
+  <section class="rounded-3xl border border-indigo-100 bg-indigo-50 p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider text-indigo-700">Package / subscription</p>
+        <h3 class="mt-1 text-xl font-black text-indigo-950">{{ subscription.plan.name }} · {{ subscription.get_status_display }}</h3>
+        <p class="mt-2 text-sm font-semibold text-indigo-900">{{ subscription.currency }} {{ subscription.amount }} · {{ subscription.billing_cycle }} · Payment: {{ subscription.get_payment_status_display }} · Next bill: {{ subscription.next_billing_date|default:'-' }}</p>
+      </div>
+      <a href="{% url 'platform_tenant_subscription' tenant.pk %}" class="rounded-xl bg-indigo-700 px-5 py-2.5 text-sm font-black text-white hover:bg-indigo-800"><i class="ph ph-credit-card mr-1"></i> Manage subscription</a>
     </div>
   </section>
 
@@ -137,7 +149,7 @@
 
   <section class="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm text-red-900">
     <h3 class="font-black">Suspension guidance</h3>
-    <p class="mt-2 font-semibold leading-6">Changing a tenant to suspended or archived is recorded on the tenant status field. Use this status in future tenant middleware or portal guards to block school access where required.</p>
+    <p class="mt-2 font-semibold leading-6">Changing a tenant to suspended or archived is recorded on the tenant status field. Subscription suspension can also pause school access while keeping school data protected.</p>
   </section>
 </div>
 {% endblock %}
