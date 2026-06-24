@@ -18,6 +18,8 @@ from .models import Domain, Tenant
 
 
 PLATFORM_PAGE_SIZE = 25
+PLATFORM_CNAME_TARGET = "edumanage.com"
+PLATFORM_A_RECORD_TARGET = "YOUR_EDUMANAGE_SERVER_IP"
 
 
 def _login_redirect_url(request):
@@ -75,6 +77,38 @@ def _schema_status(schema_name):
         "exists": exists,
         "detail": "Schema exists." if exists else "No PostgreSQL schema found for this tenant.",
     }
+
+
+def _domain_dns_instructions(domain: Domain) -> dict:
+    if domain.type == Domain.SUBDOMAIN:
+        return {
+            "summary": f"Create a CNAME record for {domain.domain} pointing to the EduManage platform host.",
+            "records": [
+                {"type": "CNAME", "host": domain.domain, "value": PLATFORM_CNAME_TARGET},
+            ],
+            "example": "schoolname.edumanage.com",
+        }
+    return {
+        "summary": "Point the custom domain to EduManage, then keep it unchanged while SSL is issued.",
+        "records": [
+            {"type": "A", "host": "@", "value": PLATFORM_A_RECORD_TARGET},
+            {"type": "CNAME", "host": "www", "value": PLATFORM_CNAME_TARGET},
+        ],
+        "example": "schoolname.ac.ug",
+    }
+
+
+def _domain_management_rows(domains):
+    return [
+        {
+            "domain": domain,
+            "dns": _domain_dns_instructions(domain),
+            "verification_label": "Verified" if domain.is_verified else "Pending",
+            "ssl_label": domain.get_ssl_status_display(),
+            "dns_label": domain.get_dns_status_display(),
+        }
+        for domain in domains
+    ]
 
 
 def platform_login(request):
@@ -188,11 +222,17 @@ def tenant_edit(request, pk):
 @platform_admin_required
 def tenant_detail(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
-    domains = tenant.domains.order_by("-is_primary", "domain")
+    domains = list(tenant.domains.order_by("-is_primary", "domain"))
     return render(
         request,
         "platform/tenant_detail.html",
-        {"tenant": tenant, "domains": domains, "schema_status": _schema_status(tenant.schema_name)},
+        {
+            "tenant": tenant,
+            "domains": domains,
+            "domain_management": _domain_management_rows(domains),
+            "schema_status": _schema_status(tenant.schema_name),
+            "status_form": TenantStatusForm(initial={"status": tenant.status}),
+        },
     )
 
 
@@ -253,11 +293,29 @@ def domain_mark_primary(request, pk):
 @require_POST
 def domain_verify(request, pk):
     domain = get_object_or_404(Domain, pk=pk)
-    form = DomainVerificationForm(request.POST)
-    if form.is_valid() and form.cleaned_data.get("mark_verified"):
+    action = request.POST.get("action") or "dns_verified"
+    update_fields = ["last_checked_at"]
+    domain.last_checked_at = timezone.now()
+
+    if action == "dns_failed":
+        domain.dns_status = Domain.DNS_FAILED
+        update_fields.append("dns_status")
+        messages.error(request, f"DNS check failed for '{domain.domain}'.")
+    elif action == "ssl_active":
+        domain.ssl_status = Domain.SSL_ACTIVE
+        update_fields.append("ssl_status")
+        messages.success(request, f"SSL marked active for '{domain.domain}'.")
+    elif action == "ssl_failed":
+        domain.ssl_status = Domain.SSL_FAILED
+        update_fields.append("ssl_status")
+        messages.error(request, f"SSL marked failed for '{domain.domain}'.")
+    else:
+        domain.dns_status = Domain.DNS_VERIFIED
         domain.verified_at = timezone.now()
-        domain.save(update_fields=["verified_at"])
-        messages.success(request, f"Domain '{domain.domain}' marked as verified.")
+        update_fields.extend(["dns_status", "verified_at"])
+        messages.success(request, f"Domain '{domain.domain}' marked as DNS verified.")
+
+    domain.save(update_fields=sorted(set(update_fields)))
     return redirect("platform_tenant_detail", pk=domain.tenant_id)
 
 
