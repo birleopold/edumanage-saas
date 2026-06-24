@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views, assignment_history_views
+from . import admin_views, assignment_history_views, schedule_views
 
 urlpatterns = [
     # Drivers
@@ -26,9 +26,9 @@ urlpatterns = [
     path("stops/<int:pk>/edit/", admin_views.stop_edit, name="admin_transport_stop_edit"),
 
     # Route Schedules
-    path("schedules/", admin_views.schedule_list, name="admin_transport_schedules_list"),
-    path("schedules/create/", admin_views.schedule_create, name="admin_transport_schedule_create"),
-    path("schedules/<int:pk>/edit/", admin_views.schedule_edit, name="admin_transport_schedule_edit"),
+    path("schedules/", schedule_views.schedule_list, name="admin_transport_schedules_list"),
+    path("schedules/create/", schedule_views.schedule_create, name="admin_transport_schedule_create"),
+    path("schedules/<int:pk>/edit/", schedule_views.schedule_edit, name="admin_transport_schedule_edit"),
 
     # Student Assignments
     path("assignments/", admin_views.assignment_list, name="admin_transport_assignments_list"),
