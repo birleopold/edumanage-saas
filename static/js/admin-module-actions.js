@@ -75,6 +75,18 @@
       ]
     },
     {
+      prefixes: ["/admin/audit/"],
+      title: "Audit, exports and backup navigation",
+      description: "Track activity, download school data, manage backups and review permissions.",
+      actions: [
+        ["Exports & Backup", "/admin/audit/exports/", "ph-download-simple", "primary"],
+        ["Activity Tracking", "/admin/audit/activity/", "ph-clock-counter-clockwise", "secondary"],
+        ["Permissions", "/admin/audit/permissions/", "ph-users-three", "secondary"],
+        ["Backups", "/admin/audit/backups/", "ph-database", "secondary"],
+        ["Back to Dashboard", "/admin/", "ph-arrow-left", "ghost"]
+      ]
+    },
+    {
       prefixes: ["/admin/enterprise/"],
       title: "Platform controls navigation",
       description: "Open enterprise controls, settings, reports and the dashboard.",
@@ -93,8 +105,8 @@
       actions: [
         ["Add New", "/platform/tenants/create/", "ph-plus-circle", "primary"],
         ["View All", "/platform/tenants/", "ph-list-bullets", "secondary"],
+        ["Activity", "/platform/activity/", "ph-clock-counter-clockwise", "secondary"],
         ["Settings", "/dj-admin/", "ph-sliders", "secondary"],
-        ["Reports", "/platform/", "ph-chart-line-up", "secondary"],
         ["Back to Dashboard", "/platform/", "ph-arrow-left", "ghost"]
       ]
     }
