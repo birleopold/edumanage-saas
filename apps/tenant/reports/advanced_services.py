@@ -18,7 +18,7 @@ from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.users.models import User
 
-from .services import DateRange, _assessment_campus_q, _entry_campus_q, _safe_rate
+from .services import DateRange, _assessment_campus_q, _entry_campus_q, _offering_campus_q, _safe_rate, _score_campus_q
 
 
 @dataclass(frozen=True)
@@ -34,16 +34,8 @@ def _money(value):
     return value or Decimal("0")
 
 
-def _date_filter(field: str, date_range: DateRange):
-    return {f"{field}__date__range": (date_range.start, date_range.end)}
-
-
 def _safe_percent(numerator, denominator):
     return _safe_rate(numerator, denominator)
-
-
-def _campus_student_filter(qs, campus_id):
-    return qs.filter(campus_id=campus_id) if campus_id else qs
 
 
 def student_performance_report(campus_id: int | None, date_range: DateRange) -> AdvancedReport:
@@ -52,7 +44,7 @@ def student_performance_report(campus_id: int | None, date_range: DateRange) -> 
         | Q(assessment__date__isnull=True, assessment__created_at__date__range=(date_range.start, date_range.end))
     )
     if campus_id:
-        scores = scores.filter(Q(student__campus_id=campus_id) | Q(_assessment_campus_q(campus_id)))
+        scores = scores.filter(Q(student__campus_id=campus_id) | _score_campus_q(campus_id))
 
     student_map: dict[int, dict] = {}
     class_map: dict[int, dict] = {}
@@ -115,7 +107,7 @@ def fee_collection_report(campus_id: int | None, date_range: DateRange) -> Advan
         total_billed += amounts.total_amount
         total_paid_against_invoices += amounts.total_paid
         total_balance += amounts.balance
-        invoice_rows.append([invoice.reference or invoice.id, invoice.student, invoice.total_amount(), invoice.total_paid(), invoice.balance(), invoice.get_status_display()])
+        invoice_rows.append([invoice.reference or invoice.id, invoice.student, amounts.total_amount, amounts.total_paid, amounts.balance, amounts.display_status])
 
     payments_total = sum((_money(p.amount) for p in payments), Decimal("0"))
     collection_rate = _safe_percent(total_paid_against_invoices, total_billed)
@@ -194,7 +186,7 @@ def teacher_workload_report(campus_id: int | None, date_range: DateRange) -> Adv
     assessments = Assessment.objects.select_related("offering", "offering__teacher").filter(created_at__date__range=(date_range.start, date_range.end))
     if campus_id:
         teachers = teachers.filter(campus_id=campus_id)
-        offerings = offerings.filter(_assessment_campus_q(campus_id))
+        offerings = offerings.filter(_offering_campus_q(campus_id))
         sessions = sessions.filter(Q(offering__campus_id=campus_id) | Q(offering__class_group__campus_id=campus_id))
         assessments = assessments.filter(_assessment_campus_q(campus_id))
 
