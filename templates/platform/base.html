@@ -55,6 +55,9 @@
         <a href="{% url 'platform_tenant_list' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/tenants' in request.path or '/platform/domains' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
           <i class="ph ph-tree-structure text-xl"></i> Tenants & Domains
         </a>
+        <a href="{% url 'platform_subscription_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/subscriptions' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
+          <i class="ph ph-credit-card text-xl"></i> Subscriptions
+        </a>
         <a href="{% url 'platform_activity' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/activity' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
           <i class="ph ph-clock-counter-clockwise text-xl"></i> Platform Activity
         </a>
