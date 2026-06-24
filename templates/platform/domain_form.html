@@ -2,7 +2,7 @@
 
 {% block title %}{% if mode == 'create' %}Add Domain{% else %}Edit Domain{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Domain{% else %}Edit Domain{% endif %}{% endblock %}
-{% block breadcrumbs %}{{ tenant.name }} · domain routing and verification{% endblock %}
+{% block breadcrumbs %}{{ tenant.name }} · domain routing, DNS guidance and verification{% endblock %}
 {% block header_actions %}
   <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back to Tenant</a>
 {% endblock %}
@@ -43,8 +43,8 @@
   </section>
 
   <section class="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-900">
-    <h3 class="font-black">DNS verification note</h3>
-    <p class="mt-2 font-semibold leading-6">This first version lets platform admins manually mark a domain as verified after DNS checks are complete. A future version can automate verification using TXT or CNAME records.</p>
+    <h3 class="font-black">DNS and SSL note</h3>
+    <p class="mt-2 font-semibold leading-6">After saving the domain, open the tenant detail page to view DNS instructions, mark DNS verification, record SSL status and see the latest check date.</p>
   </section>
 </div>
 {% endblock %}
