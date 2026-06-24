@@ -1,9 +1,9 @@
 from django.urls import path
 
-from . import deployment_readiness, platform_views, subscription_views, wizard_views
+from . import deployment_readiness, platform_auth_views, platform_views, subscription_views, wizard_views
 
 urlpatterns = [
-    path("login/", platform_views.platform_login, name="platform_admin_login"),
+    path("login/", platform_auth_views.platform_login, name="platform_admin_login"),
     path("logout/", platform_views.platform_logout, name="platform_admin_logout"),
     path("", platform_views.dashboard, name="platform_dashboard"),
     path("activity/", platform_views.platform_activity, name="platform_activity"),
