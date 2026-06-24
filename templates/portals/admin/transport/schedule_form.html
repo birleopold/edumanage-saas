@@ -1,0 +1,34 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Transport Schedule{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit{% else %}Add{% endif %} Transport Schedule{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_transport_schedules_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Schedules</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="mx-auto max-w-3xl">
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-700">Transport schedule</p>
+    <h2 class="mt-2 text-2xl font-black text-slate-950">{% if mode == 'edit' %}Update schedule{% else %}Create schedule{% endif %}</h2>
+    <p class="mt-2 text-sm font-semibold text-slate-500">Choose the route, day and start time for the transport schedule.</p>
+    <form method="post" class="mt-6 space-y-5">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label class="mb-2 block text-sm font-black text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs font-semibold text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<p class="mt-1 text-xs font-bold text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      {% if form.non_field_errors %}<div class="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{{ form.non_field_errors|join:', ' }}</div>{% endif %}
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button type="submit" class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white hover:bg-primary-700">Save Schedule</button>
+        <a href="{% url 'admin_transport_schedules_list' %}" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">Cancel</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
