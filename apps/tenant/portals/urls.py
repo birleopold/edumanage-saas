@@ -6,7 +6,7 @@ from . import experience_views, public_views, pwa, search_views, student_parent_
 
 urlpatterns = [
     path("status/", public_views.public_status, name="public_status"),
-    path("manifest.webmanifest", views.pwa_manifest, name="pwa_manifest"),
+    path("manifest.webmanifest", pwa.manifest, name="pwa_manifest"),
     path("service-worker.js", pwa.service_worker, name="pwa_service_worker"),
     path("pwa/push-readiness/", pwa.push_readiness, name="pwa_push_readiness"),
     path("platform/", include("apps.public.tenants.platform_urls")),
