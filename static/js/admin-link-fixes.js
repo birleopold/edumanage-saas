@@ -4,11 +4,11 @@
   var FEATURE_URLS = {
     ACADEMICS: ["/admin/academics/"],
     ADMISSIONS: ["/admin/admissions/"],
-    ATTENDANCE: ["/admin/attendance/"],
-    ASSESSMENTS: ["/admin/assessments/"],
+    ATTENDANCE: ["/admin/attendance/", "/teacher/attendance/", "/parent/attendance/"],
+    ASSESSMENTS: ["/admin/assessments/", "/teacher/assessments/"],
     ANNOUNCEMENTS: ["/admin/announcements/"],
-    COURSEWORK: ["/admin/coursework/"],
-    FINANCE: ["/admin/finance/"],
+    COURSEWORK: ["/admin/coursework/", "/teacher/coursework/", "/student/coursework/"],
+    FINANCE: ["/admin/finance/", "/parent/finance/", "/student/finance/"],
     EXAMS: ["/admin/exams/"],
     REPORTS: ["/admin/reports/"],
     DOCUMENTS: ["/admin/documents/"],
@@ -50,18 +50,21 @@
 
   function closestHideTarget(link) {
     return link.closest("[data-feature-card]") ||
+      link.closest(".edu-mobile-bottom-nav a") ||
       link.closest("a.group.rounded-2xl") ||
       link.closest("div[x-data]") ||
       link.closest("a.group.flex") ||
+      link.closest("li") ||
       link;
   }
 
-  function hideFeatureLinks() {
+  function hideFeatureLinks(root) {
     var currentFlags = flags();
+    var scope = root || document;
     Object.keys(FEATURE_URLS).forEach(function (feature) {
       if (!isDisabled(currentFlags[feature])) return;
       FEATURE_URLS[feature].forEach(function (prefix) {
-        document.querySelectorAll('a[href^="' + prefix + '"]').forEach(function (link) {
+        scope.querySelectorAll('a[href^="' + prefix + '"]').forEach(function (link) {
           var target = closestHideTarget(link);
           if (target) target.setAttribute("hidden", "hidden");
         });
@@ -69,8 +72,9 @@
     });
   }
 
-  function fixTransportScheduleLink() {
-    var transportMenu = document.getElementById("admin-nav-submenu-transport");
+  function fixTransportScheduleLink(root) {
+    var scope = root || document;
+    var transportMenu = scope.querySelector("#admin-nav-submenu-transport");
     if (!transportMenu) return;
     var links = transportMenu.querySelectorAll("a");
     links.forEach(function (link) {
@@ -82,8 +86,19 @@
   }
 
   function init() {
-    fixTransportScheduleLink();
-    hideFeatureLinks();
+    fixTransportScheduleLink(document);
+    hideFeatureLinks(document);
+
+    var observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        mutation.addedNodes.forEach(function (node) {
+          if (node.nodeType !== 1) return;
+          fixTransportScheduleLink(node);
+          hideFeatureLinks(node);
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   ready(init);
