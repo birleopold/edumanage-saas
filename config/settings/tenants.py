@@ -57,6 +57,7 @@ MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",
     "apps.public.tenants.middleware.TenantStatusMiddleware",
     *MIDDLEWARE,
+    "apps.tenant.orgsettings.feature_gate.FeatureGateMiddleware",
 ]
 
 TENANT_STATUS_UNAVAILABLE_STATUSES = ("suspended", "archived")
