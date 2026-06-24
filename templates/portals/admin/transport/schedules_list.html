@@ -1,0 +1,46 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Transport Schedules{% endblock %}
+{% block page_title %}Transport Schedules{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Routes</a>
+<a href="{% url 'admin_transport_schedule_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Add Schedule</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Transport operations</p>
+    <h2 class="mt-2 text-2xl font-black">Route schedules</h2>
+    <p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage pickup and drop-off schedule times by route and day of week.</p>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid gap-4 lg:grid-cols-6 lg:items-end">
+      <div class="lg:col-span-2"><label class="mb-2 block text-sm font-black text-slate-700">Search</label><input type="text" name="q" value="{{ q }}" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900" placeholder="Route code, route name or notes"></div>
+      <div><label class="mb-2 block text-sm font-black text-slate-700">Day</label><select name="day" class="block w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 font-bold text-slate-900"><option value="">All days</option>{% for value,label in day_choices %}<option value="{{ value }}" {% if day_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div><label class="mb-2 block text-sm font-black text-slate-700">Status</label><select name="active" class="block w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 font-bold text-slate-900"><option value="">All</option><option value="1" {% if active_filter == '1' %}selected{% endif %}>Active</option><option value="0" {% if active_filter == '0' %}selected{% endif %}>Inactive</option></select></div>
+      <div><label class="mb-2 block text-sm font-black text-slate-700">Per page</label><input type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900"></div>
+      <div class="flex gap-2"><button type="submit" class="rounded-xl bg-slate-100 px-4 py-2.5 font-black text-slate-700 border-2 border-slate-200">Apply</button><a href="{% url 'admin_transport_schedules_list' %}" class="rounded-xl bg-white px-4 py-2.5 font-black text-slate-700 border-2 border-slate-200">Clear</a></div>
+    </form>
+  </section>
+
+  {% if schedules %}
+  <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Route</th><th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Day</th><th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Start Time</th><th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Actions</th></tr></thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        {% for schedule in schedules %}
+        <tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><p class="font-black text-slate-900">{{ schedule.route.name }}</p><p class="text-xs font-black text-blue-700">{{ schedule.route.code }}</p></td><td class="px-6 py-4 text-sm font-bold text-slate-700">{{ schedule.get_day_of_week_display }}</td><td class="px-6 py-4 text-sm font-black text-slate-900">{{ schedule.start_time|time:'H:i' }}</td><td class="px-6 py-4 text-sm">{% if schedule.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">Inactive</span>{% endif %}</td><td class="px-6 py-4 text-right text-sm"><a href="{% url 'admin_transport_route_detail' schedule.route_id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700">Route</a> <a href="{% url 'admin_transport_schedule_edit' schedule.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white">Edit</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+  {% else %}
+    {% url 'admin_transport_schedule_create' as create_schedule_url %}
+    {% include "components/ui_empty_state.html" with icon="calendar" title="No transport schedules found" description="Create schedules for pickup and drop-off route times." action_url=create_schedule_url action_text="Add Schedule" %}
+  {% endif %}
+</div>
+{% endblock %}
