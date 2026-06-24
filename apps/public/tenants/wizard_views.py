@@ -4,9 +4,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
 
-from .models import Domain, Tenant
+from .models import Domain, PlatformAuditEvent, Tenant
 from .onboarding import provision_school_tenant
-from .platform_views import platform_admin_required
+from .platform_views import _record_platform_event, platform_admin_required
+from .subscription_services import create_subscription_for_tenant
 from .wizard_forms import (
     ConfirmActivationStepForm,
     DomainDetailsStepForm,
@@ -197,9 +198,18 @@ def create_school_wizard(request):
                         owner_password_hash=owner["owner_password_hash"],
                         enabled_feature_codes=features["feature_flags"],
                     )
+                    subscription = create_subscription_for_tenant(tenant, package_code=features.get("package") or "standard")
+                    _record_platform_event(
+                        request,
+                        PlatformAuditEvent.SUBSCRIPTION_CREATED,
+                        tenant=tenant,
+                        domain=domain,
+                        object_label=f"{tenant.name} subscription",
+                        after={"plan": subscription.plan.code, "status": subscription.status, "amount": str(subscription.amount), "billing_cycle": subscription.billing_cycle},
+                    )
                 _clear_wizard_data(request)
-                messages.success(request, f"{tenant.name} has been activated with tenant, domain, organization profile, campus, owner admin account, features and academic period.")
-                messages.info(request, f"School admin username: {onboarding.admin_user.username}. Login domain: {onboarding.login_domain}.")
+                messages.success(request, f"{tenant.name} has been activated with tenant, domain, organization profile, campus, owner admin account, features, subscription and academic period.")
+                messages.info(request, f"School admin username: {onboarding.admin_user.username}. Login domain: {onboarding.login_domain}. Plan: {subscription.plan.name}.")
                 return redirect("platform_tenant_detail", pk=tenant.pk)
 
             wizard_data[step] = _cleaned_for_session(form.cleaned_data)
