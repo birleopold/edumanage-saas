@@ -4,13 +4,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% include "components/pwa_meta.html" %}
   <title>{% block title %}Platform Admin{% endblock %} | EduManage</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
   <link rel="stylesheet" href="{% static 'css/role-scope-clarity.css' %}">
+  <link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
   <script defer src="{% static 'js/admin-module-actions.js' %}"></script>
   <script defer src="{% static 'js/role-scope-clarity.js' %}"></script>
+  <script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
+  <script defer src="{% static 'js/pwa-lite.js' %}"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -72,6 +78,8 @@
             <p class="mt-1 text-sm font-semibold text-slate-500">{% block breadcrumbs %}Public-schema management console{% endblock %}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <span data-push-readiness></span>
+            <button type="button" data-pwa-install class="edu-pwa-install-button">Install app</button>
             {% block header_actions %}{% endblock %}
             {% if request.user.is_authenticated %}
               <a href="{% url 'platform_admin_logout' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700">
