@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db import connection
+from django.http import JsonResponse
 from django.shortcuts import redirect
 
 from .services import get_current_campus, get_feature_flags, get_organization, normalize_feature_code
@@ -69,6 +70,11 @@ class FeatureGateMiddleware:
     def __call__(self, request):
         blocked_feature = self._blocked_feature(request)
         if blocked_feature:
+            if (request.path or "").startswith("/api/"):
+                return JsonResponse(
+                    {"detail": f"{blocked_feature.replace('_', ' ').title()} is turned off for this school."},
+                    status=403,
+                )
             messages.warning(request, f"{blocked_feature.replace('_', ' ').title()} is turned off for this school.")
             return redirect(self._fallback_home_name(request))
         return self.get_response(request)
