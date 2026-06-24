@@ -4,9 +4,16 @@ Everything here is plain Django + static browser APIs. No Node, no npm and no
 front-end build step are required.
 """
 
+import json
+
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
+
+from .models import WebPushSubscription
 
 
 SERVICE_WORKER_JS = r"""
@@ -116,6 +123,12 @@ def manifest(request):
     )
 
 
+def _active_subscription_count(user):
+    if not user.is_authenticated:
+        return 0
+    return WebPushSubscription.objects.filter(user=user, is_active=True).count()
+
+
 def push_readiness(request):
     public_key = getattr(settings, "WEB_PUSH_PUBLIC_KEY", "")
     return JsonResponse(
@@ -123,6 +136,54 @@ def push_readiness(request):
             "service_worker": True,
             "push_api_ready": True,
             "vapid_public_key_configured": bool(public_key),
-            "message": "Browser push APIs are prepared. Add a VAPID public key and subscription endpoint when server-side push delivery is enabled.",
+            "vapid_public_key": public_key,
+            "subscription_storage_ready": True,
+            "active_subscriptions": _active_subscription_count(request.user),
+            "subscribe_url": "/pwa/push-subscribe/",
+            "unsubscribe_url": "/pwa/push-unsubscribe/",
+            "message": "Browser push APIs, service worker, subscription storage and readiness checks are enabled. Add VAPID keys to deliver push notifications from the server.",
         }
     )
+
+
+@login_required
+@require_POST
+def push_subscribe(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "Invalid subscription payload."}, status=400)
+
+    endpoint = payload.get("endpoint")
+    keys = payload.get("keys") or {}
+    if not endpoint:
+        return JsonResponse({"ok": False, "error": "Missing endpoint."}, status=400)
+
+    subscription, _created = WebPushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={
+            "user": request.user,
+            "p256dh_key": keys.get("p256dh", ""),
+            "auth_key": keys.get("auth", ""),
+            "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+            "is_active": True,
+            "last_seen_at": timezone.now(),
+            "last_error": "",
+        },
+    )
+    return JsonResponse({"ok": True, "subscription_id": subscription.pk, "active_subscriptions": _active_subscription_count(request.user)})
+
+
+@login_required
+@require_POST
+def push_unsubscribe(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        payload = {}
+    endpoint = payload.get("endpoint")
+    qs = WebPushSubscription.objects.filter(user=request.user, is_active=True)
+    if endpoint:
+        qs = qs.filter(endpoint=endpoint)
+    updated = qs.update(is_active=False, last_seen_at=timezone.now())
+    return JsonResponse({"ok": True, "disabled": updated, "active_subscriptions": _active_subscription_count(request.user)})
