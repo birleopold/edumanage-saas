@@ -31,44 +31,44 @@ This checklist should be completed before onboarding real school clients.
    - Track SSL status on tenant domain records.
    - Monitor certificate renewal.
 
-5. **Backups and restore drills**
+5. **Package/subscription go-live checks**
+   - Confirm Starter, Standard, Enterprise and Custom plans are present.
+   - Confirm every tenant has a subscription record.
+   - Test trial status, active status, past-due status and suspended status.
+   - Test invoice creation and payment recording.
+   - Confirm suspended subscriptions pause tenant access while preserving data.
+
+6. **Backups and restore drills**
    - Schedule nightly PostgreSQL backups.
    - Store encrypted backups off-server.
    - Keep tenant export/backup tools available to schools.
    - Test restore on a separate environment.
    - Document backup retention and restore responsibility.
 
-6. **Admin security**
+7. **Admin security**
    - Keep the Platform Console restricted to trusted superusers.
    - Enable admin 2FA policy in production.
    - Remove demo/default accounts.
    - Enforce first-login password change for school-owner accounts.
    - Confirm audit/activity tracking is visible.
 
-7. **Monitoring and uptime checks**
+8. **Monitoring and uptime checks**
    - Monitor `/health/` externally.
    - Monitor CPU, memory, disk, database size, and response time.
    - Add disk-space alerts for media and backups.
    - Define support escalation/on-call contact.
 
-8. **Error logging**
+9. **Error logging and provider setup**
    - Keep friendly error pages for users.
    - Capture server-side stack traces in logs or an error tracking tool.
-   - Alert on repeated 500 errors.
-   - Make request time/page information available to support.
-   - Avoid logging sensitive student/finance data.
-
-9. **Email/SMS provider setup**
    - Configure SMTP provider and sender email.
-   - Test password reset emails end to end.
    - Configure SMS gateway URL/token/sender ID.
-   - Test fee reminders and parent messages with a small pilot group.
-   - Document provider failure handling.
+   - Avoid logging sensitive student/finance data.
 
 10. **Final go-live rehearsal**
     - Create a test tenant through the Platform Console.
     - Add school-owner admin and complete first login.
-    - Verify domain, SSL status, exports, reports, audit logs, and PWA install.
+    - Verify domain, SSL status, subscription, exports, reports, audit logs, and PWA install.
     - Run backup and restore test.
     - Sign off before real clients are onboarded.
 
