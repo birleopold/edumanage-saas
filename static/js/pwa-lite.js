@@ -34,6 +34,7 @@
       '<div>',
       '<p class="edu-install-prompt__title">Install EduManage</p>',
       '<p class="edu-install-prompt__text">Add this school system to your phone for faster access.</p>',
+      '<span data-push-readiness></span>',
       '</div>',
       '<div class="edu-install-prompt__actions">',
       '<button type="button" data-pwa-install>Install</button>',
