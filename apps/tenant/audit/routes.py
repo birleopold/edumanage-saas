@@ -1,10 +1,13 @@
 from django.urls import path
 
-from . import privacy, screens, twofactor
+from . import export_tools, privacy, screens, twofactor
 
 urlpatterns = [
     path("", screens.dashboard, name="audit_dashboard"),
     path("activity/", screens.activity_timeline, name="audit_activity_timeline"),
+    path("exports/", export_tools.export_center, name="audit_export_center"),
+    path("exports/<slug:export_key>/", export_tools.download_export, name="audit_download_export"),
+    path("backup-school-data/", export_tools.request_backup, name="audit_request_backup"),
     path("permissions/", screens.permission_review, name="audit_permission_review"),
     path("retention/", screens.retention_rules, name="audit_retention_rules"),
     path("backups/", screens.backup_jobs, name="audit_backup_jobs"),
