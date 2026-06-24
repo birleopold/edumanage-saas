@@ -13,25 +13,25 @@ TRUST_ACTIVITY_CATEGORIES = {
         "title": "Who added or changed a student?",
         "description": "Tracks student creation, profile edits, imports and student record changes.",
         "icon": "ph-student",
-        "query": Q(path__icontains="/students") | Q(object_label__icontains="student") | Q(metadata__icontains="student"),
+        "query": Q(path__icontains="/students") | Q(object_label__icontains="student"),
     },
     "fees": {
         "title": "Who edited fees or payments?",
         "description": "Tracks fee items, invoices, payments, receipts and finance adjustments.",
         "icon": "ph-wallet",
-        "query": Q(path__icontains="/finance") | Q(object_label__icontains="fee") | Q(object_label__icontains="invoice") | Q(object_label__icontains="payment") | Q(metadata__icontains="fee"),
+        "query": Q(path__icontains="/finance") | Q(object_label__icontains="fee") | Q(object_label__icontains="invoice") | Q(object_label__icontains="payment"),
     },
     "payroll": {
         "title": "Who approved or changed payroll?",
         "description": "Tracks payroll, payslip and staff payment workflows.",
         "icon": "ph-bank",
-        "query": Q(path__icontains="payroll") | Q(path__icontains="payslip") | Q(object_label__icontains="payroll") | Q(metadata__icontains="payroll"),
+        "query": Q(path__icontains="payroll") | Q(path__icontains="payslip") | Q(object_label__icontains="payroll"),
     },
     "exam_results": {
         "title": "Who changed exam results?",
         "description": "Tracks exams, assessments, marks, scores and published result changes.",
         "icon": "ph-exam",
-        "query": Q(path__icontains="/exams") | Q(path__icontains="/assessments") | Q(path__icontains="results") | Q(object_label__icontains="mark") | Q(object_label__icontains="result") | Q(metadata__icontains="result"),
+        "query": Q(path__icontains="/exams") | Q(path__icontains="/assessments") | Q(path__icontains="results") | Q(object_label__icontains="mark") | Q(object_label__icontains="result"),
     },
 }
 
@@ -54,7 +54,6 @@ def _filtered_activity_queryset(request):
             | Q(path__icontains=q)
             | Q(view_name__icontains=q)
             | Q(object_label__icontains=q)
-            | Q(metadata__icontains=q)
         )
     return qs
 
@@ -120,7 +119,7 @@ def activity_timeline(request):
 @admin_portal_required
 def permission_review(request):
     campus_admin_without_campus = UserRole.objects.filter(role__code=Role.CAMPUS_ADMIN, campus__isnull=True).select_related("user", "role", "campus")
-    superusers = UserRole.objects.filter(user__is_superuser=True).select_related("user", "role", "campus")
+    superusers = UserRole.objects.filter(user__is_superuser=True).select_related("user", "role")
     return render(request, "portals/audit/permission_review.html", {"campus_admin_without_campus": campus_admin_without_campus, "superusers": superusers})
 
 
