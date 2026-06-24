@@ -25,6 +25,11 @@ urlpatterns = [
     path("stops/create/", admin_views.stop_create, name="admin_transport_stop_create"),
     path("stops/<int:pk>/edit/", admin_views.stop_edit, name="admin_transport_stop_edit"),
 
+    # Route Schedules
+    path("schedules/", admin_views.schedule_list, name="admin_transport_schedules_list"),
+    path("schedules/create/", admin_views.schedule_create, name="admin_transport_schedule_create"),
+    path("schedules/<int:pk>/edit/", admin_views.schedule_edit, name="admin_transport_schedule_edit"),
+
     # Student Assignments
     path("assignments/", admin_views.assignment_list, name="admin_transport_assignments_list"),
     path("assignments/create/", admin_views.assignment_create, name="admin_transport_assignment_create"),
