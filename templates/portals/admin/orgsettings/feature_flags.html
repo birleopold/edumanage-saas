@@ -3,18 +3,78 @@
 
 {% block title %}Feature Flags{% endblock %}
 {% block page_title %}Feature Flags{% endblock %}
-{% block breadcrumbs %}Control global and campus-level feature availability{% endblock %}
+{% block breadcrumbs %}Choose the exact modules this school wants to use{% endblock %}
 {% block header_actions %}<a href="{% url 'admin_orgsettings_org' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Organization</a><a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Campuses</a>{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
 <div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">Module control</p><h2 class="mt-2 text-2xl font-black">Feature flag center</h2><p class="mt-2 max-w-2xl text-sm text-purple-100">Enable or disable selected system features globally, then override them for individual campuses when needed.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_orgsettings_campuses' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-purple-50">Manage Campuses</a><a href="{% url 'admin_system_status' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">System Status</a></div></div></section>
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">School package control</p>
+        <h2 class="mt-2 text-2xl font-black">Use only the modules this school needs</h2>
+        <p class="mt-2 max-w-3xl text-sm text-purple-100">Turn off modules that do not exist in this school. Disabled modules are removed from navigation, dashboards and quick links, while the remaining system continues working normally.</p>
+      </div>
+      <div class="rounded-2xl bg-white/10 px-5 py-4 text-sm font-bold text-purple-100 ring-1 ring-white/15">Safe to change anytime</div>
+    </div>
+  </section>
 
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Feature Codes</p><p class="mt-1 text-3xl font-black text-slate-900">{{ codes|length }}</p></div><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Campuses</p><p class="mt-1 text-3xl font-black text-primary-700">{{ campuses|length }}</p></div><div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Scope</p><p class="mt-1 text-lg font-black text-green-700">Global + Campus</p></div></section>
+  <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Available modules</p><p class="mt-1 text-3xl font-black text-slate-900">{{ feature_catalog|length }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Campuses</p><p class="mt-1 text-3xl font-black text-primary-700">{{ campuses|length }}</p></div>
+    <div class="rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm"><p class="text-xs font-black uppercase text-green-700">Interface behavior</p><p class="mt-1 text-lg font-black text-green-800">Disabled = hidden</p></div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Global feature settings</h3><p class="text-sm text-slate-500">These settings apply to all campuses unless a campus-specific override is saved.</p></div><i class="ph ph-globe text-2xl text-primary-600"></i></div><form method="post">{% csrf_token %}<input type="hidden" name="scope" value="global"><div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Feature</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for code in codes %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><span class="h-9 w-9 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-flag"></i></span><span class="font-black text-slate-900">{{ code }}</span></div></td><td class="px-6 py-4 text-sm"><label class="inline-flex items-center gap-3 cursor-pointer"><input type="checkbox" name="flag_{{ code }}" {% if global_flags|get_item:code %}checked{% endif %} class="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"><span class="rounded-full px-3 py-1 text-xs font-black {% if global_flags|get_item:code %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-700{% endif %}">{% if global_flags|get_item:code %}Enabled{% else %}Disabled{% endif %}</span></label></td></tr>{% endfor %}</tbody></table></div><div class="p-5 border-t border-slate-100 flex justify-end"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save Global Settings</button></div></form></section>
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 p-5">
+      <h3 class="font-black text-slate-900">School-wide feature settings</h3>
+      <p class="text-sm text-slate-500">These are the minimum features selected for this school. Switch off what the school does not use.</p>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="scope" value="global">
+      <div class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
+        {% for feature in feature_catalog %}
+          <label class="flex cursor-pointer gap-3 rounded-2xl border p-4 transition {% if global_flags|get_item:feature.code %}border-green-200 bg-green-50{% else %}border-slate-200 bg-slate-50 opacity-80{% endif %}">
+            <input type="checkbox" name="flag_{{ feature.code }}" {% if global_flags|get_item:feature.code %}checked{% endif %} class="mt-1 h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+            <span>
+              <span class="block text-sm font-black text-slate-950">{{ feature.label }}</span>
+              <span class="mt-1 block text-xs font-semibold leading-5 text-slate-500">{{ feature.description }}</span>
+              <span class="mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black {% if global_flags|get_item:feature.code %}bg-green-100 text-green-800{% else %}bg-slate-200 text-slate-700{% endif %}">{% if global_flags|get_item:feature.code %}Visible to users{% else %}Hidden from interface{% endif %}</span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="flex justify-end border-t border-slate-100 p-5"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save School Features</button></div>
+    </form>
+  </section>
 
-  <section class="space-y-5"><div><h3 class="text-lg font-black text-slate-900">Campus overrides</h3><p class="text-sm text-slate-500">Override global feature settings for individual campuses.</p></div>{% for c in campuses %}<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100 flex items-center gap-3"><span class="h-10 w-10 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-building"></i></span><div><h4 class="font-black text-slate-900">{{ c.name }}</h4><p class="text-xs text-slate-500">Campus-level flags</p></div></div><form method="post">{% csrf_token %}<input type="hidden" name="scope" value="campus"><input type="hidden" name="campus_id" value="{{ c.id }}"><div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Feature</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for code in codes %}{% with flags=campus_flags|get_item:c.id %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm font-black text-slate-900"><i class="ph ph-flag text-slate-400 mr-2"></i>{{ code }}</td><td class="px-6 py-4 text-sm"><label class="inline-flex items-center gap-3 cursor-pointer"><input type="checkbox" name="flag_{{ code }}" {% if flags and flags|get_item:code %}checked{% endif %} class="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"><span class="rounded-full px-3 py-1 text-xs font-black {% if flags and flags|get_item:code %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-700{% endif %}">{% if flags and flags|get_item:code %}Enabled{% else %}Disabled{% endif %}</span></label></td></tr>{% endwith %}{% endfor %}</tbody></table></div><div class="p-5 border-t border-slate-100 flex justify-end"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save {{ c.name }}</button></div></form></div>{% empty %}<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center"><i class="ph ph-buildings text-slate-300 text-6xl mb-4"></i><h3 class="text-lg font-black text-slate-900 mb-2">No campuses</h3><p class="text-slate-600 mb-4">Create campuses to configure campus-specific feature flags.</p><a href="{% url 'admin_orgsettings_campus_create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-black"><i class="ph ph-plus-circle"></i>Add Campus</a></div>{% endfor %}</section>
+  <section class="space-y-5">
+    <div><h3 class="text-lg font-black text-slate-900">Campus overrides</h3><p class="text-sm text-slate-500">Use this only when one campus needs a different set of modules from the school-wide setting.</p></div>
+    {% for c in campuses %}
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center gap-3 border-b border-slate-100 p-5"><span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50 text-primary-700"><i class="ph ph-building"></i></span><div><h4 class="font-black text-slate-900">{{ c.name }}</h4><p class="text-xs text-slate-500">Campus-level feature visibility</p></div></div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="scope" value="campus">
+          <input type="hidden" name="campus_id" value="{{ c.id }}">
+          <div class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
+            {% for feature in feature_catalog %}
+              {% with flags=campus_flags|get_item:c.id %}
+              <label class="flex cursor-pointer gap-3 rounded-2xl border p-4 transition {% if flags and flags|get_item:feature.code %}border-green-200 bg-green-50{% else %}border-slate-200 bg-slate-50 opacity-80{% endif %}">
+                <input type="checkbox" name="flag_{{ feature.code }}" {% if flags and flags|get_item:feature.code %}checked{% endif %} class="mt-1 h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+                <span><span class="block text-sm font-black text-slate-950">{{ feature.label }}</span><span class="mt-1 block text-xs font-semibold leading-5 text-slate-500">{{ feature.description }}</span></span>
+              </label>
+              {% endwith %}
+            {% endfor %}
+          </div>
+          <div class="flex justify-end border-t border-slate-100 p-5"><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i> Save {{ c.name }}</button></div>
+        </form>
+      </div>
+    {% empty %}
+      <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm"><i class="ph ph-buildings mb-4 text-6xl text-slate-300"></i><h3 class="mb-2 text-lg font-black text-slate-900">No campuses</h3><p class="mb-4 text-slate-600">Create campuses to configure campus-specific feature flags.</p><a href="{% url 'admin_orgsettings_campus_create' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 font-black text-white hover:bg-primary-700"><i class="ph ph-plus-circle"></i>Add Campus</a></div>
+    {% endfor %}
+  </section>
 </div>
 {% endblock %}
