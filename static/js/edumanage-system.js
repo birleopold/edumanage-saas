@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  var lastSidebarTrigger = null;
+  var generatedId = 0;
+
   function ready(callback) {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", callback, { once: true });
@@ -16,7 +19,8 @@
   function sidebarElements() {
     return {
       sidebar: document.getElementById("sidebar"),
-      backdrop: document.getElementById("sidebar-backdrop")
+      backdrop: document.getElementById("sidebar-backdrop"),
+      toggles: document.querySelectorAll('button[onclick*="toggleSidebar"], [data-sidebar-toggle]')
     };
   }
 
@@ -25,23 +29,118 @@
     return Boolean(elements.sidebar && !elements.sidebar.classList.contains("-translate-x-full"));
   }
 
-  function closeSidebar() {
-    var elements = sidebarElements();
-    if (!elements.sidebar || !elements.backdrop || !isMobileShell()) return;
-    elements.sidebar.classList.add("-translate-x-full");
-    elements.backdrop.classList.add("hidden");
-    document.body.style.overflow = "";
+  function focusableElements(container) {
+    if (!container) return [];
+    return Array.prototype.filter.call(container.querySelectorAll([
+      "a[href]",
+      "area[href]",
+      "button:not([disabled])",
+      "input:not([disabled]):not([type='hidden'])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "summary",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",")), function (element) {
+      return element.offsetParent !== null && element.getAttribute("aria-hidden") !== "true";
+    });
   }
 
   function syncSidebarState() {
     var elements = sidebarElements();
     if (!elements.sidebar || !elements.backdrop) return;
+    var open = sidebarIsOpen();
+    elements.sidebar.setAttribute("aria-label", elements.sidebar.getAttribute("aria-label") || "Portal navigation");
+    elements.sidebar.setAttribute("aria-hidden", String(isMobileShell() && !open));
+    elements.sidebar.setAttribute("role", isMobileShell() ? "dialog" : "navigation");
+    if (isMobileShell()) {
+      elements.sidebar.setAttribute("aria-modal", String(open));
+    } else {
+      elements.sidebar.removeAttribute("aria-modal");
+    }
+    elements.backdrop.setAttribute("aria-hidden", "true");
+    elements.toggles.forEach(function (button) {
+      button.setAttribute("aria-controls", "sidebar");
+      button.setAttribute("aria-expanded", String(open));
+    });
     if (!isMobileShell()) {
       elements.backdrop.classList.add("hidden");
       document.body.style.overflow = "";
       return;
     }
-    document.body.style.overflow = sidebarIsOpen() ? "hidden" : "";
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  function closeSidebar(options) {
+    var elements = sidebarElements();
+    if (!elements.sidebar || !elements.backdrop || !isMobileShell()) return;
+    elements.sidebar.classList.add("-translate-x-full");
+    elements.backdrop.classList.add("hidden");
+    document.body.style.overflow = "";
+    syncSidebarState();
+    if (!options || options.restoreFocus !== false) {
+      if (lastSidebarTrigger && document.contains(lastSidebarTrigger)) {
+        lastSidebarTrigger.focus({ preventScroll: true });
+      }
+      lastSidebarTrigger = null;
+    }
+  }
+
+  function openSidebar(trigger) {
+    var elements = sidebarElements();
+    if (!elements.sidebar || !elements.backdrop || !isMobileShell()) return;
+    lastSidebarTrigger = trigger && typeof trigger.focus === "function" ? trigger : document.activeElement;
+    elements.sidebar.classList.remove("-translate-x-full");
+    elements.backdrop.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    syncSidebarState();
+    window.requestAnimationFrame(function () {
+      var focusables = focusableElements(elements.sidebar);
+      (focusables[0] || elements.sidebar).focus({ preventScroll: true });
+    });
+  }
+
+  function toggleSidebar(trigger) {
+    if (sidebarIsOpen()) {
+      closeSidebar();
+    } else {
+      openSidebar(trigger);
+    }
+  }
+
+  function trapSidebarFocus(event) {
+    if (event.key !== "Tab" || !isMobileShell() || !sidebarIsOpen()) return;
+    var elements = sidebarElements();
+    if (!elements.sidebar) return;
+    var focusables = focusableElements(elements.sidebar);
+    if (!focusables.length) {
+      event.preventDefault();
+      elements.sidebar.focus({ preventScroll: true });
+      return;
+    }
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (!elements.sidebar.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus({ preventScroll: true });
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+    }
+  }
+
+  function nextId(prefix) {
+    generatedId += 1;
+    return prefix + "-" + generatedId;
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(value);
+    return String(value).replace(/["\\]/g, "\\$&");
   }
 
   function normalizePath(pathname) {
@@ -91,14 +190,13 @@
     var elements = sidebarElements();
     if (!elements.sidebar) return;
     elements.sidebar.classList.add("edu-sidebar-upgraded");
+    elements.sidebar.setAttribute("tabindex", elements.sidebar.getAttribute("tabindex") || "-1");
     elements.sidebar.setAttribute("aria-label", elements.sidebar.getAttribute("aria-label") || "Portal navigation");
     upgradeSidebarDestinations(elements.sidebar);
     markSidebarActive(elements.sidebar);
-    if (typeof window.toggleSidebar === "function" && !window.toggleSidebar.__eduManageEnhanced) {
-      var originalToggle = window.toggleSidebar;
+    if (!window.toggleSidebar || !window.toggleSidebar.__eduManageEnhanced) {
       var enhancedToggle = function () {
-        originalToggle();
-        window.requestAnimationFrame(syncSidebarState);
+        toggleSidebar(document.activeElement);
       };
       enhancedToggle.__eduManageEnhanced = true;
       window.toggleSidebar = enhancedToggle;
@@ -116,10 +214,22 @@
       });
     }
     window.addEventListener("resize", syncSidebarState, { passive: true });
+    document.addEventListener("keydown", trapSidebarFocus);
     syncSidebarState();
   }
 
   function enhanceTables() {
+    document.querySelectorAll("main table").forEach(function (table) {
+      if (table.querySelector("caption") || table.hasAttribute("aria-label") || table.hasAttribute("aria-labelledby")) return;
+      var container = table.closest("section, article, .bg-white, .rounded-xl, .rounded-2xl, .card, main");
+      var heading = container ? container.querySelector("h1, h2, h3") : null;
+      if (heading && heading.textContent.trim()) {
+        if (!heading.id) heading.id = nextId("edu-table-heading");
+        table.setAttribute("aria-labelledby", heading.id);
+      } else {
+        table.setAttribute("aria-label", "Data table");
+      }
+    });
     document.querySelectorAll("main .overflow-x-auto").forEach(function (wrapper) {
       var table = wrapper.querySelector("table");
       if (!table) return;
@@ -132,6 +242,21 @@
   }
 
   function enhanceForms() {
+    document.querySelectorAll("main input, main select, main textarea").forEach(function (field) {
+      var type = (field.getAttribute("type") || "").toLowerCase();
+      if (["hidden", "submit", "button", "reset", "file"].indexOf(type) !== -1) return;
+      if (!field.id) field.id = nextId("edu-field");
+      var hasAccessibleName = Boolean(
+        field.getAttribute("aria-label") ||
+        field.getAttribute("aria-labelledby") ||
+        document.querySelector('label[for="' + cssEscape(field.id) + '"]') ||
+        field.closest("label")
+      );
+      if (!hasAccessibleName) {
+        var source = field.getAttribute("placeholder") || field.getAttribute("name") || field.id;
+        field.setAttribute("aria-label", source.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim());
+      }
+    });
     document.querySelectorAll("main form").forEach(function (form) {
       form.addEventListener("submit", function () {
         if (form.method.toLowerCase() === "get" || !form.checkValidity()) return;
@@ -141,6 +266,18 @@
           button.classList.add("opacity-75", "cursor-wait");
         });
       });
+    });
+  }
+
+  function enhanceIcons() {
+    document.querySelectorAll('i[class*="ph-"], i[class*=" ph"]').forEach(function (icon) {
+      if (icon.hasAttribute("aria-hidden") || icon.getAttribute("role") === "img") return;
+      var control = icon.closest("button, a");
+      var controlText = control ? control.textContent.replace(/\s+/g, " ").trim() : "";
+      var controlNamed = control && (control.getAttribute("aria-label") || control.getAttribute("aria-labelledby") || controlText);
+      if (!control || controlNamed) {
+        icon.setAttribute("aria-hidden", "true");
+      }
     });
   }
 
@@ -279,12 +416,26 @@
 
   function enhancePage() {
     var main = document.querySelector("main");
-    if (main) main.classList.add("page-fade-in");
+    if (main) {
+      main.classList.add("page-fade-in");
+      if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+    }
     var pageHeader = document.querySelector("#main-content > div:first-child");
     if (pageHeader) {
       var title = pageHeader.querySelector("h1");
       var actions = pageHeader.querySelector("form, a, button");
       if (title && !title.textContent.trim() && !actions) pageHeader.hidden = true;
+      if (title && title.textContent.trim() && main) {
+        var shellTitle = title.textContent.trim().replace(/\s+/g, " ").toLowerCase();
+        var duplicateTitle = Array.prototype.find.call(main.querySelectorAll("h1"), function (heading) {
+          if (pageHeader.contains(heading)) return false;
+          return heading.textContent.trim().replace(/\s+/g, " ").toLowerCase() === shellTitle;
+        });
+        if (duplicateTitle) {
+          duplicateTitle.classList.add("edu-duplicate-page-title");
+          duplicateTitle.setAttribute("aria-hidden", "true");
+        }
+      }
     }
     document.querySelectorAll('a[target="_blank"]').forEach(function (link) {
       if (!link.rel.includes("noopener")) link.rel = (link.rel + " noopener noreferrer").trim();
@@ -295,6 +446,7 @@
     enhanceSidebar();
     enhanceTables();
     enhanceForms();
+    enhanceIcons();
     enhanceKeyboardNavigation();
     enhancePage();
     createQuickLauncher();

@@ -3,13 +3,75 @@
 {% block title %}Class Streams{% endblock %}
 {% block page_title %}Class Streams{% endblock %}
 {% block breadcrumbs %}Class divisions, rooms, capacity and class-teacher setup{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_stream_promotion' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Stream Promotion</a><a href="{% url 'admin_stream_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Stream</a>{% endblock %}
+{% block header_actions %}
+  {% url 'admin_stream_promotion' as stream_promotion_url %}
+  {% url 'admin_stream_create' as create_stream_url %}
+  {% include "components/ui_action_link.html" with href=stream_promotion_url label="Stream Promotion" variant="secondary" %}
+  {% include "components/ui_action_link.html" with href=create_stream_url label="Add Stream" icon="plus" %}
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
+{% url 'admin_stream_promotion' as stream_promotion_url %}
+{% url 'admin_stream_create' as create_stream_url %}
+{% url 'admin_stream_list' as stream_list_url %}
+
 <div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Class organization</p><h2 class="mt-2 text-2xl font-black">Class streams</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Manage class divisions, room placement, capacity and assigned class teachers.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_stream_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Add Stream</a><a href="{% url 'admin_stream_promotion' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Promote Stream</a></div></div></section>
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search stream, class or room..."></div></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_stream_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50">Clear</a></form></section>
-  {% if streams %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Class Group</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Stream</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Capacity</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Students</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Class Teacher</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Room</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for stream in streams %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm font-black text-slate-900">{{ stream.class_group }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">{{ stream.name }}</span></td><td class="px-6 py-4 text-sm text-slate-700">{{ stream.capacity }}</td><td class="px-6 py-4 text-sm"><span class="{% if stream.get_student_count >= stream.capacity %}text-red-700 font-black{% else %}text-slate-900 font-bold{% endif %}">{{ stream.get_student_count }}</span></td><td class="px-6 py-4 text-sm text-slate-700">{% if stream.class_teacher %}{{ stream.class_teacher }}{% else %}<span class="text-slate-400">Not assigned</span>{% endif %}</td><td class="px-6 py-4 text-sm text-slate-700">{% if stream.room %}{{ stream.room }}{% else %}<span class="text-slate-400">-</span>{% endif %}</td><td class="px-6 py-4 text-sm">{% if stream.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 text-right"><a href="{% url 'admin_stream_edit' stream.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit</a></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_stream_create' as create_stream_url %}{% include "components/ui_empty_state.html" with icon="users-three" title="No streams found" description="No class streams have been created yet or match your search criteria" action_url=create_stream_url action_text="Add Stream" %}{% endif %}
+  {% include "components/ui_page_hero.html" with tone="blue" eyebrow="Class organization" title="Class streams" description="Manage class divisions, room placement, capacity and assigned class teachers." primary_url=create_stream_url primary_text="Add Stream" secondary_url=stream_promotion_url secondary_text="Promote Stream" %}
+
+  {% include "components/ui_filter_toolbar_get.html" with q=q per_page=per_page clear_url=stream_list_url placeholder="Search stream, class or room..." %}
+
+  {% if streams %}
+    <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Class Group</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Stream</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Capacity</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Students</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Class Teacher</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Room</th>
+            <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Status</th>
+            <th class="px-6 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% for stream in streams %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-6 py-4 text-sm font-black text-slate-900">{{ stream.class_group }}</td>
+              <td class="px-6 py-4 text-sm">
+                {% include "components/ui_status_badge.html" with tone="primary" label=stream.name %}
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-700">{{ stream.capacity }}</td>
+              <td class="px-6 py-4 text-sm">
+                <span class="{% if stream.get_student_count >= stream.capacity %}font-black text-red-700{% else %}font-bold text-slate-900{% endif %}">{{ stream.get_student_count }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-700">
+                {% if stream.class_teacher %}{{ stream.class_teacher }}{% else %}<span class="text-slate-400">Not assigned</span>{% endif %}
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-700">
+                {% if stream.room %}{{ stream.room }}{% else %}<span class="text-slate-400">-</span>{% endif %}
+              </td>
+              <td class="px-6 py-4 text-sm">
+                {% if stream.is_active %}
+                  {% include "components/ui_status_badge.html" with tone="success" icon="check-circle" label="Active" %}
+                {% else %}
+                  {% include "components/ui_status_badge.html" with tone="neutral" icon="x-circle" label="Inactive" %}
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 text-right">
+                {% url 'admin_stream_edit' stream.id as edit_url %}
+                {% include "components/ui_action_link.html" with href=edit_url label="Edit" icon="pencil-simple" %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+  {% else %}
+    {% include "components/ui_empty_state.html" with icon="users-three" title="No streams found" description="No class streams have been created yet or match your search criteria" action_url=create_stream_url action_text="Add Stream" %}
+  {% endif %}
 </div>
 {% endblock %}

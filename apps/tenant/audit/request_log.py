@@ -18,7 +18,7 @@ class RequestLogMiddleware:
                     if user_needs_2fa(user) and not request.session.get("admin_2fa_verified"):
                         return redirect("audit_verify_2fa")
                 exempt = ["/admin/audit/accept/", "/logout/", "/static/", "/media/", "/api/", "/admin/audit/verify/"]
-                if not any(request.path.startswith(x) for x in exempt):
+                if getattr(settings, "PRIVACY_ACCEPTANCE_REQUIRED", False) and not any(request.path.startswith(x) for x in exempt):
                     version = getattr(settings, "PRIVACY_POLICY_VERSION", "1.0")
                     accepted = ConsentRecord.objects.filter(user=user, consent_type=ConsentRecord.PRIVACY, accepted=True, version=version).exists()
                     if not accepted:

@@ -1,0 +1,27 @@
+{% comment %}
+Reusable GET filter toolbar for list pages.
+Usage:
+{% include "components/ui_filter_toolbar_get.html" with q=q per_page=per_page clear_url=url placeholder="Search..." %}
+{% endcomment %}
+
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <form method="get" class="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_8rem_auto_auto] md:items-end">
+    <div>
+      <label for="{{ search_id|default:'id_q' }}" class="mb-2 block text-sm font-black text-slate-700">{{ search_label|default:"Search" }}</label>
+      <div class="relative">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
+        <input id="{{ search_id|default:'id_q' }}" type="search" name="{{ search_name|default:'q' }}" value="{{ q }}" class="w-full rounded-xl border-2 border-slate-200 py-2.5 pl-10 pr-3 font-bold text-slate-900" placeholder="{{ placeholder|default:'Search records...' }}">
+      </div>
+    </div>
+    <div>
+      <label for="{{ per_page_id|default:'id_per_page' }}" class="mb-2 block text-sm font-black text-slate-700">{{ per_page_label|default:"Per Page" }}</label>
+      <input id="{{ per_page_id|default:'id_per_page' }}" type="number" name="{{ per_page_name|default:'per_page' }}" value="{{ per_page }}" min="{{ per_page_min|default:'1' }}" max="{{ per_page_max|default:'200' }}" class="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900">
+    </div>
+    <button type="submit" class="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 bg-slate-100 px-5 py-2.5 font-black text-slate-700 hover:bg-slate-200">
+      <i class="ph ph-funnel mr-1" aria-hidden="true"></i>Apply
+    </button>
+    {% if clear_url %}
+      <a href="{{ clear_url }}" class="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 font-black text-slate-700 hover:bg-slate-50">Clear</a>
+    {% endif %}
+  </form>
+</section>

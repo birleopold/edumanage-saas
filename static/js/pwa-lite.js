@@ -158,7 +158,16 @@
             headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
             body: JSON.stringify(subscription)
           });
-        }).then(function () { return loadReadiness(); });
+        }).then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () { return {}; }).then(function (payload) {
+              throw new Error(payload.error || "Could not save this browser for alerts.");
+            });
+          }
+          return loadReadiness();
+        }).catch(function (error) {
+          alert(error.message || "Could not enable alerts for this browser.");
+        });
       });
     });
   }

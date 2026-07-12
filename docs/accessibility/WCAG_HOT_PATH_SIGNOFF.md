@@ -39,7 +39,7 @@ This document records accessibility work **in scope for the professional UX road
 
 - Every legacy CRUD screen, PDF viewers, third-party embeds, and email-only content.
 - Automated **contrast** verification of user-supplied **org colors** (campus/org overrides); tenants choosing extreme combinations should be advised in ops docs.
-- Full mobile/native app audits.
+- Full PWA browser audits.
 
 ## Maintenance
 

@@ -1,4 +1,4 @@
-# Generated manually for mobile app push-device registration
+# Generated manually for portal/PWA push-device registration
 
 from django.conf import settings
 from django.db import migrations, models

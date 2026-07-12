@@ -1,0 +1,29 @@
+{% comment %}
+Reusable page hero.
+Usage:
+{% include "components/ui_page_hero.html" with eyebrow="Academic calendar" title="Academic years" description="..." primary_url=url primary_text="Create Year" secondary_url=url secondary_text="Terms" tone="indigo" %}
+{% endcomment %}
+
+<section class="rounded-3xl border border-slate-200 bg-gradient-to-br {% if tone == 'blue' %}from-blue-950 via-slate-950 to-primary-900{% elif tone == 'emerald' %}from-emerald-950 via-slate-950 to-primary-900{% elif tone == 'amber' %}from-amber-950 via-slate-950 to-primary-900{% else %}from-indigo-950 via-slate-950 to-primary-900{% endif %} p-6 text-white shadow-lg">
+  <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      {% if eyebrow %}
+        <p class="text-xs font-black uppercase tracking-[0.18em] {% if tone == 'blue' %}text-blue-100{% elif tone == 'emerald' %}text-emerald-100{% elif tone == 'amber' %}text-amber-100{% else %}text-indigo-100{% endif %}">{{ eyebrow }}</p>
+      {% endif %}
+      <h2 class="mt-2 text-2xl font-black">{{ title }}</h2>
+      {% if description %}
+        <p class="mt-2 max-w-2xl text-sm {% if tone == 'blue' %}text-blue-100{% elif tone == 'emerald' %}text-emerald-100{% elif tone == 'amber' %}text-amber-100{% else %}text-indigo-100{% endif %}">{{ description }}</p>
+      {% endif %}
+    </div>
+    {% if primary_url or secondary_url %}
+      <div class="flex flex-wrap gap-2">
+        {% if primary_url %}
+          <a href="{{ primary_url }}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-slate-50">{{ primary_text|default:"Create" }}</a>
+        {% endif %}
+        {% if secondary_url %}
+          <a href="{{ secondary_url }}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">{{ secondary_text|default:"View More" }}</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>

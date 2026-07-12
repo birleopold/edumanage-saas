@@ -2,7 +2,8 @@
 Professional error handlers for friendly production pages.
 """
 
-from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 
 
 def _error_context(code, title, message, *, icon="ph-warning", action_label="Go to home", action_url="/", support_hint=None):
@@ -18,7 +19,8 @@ def _error_context(code, title, message, *, icon="ph-warning", action_label="Go 
 
 
 def render_error_page(request, template_name, status, context):
-    return render(request, template_name, context, status=status)
+    content = render_to_string(template_name, context)
+    return HttpResponse(content, status=status)
 
 
 def handler400(request, exception=None):
@@ -116,7 +118,7 @@ def tenant_suspended(request):
         403,
         _error_context(
             "403",
-            "Tenant suspended",
+            "School Portal Unavailable",
             f"{school_name} is temporarily suspended. Access to this school system is paused until the account is reactivated by the platform owner.",
             icon="ph-pause-circle",
             action_label="Contact school administration",

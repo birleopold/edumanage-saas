@@ -15,7 +15,7 @@ class PrivacyAcceptanceGuard:
         try:
             if getattr(request, "user", None) and request.user.is_authenticated:
                 exempt = ["/privacy/accept/", "/logout/", "/static/", "/media/", "/api/"]
-                if not any(request.path.startswith(x) for x in exempt):
+                if getattr(settings, "PRIVACY_ACCEPTANCE_REQUIRED", False) and not any(request.path.startswith(x) for x in exempt):
                     version = getattr(settings, "PRIVACY_POLICY_VERSION", "1.0")
                     accepted = ConsentRecord.objects.filter(user=request.user, consent_type=ConsentRecord.PRIVACY, accepted=True, version=version).exists()
                     if not accepted:

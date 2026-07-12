@@ -34,7 +34,7 @@ FEATURE_CATALOG = [
     {"code": "ANALYTICS", "label": "Analytics", "description": "Performance analytics, charts and learner intelligence."},
     {"code": "AUDIT", "label": "Security & Audit", "description": "Activity tracking, exports, backups, permissions and audit logs."},
     {"code": "INTEGRATIONS", "label": "Integrations", "description": "External providers such as SMS, WhatsApp, GPS, payments and APIs."},
-    {"code": "MOBILE_API", "label": "Mobile/API", "description": "Mobile API documentation and app/API readiness."},
+    {"code": "MOBILE_API", "label": "PWA & Alerts", "description": "Installable browser portal, PWA push readiness and API access."},
 ]
 
 DEFAULT_FLAG_CODES = [item["code"] for item in FEATURE_CATALOG]

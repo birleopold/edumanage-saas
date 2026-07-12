@@ -108,7 +108,7 @@ def manifest(request):
         {
             "name": "EduManage School System",
             "short_name": "EduManage",
-            "description": "EduManage mobile school management portal",
+            "description": "EduManage installable school management portal",
             "start_url": "/",
             "scope": "/",
             "display": "standalone",
@@ -158,6 +158,8 @@ def push_subscribe(request):
     keys = payload.get("keys") or {}
     if not endpoint:
         return JsonResponse({"ok": False, "error": "Missing endpoint."}, status=400)
+    if not keys.get("p256dh") or not keys.get("auth"):
+        return JsonResponse({"ok": False, "error": "Missing browser push keys."}, status=400)
 
     subscription, _created = WebPushSubscription.objects.update_or_create(
         endpoint=endpoint,
@@ -185,5 +187,6 @@ def push_unsubscribe(request):
     qs = WebPushSubscription.objects.filter(user=request.user, is_active=True)
     if endpoint:
         qs = qs.filter(endpoint=endpoint)
-    updated = qs.update(is_active=False, last_seen_at=timezone.now())
+    now = timezone.now()
+    updated = qs.update(is_active=False, last_seen_at=now, updated_at=now)
     return JsonResponse({"ok": True, "disabled": updated, "active_subscriptions": _active_subscription_count(request.user)})

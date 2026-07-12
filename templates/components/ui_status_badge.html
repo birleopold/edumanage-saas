@@ -1,0 +1,10 @@
+{% comment %}
+Reusable status badge.
+Usage: {% include "components/ui_status_badge.html" with tone="success" icon="check-circle" label="Active" %}
+Tones: success, danger, warning, info, primary, neutral.
+{% endcomment %}
+
+<span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black {% if tone == 'success' %}bg-green-100 text-green-700{% elif tone == 'danger' %}bg-red-100 text-red-700{% elif tone == 'warning' %}bg-amber-100 text-amber-800{% elif tone == 'info' %}bg-blue-100 text-blue-700{% elif tone == 'primary' %}bg-primary-50 text-primary-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+  {% if icon %}<i class="ph ph-{{ icon }}" aria-hidden="true"></i>{% endif %}
+  {{ label }}
+</span>

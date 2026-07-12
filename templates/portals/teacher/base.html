@@ -62,10 +62,10 @@
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white border border-gray-300 rounded px-3 py-2 text-sm z-50">Skip to main content</a>
 
     <!-- Mobile sidebar backdrop -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden hidden" onclick="toggleSidebar()" aria-hidden="true"></div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+    <aside id="sidebar" aria-label="Portal navigation" aria-hidden="true" class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
         
         <!-- Sidebar Header -->
         <div class="h-16 flex items-center px-6 border-b text-white" style="background: linear-gradient(135deg, var(--org-primary) 0%, var(--org-secondary) 100%);">
@@ -85,7 +85,7 @@
             </div>
             
             <!-- Mobile close button -->
-            <button type="button" onclick="toggleSidebar()" aria-label="Close sidebar" class="lg:hidden ml-auto text-white/80 hover:text-white">
+            <button type="button" onclick="toggleSidebar()" aria-label="Close sidebar" aria-controls="sidebar" aria-expanded="false" class="lg:hidden ml-auto text-white/80 hover:text-white">
                 <i class="ph ph-x text-xl" aria-hidden="true"></i>
             </button>
         </div>
@@ -163,7 +163,7 @@
         <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 gap-3">
             <!-- Left: Hamburger + Context -->
             <div class="flex items-center flex-1 min-w-0">
-                <button type="button" onclick="toggleSidebar()" aria-label="Open sidebar" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none shrink-0">
+                <button type="button" onclick="toggleSidebar()" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="false" class="lg:hidden text-gray-500 hover:text-gray-700 mr-4 focus:outline-none shrink-0">
                     <i class="ph ph-list text-2xl" aria-hidden="true"></i>
                 </button>
                 <form method="get" action="{% url 'teacher_global_search' %}" class="hidden sm:flex items-center gap-2 flex-1 max-w-md min-w-0">
@@ -179,13 +179,13 @@
             <div class="flex items-center space-x-4 shrink-0">
                 <!-- Notifications -->
                 <div class="relative" x-data="{ open: false }">
-                    <button type="button" aria-label="View notifications{% if unread_notifications_count %}, {{ unread_notifications_count }} unread{% endif %}" @click="open = !open" class="text-gray-400 hover:text-gray-600 relative">
+                    <button type="button" aria-label="View notifications{% if unread_notifications_count %}, {{ unread_notifications_count }} unread{% endif %}" aria-controls="teacher-notifications-panel" :aria-expanded="open.toString()" @click="open = !open" class="text-gray-400 hover:text-gray-600 relative">
                         <i class="ph ph-bell text-xl" aria-hidden="true"></i>
                         {% if unread_notifications_count %}
                         <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center ring-2 ring-white">{{ unread_notifications_count }}</span>
                         {% endif %}
                     </button>
-                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-30" role="region" aria-label="Notifications list">
+                    <div id="teacher-notifications-panel" x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-30" role="region" aria-label="Notifications list">
                         <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                             <p class="text-sm font-semibold text-gray-900">Notifications</p>
                             <p class="text-xs text-gray-500">{{ unread_notifications_count }} unread</p>

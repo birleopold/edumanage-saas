@@ -40,7 +40,24 @@ body.role-parent { --ui-role-fallback: #e11d48; }
 a, button, input, select, textarea, summary { transition: color var(--ui-ease), background-color var(--ui-ease), border-color var(--ui-ease), box-shadow var(--ui-ease), opacity var(--ui-ease), transform var(--ui-ease); }
 button, [role="button"], select { -webkit-tap-highlight-color: transparent; }
 button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .62; }
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-accent) 28%, transparent); outline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-accent) 38%, transparent); outline-offset: 3px; }
+a[href="#main-content"]:focus {
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1rem !important;
+  z-index: 9999 !important;
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 2.75rem;
+  border: 2px solid var(--ui-accent) !important;
+  border-radius: .75rem;
+  padding: .65rem 1rem !important;
+  background: #fff !important;
+  color: var(--ui-text) !important;
+  box-shadow: 0 18px 38px -18px rgba(15, 23, 42, .55);
+  font-weight: 800;
+}
+#main-content:focus { outline: none; }
 
 /* Global portal sidebar refresh */
 body.role-admin > aside,
@@ -200,3 +217,60 @@ header input[type="search"]:focus { border-color: var(--ui-accent) !important; b
 @keyframes launcherPop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @media (max-width: 640px) { .edu-quick-launcher { right: .85rem; bottom: .85rem; } .edu-quick-launcher__button span { display: none; } .edu-quick-launcher__grid { grid-template-columns: 1fr; } body.role-admin > aside, body.role-teacher > aside, body.role-student > aside, body.role-parent > aside { width: min(19.25rem, 88vw) !important; } }
 @media print { .edu-quick-launcher { display: none !important; } }
+
+.edu-duplicate-page-title { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 3px !important;
+  }
+
+  aside nav .bg-primary-50,
+  aside nav .nav-active,
+  .edu-quick-launcher__button {
+    border: 1px solid Highlight !important;
+    forced-color-adjust: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  main form button,
+  main form input[type="submit"],
+  main form input[type="button"],
+  main form a.rounded-xl,
+  main form a.rounded-lg {
+    min-height: 2.75rem !important;
+    min-width: min(9rem, 100%) !important;
+    line-height: 1.18 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    text-align: center;
+  }
+
+  main form[class*="grid"] > button,
+  main form[class*="grid"] > a,
+  main form .grid > button,
+  main form .grid > a,
+  main form[class*="flex"] > button,
+  main form[class*="flex"] > a {
+    flex: 1 1 9rem;
+    width: auto;
+  }
+}

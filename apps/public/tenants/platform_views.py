@@ -32,7 +32,7 @@ def _safe_next_url(request):
     next_url = request.POST.get("next") or request.GET.get("next")
     if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return next_url
-    return reverse("platform_dashboard")
+    return None
 
 
 def platform_admin_required(view_func):
@@ -144,7 +144,7 @@ def _activity_summary_cards():
 @platform_admin_required
 def platform_login(request):
     if request.user.is_authenticated and request.user.is_superuser:
-        return redirect(_safe_next_url(request))
+        return redirect(_safe_next_url(request) or reverse("platform_dashboard"))
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
@@ -153,7 +153,7 @@ def platform_login(request):
         else:
             login(request, user)
             messages.success(request, "Welcome to the Platform Console.")
-            return redirect(_safe_next_url(request))
+            return redirect(_safe_next_url(request) or reverse("platform_dashboard"))
     return render(request, "platform/login.html", {"form": form, "next": request.GET.get("next", "")})
 
 

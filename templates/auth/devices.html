@@ -2,7 +2,7 @@
 
 {% block title %}My Devices{% endblock %}
 {% block page_title %}My Devices{% endblock %}
-{% block breadcrumbs %}View signed-in mobile/PWA devices and turn off alert access for old or lost devices{% endblock %}
+{% block breadcrumbs %}View browsers with PWA alerts enabled and turn off access for old or lost devices{% endblock %}
 {% block header_actions %}
   <a href="{% url 'user_profile' %}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
     <i class="ph ph-arrow-left mr-2"></i> Back to profile
@@ -13,11 +13,11 @@
 <div class="space-y-6">
   <section class="grid gap-4 md:grid-cols-3">
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total devices</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total browsers</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ devices|length }}</p>
     </div>
     <div class="rounded-2xl border border-green-100 bg-green-50 p-5 shadow-sm">
-      <p class="text-xs font-bold uppercase tracking-wider text-green-700">Active devices</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-green-700">Active browsers</p>
       <p class="mt-2 text-3xl font-black text-green-800">{{ active_count }}</p>
     </div>
     <div class="rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
@@ -32,19 +32,20 @@
         {% for device in devices %}
           <div class="p-5">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-lg font-bold text-slate-950">{{ device.get_platform_display }}</h3>
+                  <h3 class="text-lg font-bold text-slate-950">Web/PWA browser</h3>
                   {% if device.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Inactive</span>{% endif %}
-                  {% if device.push_token and device.is_active %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">Alerts enabled</span>{% else %}<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Alerts not ready</span>{% endif %}
+                  {% if device.p256dh_key and device.auth_key and device.is_active %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">Alerts enabled</span>{% else %}<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Alerts not ready</span>{% endif %}
                 </div>
-                <p class="mt-2 text-sm font-semibold text-slate-600">Device ID: <span class="font-mono">{{ device.device_id|default:'Not provided' }}</span></p>
-                <p class="mt-1 text-sm text-slate-500">App version: {{ device.app_version|default:'Unknown' }} · Last seen: {{ device.last_seen_at|date:'M d, Y H:i' }}</p>
+                <p class="mt-2 max-w-4xl truncate text-sm font-semibold text-slate-600">Endpoint: <span class="font-mono">{{ device.endpoint }}</span></p>
+                <p class="mt-1 text-sm text-slate-500">Last seen: {{ device.last_seen_at|default:device.updated_at|date:'M d, Y H:i' }}</p>
+                {% if device.last_error %}<p class="mt-1 text-sm font-semibold text-red-700">Last error: {{ device.last_error|truncatechars:140 }}</p>{% endif %}
               </div>
               {% if device.is_active %}
-                <form method="post" action="{% url 'my_device_deactivate' device.pk %}" onsubmit="return confirm('Deactivate this device? It will stop receiving mobile alerts.');">
+                <form method="post" action="{% url 'my_device_deactivate' device.pk %}" onsubmit="return confirm('Disable PWA alerts for this browser?');">
                   {% csrf_token %}
-                  <button type="submit" class="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50">Deactivate</button>
+                  <button type="submit" class="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50">Disable alerts</button>
                 </form>
               {% endif %}
             </div>
@@ -54,8 +55,8 @@
     {% else %}
       <div class="p-10 text-center">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-device-mobile text-3xl"></i></div>
-        <h3 class="font-bold text-slate-950">No devices registered yet</h3>
-        <p class="mt-1 text-sm text-slate-500">Devices appear here after the mobile app or PWA registers with your account.</p>
+        <h3 class="font-bold text-slate-950">No PWA browsers registered yet</h3>
+        <p class="mt-1 text-sm text-slate-500">Browsers appear here after you install the PWA or enable alerts from the portal prompt.</p>
       </div>
     {% endif %}
   </section>

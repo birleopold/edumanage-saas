@@ -19,7 +19,7 @@ class WebPushNotConfigured(RuntimeError):
 
 
 def _vapid_claims():
-    private_key = config("WEB_PUSH_PRIVATE_KEY", default="")
+    private_key = config("WEB_PUSH_PRIVATE_KEY", default="").replace("\\n", "\n")
     subject = config("WEB_PUSH_SUBJECT", default="mailto:support@edumanage.local")
     if not private_key:
         raise WebPushNotConfigured("WEB_PUSH_PRIVATE_KEY is not configured.")
@@ -32,7 +32,10 @@ def send_web_push(subscription: WebPushSubscription, *, title: str, body: str, u
     except ImportError:
         return {"ok": False, "skipped": True, "reason": "Install the Python package pywebpush to enable delivery."}
 
-    claims, private_key = _vapid_claims()
+    try:
+        claims, private_key = _vapid_claims()
+    except WebPushNotConfigured as exc:
+        return {"ok": False, "skipped": True, "reason": str(exc)}
     payload = json.dumps({"title": title, "body": body, "url": url})
     info = {
         "endpoint": subscription.endpoint,
@@ -55,6 +58,11 @@ def send_web_push(subscription: WebPushSubscription, *, title: str, body: str, u
 
 def send_web_push_to_user(user, *, title: str, body: str, url: str = "/") -> dict:
     results = []
-    for subscription in WebPushSubscription.objects.filter(user=user, is_active=True):
+    subscriptions = (
+        WebPushSubscription.objects.filter(user=user, is_active=True)
+        .exclude(p256dh_key="")
+        .exclude(auth_key="")
+    )
+    for subscription in subscriptions:
         results.append(send_web_push(subscription, title=title, body=body, url=url))
     return {"sent": sum(1 for item in results if item.get("ok")), "attempted": len(results), "results": results}

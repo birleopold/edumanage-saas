@@ -7,9 +7,8 @@
   {% include "components/pwa_meta.html" %}
   <title>{% block title %}Platform Admin{% endblock %} | EduManage</title>
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="preconnect" href="https://cdn.tailwindcss.com">
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="{% static 'css/public-tailwind.css' %}">
   <link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
   <link rel="stylesheet" href="{% static 'css/role-scope-clarity.css' %}">
   <link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
@@ -17,23 +16,6 @@
   <script defer src="{% static 'js/role-scope-clarity.js' %}"></script>
   <script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
   <script defer src="{% static 'js/pwa-lite.js' %}"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              900: '#1e3a8a'
-            }
-          }
-        }
-      }
-    }
-  </script>
 </head>
 <body class="min-h-full bg-slate-50 text-slate-900 role-platform">
   <div class="min-h-screen lg:flex">

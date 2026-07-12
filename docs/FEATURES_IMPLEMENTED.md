@@ -489,7 +489,7 @@ return export_queryset_to_csv(
 - **Parent search** (`/parent/search/`, `parent_global_search`): parent header + sidebar; respects **selected campus** like other parent pages — **linked children** (name/student ID), **announcements** (ALL/PARENTS), **assignments** per child (with link to parent assignment detail), **documents**, **invoices** for linked children, **their own grievances**.
 - **Charts** (`/admin/analytics/charts/` + JSON `admin_analytics_api_charts_overview`): Chart.js bar + doughnut for students-by-campus and invoices-by-status (scoped for campus admins).
 - **Scheduled reports**: `reports.ReportRun` log, **Scheduled reports** admin page (`/admin/reports/scheduled/`), CSV export via shared `execute_overview_csv_run`, downloads at `admin_reports_run_download`, and management command `run_scheduled_reports` for cron/Task Scheduler.
-- **Mobile**: not a separate native app — **Web App Manifest** at `/manifest.webmanifest` plus `theme-color` / Apple meta tags via `templates/components/pwa_meta.html` on admin, student, teacher, and parent bases for installable mobile browser experience.
+- **PWA**: not a separate app — **Web App Manifest** at `/manifest.webmanifest` plus `theme-color` / Apple meta tags via `templates/components/pwa_meta.html` on admin, student, teacher, and parent bases for installable browser experience.
 
 ---
 

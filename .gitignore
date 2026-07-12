@@ -73,5 +73,6 @@ Thumbs.db
 
 # Project specific
 *.sqlite3
+node_modules/
 staticfiles/
 media/

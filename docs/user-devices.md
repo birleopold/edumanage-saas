@@ -1,33 +1,49 @@
-# User Devices
+# PWA Devices
 
-This feature exposes the existing `MobileDevice` model outside Django admin.
+This feature exposes browser push subscriptions outside Django admin so users
+and administrators can manage PWA alert access from the normal portal.
 
-## User pages
+## User Pages
 
-- `/profile/devices/` lists a signed-in user's mobile and PWA devices.
-- `/profile/devices/<id>/disable/` lets the user turn off an old device.
+- `/profile/devices/` lists a signed-in user's PWA browser subscriptions.
+- `/profile/devices/<id>/disable/` lets the user turn off alerts for an old browser.
 
-The profile page now links to My Devices from the Security section.
+The profile page links to My Devices from the Security section.
 
-## Admin monitoring
+## Admin Monitoring
 
-- `/admin/users/devices/` lets administrators review registered devices.
+- `/admin/users/devices/` lets administrators review PWA alert registrations.
+- `/admin/users/devices/test-push/` sends a test alert to the signed-in admin's
+  active browser subscriptions.
 
-Admin filters include user search, platform, active status, and alert readiness. Sensitive device credentials are not shown in the admin UI.
+Admin filters include user search, active status, alert readiness, and delivery
+errors. Raw browser push credentials are not shown in the admin UI.
 
-## API endpoints
+## API Endpoints
 
-- `GET /api/v1/mobile/devices/`
-- `POST /api/v1/mobile/devices/register/`
-- `POST /api/v1/mobile/devices/token/`
-- `POST /api/v1/mobile/devices/<id>/disable/`
+The legacy `/api/v1/mobile/devices/` endpoints may remain for integrations, but
+the first-class portal experience is the Django PWA browser flow:
 
-API responses show whether a device is ready for mobile alerts without returning raw credentials.
+- `/pwa/push-readiness/`
+- `/pwa/push-subscribe/`
+- `/pwa/push-unsubscribe/`
 
-## Notification connection
+## Notification Connection
 
-The notification center can use this device list later when sending mobile or PWA alerts. This PR keeps active devices, app versions, platform values, last-seen time, and alert readiness current.
+Portal alerts use `WebPushSubscription` records and the Python web-push helper.
+No separate mobile Node project is required.
 
-## Suggested verification
+Generate VAPID keys with:
 
-Run Django checks and smoke-test profile devices, admin device monitor, registration, token refresh, and disable flows in a tenant environment.
+```bash
+python manage.py generate_vapid_keys --subject mailto:admin@example.com
+```
+
+Add the printed `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, and
+`WEB_PUSH_SUBJECT` values to the deployment environment.
+
+## Suggested Verification
+
+Run Django checks and smoke-test profile devices, admin alert monitor, PWA
+subscription, unsubscribe, and the admin Send test alert action in a tenant
+environment.
