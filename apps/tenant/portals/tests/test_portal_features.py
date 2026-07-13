@@ -1,8 +1,11 @@
 import re
 from decimal import Decimal
+from io import StringIO
 
 from django.contrib.auth.hashers import identify_hasher
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -21,6 +24,8 @@ from apps.tenant.announcements.models import Announcement
 from apps.tenant.coursework.models import Assignment
 from apps.tenant.admissions.pdf_letter import generate_admission_letter_pdf
 from apps.tenant.assessments.parent_session import PIN_SESSION_KEY
+from apps.tenant.audit.models import BackupJob
+from apps.tenant.finance.integration_models import IntegrationProviderConfig
 from apps.tenant.finance.models import FeeItem, Invoice, Payment
 from apps.tenant.grievances.models import Grievance
 from apps.tenant.teachers.models import TeacherProfile
@@ -28,6 +33,8 @@ from apps.tenant.hostels.models import Bed, BedAllocation, Hostel, HostelRoom
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_or_create_organization
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
+from apps.tenant.portals.experience_services import build_school_health_score
+from apps.tenant.portals.models import WebPushSubscription
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.finance.pdf_receipt import generate_payment_receipt_pdf
 from apps.tenant.students.pdf_id_card import generate_student_id_card_pdf
@@ -281,6 +288,12 @@ class AdminHomeCampusScopeTests(TestCase):
         resp = self.client.get(reverse("admin_home"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["students_total"], 2)
+        self.assertIn("school_health", resp.context)
+        self.assertContains(resp, "Health Score")
+        self.assertContains(resp, reverse("admin_school_health_score"))
+        self.assertContains(resp, reverse("admin_analytics_risk_radar"))
+        self.assertContains(resp, reverse("admin_sickbay_dashboard"))
+        self.assertContains(resp, "Parent Digests")
 
     def test_campus_admin_sees_only_their_campus_students(self):
         user = User.objects.create_user(username="campus_only", password="x")
@@ -290,6 +303,54 @@ class AdminHomeCampusScopeTests(TestCase):
         resp = self.client.get(reverse("admin_home"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["students_total"], 1)
+
+
+class FeatureEntryPointTests(TestCase):
+    def setUp(self):
+        self.role_teacher, _ = Role.objects.get_or_create(code=Role.TEACHER, defaults={"name": "Teacher"})
+        self.role_student, _ = Role.objects.get_or_create(code=Role.STUDENT, defaults={"name": "Student"})
+        self.role_parent, _ = Role.objects.get_or_create(code=Role.PARENT, defaults={"name": "Parent"})
+        org = get_or_create_organization()
+        self.campus = Campus.objects.filter(organization=org).first()
+
+    def test_teacher_home_mentions_offline_attendance_and_report_comments(self):
+        user = User.objects.create_user(username="feature_teacher", password="test-pass-123")
+        user.roles.add(self.role_teacher)
+        TeacherProfile.objects.create(user=user, first_name="Feature", last_name="Teacher", campus=self.campus)
+        self.client.login(username="feature_teacher", password="test-pass-123")
+
+        resp = self.client.get(reverse("teacher_home"))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "work offline")
+        self.assertContains(resp, "draft report comments")
+
+    def test_student_home_links_sickbay(self):
+        user = User.objects.create_user(username="feature_student", password="test-pass-123")
+        user.roles.add(self.role_student)
+        StudentProfile.objects.create(user=user, first_name="Feature", last_name="Student", campus=self.campus)
+        self.client.login(username="feature_student", password="test-pass-123")
+
+        resp = self.client.get(reverse("student_home"))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reverse("student_sickbay_visits"))
+        self.assertContains(resp, "Sickbay")
+
+    def test_parent_home_links_digests_and_sickbay(self):
+        user = User.objects.create_user(username="feature_parent", password="test-pass-123")
+        user.roles.add(self.role_parent)
+        parent = ParentProfile.objects.create(user=user, first_name="Feature", last_name="Parent")
+        student = StudentProfile.objects.create(first_name="Feature", last_name="Child", campus=self.campus)
+        ParentStudentLink.objects.create(parent=parent, student=student)
+        self.client.login(username="feature_parent", password="test-pass-123")
+
+        resp = self.client.get(reverse("parent_home"))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reverse("parent_digest_history"))
+        self.assertContains(resp, reverse("parent_sickbay_visits"))
+        self.assertContains(resp, "Weekly Digests")
 
 
 class ParentChildIdCardPdfViewTests(TestCase):
@@ -637,6 +698,78 @@ class ExperienceHubViewsTests(TestCase):
         resp = self.client.get(reverse("admin_school_setup_guide"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "checklist")
+
+    def test_school_health_score_renders(self):
+        self.client.login(username="ux_exp_hub", password="test-pass-123")
+        resp = self.client.get(reverse("admin_school_health_score"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "School setup health score")
+
+    def test_school_health_score_data_returns_json(self):
+        self.client.login(username="ux_exp_hub", password="test-pass-123")
+        resp = self.client.get(reverse("admin_school_health_score_data"))
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("percent", data)
+        self.assertIn("items", data)
+        self.assertIn("top_gaps", data)
+
+    def test_school_health_score_reflects_ready_setup(self):
+        org = get_or_create_organization()
+        campus = Campus.objects.filter(organization=org).first()
+        campus.is_active = True
+        campus.is_default = True
+        campus.save(update_fields=["is_active", "is_default"])
+
+        year = AcademicYear.objects.create(name="2026", is_current=True)
+        AcademicTerm.objects.create(year=year, name="Term 1", order=1, is_current=True)
+        FeeItem.objects.create(code="TUITION", name="Tuition", amount=Decimal("500000"), is_active=True)
+
+        for code, name in Role.CODE_CHOICES:
+            Role.objects.get_or_create(code=code, defaults={"name": name})
+        UserRole.objects.get_or_create(user=self.user, role=self.role_admin, campus=None)
+        teacher_role = Role.objects.get(code=Role.TEACHER)
+        teacher_user = User.objects.create_user(username="ux_exp_teacher", password="test-pass-123")
+        UserRole.objects.create(user=teacher_user, role=teacher_role, campus=campus)
+
+        WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://push.example.test/score",
+            p256dh_key="key",
+            auth_key="auth",
+            is_active=True,
+        )
+        BackupJob.objects.create(
+            requested_by=self.user,
+            status=BackupJob.SUCCESS,
+            finished_at=timezone.now(),
+        )
+        IntegrationProviderConfig.objects.create(
+            name="MTN test",
+            provider_type=IntegrationProviderConfig.MTN_MOMO,
+            is_active=True,
+            base_url="https://payments.example.test",
+        )
+
+        with self.settings(WEB_PUSH_PUBLIC_KEY="public-key", WEB_PUSH_PRIVATE_KEY="private-key"):
+            health = build_school_health_score()
+
+        self.assertEqual(health["percent"], 100)
+        self.assertEqual(health["level"], "Ready")
+
+    def test_school_health_score_prioritizes_largest_gaps(self):
+        health = build_school_health_score()
+        gap_points = [item["gap_points"] for item in health["top_gaps"]]
+        self.assertEqual(gap_points, sorted(gap_points, reverse=True))
+
+    def test_check_school_health_command_reports_score(self):
+        out = StringIO()
+        call_command("check_school_health", stdout=out)
+        self.assertIn("School setup health:", out.getvalue())
+
+    def test_check_school_health_command_can_enforce_threshold(self):
+        with self.assertRaises(CommandError):
+            call_command("check_school_health", min_percent=101, stdout=StringIO())
 
     def test_system_status_renders(self):
         self.client.login(username="ux_exp_hub", password="test-pass-123")

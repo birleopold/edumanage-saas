@@ -1,0 +1,150 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Parent Digest{% endblock %}
+{% block page_title %}Smart Parent Digest{% endblock %}
+{% block breadcrumbs %}Weekly summary preview for {{ parent }}{% endblock %}
+{% block header_actions %}
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'admin_parents_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Parents</a>
+    <form method="post" action="{% url 'admin_parents_digest_send' parent.pk %}" class="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+      {% csrf_token %}
+      <label class="inline-flex items-center gap-2 text-xs font-black text-slate-600"><input type="checkbox" name="include_email" class="rounded border-slate-300"> Email</label>
+      <label class="inline-flex items-center gap-2 text-xs font-black text-slate-600"><input type="checkbox" name="include_whatsapp" class="rounded border-slate-300"> WhatsApp</label>
+      <label class="inline-flex items-center gap-2 text-xs font-black text-slate-600"><input type="checkbox" name="force" class="rounded border-slate-300"> Force</label>
+      <button type="submit" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-paper-plane-tilt mr-1"></i> Send Digest</button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">{{ digest.window.label }}</p>
+        <h2 class="mt-2 text-2xl font-black text-slate-950">{{ digest.subject }}</h2>
+        <p class="mt-2 text-sm font-semibold text-slate-600">Generated for {{ parent.first_name }} {{ parent.last_name }}{% if parent.user %} and delivered to {{ parent.user.username }}{% endif %}.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-xs font-black text-slate-500">Children</p><p class="mt-1 text-xl font-black text-slate-950">{{ digest.totals.children }}</p></div>
+        <div class="rounded-xl border border-amber-100 bg-amber-50 p-3"><p class="text-xs font-black text-amber-700">Absences</p><p class="mt-1 text-xl font-black text-amber-900">{{ digest.totals.absences }}</p></div>
+        <div class="rounded-xl border border-blue-100 bg-blue-50 p-3"><p class="text-xs font-black text-blue-700">Assignments</p><p class="mt-1 text-xl font-black text-blue-900">{{ digest.totals.due_assignments }}</p></div>
+        <div class="rounded-xl border border-rose-100 bg-rose-50 p-3"><p class="text-xs font-black text-rose-700">Balance</p><p class="mt-1 text-xl font-black text-rose-900">{{ digest.totals.balance_display }}</p></div>
+      </div>
+    </div>
+    <pre class="mt-5 whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-950 p-4 text-sm font-semibold leading-6 text-slate-100">{{ digest.message }}</pre>
+  </section>
+
+  {% for row in digest.students %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 class="text-xl font-black text-slate-950">{{ row.name }}</h3>
+          <p class="text-sm font-semibold text-slate-500">{{ row.student.student_id|default:'No student ID' }}{% if row.campus %} · {{ row.campus }}{% endif %}</p>
+        </div>
+        <span class="w-fit rounded-full bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">{% if row.attendance_rate != None %}{{ row.attendance_rate }}% attendance{% else %}No attendance{% endif %}</span>
+      </div>
+
+      <div class="mt-5 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-sm font-black text-slate-900">Attendance and finance</p>
+          <p class="mt-2 text-sm text-slate-600">{{ row.attendance_total }} attendance record{{ row.attendance_total|pluralize }}, {{ row.absent_count }} absent, {{ row.late_count }} late.</p>
+          <p class="mt-1 text-sm text-slate-600">Open balance: <strong>{{ row.balance_display }}</strong>{% if row.overdue_count %}; {{ row.overdue_count }} overdue invoice{{ row.overdue_count|pluralize }}{% endif %}.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-sm font-black text-slate-900">Coursework</p>
+          {% if row.due_assignments %}
+            <ul class="mt-2 space-y-1 text-sm text-slate-600">
+              {% for assignment in row.due_assignments|slice:":4" %}<li>{{ assignment.title }}{% if assignment.due_date %} · due {{ assignment.due_date|date:'M d' }}{% endif %}</li>{% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-2 text-sm text-slate-600">No due assignments in this digest window.</p>
+          {% endif %}
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-sm font-black text-slate-900">Discipline</p>
+          {% if row.incidents %}
+            <ul class="mt-2 space-y-1 text-sm text-slate-600">
+              {% for incident in row.incidents %}<li>{{ incident.title }} · {{ incident.get_severity_display }}</li>{% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-2 text-sm text-slate-600">No discipline updates this week.</p>
+          {% endif %}
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-sm font-black text-slate-900">Upcoming exams</p>
+          {% if row.exam_schedules %}
+            <ul class="mt-2 space-y-1 text-sm text-slate-600">
+              {% for schedule in row.exam_schedules %}<li>{{ schedule.paper.offering.course }} · {{ schedule.date|date:'M d' }} · {{ schedule.room_name }}</li>{% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-2 text-sm text-slate-600">No upcoming exam schedules found.</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  {% empty %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+      <h3 class="font-black text-slate-950">No linked students</h3>
+      <p class="mt-2 text-sm text-slate-500">Link this parent to students before sending a digest.</p>
+    </section>
+  {% endfor %}
+
+  {% if digest.announcements %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="text-lg font-black text-slate-950">Parent announcements included</h3>
+      <div class="mt-3 space-y-2">
+        {% for announcement in digest.announcements %}
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p class="font-black text-slate-900">{{ announcement.title }}</p>
+            <p class="mt-1 text-sm text-slate-600">{{ announcement.body|truncatechars:180 }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h3 class="text-lg font-black text-slate-950">Digest records</h3>
+    {% if digest_records %}
+      <div class="mt-3 grid gap-3">
+        {% for record in digest_records %}
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              <p class="font-black text-slate-900">{{ record.window_start|date:'M d' }} - {{ record.window_end|date:'M d, Y' }}</p>
+              <span class="w-fit rounded-full px-3 py-1 text-xs font-black {% if record.status == 'SENT' %}bg-green-100 text-green-700{% elif record.status == 'SKIPPED' %}bg-amber-100 text-amber-800{% else %}bg-slate-100 text-slate-700{% endif %}">{{ record.get_status_display }}</span>
+            </div>
+            <p class="mt-1 text-sm text-slate-600">{{ record.subject }}</p>
+            <p class="mt-1 text-xs font-semibold text-slate-500">PWA {{ record.channels.push.sent|default:0 }}/{{ record.channels.push.attempted|default:0 }}{% if record.channels.email.attempted %} · Email {% if record.channels.email.sent %}sent{% else %}not sent{% endif %}{% endif %}{% if record.channels.whatsapp.attempted %} · WhatsApp {{ record.channels.whatsapp.status|default:'attempted' }}{% endif %}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="mt-2 text-sm text-slate-500">No digest records have been created for this parent yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h3 class="text-lg font-black text-slate-950">Recent digest activity</h3>
+    {% if digest_activity %}
+      <div class="mt-3 divide-y divide-slate-100">
+        {% for item in digest_activity %}
+          <div class="py-3">
+            <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              <p class="font-black text-slate-900">{{ item.action }}</p>
+              <p class="text-xs font-bold text-slate-500">{{ item.created_at|date:'M d, Y H:i' }}</p>
+            </div>
+            <p class="mt-1 text-sm text-slate-600">{{ item.description }}</p>
+            {% if item.metadata %}
+              <p class="mt-1 text-xs font-semibold text-slate-500">PWA {{ item.metadata.push_sent|default:0 }}/{{ item.metadata.push_attempted|default:0 }}{% if item.metadata.email_attempted %} · Email {% if item.metadata.email_sent %}sent{% else %}not sent{% endif %}{% endif %}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="mt-2 text-sm text-slate-500">No digest sends have been recorded for this parent yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

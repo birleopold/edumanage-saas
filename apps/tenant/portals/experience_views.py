@@ -1,12 +1,13 @@
 """Staff-facing UX hub views (communication center, setup guide, system status)."""
 
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
 from apps.tenant.finance.models import CommunicationTemplate, WebhookRetryQueueItem
 from apps.tenant.finance.services import messaging_readiness_snapshot
 
-from .experience_services import messaging_activity_summary, school_setup_progress
+from .experience_services import build_school_health_score, messaging_activity_summary, school_setup_progress
 from .permissions import admin_portal_required
 
 
@@ -43,14 +44,32 @@ def admin_school_setup_guide(request):
 
 
 @admin_portal_required
+def admin_school_health_score(request):
+    health = build_school_health_score()
+    return render(
+        request,
+        "portals/admin/experience/school_health_score.html",
+        {"health": health},
+    )
+
+
+@admin_portal_required
+def admin_school_health_score_data(request):
+    health = build_school_health_score()
+    return JsonResponse(health)
+
+
+@admin_portal_required
 def admin_system_status(request):
     snap = messaging_readiness_snapshot(sample_limit=20)
     activity = messaging_activity_summary(days=7)
+    health = build_school_health_score()
     return render(
         request,
         "portals/admin/experience/system_status.html",
         {
             "messaging": snap,
             "activity": activity,
+            "health": health,
         },
     )

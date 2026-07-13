@@ -1,5 +1,5 @@
 {% extends 'portals/teacher/base.html' %}
-{% load attendance_extras %}
+{% load attendance_extras static %}
 
 {% block title %}Roll Call{% endblock %}
 {% block page_title %}Roll Call{% endblock %}
@@ -12,44 +12,24 @@
   <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 md:items-end"><div><label for="id_offering" class="block text-sm font-black text-slate-700 mb-2">Course</label><select id="id_offering" name="offering" onchange="this.form.submit()" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-primary-500 focus:border-primary-500 font-bold text-slate-900"><option value="">-- Select Course --</option>{% for o in offerings %}<option value="{{ o.id }}" {% if selected_offering and selected_offering.id == o.id %}selected{% endif %}>{{ o.course.name }} - {{ o.class_group.name }}</option>{% endfor %}</select></div><div><label for="id_date" class="block text-sm font-black text-slate-700 mb-2">Date</label><input id="id_date" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" onchange="this.form.submit()" class="block w-56 px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-primary-500 focus:border-primary-500 font-bold text-slate-900"></div><button type="button" onclick="markAllPresent()" class="rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-700"><i class="ph ph-check-circle mr-1"></i> All Present</button></form></section>
 
   {% if selected_offering and students %}
+    <section data-offline-attendance-status class="edu-attendance-sync-panel"><div><p data-offline-attendance-label class="edu-attendance-sync-panel__title">Attendance sync ready</p><p data-offline-attendance-detail class="edu-attendance-sync-panel__detail">Online. Saves go directly to Django.</p></div><button type="button" data-offline-attendance-sync>Sync now</button></section>
+
     {% if summary %}<section class="grid grid-cols-2 md:grid-cols-5 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Marked</p><p class="text-xl font-black text-slate-900">{{ summary.marked }}/{{ summary.total }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Present</p><p class="text-xl font-black text-green-700">{{ summary.present }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Absent</p><p class="text-xl font-black text-red-700">{{ summary.absent }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Late</p><p class="text-xl font-black text-yellow-700">{{ summary.late }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Rate</p><p class="text-xl font-black text-primary-700">{{ summary.attendance_rate }}%</p></div></section>{% endif %}
 
     <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="px-6 py-4 border-b border-slate-100 bg-slate-50"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><h3 class="text-xl font-black text-slate-900">{{ selected_offering.course.name }}</h3><p class="text-sm text-slate-600">{{ selected_offering.class_group.name }} • {{ selected_date|date:'F d, Y' }}</p></div><div class="flex items-center gap-4"><div class="text-right"><p class="text-xs uppercase font-black text-slate-500">Total Students</p><p class="text-2xl font-black text-slate-900">{{ students|length }}</p></div><div class="text-right"><p class="text-xs uppercase font-black text-slate-500">Marked</p><p class="text-2xl font-black text-primary-600" id="marked-count">0</p></div></div></div></div><div class="divide-y divide-slate-100">{% for student in students %}<div class="px-6 py-4 hover:bg-slate-50 transition-colors" data-student-id="{{ student.id }}"><div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4"><div class="flex-1"><div class="flex items-center gap-3"><div class="w-11 h-11 bg-primary-100 rounded-2xl flex items-center justify-center"><span class="text-primary-700 font-black text-lg">{{ forloop.counter }}</span></div><div><p class="text-base font-black text-slate-900">{{ student.first_name }} {{ student.last_name }}</p><p class="text-sm text-slate-600">{{ student.student_id }}</p></div></div></div><div class="flex flex-wrap items-center gap-2"><button type="button" onclick="markStudent({{ student.id }}, 'PRESENT', this)" class="status-btn px-4 py-2 rounded-xl font-black transition-all border-2 {% if existing_entries|get_item:student.id == 'PRESENT' %}bg-green-600 text-white border-green-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-green-600{% endif %}" data-status="PRESENT"><i class="ph ph-check-circle"></i><span class="ml-1">Present</span></button><button type="button" onclick="markStudent({{ student.id }}, 'ABSENT', this)" class="status-btn px-4 py-2 rounded-xl font-black transition-all border-2 {% if existing_entries|get_item:student.id == 'ABSENT' %}bg-red-600 text-white border-red-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-red-600{% endif %}" data-status="ABSENT"><i class="ph ph-x-circle"></i><span class="ml-1">Absent</span></button><button type="button" onclick="markStudent({{ student.id }}, 'LATE', this)" class="status-btn px-4 py-2 rounded-xl font-black transition-all border-2 {% if existing_entries|get_item:student.id == 'LATE' %}bg-yellow-600 text-white border-yellow-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-yellow-600{% endif %}" data-status="LATE"><i class="ph ph-clock"></i><span class="ml-1">Late</span></button><button type="button" onclick="markStudent({{ student.id }}, 'EXCUSED', this)" class="status-btn px-4 py-2 rounded-xl font-black transition-all border-2 {% if existing_entries|get_item:student.id == 'EXCUSED' %}bg-blue-600 text-white border-blue-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-blue-600{% endif %}" data-status="EXCUSED"><i class="ph ph-note"></i><span class="ml-1">Excused</span></button></div></div></div>{% endfor %}</div><div class="px-6 py-4 border-t border-slate-100 bg-slate-50"><div class="flex items-center justify-between"><a href="{% url 'teacher_attendance_home' %}" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-black"><i class="ph ph-arrow-left"></i><span>Back</span></a><button type="button" onclick="saveAttendance()" class="flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-white hover:bg-primary-700 font-black shadow-sm hover:shadow-md"><i class="ph ph-floppy-disk"></i><span>Save Attendance</span></button></div></div></section>
 
     <script>
-      const attendanceData = {};
-      {% for student in students %}{% if existing_entries|get_item:student.id %}attendanceData[{{ student.id }}] = '{{ existing_entries|get_item:student.id }}';{% endif %}{% endfor %}
-      function updateMarkedCount() { document.getElementById('marked-count').textContent = Object.keys(attendanceData).length; }
-      function markStudent(studentId, status, button) {
-        attendanceData[studentId] = status;
-        const row = button.closest('[data-student-id]');
-        const buttons = row.querySelectorAll('.status-btn');
-        buttons.forEach(btn => {
-          const btnStatus = btn.getAttribute('data-status');
-          btn.classList.remove('bg-green-600', 'bg-red-600', 'bg-yellow-600', 'bg-blue-600', 'text-white', 'border-green-600', 'border-red-600', 'border-yellow-600', 'border-blue-600');
-          btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
-          if (btnStatus === status) {
-            btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
-            if (status === 'PRESENT') btn.classList.add('bg-green-600', 'text-white', 'border-green-600');
-            if (status === 'ABSENT') btn.classList.add('bg-red-600', 'text-white', 'border-red-600');
-            if (status === 'LATE') btn.classList.add('bg-yellow-600', 'text-white', 'border-yellow-600');
-            if (status === 'EXCUSED') btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-          }
-        });
-        updateMarkedCount();
-      }
-      function markAllPresent() { document.querySelectorAll('[data-student-id]').forEach(row => { const studentId = row.getAttribute('data-student-id'); const presentBtn = row.querySelector('[data-status="PRESENT"]'); markStudent(parseInt(studentId), 'PRESENT', presentBtn); }); }
-      function saveAttendance() {
-        const offeringId = {{ selected_offering.id }};
-        const date = '{{ selected_date|date:"Y-m-d" }}';
-        fetch('{% url "teacher_roll_call_save" %}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify({ offering_id: offeringId, date: date, attendance: attendanceData }) })
-          .then(response => response.json())
-          .then(data => { if (data.success) { showToast('Success', data.message, 'success'); } else { showToast('Error', data.error || 'Failed to save attendance', 'error'); } })
-          .catch(() => showToast('Error', 'Network error occurred', 'error'));
-      }
-      function showToast(title, message, type) { if (typeof window.showToast === 'function') { window.showToast(title, message, type); return; } alert(title + ': ' + message); }
-      updateMarkedCount();
+      window.OfflineAttendanceConfig = {
+        saveUrl: '{% url "teacher_roll_call_save" %}',
+        csrfToken: '{{ csrf_token }}',
+        offeringId: {{ selected_offering.id }},
+        date: '{{ selected_date|date:"Y-m-d" }}',
+        initialAttendance: {
+          {% for student in students %}{% if existing_entries|get_item:student.id %}'{{ student.id }}': '{{ existing_entries|get_item:student.id }}'{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}
+        }
+      };
     </script>
+    <script src="{% static 'js/offline-attendance.js' %}"></script>
   {% elif selected_offering %}
     {% include "components/ui_empty_state.html" with icon="users" title="No students enrolled" description="There are no students enrolled in this course offering" %}
   {% else %}

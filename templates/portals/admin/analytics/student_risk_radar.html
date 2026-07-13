@@ -1,0 +1,41 @@
+{% extends "portals/admin/base.html" %}
+{% block title %}Student Risk Radar{% endblock %}
+{% block page_title %}Student Risk Radar{% endblock %}
+{% block breadcrumbs %}Attendance, fees, assessments, discipline and coursework early warnings{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_analytics_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Analytics</a><a href="{% url 'admin_analytics_alerts_list' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Risk Alerts</a>{% endblock %}
+
+{% block content %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-red-900 p-6 text-white shadow-lg">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-red-100">Early warning</p>
+    <h2 class="mt-2 text-2xl font-black">Student Risk Radar</h2>
+    <p class="mt-2 max-w-3xl text-sm text-red-100">Combines attendance drops, overdue fees, weak marks, discipline records and missing coursework into one action list.</p>
+  </section>
+
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-red-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Critical</p><p class="mt-1 text-3xl font-black text-red-700">{{ counts.CRITICAL }}</p></div>
+    <div class="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">High</p><p class="mt-1 text-3xl font-black text-orange-700">{{ counts.HIGH }}</p></div>
+    <div class="rounded-2xl border border-yellow-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Medium</p><p class="mt-1 text-3xl font-black text-yellow-700">{{ counts.MEDIUM }}</p></div>
+    <div class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Low</p><p class="mt-1 text-3xl font-black text-blue-700">{{ counts.LOW }}</p></div>
+  </section>
+
+  <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Student</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Level</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Signals</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Snapshot</th><th class="px-5 py-3 text-right text-xs font-black uppercase text-slate-500">Action</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in rows %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-4"><p class="font-black text-slate-900">{{ row.student }}</p><p class="text-xs text-slate-500">{{ row.student.student_id|default:"No ID" }}{% if row.student.stream %} · {{ row.student.stream }}{% endif %}</p></td>
+          <td class="px-5 py-4"><span class="rounded-full px-3 py-1 text-xs font-black {% if row.level == 'CRITICAL' %}bg-red-100 text-red-700{% elif row.level == 'HIGH' %}bg-orange-100 text-orange-700{% elif row.level == 'MEDIUM' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">{{ row.level }} · {{ row.score }}</span></td>
+          <td class="px-5 py-4"><div class="flex flex-wrap gap-2">{% for signal in row.signals %}<span title="{{ signal.detail }}" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ signal.label }}</span>{% endfor %}</div></td>
+          <td class="px-5 py-4 text-sm text-slate-600">Attendance: {{ row.attendance_rate|default:"-" }}% · Fees: {{ row.fee_balance }} · Missing: {{ row.missing_coursework }} · Discipline: {{ row.discipline_count }}</td>
+          <td class="px-5 py-4 text-right"><a href="{{ row.detail_url }}" class="text-sm font-black text-primary-700 hover:text-primary-900">Open student</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-12 text-center text-sm text-slate-500">No current risk signals found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

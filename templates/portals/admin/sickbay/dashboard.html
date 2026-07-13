@@ -1,0 +1,35 @@
+{% extends "portals/admin/base.html" %}
+{% block title %}Sickbay{% endblock %}
+{% block page_title %}Sickbay & Student Health{% endblock %}
+{% block breadcrumbs %}Clinic visits, medical alerts, nurse notes and parent notifications{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_sickbay_visit_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Record Visit</a><a href="{% url 'admin_sickbay_profile_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Medical Profiles</a>{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-blue-900 p-6 text-white shadow-lg">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Student care</p><h2 class="mt-2 text-2xl font-black">Sickbay operations</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Capture clinic visits, symptoms, medicine, nurse or doctor notes, parent notifications and follow-up needs.</p></div>
+      <a href="{% url 'admin_sickbay_visit_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">Record Visit</a>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Visits today</p><p class="mt-1 text-3xl font-black text-emerald-700">{{ visits_today_count }}</p></div>
+    <div class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Parents notified</p><p class="mt-1 text-3xl font-black text-blue-700">{{ parent_notified_today_count }}</p></div>
+    <div class="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Follow-ups</p><p class="mt-1 text-3xl font-black text-amber-700">{{ follow_up_count }}</p></div>
+    <div class="rounded-2xl border border-red-100 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-slate-500">Medical alerts</p><p class="mt-1 text-3xl font-black text-red-700">{{ profile_alert_count }}</p></div>
+  </section>
+
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr_.55fr] gap-5">
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-100 p-5"><h3 class="font-black text-slate-900">Recent sickbay visits</h3><a href="{% url 'admin_sickbay_visit_list' %}" class="text-sm font-black text-primary-700">View all</a></div>
+      <div class="divide-y divide-slate-100">{% for visit in recent_visits %}<a href="{% url 'admin_sickbay_visit_detail' visit.pk %}" class="block p-4 hover:bg-slate-50"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2"><div><p class="font-black text-slate-900">{{ visit.student }}</p><p class="text-sm text-slate-600">{{ visit.complaint }} · {{ visit.get_outcome_display }}</p></div><span class="text-xs font-bold text-slate-500">{{ visit.visit_at|date:"M j, Y H:i" }}</span></div></a>{% empty %}<div class="p-8 text-center text-sm text-slate-500">No sickbay visits recorded yet.</div>{% endfor %}</div>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="font-black text-slate-900">Outcome mix</h3>
+      <div class="mt-4 space-y-2">{% for row in outcome_rows %}<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm"><span class="font-bold text-slate-700">{{ row.outcome }}</span><span class="font-black text-slate-950">{{ row.count }}</span></div>{% empty %}<p class="text-sm text-slate-500">No outcomes yet.</p>{% endfor %}</div>
+    </div>
+  </section>
+</div>
+{% endblock %}

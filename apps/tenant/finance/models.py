@@ -162,7 +162,14 @@ class OutboundMessageLog(models.Model):
     PAYMENT_RECEIPT = "PAYMENT_RECEIPT"
     ABSENCE_ALERT = "ABSENCE_ALERT"
     URGENT_ANNOUNCEMENT = "URGENT_ANNOUNCEMENT"
-    MESSAGE_TYPE_CHOICES = ((FEE_REMINDER, "Fee reminder"), (PAYMENT_RECEIPT, "Payment receipt"), (ABSENCE_ALERT, "Absence alert"), (URGENT_ANNOUNCEMENT, "Urgent announcement"))
+    PARENT_DIGEST = "PARENT_DIGEST"
+    MESSAGE_TYPE_CHOICES = (
+        (FEE_REMINDER, "Fee reminder"),
+        (PAYMENT_RECEIPT, "Payment receipt"),
+        (ABSENCE_ALERT, "Absence alert"),
+        (URGENT_ANNOUNCEMENT, "Urgent announcement"),
+        (PARENT_DIGEST, "Parent digest"),
+    )
     SMS = "SMS"
     WHATSAPP = "WHATSAPP"
     CHANNEL_CHOICES = ((SMS, "SMS"), (WHATSAPP, "WhatsApp"))

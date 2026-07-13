@@ -7,12 +7,13 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.tenant.portals.permissions import admin_portal_required
-from apps.tenant.orgsettings.utils import log_action
+from apps.tenant.portals.permissions import admin_portal_required, role_required
+from apps.tenant.orgsettings.utils import get_action_log, log_action
 from apps.tenant.users.models import Role, User, PasswordSetupToken
 
 from .forms import ParentProfileForm, ParentStudentLinkForm
-from .models import ParentProfile, ParentStudentLink
+from .digest import build_parent_digest, send_all_parent_digests, send_parent_digest
+from .models import ParentDigest, ParentProfile, ParentStudentLink
 
 
 def _generate_unique_username(base: str) -> str:
@@ -162,6 +163,86 @@ def parent_credentials(request, pk: int):
         request,
         "portals/admin/parents/credentials.html",
         {"parent": parent, "temp_password": temp_password},
+    )
+
+
+@admin_portal_required
+def parent_digest_preview(request, pk: int):
+    parent = get_object_or_404(ParentProfile.objects.select_related("user"), pk=pk)
+    digest = build_parent_digest(parent)
+    digest_activity = get_action_log(parent).filter(action__in=["PARENT_DIGEST_SENT", "PARENT_DIGEST_SKIPPED"])[:8]
+    digest_records = parent.digests.order_by("-window_end", "-created_at")[:8]
+    return render(
+        request,
+        "portals/admin/parents/digest.html",
+        {
+            "parent": parent,
+            "digest": digest,
+            "digest_activity": digest_activity,
+            "digest_records": digest_records,
+        },
+    )
+
+
+@admin_portal_required
+def parent_digest_send(request, pk: int):
+    parent = get_object_or_404(ParentProfile.objects.select_related("user"), pk=pk)
+    if request.method == "POST":
+        include_email = request.POST.get("include_email") == "on"
+        include_whatsapp = request.POST.get("include_whatsapp") == "on"
+        force = request.POST.get("force") == "on"
+        result = send_parent_digest(
+            parent,
+            created_by=request.user,
+            include_email=include_email,
+            include_whatsapp=include_whatsapp,
+            force=force,
+        )
+        if result.get("sent"):
+            push = result.get("push") or {}
+            email = result.get("email") or {}
+            whatsapp = result.get("whatsapp") or {}
+            messages.success(
+                request,
+                f"Digest sent to {parent}. PWA alerts delivered: {push.get('sent', 0)}. Emails sent: {1 if email.get('sent') else 0}. WhatsApp sent: {1 if whatsapp.get('sent') else 0}.",
+            )
+        else:
+            messages.warning(request, result.get("reason", "Digest was not sent."))
+    return redirect("admin_parents_digest", pk=parent.pk)
+
+
+@admin_portal_required
+def parent_digest_send_all(request):
+    if request.method == "POST":
+        include_email = request.POST.get("include_email") == "on"
+        include_whatsapp = request.POST.get("include_whatsapp") == "on"
+        force = request.POST.get("force") == "on"
+        result = send_all_parent_digests(
+            created_by=request.user,
+            include_email=include_email,
+            include_whatsapp=include_whatsapp,
+            force=force,
+        )
+        messages.success(
+            request,
+            f"Parent digests complete: {result['sent']} sent, {result['skipped']} skipped, {result['duplicates']} duplicate(s), {result['push_sent']} PWA alert(s), {result['email_sent']} email(s), {result['whatsapp_sent']} WhatsApp message(s).",
+        )
+    return redirect("admin_parents_list")
+
+
+@role_required(Role.PARENT)
+def parent_digest_history(request):
+    parent = ParentProfile.objects.filter(user=request.user).first()
+    digests = ParentDigest.objects.none()
+    if parent:
+        digests = parent.digests.filter(status=ParentDigest.SENT).order_by("-window_end", "-created_at")
+    return render(
+        request,
+        "portals/parent/digests/history.html",
+        {
+            "parent_profile": parent,
+            "digests": digests,
+        },
     )
 
 

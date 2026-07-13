@@ -24,7 +24,7 @@ from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.users.models import Role
 
 from .campus_permissions import get_user_campus_scope
-from .experience_services import school_setup_progress
+from .experience_services import build_school_health_score, school_setup_progress
 from .permissions import admin_portal_required, role_required
 
 
@@ -99,6 +99,7 @@ def admin_home(request):
     grievances_in_progress_count = g_qs.filter(status=Grievance.IN_PROGRESS).count()
 
     school_setup = school_setup_progress()
+    school_health = build_school_health_score()
 
     return render(
         request,
@@ -121,6 +122,7 @@ def admin_home(request):
             "grievances_open_count": grievances_open_count,
             "grievances_in_progress_count": grievances_in_progress_count,
             "school_setup": school_setup,
+            "school_health": school_health,
             "poll_dashboard_items": _poll_items(request),
         },
     )
@@ -297,9 +299,9 @@ def pwa_manifest(request):
             "theme_color": "#2563eb",
             "icons": [
                 {
-                    "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f393.png",
+                    "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' rx='16' fill='%232563eb'/%3E%3Cpath d='M10 27 36 16l26 11-26 11L10 27Z' fill='white'/%3E%3Cpath d='M20 34v12c4 5 11 8 16 8s12-3 16-8V34L36 41 20 34Z' fill='white' opacity='.9'/%3E%3C/svg%3E",
                     "sizes": "72x72",
-                    "type": "image/png",
+                    "type": "image/svg+xml",
                     "purpose": "any",
                 }
             ],

@@ -171,6 +171,10 @@
                     <i class="ph-fill ph-clipboard-text text-lg mr-3" style="color: {% if '/admin/school-setup' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/school-setup' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                     <span>Getting started</span>
                 </a>
+                <a href="{% url 'admin_school_health_score' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/school-health' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                    <i class="ph-fill ph-gauge text-lg mr-3" style="color: {% if '/admin/school-health' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/school-health' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                    <span>Health score</span>
+                </a>
                 <a href="{% url 'admin_system_status' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/system-status' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                     <i class="ph-fill ph-heartbeat text-lg mr-3" style="color: {% if '/admin/system-status' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/system-status' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                     <span>System status</span>
@@ -471,15 +475,23 @@
                         <span>Discipline</span>
                     </a>
                     {% endif %}
+                    <a href="{% url 'admin_sickbay_dashboard' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/sickbay' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-first-aid-kit text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/sickbay' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/sickbay' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Sickbay</span>
+                    </a>
                     {% if not feature_flags or feature_flags|get_item:'DOCUMENTS' %}
                     <a href="{% url 'admin_documents_list' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/documents' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                         <i class="ph-fill ph-files text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/documents' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/documents' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Documents</span>
                     </a>
                     {% endif %}
-                    <a href="{% url 'admin_analytics_dashboard' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
-                        <i class="ph-fill ph-chart-line-up text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                    <a href="{% url 'admin_analytics_dashboard' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path and '/admin/analytics/risk-radar' not in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-chart-line-up text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path and '/admin/analytics/risk-radar' not in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics' in request.path and '/admin/analytics/charts' not in request.path and '/admin/analytics/risk-radar' not in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
                         <span>Performance Analytics</span>
+                    </a>
+                    <a href="{% url 'admin_analytics_risk_radar' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics/risk-radar' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
+                        <i class="ph-fill ph-radar text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics/risk-radar' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics/risk-radar' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>
+                        <span>Risk Radar</span>
                     </a>
                     <a href="{% url 'admin_analytics_charts' %}" class="group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {% if '/admin/analytics/charts' in request.path %}nav-active text-white{% else %}text-slate-700 nav-hover{% endif %}">
                         <i class="ph-fill ph-chart-pie text-lg mr-3 transition-colors duration-200" style="color: {% if '/admin/analytics/charts' in request.path %}white{% else %}var(--org-primary){% endif %}; opacity: {% if '/admin/analytics/charts' in request.path %}1{% else %}0.5{% endif %};" aria-hidden="true"></i>

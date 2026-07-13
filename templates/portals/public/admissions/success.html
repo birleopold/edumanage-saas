@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% include "components/pwa_meta.html" %}
     <title>Application Submitted | EduManage</title>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     {% include "components/ui_public_polish.html" %}
 </head>
 <body class="min-h-screen bg-gradient-to-br from-green-700 via-teal-700 to-blue-800 public-fade-in">
@@ -50,6 +49,9 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 sm:justify-center pt-2">
+                    <a href="{% url 'public_admissions_track' %}?reference={{ applicant.application_reference }}&contact={{ applicant.email|default:applicant.phone|urlencode }}" class="inline-flex justify-center items-center gap-2 px-5 py-3 bg-green-700 text-white rounded-xl text-sm font-bold hover:bg-green-800 shadow-lg">
+                        <i class="ph ph-list-checks"></i> Track application
+                    </a>
                     <a href="{% url 'public_admissions_apply' %}" class="inline-flex justify-center items-center gap-2 px-5 py-3 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50">
                         <i class="ph ph-plus"></i> Submit another application
                     </a>

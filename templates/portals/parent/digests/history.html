@@ -1,0 +1,42 @@
+{% extends 'portals/parent/base.html' %}
+
+{% block title %}Weekly Digests{% endblock %}
+{% block page_title %}Weekly Digests{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-rose-50 p-6 shadow-sm">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Family summary</p>
+    <h2 class="mt-2 text-2xl font-black text-slate-950">Weekly parent digests</h2>
+    <p class="mt-2 max-w-2xl text-sm text-slate-600">Review the school summaries sent to your account, including attendance, fees, coursework, discipline, announcements and exams.</p>
+  </section>
+
+  {% if parent_profile %}
+    <section class="grid gap-4">
+      {% for digest in digests %}
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.14em] text-primary-600">{{ digest.window_start|date:'M d' }} - {{ digest.window_end|date:'M d, Y' }}</p>
+              <h3 class="mt-1 text-lg font-black text-slate-950">{{ digest.subject }}</h3>
+            </div>
+            <span class="w-fit rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">{{ digest.get_status_display }}</span>
+          </div>
+          <pre class="mt-4 whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-700">{{ digest.message }}</pre>
+          <p class="mt-3 text-xs font-semibold text-slate-500">Sent {{ digest.sent_at|date:'M d, Y H:i' }}</p>
+        </article>
+      {% empty %}
+        <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-newspaper text-3xl"></i></div>
+          <h3 class="mt-4 font-black text-slate-950">No digests yet</h3>
+          <p class="mt-2 text-sm text-slate-500">Weekly summaries will appear here after the school sends them.</p>
+        </div>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+      <i class="ph ph-warning mr-2"></i>No parent profile is linked to this account yet.
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

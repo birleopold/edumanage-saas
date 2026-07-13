@@ -121,6 +121,9 @@
                     <a href="{% url 'parent_incidents_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/parent/discipline' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-warning-circle text-lg mr-3 {% if '/parent/discipline' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Discipline Records
                     </a>
+                    <a href="{% url 'parent_sickbay_visits' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/parent/sickbay' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-first-aid-kit text-lg mr-3 {% if '/parent/sickbay' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Sickbay Visits
+                    </a>
                     <a href="{% url 'parent_grievances_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/parent/grievances/submissions' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-list text-lg mr-3 {% if '/parent/grievances/submissions' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> My concerns
                     </a>
@@ -155,6 +158,9 @@
                     </a>
                     <a href="{% url 'parent_communication_preferences' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/parent/account/message-preferences' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-bell text-lg mr-3 {% if '/parent/account/message-preferences' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Message preferences
+                    </a>
+                    <a href="{% url 'parent_digest_history' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/parent/digests' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-newspaper text-lg mr-3 {% if '/parent/digests' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Weekly digests
                     </a>
                 </div>
             </div>

@@ -24,6 +24,7 @@ INSTALLED_APPS += [
     "apps.tenant.duty",
     "apps.tenant.timetable",
     "apps.tenant.discipline",
+    "apps.tenant.sickbay",
     "apps.tenant.documents",
     "apps.tenant.transport",
     "apps.tenant.library",

@@ -37,6 +37,8 @@ class ScoreResult:
     grade: str
     remark: str
     note: str
+    report_comment: str
+    report_comment_ai_assisted: bool
     is_missing: bool
 
 
@@ -121,6 +123,8 @@ def score_result(assessment: Assessment, score: AssessmentScore | None) -> Score
         grade=grade,
         remark=remark,
         note=score.note if score else "",
+        report_comment=score.report_comment if score else "",
+        report_comment_ai_assisted=bool(score.report_comment_ai_assisted) if score else False,
         is_missing=value is None,
     )
 

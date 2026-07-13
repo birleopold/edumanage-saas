@@ -13,20 +13,47 @@ class ParentCommunicationPreferencesForm(forms.ModelForm):
 
     class Meta:
         model = ParentProfile
-        fields = ["allow_sms_alerts", "allow_whatsapp_alerts"]
+        fields = [
+            "allow_sms_alerts",
+            "allow_whatsapp_alerts",
+            "digest_enabled",
+            "digest_email_enabled",
+            "digest_whatsapp_enabled",
+            "digest_pwa_enabled",
+        ]
         labels = {
             "allow_sms_alerts": "Text message (SMS) alerts",
             "allow_whatsapp_alerts": "WhatsApp alerts",
+            "digest_enabled": "Weekly Smart Parent Digest",
+            "digest_email_enabled": "Email weekly digest",
+            "digest_whatsapp_enabled": "WhatsApp weekly digest",
+            "digest_pwa_enabled": "Browser/PWA weekly digest alert",
         }
         help_texts = {
             "allow_sms_alerts": "Fee reminders, absence notices, and urgent school messages sent by SMS.",
             "allow_whatsapp_alerts": "Same types of messages on WhatsApp when your school uses it.",
+            "digest_enabled": "A weekly family summary covering attendance, fees, coursework, discipline, announcements and exams.",
+            "digest_email_enabled": "Send the weekly digest to your email address.",
+            "digest_whatsapp_enabled": "Send the weekly digest to your WhatsApp number when enabled by the school.",
+            "digest_pwa_enabled": "Show a browser notification when the weekly digest is ready.",
         }
         widgets = {
             "allow_sms_alerts": forms.CheckboxInput(
                 attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
             ),
             "allow_whatsapp_alerts": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+            "digest_enabled": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+            "digest_email_enabled": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+            "digest_whatsapp_enabled": forms.CheckboxInput(
+                attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
+            ),
+            "digest_pwa_enabled": forms.CheckboxInput(
                 attrs={"class": "mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"}
             ),
         }
@@ -57,6 +84,10 @@ class ParentProfileForm(forms.ModelForm):
             "email",
             "allow_sms_alerts",
             "allow_whatsapp_alerts",
+            "digest_enabled",
+            "digest_email_enabled",
+            "digest_whatsapp_enabled",
+            "digest_pwa_enabled",
             "is_active",
         ]
 

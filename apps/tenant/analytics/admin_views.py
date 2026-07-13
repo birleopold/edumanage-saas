@@ -30,6 +30,7 @@ from .utils import (
     export_student_performance_report,
     generate_class_performance_report,
 )
+from .risk_radar import build_student_risk_radar
 
 
 def _parse_per_page(request, default=25):
@@ -137,6 +138,22 @@ def analytics_dashboard(request):
     }
     
     return render(request, "portals/admin/analytics/dashboard.html", context)
+
+
+@admin_portal_required
+def student_risk_radar(request):
+    """Early-warning list combining attendance, fees, assessments, discipline and coursework."""
+    campus_id = request.GET.get("campus") or None
+    rows = build_student_risk_radar(limit=100, campus_id=campus_id)
+    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    for row in rows:
+        if row.level in counts:
+            counts[row.level] += 1
+    return render(
+        request,
+        "portals/admin/analytics/student_risk_radar.html",
+        {"rows": rows, "counts": counts, "selected_campus_id": campus_id},
+    )
 
 
 @admin_portal_required

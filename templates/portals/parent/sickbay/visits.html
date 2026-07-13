@@ -1,0 +1,84 @@
+{% extends "portals/parent/base.html" %}
+
+{% block title %}Sickbay Visits{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Children's Sickbay Visits</h1>
+  <p class="text-gray-600">View clinic visits, treatment notes, outcomes and medical alerts for your linked children.</p>
+</div>
+
+{% include "components/ui_toast.html" %}
+
+{% if profiles %}
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+  {% for profile in profiles %}
+  <div class="rounded-xl border border-red-100 bg-white p-4 shadow-sm">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-sm font-black text-gray-900">{{ profile.student }}</p>
+        <p class="text-xs text-gray-500">{{ profile.student.student_id|default:"No student ID" }}</p>
+      </div>
+      {% if profile.has_alerts %}<span class="rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">Medical alert</span>{% endif %}
+    </div>
+    <div class="mt-3 grid gap-2 text-sm text-gray-700">
+      {% if profile.allergies %}<p><span class="font-black text-red-700">Allergies:</span> {{ profile.allergies }}</p>{% endif %}
+      {% if profile.chronic_conditions %}<p><span class="font-black text-amber-700">Conditions:</span> {{ profile.chronic_conditions }}</p>{% endif %}
+      {% if profile.current_medication %}<p><span class="font-black text-blue-700">Medication:</span> {{ profile.current_medication }}</p>{% endif %}
+      {% if profile.emergency_contact_phone %}<p><span class="font-black text-gray-900">Emergency contact:</span> {{ profile.emergency_contact_name }} {{ profile.emergency_contact_phone }}</p>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+  <form method="get" class="flex flex-col lg:flex-row gap-4 lg:items-end">
+    <div class="w-full lg:w-48">
+      <label for="id_campus" class="block text-sm font-bold text-gray-700 mb-2">Campus</label>
+      <select id="id_campus" name="campus" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg">
+        <option value="">All Campuses</option>
+        {% for c in campuses %}
+          <option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex-1">
+      <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
+      <input id="id_q" type="text" name="q" value="{{ q }}" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Search complaint, symptoms or treatment..." />
+    </div>
+    <div class="w-full lg:w-32">
+      <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
+      <input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg" />
+    </div>
+    <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold">Apply</button>
+  </form>
+</div>
+
+{% if visits %}
+<div class="space-y-4">
+  {% for visit in visits %}
+  <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+      <div>
+        <p class="text-sm text-gray-500">{{ visit.visit_at|date:"M d, Y H:i" }}</p>
+        <h2 class="mt-1 text-lg font-black text-gray-900">{{ visit.student }} - {{ visit.complaint }}</h2>
+      </div>
+      <span class="w-fit rounded-full px-3 py-1 text-xs font-black {% if visit.severity == 'SEVERE' %}bg-red-100 text-red-700{% elif visit.severity == 'MODERATE' %}bg-yellow-100 text-yellow-700{% else %}bg-green-100 text-green-700{% endif %}">{{ visit.get_severity_display }}</span>
+    </div>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div><p class="text-xs font-black uppercase text-gray-500">Outcome</p><p class="mt-1 font-bold text-gray-900">{{ visit.get_outcome_display }}</p></div>
+      <div><p class="text-xs font-black uppercase text-gray-500">Medicine</p><p class="mt-1 font-bold text-gray-900">{{ visit.medicine_given|default:"None recorded" }}</p></div>
+      <div><p class="text-xs font-black uppercase text-gray-500">Parent notification</p><p class="mt-1 font-bold text-gray-900">{% if visit.parent_notified %}Marked notified{% else %}Not marked{% endif %}</p></div>
+    </div>
+    {% if visit.symptoms %}<p class="mt-4 text-sm text-gray-700"><span class="font-black">Symptoms:</span> {{ visit.symptoms }}</p>{% endif %}
+    {% if visit.treatment_given %}<p class="mt-2 text-sm text-gray-700"><span class="font-black">Treatment:</span> {{ visit.treatment_given }}</p>{% endif %}
+    {% if visit.follow_up_required %}<p class="mt-3 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm font-bold text-amber-900">Follow-up required: {{ visit.follow_up_note|default:"Please contact the school for details." }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+{% else %}
+{% include "components/ui_empty_state.html" with icon="first-aid-kit" title="No sickbay visits" description="No clinic visits are currently recorded for your linked children." %}
+{% endif %}
+{% endblock %}

@@ -143,6 +143,9 @@
                     <a href="{% url 'student_incidents_list' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/discipline' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="ph ph-warning-circle text-lg mr-3 {% if '/student/discipline' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Discipline
                     </a>
+                    <a href="{% url 'student_sickbay_visits' %}" class="flex items-center px-3 py-2 text-sm font-medium rounded-md {% if '/student/sickbay' in request.path %}bg-primary-50 text-primary-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="ph ph-first-aid-kit text-lg mr-3 {% if '/student/sickbay' in request.path %}text-primary-700{% else %}text-gray-400{% endif %}" aria-hidden="true"></i> Sickbay
+                    </a>
                 </div>
             </div>
 

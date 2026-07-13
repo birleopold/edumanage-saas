@@ -23,6 +23,8 @@ class AssessmentScore(models.Model):
     student = models.ForeignKey("students.StudentProfile", on_delete=models.CASCADE)
     score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     note = models.CharField(max_length=255, blank=True)
+    report_comment = models.TextField(blank=True)
+    report_comment_ai_assisted = models.BooleanField(default=False)
     graded_by = models.ForeignKey(
         "teachers.TeacherProfile",
         on_delete=models.SET_NULL,

@@ -57,6 +57,8 @@
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">%</th>
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Grade</th>
             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Report comment</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">AI comment</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -67,10 +69,27 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm"><input type="number" step="0.01" min="0" max="{{ assessment.max_score }}" name="score_{{ row.student.id }}" value="{% if row.score and row.score.score != None %}{{ row.score.score }}{% endif %}" class="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm" /></td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">{% if row.result.percentage != None %}<span class="font-bold text-gray-900">{{ row.result.percentage }}%</span>{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold {% if row.result.grade == 'A' or row.result.grade == 'B' %}bg-green-100 text-green-800{% elif row.result.grade == 'C' or row.result.grade == 'D' %}bg-yellow-100 text-yellow-800{% elif row.result.grade == 'F' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-700{% endif %}">{{ row.result.grade }}</span><span class="text-xs text-gray-500 ml-1">{{ row.result.remark }}</span></td>
-            <td class="px-6 py-4 text-sm"><input type="text" name="note_{{ row.student.id }}" value="{% if row.score %}{{ row.score.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></td>
+            <td class="px-6 py-4 text-sm"><input id="note_{{ row.student.id }}" type="text" name="note_{{ row.student.id }}" value="{% if row.score %}{{ row.score.note }}{% endif %}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></td>
+            <td class="px-6 py-4 text-sm min-w-[20rem]">
+              <textarea id="report_comment_{{ row.student.id }}" name="report_comment_{{ row.student.id }}" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">{% if row.score %}{{ row.score.report_comment }}{% endif %}</textarea>
+              <input id="report_comment_ai_{{ row.student.id }}" type="hidden" name="report_comment_ai_{{ row.student.id }}" value="{% if row.score and row.score.report_comment_ai_assisted %}1{% else %}0{% endif %}" />
+              {% if row.score and row.score.report_comment_ai_assisted %}<p class="mt-1 text-xs font-bold text-primary-700">AI-assisted comment accepted</p>{% endif %}
+            </td>
+            <td class="px-6 py-4 text-sm min-w-[22rem]">
+              <p class="text-sm leading-6 text-gray-700">{{ row.comment_suggestion.comment }}</p>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{{ row.comment_suggestion.trend|title }}</span>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ row.comment_suggestion.performance_band|title }}</span>
+                {% if row.comment_suggestion.attendance_percentage != None %}<span class="rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">Attendance {{ row.comment_suggestion.attendance_percentage }}%</span>{% endif %}
+                {% if row.comment_suggestion.discipline_incidents %}<span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">{{ row.comment_suggestion.discipline_incidents }} conduct</span>{% endif %}
+              </div>
+              <button type="button" data-comment-target="report_comment_{{ row.student.id }}" data-ai-target="report_comment_ai_{{ row.student.id }}" data-comment="{{ row.comment_suggestion.comment|escape }}" class="js-use-comment mt-2 inline-flex items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-black text-primary-700 hover:bg-primary-100">
+                <i class="ph ph-sparkle"></i> Use comment
+              </button>
+            </td>
           </tr>
           {% empty %}
-          <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 text-sm">No enrolled students.</td></tr>
+          <tr><td colspan="8" class="px-6 py-8 text-center text-gray-500 text-sm">No enrolled students.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -82,4 +101,17 @@
     </div>
   </form>
 </div>
+<script>
+  document.addEventListener("click", function (event) {
+    const button = event.target.closest(".js-use-comment");
+    if (!button) return;
+    const target = document.getElementById(button.dataset.commentTarget);
+    if (target) {
+      target.value = button.dataset.comment || "";
+      target.focus();
+    }
+    const aiTarget = document.getElementById(button.dataset.aiTarget);
+    if (aiTarget) aiTarget.value = "1";
+  });
+</script>
 {% endblock %}

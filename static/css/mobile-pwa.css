@@ -97,6 +97,58 @@
   font-weight: 900;
 }
 
+.edu-attendance-sync-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 1rem;
+  background: #eff6ff;
+  padding: 1rem;
+  color: #1e3a8a;
+  box-shadow: 0 14px 38px -32px rgba(15, 23, 42, .7);
+}
+
+.edu-attendance-sync-panel.is-offline,
+.edu-attendance-sync-panel.has-pending {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.edu-attendance-sync-panel__title {
+  margin: 0;
+  font-size: .82rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+.edu-attendance-sync-panel__detail {
+  margin: .2rem 0 0;
+  font-size: .86rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.edu-attendance-sync-panel button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: .85rem;
+  background: #2563eb;
+  padding: .7rem .95rem;
+  color: white;
+  font-size: .8rem;
+  font-weight: 950;
+}
+
+.edu-attendance-sync-panel button:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
 .edu-mobile-bottom-nav {
   position: fixed;
   left: 0;
@@ -170,6 +222,15 @@
 
   .grid {
     row-gap: 1rem;
+  }
+
+  .edu-attendance-sync-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .edu-attendance-sync-panel button {
+    width: 100%;
   }
 }
 

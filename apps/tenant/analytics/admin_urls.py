@@ -11,6 +11,7 @@ urlpatterns = [
     path("charts/", admin_views.charts_overview, name="admin_analytics_charts"),
     path("api/charts-overview/", admin_views.charts_overview_data, name="admin_analytics_api_charts_overview"),
     path("", admin_views.analytics_dashboard, name="admin_analytics_dashboard"),
+    path("risk-radar/", admin_views.student_risk_radar, name="admin_analytics_risk_radar"),
     path("students/", admin_views.student_performance_list, name="admin_analytics_student_list"),
     path("students/<int:student_id>/", admin_views.student_performance_detail, name="admin_analytics_student_detail"),
     path("classes/<int:stream_id>/", admin_views.class_performance_report_view, name="admin_analytics_class_report"),

@@ -9,6 +9,7 @@ from apps.tenant.orgsettings.services import get_current_campus
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 
+from .comment_suggestions import build_report_comment_suggestion
 from .forms import AssessmentForm
 from .models import Assessment, AssessmentScore
 from .services import score_result, validate_score
@@ -125,6 +126,8 @@ def assessment_scores(request, pk: int):
             for sid in student_ids:
                 score_raw = request.POST.get(f"score_{sid}")
                 note = request.POST.get(f"note_{sid}") or ""
+                report_comment = request.POST.get(f"report_comment_{sid}") or ""
+                ai_assisted = request.POST.get(f"report_comment_ai_{sid}") == "1"
                 value, error = validate_score(score_raw, assessment.max_score)
                 if error:
                     errors.append(f"Student #{sid}: {error}")
@@ -132,7 +135,12 @@ def assessment_scores(request, pk: int):
                 AssessmentScore.objects.update_or_create(
                     assessment=assessment,
                     student_id=sid,
-                    defaults={"score": value, "note": note},
+                    defaults={
+                        "score": value,
+                        "note": note,
+                        "report_comment": report_comment,
+                        "report_comment_ai_assisted": ai_assisted and bool(report_comment.strip()),
+                    },
                 )
                 updated += 1
         for error in errors[:5]:
@@ -150,11 +158,13 @@ def assessment_scores(request, pk: int):
     rows = []
     for enrollment in enrollments_qs:
         score_obj = existing_scores.get(enrollment.student_id)
+        suggestion = build_report_comment_suggestion(assessment, score_obj, enrollment.student)
         rows.append(
             {
                 "student": enrollment.student,
                 "score": score_obj,
                 "result": score_result(assessment, score_obj),
+                "comment_suggestion": suggestion,
             }
         )
 

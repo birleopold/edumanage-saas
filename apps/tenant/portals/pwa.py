@@ -17,18 +17,23 @@ from .models import WebPushSubscription
 
 
 SERVICE_WORKER_JS = r"""
-const CACHE_NAME = "edumanage-static-v1";
+const CACHE_NAME = "edumanage-static-v2";
 const STATIC_ASSETS = [
+  "/static/css/public-tailwind.css",
   "/static/css/edumanage-system.css",
   "/static/css/edumanage-legacy-pages.css",
   "/static/css/admin-module-actions.css",
   "/static/css/role-scope-clarity.css",
   "/static/css/mobile-pwa.css",
+  "/static/css/django-only-utilities.css",
   "/static/js/edumanage-system.js",
   "/static/js/admin-module-actions.js",
   "/static/js/role-scope-clarity.js",
   "/static/js/mobile-bottom-nav.js",
   "/static/js/pwa-lite.js",
+  "/static/js/alpine-lite.js",
+  "/static/js/chart-lite.js",
+  "/static/js/offline-attendance.js",
   "/static/img/pwa-icon.svg"
 ];
 
@@ -57,7 +62,13 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } }))
+      fetch(request).then((response) => {
+        const copy = response.clone();
+        if (url.pathname.startsWith("/teacher/attendance/roll-call/") || url.pathname.startsWith("/teacher/attendance/take/")) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      }).catch(() => caches.match(request).then((cached) => cached || new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } })))
     );
     return;
   }

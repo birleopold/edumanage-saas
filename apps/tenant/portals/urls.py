@@ -2,6 +2,7 @@ from django.urls import include, path
 from django.contrib.auth import views as auth_views
 
 from apps.tenant.users import auth_views as custom_auth_views
+from apps.tenant.parents import views as parent_admin_views
 from . import experience_views, public_views, pwa, search_views, student_parent_search_views, teacher_search_views, views
 
 urlpatterns = [
@@ -29,6 +30,8 @@ urlpatterns = [
     path("admin/audit/", include("apps.tenant.audit.routes")),
     path("admin/communication/", experience_views.admin_communication_center, name="admin_communication_center"),
     path("admin/school-setup/", experience_views.admin_school_setup_guide, name="admin_school_setup_guide"),
+    path("admin/school-health/", experience_views.admin_school_health_score, name="admin_school_health_score"),
+    path("admin/school-health/data/", experience_views.admin_school_health_score_data, name="admin_school_health_score_data"),
     path("admin/system-status/", experience_views.admin_system_status, name="admin_system_status"),
     path("admin/search/", search_views.global_search, name="admin_global_search"),
     path("admin/students/", include("apps.tenant.students.urls")),
@@ -47,6 +50,7 @@ urlpatterns = [
     path("admin/duty/", include("apps.tenant.duty.admin_urls")),
     path("admin/timetable/", include("apps.tenant.timetable.admin_urls")),
     path("admin/discipline/", include("apps.tenant.discipline.admin_urls")),
+    path("admin/sickbay/", include("apps.tenant.sickbay.admin_urls")),
     path("admin/grievances/", include("apps.tenant.grievances.admin_urls")),
     path("admin/documents/", include("apps.tenant.documents.admin_urls")),
     path("admin/transport/", include("apps.tenant.transport.admin_urls")),
@@ -83,6 +87,7 @@ urlpatterns = [
     path("student/quizzes/", include("apps.tenant.quizzes.student_urls")),
     path("student/timetable/", include("apps.tenant.timetable.student_urls")),
     path("student/discipline/", include("apps.tenant.discipline.student_urls")),
+    path("student/sickbay/", include("apps.tenant.sickbay.student_urls")),
     path("student/documents/", include("apps.tenant.documents.student_urls")),
     path("student/transport/", include("apps.tenant.transport.student_urls")),
     path("student/library/", include("apps.tenant.library.student_urls")),
@@ -90,6 +95,7 @@ urlpatterns = [
     path("student/exams/", include("apps.tenant.exams.student_urls")),
     path("parent/", views.parent_home, name="parent_home"),
     path("parent/search/", student_parent_search_views.parent_search, name="parent_global_search"),
+    path("parent/digests/", parent_admin_views.parent_digest_history, name="parent_digest_history"),
     path("parent/account/results-pin/", views.parent_results_pin_security, name="parent_results_pin_security"),
     path("parent/account/message-preferences/", views.parent_communication_preferences, name="parent_communication_preferences"),
     path("parent/attendance/", include("apps.tenant.attendance.parent_urls")),
@@ -99,6 +105,7 @@ urlpatterns = [
     path("parent/coursework/", include("apps.tenant.coursework.parent_urls")),
     path("parent/exams/", include("apps.tenant.exams.parent_urls")),
     path("parent/discipline/", include("apps.tenant.discipline.parent_urls")),
+    path("parent/sickbay/", include("apps.tenant.sickbay.parent_urls")),
     path("parent/grievances/", include("apps.tenant.grievances.parent_urls")),
     path("parent/documents/", include("apps.tenant.documents.parent_urls")),
     path("parent/transport/", include("apps.tenant.transport.parent_urls")),

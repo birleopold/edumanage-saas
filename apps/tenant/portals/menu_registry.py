@@ -46,6 +46,7 @@ ADMIN_MENU_REGISTRY: tuple[MenuSection, ...] = (
             MenuItem("Enterprise UI Center", "ph-grid-four", "admin_enterprise_center"),
             MenuItem("Menu Registry", "ph-list-bullets", "admin_enterprise_menu_registry"),
             MenuItem("Communication Hub", "ph-chats-circle", "admin_communication_center"),
+            MenuItem("School Health Score", "ph-gauge", "admin_school_health_score"),
             MenuItem("System Status", "ph-heartbeat", "admin_system_status"),
         ),
     ),
@@ -57,6 +58,7 @@ ADMIN_MENU_REGISTRY: tuple[MenuSection, ...] = (
             MenuItem("Students", "ph-student", path="/admin/students/"),
             MenuItem("Teachers", "ph-chalkboard-teacher", path="/admin/teachers/"),
             MenuItem("Parents", "ph-users", path="/admin/parents/"),
+            MenuItem("Sickbay", "ph-first-aid-kit", "admin_sickbay_dashboard"),
         ),
     ),
     MenuSection(
@@ -66,6 +68,7 @@ ADMIN_MENU_REGISTRY: tuple[MenuSection, ...] = (
             MenuItem("Exams", "ph-exam", path="/admin/exams/"),
             MenuItem("Exam Review", "ph-shield-check", path="/admin/exams/review/"),
             MenuItem("Analytics", "ph-chart-line-up", "admin_enterprise_analytics"),
+            MenuItem("Risk Radar", "ph-radar", "admin_analytics_risk_radar"),
         ),
     ),
     MenuSection(
