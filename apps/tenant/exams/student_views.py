@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -25,7 +26,7 @@ from .utils import generate_exam_report_card_pdf
 def _get_student_profile(request):
     student = StudentProfile.objects.filter(user=request.user).select_related("campus", "stream", "stream__class_group").first()
     if not student:
-        raise HttpResponseForbidden("No student profile linked to this account.")
+        raise PermissionDenied("No student profile linked to this account.")
     return student
 
 
