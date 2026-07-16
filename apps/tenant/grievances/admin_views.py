@@ -4,10 +4,20 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.services import get_current_campus
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import GrievanceAdminForm
 from .models import Grievance
+
+
+def _grievance_queryset_for(user, current_campus=None):
+    qs = Grievance.objects.select_related("submitted_by", "campus", "handled_by")
+    scoped = get_user_campus_scope(user)
+    campus = scoped or current_campus
+    if campus:
+        qs = qs.filter(Q(campus=campus) | Q(campus__isnull=True))
+    return qs
 
 
 @admin_portal_required
@@ -17,9 +27,7 @@ def grievance_list(request):
     status = (request.GET.get("status") or "").strip()
     page_number = request.GET.get("page") or 1
 
-    base_qs = Grievance.objects.select_related("submitted_by", "campus", "handled_by").all()
-    if campus:
-        base_qs = base_qs.filter(Q(campus=campus) | Q(campus__isnull=True))
+    base_qs = _grievance_queryset_for(request.user, current_campus=campus)
     if q:
         base_qs = base_qs.filter(Q(subject__icontains=q) | Q(body__icontains=q))
 
@@ -58,12 +66,9 @@ def grievance_list(request):
 def grievance_detail(request, pk: int):
     campus = get_current_campus(request)
     grievance = get_object_or_404(
-        Grievance.objects.select_related("submitted_by", "campus", "handled_by"),
+        _grievance_queryset_for(request.user, current_campus=campus),
         pk=pk,
     )
-    if campus and grievance.campus_id and grievance.campus_id != campus.id:
-        messages.error(request, "This record belongs to another campus.")
-        return redirect("admin_grievances_list")
 
     if request.method == "POST":
         old_status = grievance.status

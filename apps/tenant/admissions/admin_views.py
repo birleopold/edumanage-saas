@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.orgsettings.utils import log_action
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import (
@@ -36,9 +37,13 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-def _campus_queryset():
+def _campus_queryset(user=None):
     org = get_or_create_organization()
-    return Campus.objects.filter(organization=org).order_by("name")
+    qs = Campus.objects.filter(organization=org).order_by("name")
+    scoped = get_user_campus_scope(user) if user is not None else None
+    if scoped:
+        qs = qs.filter(pk=scoped.pk)
+    return qs
 
 
 def _applicant_queryset():
@@ -52,6 +57,38 @@ def _applicant_queryset():
         "created_student",
         "created_admission_invoice",
     ).prefetch_related("documents", "appointments", "communications", "admission_payments")
+
+
+def _applicant_queryset_for(user):
+    qs = _applicant_queryset()
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        return qs.filter(Q(campus=scoped) | Q(campus__isnull=True))
+    return qs
+
+
+def _lead_queryset_for(user):
+    qs = AdmissionLead.objects.select_related("campus", "interested_program", "interested_class_group", "converted_applicant", "assigned_to")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        return qs.filter(Q(campus=scoped) | Q(campus__isnull=True))
+    return qs
+
+
+def _template_queryset_for(user):
+    qs = AdmissionFormTemplate.objects.select_related("campus", "program", "class_group", "admission_fee_item").prefetch_related("fields")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        return qs.filter(Q(campus=scoped) | Q(campus__isnull=True))
+    return qs
+
+
+def _editable_template_queryset_for(user):
+    qs = AdmissionFormTemplate.objects.prefetch_related("fields")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        return qs.filter(campus=scoped)
+    return qs
 
 
 def _filter_applicants(request, qs):
@@ -72,17 +109,24 @@ def _filter_applicants(request, qs):
         qs = qs.filter(status=status)
     if source in dict(Applicant.SOURCE_CHOICES):
         qs = qs.filter(source=source)
-    if campus_raw.isdigit():
+    scoped = get_user_campus_scope(request.user)
+    if scoped:
+        campus_id = scoped.pk
+    elif campus_raw.isdigit():
         qs = qs.filter(campus_id=int(campus_raw))
-    return qs, q, status, source, int(campus_raw) if campus_raw.isdigit() else None
+        campus_id = int(campus_raw)
+    else:
+        campus_id = None
+    return qs, q, status, source, campus_id
 
 
 @admin_portal_required
 def applicant_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
-    qs, q, status, source, campus_id = _filter_applicants(request, _applicant_queryset().all())
-    summary = pipeline_summary(_applicant_queryset().all())
+    base_qs = _applicant_queryset_for(request.user)
+    qs, q, status, source, campus_id = _filter_applicants(request, base_qs.all())
+    summary = pipeline_summary(base_qs.all())
     page_obj = Paginator(qs, per_page).get_page(page_number)
     return render(
         request,
@@ -96,7 +140,7 @@ def applicant_list(request):
             "selected_campus_id": campus_id,
             "per_page": per_page,
             "summary": summary,
-            "campuses": _campus_queryset(),
+            "campuses": _campus_queryset(request.user),
             "status_choices": Applicant.STATUS_CHOICES,
             "source_choices": Applicant.SOURCE_CHOICES,
         },
@@ -105,7 +149,7 @@ def applicant_list(request):
 
 @admin_portal_required
 def applicant_pipeline(request):
-    qs, q, status, source, campus_id = _filter_applicants(request, _applicant_queryset().all())
+    qs, q, status, source, campus_id = _filter_applicants(request, _applicant_queryset_for(request.user).all())
     applicants = list(qs)
     columns = [
         (Applicant.NEW, "New", [a for a in applicants if a.status == Applicant.NEW]),
@@ -122,7 +166,7 @@ def applicant_pipeline(request):
             "status": status,
             "source": source,
             "selected_campus_id": campus_id,
-            "campuses": _campus_queryset(),
+            "campuses": _campus_queryset(request.user),
             "status_choices": Applicant.STATUS_CHOICES,
             "source_choices": Applicant.SOURCE_CHOICES,
             "summary": pipeline_summary(applicants),
@@ -132,13 +176,16 @@ def applicant_pipeline(request):
 
 @admin_portal_required
 def applicant_create(request):
-    campuses = _campus_queryset()
-    current = get_current_campus(request)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
     if request.method == "POST":
         form = ApplicantForm(request.POST, campuses=campuses)
         if form.is_valid():
             applicant = form.save(commit=False)
-            if applicant.campus_id is None and current is not None:
+            if scoped:
+                applicant.campus = scoped
+            elif applicant.campus_id is None and current is not None:
                 applicant.campus = current
             applicant.save()
             messages.success(request, "Applicant created.")
@@ -152,12 +199,16 @@ def applicant_create(request):
 
 @admin_portal_required
 def applicant_edit(request, pk: int):
-    campuses = _campus_queryset()
-    applicant = get_object_or_404(Applicant, pk=pk)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         form = ApplicantForm(request.POST, instance=applicant, campuses=campuses)
         if form.is_valid():
-            form.save()
+            applicant = form.save(commit=False)
+            if scoped:
+                applicant.campus = scoped
+            applicant.save()
             messages.success(request, "Applicant updated.")
             return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
     else:
@@ -167,14 +218,14 @@ def applicant_edit(request, pk: int):
 
 @admin_portal_required
 def applicant_detail(request, pk: int):
-    applicant = get_object_or_404(_applicant_queryset(), pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     return render(
         request,
         "portals/admin/admissions/applicant_detail.html",
         {
             "applicant": applicant,
             "decision_form": AdmissionDecisionForm(initial={"status": applicant.status}),
-            "conversion_form": ApplicantConversionForm(applicant=applicant, campuses=_campus_queryset()),
+            "conversion_form": ApplicantConversionForm(applicant=applicant, campuses=_campus_queryset(request.user)),
             "appointment_form": AdmissionAppointmentForm(),
             "communication_form": ApplicantCommunicationForm(),
             "payment_form": ApplicantPaymentForm(),
@@ -184,7 +235,7 @@ def applicant_detail(request, pk: int):
 
 @admin_portal_required
 def applicant_set_status(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method != "POST":
         return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
     form = AdmissionDecisionForm(request.POST)
@@ -208,7 +259,7 @@ def applicant_set_status(request, pk: int):
 
 @admin_portal_required
 def applicant_reject(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method != "POST":
         return render(request, "portals/admin/admissions/reject_confirm.html", {"applicant": applicant})
     note = (request.POST.get("note") or "").strip()
@@ -227,8 +278,8 @@ def applicant_reject(request, pk: int):
 
 @admin_portal_required
 def applicant_admit(request, pk: int):
-    applicant = get_object_or_404(Applicant.objects.select_related("created_student", "campus", "target_class_group"), pk=pk)
-    campuses = _campus_queryset()
+    applicant = get_object_or_404(_applicant_queryset_for(request.user).select_related("target_class_group"), pk=pk)
+    campuses = _campus_queryset(request.user)
     if applicant.status == Applicant.ADMITTED and applicant.created_student_id:
         messages.info(request, "Applicant already converted to a student.")
         return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
@@ -265,7 +316,7 @@ def applicant_admit(request, pk: int):
 
 @admin_portal_required
 def appointment_add(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         form = AdmissionAppointmentForm(request.POST)
         if form.is_valid():
@@ -278,7 +329,7 @@ def appointment_add(request, pk: int):
 
 @admin_portal_required
 def appointment_edit(request, pk: int):
-    item = get_object_or_404(AdmissionAppointment, pk=pk)
+    item = get_object_or_404(AdmissionAppointment.objects.select_related("applicant", "applicant__campus").filter(applicant__in=_applicant_queryset_for(request.user)), pk=pk)
     if request.method == "POST":
         form = AdmissionAppointmentForm(request.POST, instance=item)
         if form.is_valid():
@@ -292,7 +343,7 @@ def appointment_edit(request, pk: int):
 
 @admin_portal_required
 def communication_add(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         form = ApplicantCommunicationForm(request.POST)
         if form.is_valid():
@@ -306,7 +357,7 @@ def communication_add(request, pk: int):
 
 @admin_portal_required
 def payment_add(request, pk: int):
-    applicant = get_object_or_404(Applicant, pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         form = ApplicantPaymentForm(request.POST)
         if form.is_valid():
@@ -322,7 +373,7 @@ def payment_add(request, pk: int):
 def lead_list(request):
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status") or "").strip()
-    qs = AdmissionLead.objects.select_related("campus", "interested_program", "interested_class_group", "converted_applicant", "assigned_to")
+    qs = _lead_queryset_for(request.user)
     if q:
         qs = qs.filter(Q(learner_name__icontains=q) | Q(parent_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q))
     if status in dict(AdmissionLead.STATUS_CHOICES):
@@ -333,34 +384,50 @@ def lead_list(request):
 
 @admin_portal_required
 def lead_create(request):
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = AdmissionLeadForm(request.POST)
+        form = AdmissionLeadForm(request.POST, campuses=campuses)
         if form.is_valid():
-            lead = form.save()
+            lead = form.save(commit=False)
+            if scoped:
+                lead.campus = scoped
+            lead.save()
             messages.success(request, "Lead created.")
             return redirect("admin_admissions_lead_edit", pk=lead.pk)
     else:
-        form = AdmissionLeadForm()
+        form = AdmissionLeadForm(campuses=campuses)
+        if scoped:
+            form.fields["campus"].initial = scoped
     return render(request, "portals/admin/admissions/simple_form.html", {"form": form, "title": "Create lead"})
 
 
 @admin_portal_required
 def lead_edit(request, pk: int):
-    lead = get_object_or_404(AdmissionLead, pk=pk)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    lead = get_object_or_404(_lead_queryset_for(request.user), pk=pk)
     if request.method == "POST":
-        form = AdmissionLeadForm(request.POST, instance=lead)
+        form = AdmissionLeadForm(request.POST, instance=lead, campuses=campuses)
         if form.is_valid():
-            form.save()
+            lead = form.save(commit=False)
+            if scoped:
+                lead.campus = scoped
+            lead.save()
             messages.success(request, "Lead updated.")
             return redirect("admin_admissions_leads")
     else:
-        form = AdmissionLeadForm(instance=lead)
+        form = AdmissionLeadForm(instance=lead, campuses=campuses)
     return render(request, "portals/admin/admissions/simple_form.html", {"form": form, "title": "Edit lead"})
 
 
 @admin_portal_required
 def lead_convert(request, pk: int):
-    lead = get_object_or_404(AdmissionLead, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    lead = get_object_or_404(_lead_queryset_for(request.user), pk=pk)
+    if scoped and lead.campus_id is None:
+        lead.campus = scoped
+        lead.save(update_fields=["campus", "updated_at"])
     applicant = convert_lead_to_applicant(lead=lead, user=request.user)
     messages.success(request, "Lead converted to applicant.")
     return redirect("admin_admissions_applicant_detail", pk=applicant.pk)
@@ -368,40 +435,54 @@ def lead_convert(request, pk: int):
 
 @admin_portal_required
 def form_template_list(request):
-    templates = AdmissionFormTemplate.objects.select_related("campus", "program", "class_group", "admission_fee_item").prefetch_related("fields")
+    templates = _template_queryset_for(request.user)
     return render(request, "portals/admin/admissions/form_templates.html", {"templates": templates})
 
 
 @admin_portal_required
 def form_template_create(request):
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = AdmissionFormTemplateForm(request.POST)
+        form = AdmissionFormTemplateForm(request.POST, campuses=campuses)
         if form.is_valid():
-            obj = form.save()
+            obj = form.save(commit=False)
+            if scoped:
+                obj.campus = scoped
+            obj.save()
+            form.save_m2m()
             messages.success(request, "Admission form template created.")
             return redirect("admin_admissions_form_template_edit", pk=obj.pk)
     else:
-        form = AdmissionFormTemplateForm()
+        form = AdmissionFormTemplateForm(campuses=campuses)
+        if scoped:
+            form.fields["campus"].initial = scoped
     return render(request, "portals/admin/admissions/simple_form.html", {"form": form, "title": "Create admission form template"})
 
 
 @admin_portal_required
 def form_template_edit(request, pk: int):
-    obj = get_object_or_404(AdmissionFormTemplate.objects.prefetch_related("fields"), pk=pk)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    obj = get_object_or_404(_editable_template_queryset_for(request.user), pk=pk)
     if request.method == "POST":
-        form = AdmissionFormTemplateForm(request.POST, instance=obj)
+        form = AdmissionFormTemplateForm(request.POST, instance=obj, campuses=campuses)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            if scoped:
+                obj.campus = scoped
+            obj.save()
+            form.save_m2m()
             messages.success(request, "Admission form template updated.")
             return redirect("admin_admissions_form_template_edit", pk=obj.pk)
     else:
-        form = AdmissionFormTemplateForm(instance=obj)
+        form = AdmissionFormTemplateForm(instance=obj, campuses=campuses)
     return render(request, "portals/admin/admissions/form_template_detail.html", {"form": form, "template_obj": obj, "field_form": AdmissionFormFieldForm()})
 
 
 @admin_portal_required
 def form_field_create(request, pk: int):
-    template = get_object_or_404(AdmissionFormTemplate, pk=pk)
+    template = get_object_or_404(_editable_template_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         form = AdmissionFormFieldForm(request.POST)
         if form.is_valid():
@@ -414,7 +495,7 @@ def form_field_create(request, pk: int):
 
 @admin_portal_required
 def form_field_edit(request, pk: int):
-    field = get_object_or_404(AdmissionFormField, pk=pk)
+    field = get_object_or_404(AdmissionFormField.objects.select_related("template").filter(template__in=_editable_template_queryset_for(request.user)), pk=pk)
     if request.method == "POST":
         form = AdmissionFormFieldForm(request.POST, instance=field)
         if form.is_valid():
@@ -428,7 +509,7 @@ def form_field_edit(request, pk: int):
 
 @admin_portal_required
 def applicant_admission_letter_pdf(request, pk: int):
-    applicant = get_object_or_404(Applicant.objects.select_related("created_student", "campus", "target_term"), pk=pk)
+    applicant = get_object_or_404(_applicant_queryset_for(request.user).select_related("created_student", "target_term"), pk=pk)
     if applicant.status != Applicant.ADMITTED or not applicant.created_student_id:
         return HttpResponseForbidden("This letter is only available after admission, once a student record exists.")
     student = applicant.created_student

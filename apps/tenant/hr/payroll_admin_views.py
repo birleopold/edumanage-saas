@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
@@ -46,6 +47,30 @@ def _admin_or_principal_required(request):
     if not request.user.is_authenticated:
         return False
     return request.user.has_role(Role.ADMIN) or request.user.has_role(Role.PRINCIPAL)
+
+
+def _staff_queryset_for(user):
+    qs = StaffProfile.objects.filter(is_active=True).order_by("last_name", "first_name")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
+def _salary_structure_queryset_for(user):
+    qs = SalaryStructure.objects.select_related("staff", "staff__campus", "pay_grade")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(staff__campus=scoped)
+    return qs
+
+
+def _payslip_queryset_for(user):
+    qs = Payslip.objects.select_related("staff", "staff__campus", "generated_by", "approved_by")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(staff__campus=scoped)
+    return qs
 
 
 # Pay Grade Views
@@ -106,7 +131,7 @@ def salary_structure_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = SalaryStructure.objects.select_related("staff", "pay_grade").all()
+    qs = _salary_structure_queryset_for(request.user)
     if q:
         qs = qs.filter(Q(staff__first_name__icontains=q) | Q(staff__last_name__icontains=q) | Q(staff__staff_id__icontains=q))
 
@@ -122,30 +147,32 @@ def salary_structure_list(request):
 
 @admin_portal_required
 def salary_structure_create(request):
+    staff_queryset = _staff_queryset_for(request.user)
     if request.method == "POST":
-        form = SalaryStructureForm(request.POST)
+        form = SalaryStructureForm(request.POST, staff_queryset=staff_queryset)
         if form.is_valid():
             form.save()
             messages.success(request, "Salary structure created.")
             return redirect("admin_hr_payroll_salary_structures_list")
     else:
-        form = SalaryStructureForm()
+        form = SalaryStructureForm(staff_queryset=staff_queryset)
 
     return render(request, "portals/admin/hr/payroll/salary_structure_form.html", {"form": form, "mode": "create"})
 
 
 @admin_portal_required
 def salary_structure_edit(request, pk: int):
-    obj = get_object_or_404(SalaryStructure, pk=pk)
+    staff_queryset = _staff_queryset_for(request.user)
+    obj = get_object_or_404(_salary_structure_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = SalaryStructureForm(request.POST, instance=obj)
+        form = SalaryStructureForm(request.POST, instance=obj, staff_queryset=staff_queryset)
         if form.is_valid():
             form.save()
             messages.success(request, "Salary structure updated.")
             return redirect("admin_hr_payroll_salary_structures_list")
     else:
-        form = SalaryStructureForm(instance=obj)
+        form = SalaryStructureForm(instance=obj, staff_queryset=staff_queryset)
 
     return render(request, "portals/admin/hr/payroll/salary_structure_form.html", {"form": form, "mode": "edit", "structure": obj})
 
@@ -259,7 +286,7 @@ def payslip_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Payslip.objects.select_related("staff", "generated_by", "approved_by").all()
+    qs = _payslip_queryset_for(request.user)
     if q:
         qs = qs.filter(Q(staff__first_name__icontains=q) | Q(staff__last_name__icontains=q) | Q(staff__staff_id__icontains=q))
 
@@ -275,8 +302,9 @@ def payslip_list(request):
 
 @admin_portal_required
 def payslip_generate(request):
+    staff_queryset = _staff_queryset_for(request.user)
     if request.method == "POST":
-        form = PayslipGenerateForm(request.POST)
+        form = PayslipGenerateForm(request.POST, staff_queryset=staff_queryset)
         if form.is_valid():
             period_year = form.cleaned_data["period_year"]
             period_month = form.cleaned_data["period_month"]
@@ -285,7 +313,7 @@ def payslip_generate(request):
             if selected_staff:
                 staff_list = selected_staff
             else:
-                staff_list = StaffProfile.objects.filter(is_active=True)
+                staff_list = staff_queryset
 
             created_count = 0
             skipped_count = 0
@@ -325,7 +353,7 @@ def payslip_generate(request):
             messages.success(request, f"Created {created_count} payslip(s). Skipped {skipped_count}.")
             return redirect("admin_hr_payroll_payslips_list")
     else:
-        form = PayslipGenerateForm()
+        form = PayslipGenerateForm(staff_queryset=staff_queryset)
 
     return render(request, "portals/admin/hr/payroll/payslip_generate.html", {"form": form})
 
@@ -333,7 +361,7 @@ def payslip_generate(request):
 @admin_portal_required
 def payslip_detail(request, pk: int):
     payslip = get_object_or_404(
-        Payslip.objects.select_related("staff", "generated_by", "approved_by").prefetch_related(
+        _payslip_queryset_for(request.user).prefetch_related(
             "allowances__allowance_type", "deductions__deduction_type", "approvals"
         ),
         pk=pk,
@@ -344,7 +372,7 @@ def payslip_detail(request, pk: int):
 
 @admin_portal_required
 def payslip_submit_for_approval(request, pk: int):
-    payslip = get_object_or_404(Payslip, pk=pk)
+    payslip = get_object_or_404(_payslip_queryset_for(request.user), pk=pk)
 
     if payslip.status != Payslip.DRAFT:
         messages.error(request, "Only draft payslips can be submitted for approval.")
@@ -368,7 +396,7 @@ def payslip_approve(request, pk: int):
 
         return HttpResponseForbidden("Forbidden")
 
-    payslip = get_object_or_404(Payslip.objects.prefetch_related("approvals"), pk=pk)
+    payslip = get_object_or_404(_payslip_queryset_for(request.user).prefetch_related("approvals"), pk=pk)
 
     if payslip.status != Payslip.PENDING_APPROVAL:
         messages.error(request, "Only pending payslips can be approved.")

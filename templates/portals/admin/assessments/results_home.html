@@ -110,7 +110,7 @@
           {% else %}bg-gray-100 text-gray-700{% endif %}">
           {{ assessment.graded_count }}/{{ assessment.submission_count }} Graded
         </span>
-        <a href="{% url 'admin_assessment_scores' assessment.id %}" 
+        <a href="{% url 'admin_assessments_scores' assessment.id %}"
            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
           <i class="ph ph-chart-bar mr-1"></i>View Results
         </a>

@@ -183,6 +183,11 @@ class ParentResultsPinSelfServiceForm(forms.Form):
 class ParentStudentLinkForm(forms.ModelForm):
     student = forms.ModelChoiceField(queryset=StudentProfile.objects.all())
 
+    def __init__(self, *args, campus_scope=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if campus_scope is not None:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+
     class Meta:
         model = ParentStudentLink
         fields = [

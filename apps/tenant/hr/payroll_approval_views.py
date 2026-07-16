@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 from apps.tenant.orgsettings.models import Notification
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import roles_required
 from apps.tenant.users.models import Role
 
@@ -59,7 +60,10 @@ def _append_note(payslip, text):
 
 
 def _approval_queryset_for_user(user):
-    qs = PayrollApproval.objects.select_related("payslip", "payslip__staff", "approver").order_by("-created_at")
+    qs = PayrollApproval.objects.select_related("payslip", "payslip__staff", "payslip__staff__campus", "approver").order_by("-created_at")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(payslip__staff__campus=scoped)
     if user.has_role(Role.ADMIN):
         return qs
     allowed = []
@@ -89,13 +93,19 @@ def approval_dashboard(request):
             | Q(payslip__staff__staff_id__icontains=q)
             | Q(approver_role__icontains=q)
         )
+    scoped = get_user_campus_scope(request.user)
+    count_approvals = PayrollApproval.objects.select_related("payslip", "payslip__staff")
+    count_payslips = Payslip.objects.select_related("staff")
+    if scoped:
+        count_approvals = count_approvals.filter(payslip__staff__campus=scoped)
+        count_payslips = count_payslips.filter(staff__campus=scoped)
     counts = {
-        "pending": PayrollApproval.objects.filter(status=PayrollApproval.PENDING).count(),
-        "approved": PayrollApproval.objects.filter(status=PayrollApproval.APPROVED).count(),
-        "rejected": PayrollApproval.objects.filter(status=PayrollApproval.REJECTED).count(),
-        "paid": Payslip.objects.filter(status=Payslip.PAID).count(),
+        "pending": count_approvals.filter(status=PayrollApproval.PENDING).count(),
+        "approved": count_approvals.filter(status=PayrollApproval.APPROVED).count(),
+        "rejected": count_approvals.filter(status=PayrollApproval.REJECTED).count(),
+        "paid": count_payslips.filter(status=Payslip.PAID).count(),
     }
-    grouped = Payslip.objects.values("status").annotate(total=Count("id")).order_by("status")
+    grouped = count_payslips.values("status").annotate(total=Count("id")).order_by("status")
     return render(request, "portals/admin/hr/payroll/approval_dashboard.html", {"approvals": approvals[:200], "counts": counts, "grouped": grouped, "status": status, "q": q})
 
 
@@ -103,7 +113,7 @@ def approval_dashboard(request):
 def approval_detail(request, pk):
     approval = get_object_or_404(_approval_queryset_for_user(request.user), pk=pk)
     payslip = get_object_or_404(
-        Payslip.objects.select_related("staff", "generated_by", "approved_by").prefetch_related("allowances__allowance_type", "deductions__deduction_type", "approvals__approver"),
+        Payslip.objects.select_related("staff", "staff__campus", "generated_by", "approved_by").filter(pk=approval.payslip_id).prefetch_related("allowances__allowance_type", "deductions__deduction_type", "approvals__approver"),
         pk=approval.payslip_id,
     )
     can_act = approval.status == PayrollApproval.PENDING and payslip.status == Payslip.PENDING_APPROVAL and _user_can_approve(request.user, approval)
@@ -113,7 +123,7 @@ def approval_detail(request, pk):
 @roles_required(*PAYROLL_REVIEW_ROLES)
 @require_POST
 def approval_action(request, pk):
-    approval = get_object_or_404(PayrollApproval.objects.select_related("payslip"), pk=pk)
+    approval = get_object_or_404(_approval_queryset_for_user(request.user).select_related("payslip"), pk=pk)
     if not _user_can_approve(request.user, approval):
         return HttpResponseForbidden("You do not have the required approval role.")
     payslip = approval.payslip
@@ -152,7 +162,11 @@ def approval_action(request, pk):
 @roles_required(*PAYROLL_REVIEW_ROLES)
 @require_POST
 def mark_paid(request, pk):
-    payslip = get_object_or_404(Payslip, pk=pk)
+    payslip_qs = Payslip.objects.select_related("staff", "staff__campus")
+    scoped = get_user_campus_scope(request.user)
+    if scoped:
+        payslip_qs = payslip_qs.filter(staff__campus=scoped)
+    payslip = get_object_or_404(payslip_qs, pk=pk)
     if not request.user.has_role(Role.ADMIN):
         return HttpResponseForbidden("Only admin users can mark payroll as paid.")
     if payslip.status != Payslip.APPROVED:
@@ -207,7 +221,11 @@ def _render_payslip_pdf(payslip):
 
 @roles_required(*PAYROLL_REVIEW_ROLES)
 def payslip_pdf(request, pk):
-    payslip = get_object_or_404(Payslip.objects.select_related("staff").prefetch_related("approvals__approver"), pk=pk)
+    payslip_qs = Payslip.objects.select_related("staff", "staff__campus").prefetch_related("approvals__approver")
+    scoped = get_user_campus_scope(request.user)
+    if scoped:
+        payslip_qs = payslip_qs.filter(staff__campus=scoped)
+    payslip = get_object_or_404(payslip_qs, pk=pk)
     buffer = _render_payslip_pdf(payslip)
     response = HttpResponse(buffer, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="payslip_{payslip.staff.staff_id or payslip.staff_id}_{payslip.period_year}_{payslip.period_month:02d}.pdf"'

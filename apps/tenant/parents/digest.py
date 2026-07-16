@@ -56,13 +56,15 @@ def _assignment_queryset_for_student(student, window: DigestWindow):
     return qs.filter(Q(due_date__date__gte=window.start, due_date__date__lte=window.end + timedelta(days=7)) | Q(due_date__isnull=True)).distinct()
 
 
-def build_parent_digest(parent: ParentProfile, *, window: DigestWindow | None = None) -> dict:
+def build_parent_digest(parent: ParentProfile, *, window: DigestWindow | None = None, campus_scope=None) -> dict:
     window = window or default_digest_window()
     links = (
         ParentStudentLink.objects.filter(parent=parent)
         .select_related("student", "student__stream", "student__stream__class_group", "student__campus")
         .order_by("-is_primary", "student__last_name", "student__first_name")
     )
+    if campus_scope is not None:
+        links = links.filter(student__campus=campus_scope)
     students = []
     total_balance = Decimal("0")
     total_absences = 0
@@ -262,6 +264,7 @@ def send_parent_digest(
     *,
     created_by=None,
     window: DigestWindow | None = None,
+    campus_scope=None,
     include_push: bool = True,
     include_email: bool = False,
     include_whatsapp: bool = False,
@@ -269,7 +272,7 @@ def send_parent_digest(
     force: bool = False,
     use_parent_preferences: bool = False,
 ) -> dict:
-    digest = build_parent_digest(parent, window=window)
+    digest = build_parent_digest(parent, window=window, campus_scope=campus_scope)
     if use_parent_preferences:
         if not parent.digest_enabled:
             reason = "Parent has disabled weekly digests."
@@ -396,6 +399,7 @@ def send_all_parent_digests(
     *,
     created_by=None,
     window: DigestWindow | None = None,
+    campus_scope=None,
     include_push: bool = True,
     include_email: bool = False,
     include_whatsapp: bool = False,
@@ -407,11 +411,14 @@ def send_all_parent_digests(
     qs = ParentProfile.objects.select_related("user").order_by("last_name", "first_name")
     if active_only:
         qs = qs.filter(is_active=True)
+    if campus_scope is not None:
+        qs = qs.filter(parentstudentlink__student__campus=campus_scope).distinct()
     results = [
         send_parent_digest(
             parent,
             created_by=created_by,
             window=window,
+            campus_scope=campus_scope,
             include_push=include_push,
             include_email=include_email,
             include_whatsapp=include_whatsapp,

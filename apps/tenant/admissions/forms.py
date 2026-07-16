@@ -158,6 +158,12 @@ class AdmissionLeadForm(forms.ModelForm):
             raise forms.ValidationError("A lead must have at least a phone number or email address.")
         return cleaned
 
+    def __init__(self, *args, **kwargs):
+        campuses = kwargs.pop("campuses", None)
+        super().__init__(*args, **kwargs)
+        if campuses is not None:
+            self.fields["campus"].queryset = campuses
+
 
 class AdmissionAppointmentForm(forms.ModelForm):
     class Meta:
@@ -206,6 +212,12 @@ class AdmissionFormTemplateForm(forms.ModelForm):
     class Meta:
         model = AdmissionFormTemplate
         fields = ["name", "campus", "program", "class_group", "is_default", "is_active", "admission_fee_item", "admission_fee_amount"]
+
+    def __init__(self, *args, **kwargs):
+        campuses = kwargs.pop("campuses", None)
+        super().__init__(*args, **kwargs)
+        if campuses is not None:
+            self.fields["campus"].queryset = campuses
 
 
 class AdmissionFormFieldForm(forms.ModelForm):

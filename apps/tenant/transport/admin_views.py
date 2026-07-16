@@ -7,6 +7,8 @@ from apps.tenant.users.models import Role
 
 from django.contrib import messages
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
+
 from .forms import (
     DriverForm,
     RouteScheduleForm,
@@ -27,6 +29,14 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
         except (TypeError, ValueError):
             per_page = default
     return max(1, min(per_page, max_value))
+
+
+def _assignment_queryset_for(user):
+    qs = StudentTransportAssignment.objects.select_related("student", "student__campus", "route", "stop", "route__vehicle")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(student__campus=scoped)
+    return qs
 
 
 @admin_portal_required
@@ -323,7 +333,7 @@ def assignment_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = StudentTransportAssignment.objects.select_related("student", "route", "stop", "route__vehicle").all()
+    qs = _assignment_queryset_for(request.user)
     if q:
         qs = qs.filter(
             Q(student__first_name__icontains=q)
@@ -375,14 +385,15 @@ def assignment_list(request):
 
 @admin_portal_required
 def assignment_create(request):
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = StudentTransportAssignmentForm(request.POST)
+        form = StudentTransportAssignmentForm(request.POST, campus_scope=scoped)
         if form.is_valid():
             assignment = form.save()
             messages.success(request, f"Student {assignment.student.get_full_name()} assigned to route {assignment.route.code} successfully.")
             return redirect("admin_transport_assignments_list")
     else:
-        form = StudentTransportAssignmentForm()
+        form = StudentTransportAssignmentForm(campus_scope=scoped)
 
     return render(
         request,
@@ -393,16 +404,17 @@ def assignment_create(request):
 
 @admin_portal_required
 def assignment_edit(request, pk: int):
-    obj = get_object_or_404(StudentTransportAssignment, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    obj = get_object_or_404(_assignment_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = StudentTransportAssignmentForm(request.POST, instance=obj)
+        form = StudentTransportAssignmentForm(request.POST, instance=obj, campus_scope=scoped)
         if form.is_valid():
             form.save()
             messages.success(request, "Assignment updated successfully.")
             return redirect("admin_transport_assignments_list")
     else:
-        form = StudentTransportAssignmentForm(instance=obj)
+        form = StudentTransportAssignmentForm(instance=obj, campus_scope=scoped)
 
     return render(
         request,

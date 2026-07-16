@@ -28,15 +28,33 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
+def _campus_queryset_for(user):
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        return Campus.objects.filter(pk=scoped.pk)
+    return _campus_queryset()
+
+
+def _student_queryset_for(user):
+    qs = StudentProfile.objects.select_related("campus", "stream").all()
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
 def _students_queryset_for_list_filters(request):
     """
     Same campus + search rules as the student list (and CSV export).
     Returns (queryset, selected_campus_id, q).
     """
     q = (request.GET.get("q") or "").strip()
-    current = get_current_campus(request)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
 
-    if "campus" in request.GET:
+    if scoped is not None:
+        campus_id = scoped.id
+    elif "campus" in request.GET:
         campus_filter = request.GET.get("campus")
         if campus_filter == "":
             campus_id = None
@@ -48,7 +66,7 @@ def _students_queryset_for_list_filters(request):
     else:
         campus_id = current.id if current else None
 
-    students_qs = StudentProfile.objects.select_related("campus", "stream").all()
+    students_qs = _student_queryset_for(request.user)
     if campus_id:
         students_qs = students_qs.filter(campus_id=campus_id)
     if q:
@@ -65,7 +83,7 @@ def student_list(request):
     per_page_raw = request.GET.get("per_page")
     page_number = request.GET.get("page") or 1
 
-    campuses = _campus_queryset()
+    campuses = _campus_queryset_for(request.user)
     students_qs, campus_id, q = _students_queryset_for_list_filters(request)
 
     per_page = 25
@@ -148,14 +166,18 @@ def student_export_csv(request):
 
 @admin_portal_required
 def student_create(request):
-    current = get_current_campus(request)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
+    campus_qs = _campus_queryset_for(request.user)
     if request.method == "POST":
-        form = StudentProfileForm(request.POST, campus=current)
+        form = StudentProfileForm(request.POST, campus=current, campus_queryset=campus_qs)
         if form.is_valid():
             with transaction.atomic():
                 obj = form.save(commit=False)
                 if obj.campus_id is None and current is not None:
                     obj.campus = current
+                if scoped is not None and obj.campus_id != scoped.id:
+                    return HttpResponseForbidden("You cannot create students outside your campus scope.")
 
                 if not obj.student_id:
                     obj.student_id = generate_next_student_id(obj.campus)
@@ -230,7 +252,7 @@ def student_create(request):
             messages.success(request, "Student created.")
             return redirect("admin_students_list")
     else:
-        form = StudentProfileForm(campus=current)
+        form = StudentProfileForm(campus=current, campus_queryset=campus_qs)
         if current is not None:
             form.fields["campus"].initial = current
     return render(request, "portals/admin/students/form.html", {"form": form, "mode": "create"})
@@ -238,7 +260,7 @@ def student_create(request):
 
 @admin_portal_required
 def student_credentials(request, pk: int):
-    student = get_object_or_404(StudentProfile, pk=pk)
+    student = get_object_or_404(_student_queryset_for(request.user), pk=pk)
     temp_password = request.session.pop(f"student_temp_password_{student.pk}", None)
     log_action(
         student,
@@ -260,7 +282,7 @@ def student_credentials(request, pk: int):
 
 @admin_portal_required
 def student_id_card_pdf(request, pk: int):
-    student = get_object_or_404(StudentProfile.objects.select_related("campus"), pk=pk)
+    student = get_object_or_404(_student_queryset_for(request.user), pk=pk)
     campus = getattr(student, "campus", None)
     scoped = get_user_campus_scope(request.user)
     if scoped is not None:
@@ -275,8 +297,10 @@ def student_id_card_pdf(request, pk: int):
 
 @admin_portal_required
 def student_edit(request, pk: int):
-    student = get_object_or_404(StudentProfile, pk=pk)
-    current = get_current_campus(request)
+    student = get_object_or_404(_student_queryset_for(request.user), pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
+    campus_qs = _campus_queryset_for(request.user)
     stream_campus = student.campus or current
 
     if request.method == "POST":
@@ -321,11 +345,14 @@ def student_edit(request, pk: int):
             messages.success(request, "Password reset link sent to student's email.")
             return redirect("admin_students_edit", pk=pk)
         
-        form = StudentProfileForm(request.POST, instance=student, campus=stream_campus)
+        form = StudentProfileForm(request.POST, instance=student, campus=stream_campus, campus_queryset=campus_qs)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            if scoped is not None and obj.campus_id != scoped.id:
+                return HttpResponseForbidden("You cannot move students outside your campus scope.")
+            obj.save()
             messages.success(request, "Student updated successfully.")
             return redirect("admin_students_list")
     else:
-        form = StudentProfileForm(instance=student, campus=stream_campus)
+        form = StudentProfileForm(instance=student, campus=stream_campus, campus_queryset=campus_qs)
     return render(request, "portals/admin/students/form.html", {"form": form, "mode": "edit", "student": student})

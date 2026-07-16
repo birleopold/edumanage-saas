@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  django-check:
-    name: Django system check
+  quality-gates:
+    name: Quality gates
     runs-on: ubuntu-latest
 
     steps:
@@ -26,9 +26,49 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install asset dependencies
+        run: npm ci
+
       - name: Run Django checks
         env:
-          DJANGO_SECRET_KEY: ci-secret-key-not-for-production
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
           DJANGO_DEBUG: "True"
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
         run: python manage.py check
+
+      - name: Run production deploy checks
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          POSTGRES_DB: edumanage_saas
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
+          DJANGO_SECURE_HSTS_PRELOAD: "True"
+        run: python manage.py check --deploy
+
+      - name: Verify template routes
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python verify_routes.py
+
+      - name: Run Django tests
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py test
+
+      - name: Audit Node dependencies
+        run: npm audit --omit=dev

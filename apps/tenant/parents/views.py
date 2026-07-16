@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required, role_required
 from apps.tenant.orgsettings.utils import get_action_log, log_action
 from apps.tenant.users.models import Role, User, PasswordSetupToken
@@ -26,13 +27,29 @@ def _generate_unique_username(base: str) -> str:
     return username
 
 
+def _parents_queryset_for(user):
+    qs = ParentProfile.objects.select_related("user")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(parentstudentlink__student__campus=scoped).distinct()
+    return qs
+
+
+def _editable_parents_queryset_for(user):
+    qs = ParentProfile.objects.select_related("user")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(Q(parentstudentlink__student__campus=scoped) | Q(parentstudentlink__isnull=True)).distinct()
+    return qs
+
+
 @admin_portal_required
 def parent_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page_raw = request.GET.get("per_page")
     page_number = request.GET.get("page") or 1
 
-    parents_qs = ParentProfile.objects.all()
+    parents_qs = _editable_parents_queryset_for(request.user)
     if q:
         parents_qs = parents_qs.filter(
             Q(first_name__icontains=q)
@@ -147,7 +164,7 @@ def parent_create(request):
 
 @admin_portal_required
 def parent_credentials(request, pk: int):
-    parent = get_object_or_404(ParentProfile, pk=pk)
+    parent = get_object_or_404(_editable_parents_queryset_for(request.user), pk=pk)
     temp_password = request.session.pop(f"parent_temp_password_{parent.pk}", None)
     log_action(
         parent,
@@ -168,8 +185,9 @@ def parent_credentials(request, pk: int):
 
 @admin_portal_required
 def parent_digest_preview(request, pk: int):
-    parent = get_object_or_404(ParentProfile.objects.select_related("user"), pk=pk)
-    digest = build_parent_digest(parent)
+    scoped = get_user_campus_scope(request.user)
+    parent = get_object_or_404(_parents_queryset_for(request.user), pk=pk)
+    digest = build_parent_digest(parent, campus_scope=scoped)
     digest_activity = get_action_log(parent).filter(action__in=["PARENT_DIGEST_SENT", "PARENT_DIGEST_SKIPPED"])[:8]
     digest_records = parent.digests.order_by("-window_end", "-created_at")[:8]
     return render(
@@ -186,7 +204,8 @@ def parent_digest_preview(request, pk: int):
 
 @admin_portal_required
 def parent_digest_send(request, pk: int):
-    parent = get_object_or_404(ParentProfile.objects.select_related("user"), pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    parent = get_object_or_404(_parents_queryset_for(request.user), pk=pk)
     if request.method == "POST":
         include_email = request.POST.get("include_email") == "on"
         include_whatsapp = request.POST.get("include_whatsapp") == "on"
@@ -194,6 +213,7 @@ def parent_digest_send(request, pk: int):
         result = send_parent_digest(
             parent,
             created_by=request.user,
+            campus_scope=scoped,
             include_email=include_email,
             include_whatsapp=include_whatsapp,
             force=force,
@@ -219,6 +239,7 @@ def parent_digest_send_all(request):
         force = request.POST.get("force") == "on"
         result = send_all_parent_digests(
             created_by=request.user,
+            campus_scope=get_user_campus_scope(request.user),
             include_email=include_email,
             include_whatsapp=include_whatsapp,
             force=force,
@@ -248,7 +269,8 @@ def parent_digest_history(request):
 
 @admin_portal_required
 def parent_edit(request, pk: int):
-    parent = get_object_or_404(ParentProfile, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    parent = get_object_or_404(_editable_parents_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
         if "reset_password" in request.POST:
@@ -312,7 +334,9 @@ def parent_edit(request, pk: int):
         form = ParentProfileForm(instance=parent)
 
     links = ParentStudentLink.objects.filter(parent=parent).select_related("student")
-    link_form = ParentStudentLinkForm()
+    if scoped is not None:
+        links = links.filter(student__campus=scoped)
+    link_form = ParentStudentLinkForm(campus_scope=scoped)
 
     return render(
         request,
@@ -329,11 +353,12 @@ def parent_edit(request, pk: int):
 
 @admin_portal_required
 def parent_add_student(request, pk: int):
-    parent = get_object_or_404(ParentProfile, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    parent = get_object_or_404(_editable_parents_queryset_for(request.user), pk=pk)
     if request.method != "POST":
         return redirect("admin_parents_edit", pk=parent.pk)
 
-    form = ParentStudentLinkForm(request.POST)
+    form = ParentStudentLinkForm(request.POST, campus_scope=scoped)
     if form.is_valid():
         link = form.save(commit=False)
         link.parent = parent
@@ -350,8 +375,12 @@ def parent_add_student(request, pk: int):
 
 @admin_portal_required
 def parent_remove_student(request, pk: int, link_id: int):
-    parent = get_object_or_404(ParentProfile, pk=pk)
-    link = get_object_or_404(ParentStudentLink, pk=link_id, parent=parent)
+    parent = get_object_or_404(_editable_parents_queryset_for(request.user), pk=pk)
+    links = ParentStudentLink.objects.filter(parent=parent)
+    scoped = get_user_campus_scope(request.user)
+    if scoped is not None:
+        links = links.filter(student__campus=scoped)
+    link = get_object_or_404(links, pk=link_id)
     if request.method == "POST":
         link.delete()
     return redirect("admin_parents_edit", pk=parent.pk)

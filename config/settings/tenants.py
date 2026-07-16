@@ -17,8 +17,8 @@ SHARED_APPS = (
 )
 
 TENANT_APPS = (
-    "apps.core",
     "apps.tenant.users",
+    "apps.tenant.analytics",
     "apps.tenant.portals",
     "apps.tenant.students",
     "apps.tenant.teachers",

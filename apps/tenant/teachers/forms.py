@@ -18,3 +18,9 @@ class TeacherProfileForm(forms.ModelForm):
             "email",
             "is_active",
         ]
+
+    def __init__(self, *args, **kwargs):
+        campus_queryset = kwargs.pop("campus_queryset", None)
+        super().__init__(*args, **kwargs)
+        if campus_queryset is not None:
+            self.fields["campus"].queryset = campus_queryset

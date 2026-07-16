@@ -1,14 +1,33 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from . import services as finance_services
-from .models import OutboundMessageLog, WebhookRetryQueueItem
+from .models import Invoice, OutboundMessageLog, WebhookRetryQueueItem
+
+
+def _invoice_queryset_for(user):
+    qs = Invoice.objects.select_related("student", "student__campus").prefetch_related("lines", "payments")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(student__campus=scoped)
+    return qs
+
+
+def _message_log_queryset_for(user):
+    qs = OutboundMessageLog.objects.select_related("invoice", "invoice__student", "payment")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(invoice__student__campus=scoped)
+    return qs
 
 
 @admin_portal_required
 def communication_operations(request):
+    invoice_qs = _invoice_queryset_for(request.user)
+    log_qs = _message_log_queryset_for(request.user)
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
 
@@ -48,6 +67,7 @@ def communication_operations(request):
                 dry_run=dry_run,
                 only_failed=True,
                 message_type=message_type,
+                log_queryset=log_qs,
             )
             messages.success(
                 request,
@@ -83,9 +103,9 @@ def communication_operations(request):
         messages.error(request, "Invalid communication action.")
         return redirect("admin_finance_communication_operations")
 
-    readiness = finance_services.messaging_readiness_snapshot(sample_limit=100)
-    recent_failed = OutboundMessageLog.objects.filter(status=OutboundMessageLog.FAILED).order_by("-created_at")[:10]
-    recent_logs = OutboundMessageLog.objects.order_by("-created_at")[:15]
+    readiness = finance_services.messaging_readiness_snapshot(sample_limit=100, invoice_queryset=invoice_qs, log_queryset=log_qs)
+    recent_failed = log_qs.filter(status=OutboundMessageLog.FAILED).order_by("-created_at")[:10]
+    recent_logs = log_qs.order_by("-created_at")[:15]
     webhook_queue_count = WebhookRetryQueueItem.objects.filter(is_active=True).count()
 
     return render(

@@ -18,6 +18,12 @@ class SalaryStructureForm(forms.ModelForm):
             "end_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        staff_queryset = kwargs.pop("staff_queryset", None)
+        super().__init__(*args, **kwargs)
+        if staff_queryset is not None:
+            self.fields["staff"].queryset = staff_queryset
+
 
 class AllowanceTypeForm(forms.ModelForm):
     class Meta:
@@ -42,10 +48,15 @@ class PayslipGenerateForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        staff_queryset = kwargs.pop("staff_queryset", None)
         super().__init__(*args, **kwargs)
         from .models import StaffProfile
 
-        self.fields["staff"].queryset = StaffProfile.objects.filter(is_active=True).order_by("last_name", "first_name")
+        self.fields["staff"].queryset = (
+            staff_queryset
+            if staff_queryset is not None
+            else StaffProfile.objects.filter(is_active=True).order_by("last_name", "first_name")
+        )
 
 
 class PayslipApprovalForm(forms.Form):

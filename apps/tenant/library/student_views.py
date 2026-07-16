@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
@@ -149,6 +150,26 @@ def my_reservations(request):
         "portals/student/library/reservations_list.html",
         {"student": student, "reservations": reservations},
     )
+
+
+@role_required(Role.STUDENT)
+@require_POST
+def cancel_reservation(request, pk: int):
+    student = StudentProfile.objects.filter(user=request.user).first()
+    if not student:
+        return HttpResponseForbidden("No student profile linked to this account.")
+
+    reservation = get_object_or_404(
+        Reservation,
+        pk=pk,
+        student=student,
+        borrower_type=Reservation.BORROWER_TYPE_STUDENT,
+        status=Reservation.PENDING,
+    )
+    reservation.status = Reservation.CANCELLED
+    reservation.save(update_fields=["status"])
+    messages.success(request, f"Reservation for '{reservation.book.title}' cancelled.")
+    return redirect("student_library_reservations")
 
 
 @role_required(Role.STUDENT)

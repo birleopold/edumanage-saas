@@ -26,8 +26,53 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
+def _campus_queryset_for(user):
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        return Campus.objects.filter(pk=scoped.pk)
+    return _campus_queryset()
+
+
+def _invoice_queryset_for(user):
+    qs = Invoice.objects.select_related(
+        "student",
+        "student__campus",
+        "academic_year",
+        "academic_term",
+    ).prefetch_related("lines", "payments")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(student__campus=scoped)
+    return qs
+
+
+def _payment_queryset_for(user):
+    qs = Payment.objects.select_related(
+        "invoice",
+        "invoice__student",
+        "invoice__student__campus",
+        "invoice__academic_year",
+        "invoice__academic_term",
+    )
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(invoice__student__campus=scoped)
+    return qs
+
+
+def _message_log_queryset_for(user):
+    qs = OutboundMessageLog.objects.select_related("invoice", "invoice__student", "payment")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(Q(invoice__student__campus=scoped) | Q(invoice__isnull=True))
+    return qs
+
+
 def _selected_campus_id(request):
-    current = get_current_campus(request)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
+    if scoped is not None:
+        return scoped.id
     if "campus" in request.GET:
         raw = request.GET.get("campus")
         if raw == "":
@@ -55,12 +100,7 @@ def _invoice_list_base_queryset(request):
     q = (request.GET.get("q") or "").strip()
     campus_id = _selected_campus_id(request)
 
-    qs = Invoice.objects.select_related(
-        "student",
-        "student__campus",
-        "academic_year",
-        "academic_term",
-    ).prefetch_related("lines", "payments")
+    qs = _invoice_queryset_for(request.user)
 
     if campus_id:
         qs = qs.filter(student__campus_id=campus_id)
@@ -135,10 +175,7 @@ def fee_item_edit(request, pk: int):
 
 @admin_portal_required
 def payment_receipt_pdf(request, pk: int):
-    payment = get_object_or_404(
-        Payment.objects.select_related("invoice", "invoice__student", "invoice__student__campus"),
-        pk=pk,
-    )
+    payment = get_object_or_404(_payment_queryset_for(request.user), pk=pk)
     st = payment.invoice.student
     campus = getattr(st, "campus", None)
     scoped = get_user_campus_scope(request.user)
@@ -158,7 +195,7 @@ def invoice_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    campuses = _campus_queryset()
+    campuses = _campus_queryset_for(request.user)
     campus_id = _selected_campus_id(request)
     overdue_only = request.GET.get("overdue") == "1"
 
@@ -246,9 +283,7 @@ def invoice_clone(request, pk: int):
     Copy fee line items onto a new invoice for the same student in another year/term.
     """
     source = get_object_or_404(
-        Invoice.objects.select_related("student", "academic_year", "academic_term").prefetch_related(
-            "lines"
-        ),
+        _invoice_queryset_for(request.user),
         pk=pk,
     )
 
@@ -299,7 +334,7 @@ def invoice_clone(request, pk: int):
 
 @admin_portal_required
 def invoice_create(request):
-    current = get_current_campus(request)
+    current = get_user_campus_scope(request.user) or get_current_campus(request)
     if request.method == "POST":
         form = InvoiceForm(request.POST, campus=current)
         if form.is_valid():
@@ -316,7 +351,7 @@ def invoice_carry_forward(request, pk: int):
     Move remaining balance onto another academic period (same student).
     """
     source = get_object_or_404(
-        Invoice.objects.select_related("student", "academic_year", "academic_term"),
+        _invoice_queryset_for(request.user),
         pk=pk,
     )
     balance = source.balance()
@@ -377,7 +412,7 @@ def invoice_carry_forward(request, pk: int):
 
 @admin_portal_required
 def invoice_edit(request, pk: int):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(_invoice_queryset_for(request.user), pk=pk)
     campus = getattr(invoice.student, "campus", None)
     if request.method == "POST":
         form = InvoiceForm(request.POST, instance=invoice, campus=campus)
@@ -396,8 +431,7 @@ def invoice_edit(request, pk: int):
 @admin_portal_required
 def invoice_detail(request, pk: int):
     invoice = get_object_or_404(
-        Invoice.objects.select_related("student", "academic_year", "academic_term")
-        .prefetch_related("lines", "payments"),
+        _invoice_queryset_for(request.user),
         pk=pk,
     )
 
@@ -512,8 +546,7 @@ def invoice_detail(request, pk: int):
 @admin_portal_required
 def invoice_print(request, pk: int):
     invoice = get_object_or_404(
-        Invoice.objects.select_related("student", "academic_year", "academic_term", "student__campus")
-        .prefetch_related("lines", "payments"),
+        _invoice_queryset_for(request.user),
         pk=pk,
     )
     org = get_or_create_organization()
@@ -533,7 +566,7 @@ def invoice_print(request, pk: int):
 
 @admin_portal_required
 def invoice_line_remove(request, pk: int, line_id: int):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(_invoice_queryset_for(request.user), pk=pk)
     line = get_object_or_404(InvoiceLine, pk=line_id, invoice=invoice)
     if request.method == "POST":
         line.delete()
@@ -542,7 +575,7 @@ def invoice_line_remove(request, pk: int, line_id: int):
 
 @admin_portal_required
 def invoice_payment_remove(request, pk: int, payment_id: int):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(_invoice_queryset_for(request.user), pk=pk)
     payment = get_object_or_404(Payment, pk=payment_id, invoice=invoice)
     if request.method == "POST":
         payment.delete()
@@ -558,14 +591,14 @@ def message_logs_list(request):
     channel = (request.GET.get("channel") or "").strip().upper()
     message_type = (request.GET.get("message_type") or "").strip().upper()
     campus_id = _selected_campus_id(request)
-    campuses = _campus_queryset()
+    campuses = _campus_queryset_for(request.user)
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         if action == "retry_log":
             log_id = request.POST.get("log_id")
             dry_run = request.POST.get("dry_run") == "1"
-            log = get_object_or_404(OutboundMessageLog.objects.select_related("invoice"), pk=log_id)
+            log = get_object_or_404(_message_log_queryset_for(request.user), pk=log_id)
             if campus_id and log.invoice_id and getattr(log.invoice.student, "campus_id", None) != campus_id:
                 return HttpResponseForbidden("You cannot retry logs outside selected campus scope.")
             result = finance_services.retry_outbound_message_log(log, dry_run=dry_run)
@@ -584,9 +617,7 @@ def message_logs_list(request):
         messages.error(request, "Invalid action.")
         return redirect("admin_finance_message_logs")
 
-    logs_qs = OutboundMessageLog.objects.select_related("invoice", "invoice__student", "payment").order_by(
-        "-created_at"
-    )
+    logs_qs = _message_log_queryset_for(request.user).order_by("-created_at")
     if status and status != "ALL":
         logs_qs = logs_qs.filter(status=status)
     if channel:
@@ -641,10 +672,10 @@ def messaging_report(request):
     date_to = request.GET.get("date_to") or today.isoformat()
     q = (request.GET.get("q") or "").strip()
 
-    campuses = _campus_queryset()
+    campuses = _campus_queryset_for(request.user)
     campus_id = _selected_campus_id(request)
 
-    logs_qs = OutboundMessageLog.objects.select_related("invoice", "invoice__student").all()
+    logs_qs = _message_log_queryset_for(request.user)
     if date_from:
         logs_qs = logs_qs.filter(created_at__date__gte=date_from)
     if date_to:

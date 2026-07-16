@@ -1,133 +1,98 @@
 #!/usr/bin/env python
 """
-Route Verification Script
-Checks all URL patterns and templates are properly configured
+Verify template URL references against Django's active URL resolver.
+
+This checks the URLs that the running app can actually reverse, instead of
+guessing from selected URL files. That keeps platform routes, connector modules,
+and other included route files from being reported as false positives.
 """
 import os
 import re
 from pathlib import Path
 
-# Base directories
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+
+import django
+from django.urls import get_resolver
+
+
 BASE_DIR = Path(__file__).resolve().parent
-APPS_DIR = BASE_DIR / "apps" / "tenant"
 TEMPLATES_DIR = BASE_DIR / "templates"
 
-def find_url_patterns():
-    """Find all URL pattern files"""
-    url_files = []
-    for root, dirs, files in os.walk(APPS_DIR):
-        for file in files:
-            if file.endswith('urls.py'):
-                url_files.append(Path(root) / file)
-    return url_files
-
-def extract_url_names(file_path):
-    """Extract URL names from a URL configuration file"""
-    url_names = []
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            # Find name= parameters in path() calls
-            names = re.findall(r'name=["\']([^"\']+)["\']', content)
-            url_names.extend(names)
-    except Exception as e:
-        print(f"Error reading {file_path}: {e}")
-    return url_names
 
 def find_templates():
-    """Find all template files"""
-    templates = []
-    for root, dirs, files in os.walk(TEMPLATES_DIR):
-        for file in files:
-            if file.endswith('.html'):
-                templates.append(Path(root) / file)
-    return templates
+    return sorted(TEMPLATES_DIR.rglob("*.html"))
+
 
 def extract_url_references(template_path):
-    """Extract {% url %} references from a template"""
-    url_refs = []
-    try:
-        with open(template_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            # Find {% url 'name' %} patterns
-            refs = re.findall(r'{%\s*url\s+["\']([^"\']+)["\']', content)
-            url_refs.extend(refs)
-    except Exception as e:
-        print(f"Error reading {template_path}: {e}")
-    return url_refs
+    content = template_path.read_text(encoding="utf-8")
+    return re.findall(r"{%\s*url\s+[\"']([^\"']+)[\"']", content)
+
+
+def resolver_url_names():
+    resolver = get_resolver()
+    return {name for name in resolver.reverse_dict.keys() if isinstance(name, str)}
+
 
 def main():
+    django.setup()
+
     print("=" * 80)
     print("ROUTE VERIFICATION REPORT")
     print("=" * 80)
-    
-    # 1. Find all URL patterns
-    print("\n1. URL Configuration Files:")
+
+    print("\n1. Active Django URL Resolver:")
     print("-" * 80)
-    url_files = find_url_patterns()
-    all_url_names = set()
-    
-    for url_file in sorted(url_files):
-        rel_path = url_file.relative_to(BASE_DIR)
-        names = extract_url_names(url_file)
-        all_url_names.update(names)
-        print(f"  ✓ {rel_path} ({len(names)} URLs)")
-    
-    print(f"\n  Total URL patterns defined: {len(all_url_names)}")
-    
-    # 2. Find all templates
-    print("\n2. Template Files:")
+    url_names = resolver_url_names()
+    print(f"  URL names available: {len(url_names)}")
+
+    print("\n2. Template URL References:")
     print("-" * 80)
     templates = find_templates()
-    all_url_refs = set()
-    
-    for template in sorted(templates):
-        rel_path = template.relative_to(BASE_DIR)
+    refs_by_name = {}
+    total_refs = 0
+    for template in templates:
         refs = extract_url_references(template)
-        all_url_refs.update(refs)
+        total_refs += len(refs)
+        for ref in refs:
+            refs_by_name.setdefault(ref, []).append(template.relative_to(BASE_DIR))
         if refs:
-            print(f"  ✓ {rel_path} ({len(refs)} URL refs)")
-    
-    print(f"\n  Total templates: {len(templates)}")
-    print(f"  Total unique URL references: {len(all_url_refs)}")
-    
-    # 3. Check for broken references
+            print(f"  OK {template.relative_to(BASE_DIR)} ({len(refs)} URL refs)")
+
+    referenced_names = set(refs_by_name)
+    missing = sorted(referenced_names - url_names)
+    unused = sorted(url_names - referenced_names)
+
     print("\n3. Verification:")
     print("-" * 80)
-    broken_refs = all_url_refs - all_url_names
-    
-    if broken_refs:
-        print(f"  ⚠ WARNING: {len(broken_refs)} potentially broken URL references:")
-        for ref in sorted(broken_refs):
-            print(f"    - {ref}")
+    if missing:
+        print(f"  FAIL: {len(missing)} broken template URL references:")
+        for ref in missing:
+            first_seen = refs_by_name[ref][0]
+            print(f"    - {ref} first seen in {first_seen}")
     else:
-        print("  ✓ All URL references appear valid!")
-    
-    # 4. Unused URLs
-    unused_urls = all_url_names - all_url_refs
-    if unused_urls:
-        print(f"\n  ℹ INFO: {len(unused_urls)} URLs not referenced in templates (may be API endpoints):")
-        for url in sorted(list(unused_urls)[:20]):  # Show first 20
-            print(f"    - {url}")
-        if len(unused_urls) > 20:
-            print(f"    ... and {len(unused_urls) - 20} more")
-    
-    # 5. Summary
+        print("  PASS: All template URL references resolve.")
+
+    if unused:
+        print(f"\n  INFO: {len(unused)} URL names are not referenced in templates.")
+        print("  This is normal for API endpoints, redirects, and form actions built in Python.")
+        for name in unused[:20]:
+            print(f"    - {name}")
+        if len(unused) > 20:
+            print(f"    ... and {len(unused) - 20} more")
+
     print("\n" + "=" * 80)
     print("SUMMARY")
     print("=" * 80)
-    print(f"  URL Patterns Defined: {len(all_url_names)}")
-    print(f"  Templates Found: {len(templates)}")
-    print(f"  URL References in Templates: {len(all_url_refs)}")
-    print(f"  Broken References: {len(broken_refs)}")
-    print(f"  Unused URLs: {len(unused_urls)}")
-    
-    if len(broken_refs) == 0:
-        print("\n  ✅ PASS: All template URL references are valid!")
-        return 0
-    else:
-        print("\n  ❌ FAIL: Found broken URL references that need fixing!")
-        return 1
+    print(f"  Templates found: {len(templates)}")
+    print(f"  Template URL references: {total_refs}")
+    print(f"  Unique referenced URL names: {len(referenced_names)}")
+    print(f"  Resolver URL names: {len(url_names)}")
+    print(f"  Broken references: {len(missing)}")
+
+    return 1 if missing else 0
+
 
 if __name__ == "__main__":
-    exit(main())
+    raise SystemExit(main())

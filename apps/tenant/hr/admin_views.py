@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role, User
 
@@ -41,9 +42,69 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
-def _campus_queryset():
+def _campus_queryset(user=None):
     org = get_or_create_organization()
-    return Campus.objects.filter(organization=org).order_by("name")
+    qs = Campus.objects.filter(organization=org).order_by("name")
+    scoped = get_user_campus_scope(user) if user is not None else None
+    if scoped:
+        qs = qs.filter(pk=scoped.pk)
+    return qs
+
+
+def _selected_campus_id(request) -> Optional[int]:
+    scoped = get_user_campus_scope(request.user)
+    if scoped:
+        return scoped.pk
+    current = get_current_campus(request)
+    if "campus" in request.GET:
+        campus_filter = request.GET.get("campus")
+        if campus_filter == "":
+            return None
+        try:
+            return int(campus_filter)
+        except (TypeError, ValueError):
+            return None
+    return current.id if current else None
+
+
+def _staff_queryset_for(user):
+    qs = StaffProfile.objects.select_related("campus", "department", "position", "user")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
+def _department_queryset_for(user):
+    qs = Department.objects.select_related("campus")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(Q(campus=scoped) | Q(campus__isnull=True))
+    return qs
+
+
+def _editable_department_queryset_for(user):
+    qs = Department.objects.select_related("campus")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
+def _position_queryset_for(user):
+    qs = Position.objects.select_related("department", "department__campus")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(Q(department__campus=scoped) | Q(department__campus__isnull=True))
+    return qs
+
+
+def _department_head_queryset_for(user):
+    qs = _department_head_base_queryset()
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(department__campus=scoped, staff__campus=scoped)
+    return qs
 
 
 def _generate_unique_username(base: str) -> str:
@@ -79,22 +140,10 @@ def staff_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    campuses = _campus_queryset()
-    current = get_current_campus(request)
+    campuses = _campus_queryset(request.user)
+    campus_id = _selected_campus_id(request)
 
-    if "campus" in request.GET:
-        campus_filter = request.GET.get("campus")
-        if campus_filter == "":
-            campus_id = None
-        else:
-            try:
-                campus_id = int(campus_filter)
-            except (TypeError, ValueError):
-                campus_id = None
-    else:
-        campus_id = current.id if current else None
-
-    qs = StaffProfile.objects.select_related("campus", "department", "position", "user").all()
+    qs = _staff_queryset_for(request.user)
 
     if campus_id:
         qs = qs.filter(campus_id=campus_id)
@@ -128,7 +177,7 @@ def department_head_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = _department_head_base_queryset()
+    qs = _department_head_queryset_for(request.user)
     if q:
         qs = qs.filter(
             Q(department__name__icontains=q)
@@ -152,14 +201,16 @@ def department_head_create(request):
 
         return HttpResponseForbidden("Forbidden")
 
+    departments = _editable_department_queryset_for(request.user)
+    staff_queryset = _staff_queryset_for(request.user)
     if request.method == "POST":
-        form = DepartmentHeadForm(request.POST)
+        form = DepartmentHeadForm(request.POST, departments=departments, staff_queryset=staff_queryset)
         if form.is_valid():
             form.save()
             messages.success(request, "Department head assigned.")
             return redirect("admin_hr_department_heads_list")
     else:
-        form = DepartmentHeadForm()
+        form = DepartmentHeadForm(departments=departments, staff_queryset=staff_queryset)
 
     return render(request, "portals/admin/hr/department_head_form.html", {"form": form, "mode": "create"})
 
@@ -170,15 +221,17 @@ def department_head_edit(request, pk: int):
 
         return HttpResponseForbidden("Forbidden")
 
-    obj = get_object_or_404(DepartmentHead, pk=pk)
+    departments = _editable_department_queryset_for(request.user)
+    staff_queryset = _staff_queryset_for(request.user)
+    obj = get_object_or_404(_department_head_queryset_for(request.user), pk=pk)
     if request.method == "POST":
-        form = DepartmentHeadForm(request.POST, instance=obj)
+        form = DepartmentHeadForm(request.POST, instance=obj, departments=departments, staff_queryset=staff_queryset)
         if form.is_valid():
             form.save()
             messages.success(request, "Department head updated.")
             return redirect("admin_hr_department_heads_list")
     else:
-        form = DepartmentHeadForm(instance=obj)
+        form = DepartmentHeadForm(instance=obj, departments=departments, staff_queryset=staff_queryset)
 
     return render(
         request,
@@ -193,22 +246,10 @@ def staff_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    campuses = _campus_queryset()
-    current = get_current_campus(request)
+    campuses = _campus_queryset(request.user)
+    campus_id = _selected_campus_id(request)
 
-    if "campus" in request.GET:
-        campus_filter = request.GET.get("campus")
-        if campus_filter == "":
-            campus_id = None
-        else:
-            try:
-                campus_id = int(campus_filter)
-            except (TypeError, ValueError):
-                campus_id = None
-    else:
-        campus_id = current.id if current else None
-
-    qs = StaffProfile.objects.select_related("campus", "department", "position", "user").all()
+    qs = _staff_queryset_for(request.user)
 
     if campus_id:
         qs = qs.filter(campus_id=campus_id)
@@ -241,15 +282,20 @@ def staff_list(request):
 
 @admin_portal_required
 def staff_create(request):
-    campuses = _campus_queryset()
-    current = get_current_campus(request)
+    campuses = _campus_queryset(request.user)
+    departments = _department_queryset_for(request.user)
+    staff_queryset = _staff_queryset_for(request.user)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
 
     if request.method == "POST":
-        form = StaffProfileForm(request.POST)
+        form = StaffProfileForm(request.POST, campuses=campuses, departments=departments, staff_queryset=staff_queryset)
         if form.is_valid():
             with transaction.atomic():
                 staff = form.save(commit=False)
-                if staff.campus_id is None and current is not None:
+                if scoped:
+                    staff.campus = scoped
+                elif staff.campus_id is None and current is not None:
                     staff.campus = current
 
                 create_user = form.cleaned_data.get("create_user")
@@ -263,7 +309,7 @@ def staff_create(request):
             messages.success(request, "Staff member created.")
             return redirect("admin_hr_staff_list")
     else:
-        form = StaffProfileForm()
+        form = StaffProfileForm(campuses=campuses, departments=departments, staff_queryset=staff_queryset)
         if current is not None:
             form.fields["campus"].initial = current
 
@@ -272,16 +318,23 @@ def staff_create(request):
 
 @admin_portal_required
 def staff_edit(request, pk: int):
-    staff = get_object_or_404(StaffProfile, pk=pk)
+    campuses = _campus_queryset(request.user)
+    departments = _department_queryset_for(request.user)
+    staff_queryset = _staff_queryset_for(request.user).exclude(pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    staff = get_object_or_404(_staff_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = StaffProfileForm(request.POST, instance=staff)
+        form = StaffProfileForm(request.POST, instance=staff, campuses=campuses, departments=departments, staff_queryset=staff_queryset)
         if form.is_valid():
-            form.save()
+            staff = form.save(commit=False)
+            if scoped:
+                staff.campus = scoped
+            staff.save()
             messages.success(request, "Staff member updated.")
             return redirect("admin_hr_staff_detail", pk=staff.pk)
     else:
-        form = StaffProfileForm(instance=staff)
+        form = StaffProfileForm(instance=staff, campuses=campuses, departments=departments, staff_queryset=staff_queryset)
 
     return render(
         request,
@@ -292,7 +345,7 @@ def staff_edit(request, pk: int):
 
 @admin_portal_required
 def staff_detail(request, pk: int):
-    staff = get_object_or_404(StaffProfile.objects.select_related("campus", "department", "position", "user"), pk=pk)
+    staff = get_object_or_404(_staff_queryset_for(request.user), pk=pk)
     return render(request, "portals/admin/hr/staff_detail.html", {"staff": staff})
 
 
@@ -302,7 +355,7 @@ def department_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Department.objects.select_related("campus").all()
+    qs = _department_queryset_for(request.user)
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(code__icontains=q))
 
@@ -318,19 +371,23 @@ def department_list(request):
 
 @admin_portal_required
 def department_create(request):
-    current = get_current_campus(request)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
 
     if request.method == "POST":
-        form = DepartmentForm(request.POST)
+        form = DepartmentForm(request.POST, campuses=campuses)
         if form.is_valid():
             dept = form.save(commit=False)
-            if dept.campus_id is None and current is not None:
+            if scoped:
+                dept.campus = scoped
+            elif dept.campus_id is None and current is not None:
                 dept.campus = current
             dept.save()
             messages.success(request, "Department created.")
             return redirect("admin_hr_departments_list")
     else:
-        form = DepartmentForm()
+        form = DepartmentForm(campuses=campuses)
         if current is not None:
             form.fields["campus"].initial = current
 
@@ -339,16 +396,21 @@ def department_create(request):
 
 @admin_portal_required
 def department_edit(request, pk: int):
-    dept = get_object_or_404(Department, pk=pk)
+    campuses = _campus_queryset(request.user)
+    scoped = get_user_campus_scope(request.user)
+    dept = get_object_or_404(_editable_department_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = DepartmentForm(request.POST, instance=dept)
+        form = DepartmentForm(request.POST, instance=dept, campuses=campuses)
         if form.is_valid():
-            form.save()
+            dept = form.save(commit=False)
+            if scoped:
+                dept.campus = scoped
+            dept.save()
             messages.success(request, "Department updated.")
             return redirect("admin_hr_departments_list")
     else:
-        form = DepartmentForm(instance=dept)
+        form = DepartmentForm(instance=dept, campuses=campuses)
 
     return render(
         request,
@@ -363,7 +425,7 @@ def position_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Position.objects.select_related("department", "department__campus").all()
+    qs = _position_queryset_for(request.user)
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(department__name__icontains=q))
 
@@ -379,30 +441,32 @@ def position_list(request):
 
 @admin_portal_required
 def position_create(request):
+    departments = _department_queryset_for(request.user)
     if request.method == "POST":
-        form = PositionForm(request.POST)
+        form = PositionForm(request.POST, departments=departments)
         if form.is_valid():
             form.save()
             messages.success(request, "Position created.")
             return redirect("admin_hr_positions_list")
     else:
-        form = PositionForm()
+        form = PositionForm(departments=departments)
 
     return render(request, "portals/admin/hr/position_form.html", {"form": form, "mode": "create"})
 
 
 @admin_portal_required
 def position_edit(request, pk: int):
-    position = get_object_or_404(Position, pk=pk)
+    departments = _department_queryset_for(request.user)
+    position = get_object_or_404(_position_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = PositionForm(request.POST, instance=position)
+        form = PositionForm(request.POST, instance=position, departments=departments)
         if form.is_valid():
             form.save()
             messages.success(request, "Position updated.")
             return redirect("admin_hr_positions_list")
     else:
-        form = PositionForm(instance=position)
+        form = PositionForm(instance=position, departments=departments)
 
     return render(
         request,

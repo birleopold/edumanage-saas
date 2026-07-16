@@ -173,6 +173,13 @@ def _env_check(name, *, required=True):
         configured = configured and value not in {"localhost", "noreply@edumanage.local"}
     elif name in {"SMS_GATEWAY_URL", "WEB_PUSH_PUBLIC_KEY"}:
         configured = bool(value)
+    elif name in {"SECURE_SSL_REDIRECT", "SESSION_COOKIE_SECURE", "CSRF_COOKIE_SECURE"}:
+        configured = value is True or str(value).lower() in {"true", "1", "yes"}
+    elif name == "SECURE_HSTS_SECONDS":
+        try:
+            configured = int(value or 0) >= 31536000
+        except (TypeError, ValueError):
+            configured = False
     return {"name": name, "configured": configured, "required": required, "value": "Configured" if configured else "Needs attention"}
 
 
@@ -203,6 +210,10 @@ def deployment_readiness(request):
         _env_check("DEFAULT_FROM_EMAIL", required=False),
         _env_check("SMS_GATEWAY_URL", required=False),
         _env_check("WEB_PUSH_PUBLIC_KEY", required=False),
+        _env_check("SECURE_SSL_REDIRECT"),
+        _env_check("SESSION_COOKIE_SECURE"),
+        _env_check("CSRF_COOKIE_SECURE"),
+        _env_check("SECURE_HSTS_SECONDS"),
     ]
     database_status = _database_status()
     domains_ready = Domain.objects.filter(is_primary=True).exists()

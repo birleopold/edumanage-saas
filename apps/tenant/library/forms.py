@@ -1,6 +1,9 @@
 from django import forms
 from django.utils import timezone
 
+from apps.tenant.hr.models import StaffProfile
+from apps.tenant.students.models import StudentProfile
+
 from .models import Author, Book, BookCopy, BookLoan, Category, Fine, Reservation
 
 
@@ -62,6 +65,15 @@ class BookLoanForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
 
+    def __init__(self, *args, **kwargs):
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+        self.fields["student"].queryset = StudentProfile.objects.select_related("campus").all()
+        self.fields["staff"].queryset = StaffProfile.objects.select_related("campus").all()
+        if campus_scope:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+            self.fields["staff"].queryset = self.fields["staff"].queryset.filter(campus=campus_scope)
+
     def clean(self):
         cleaned = super().clean()
         copy = cleaned.get("copy")
@@ -102,6 +114,15 @@ class ReservationForm(forms.ModelForm):
         model = Reservation
         fields = ["book", "borrower_type", "student", "staff", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+        self.fields["student"].queryset = StudentProfile.objects.select_related("campus").all()
+        self.fields["staff"].queryset = StaffProfile.objects.select_related("campus").all()
+        if campus_scope:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+            self.fields["staff"].queryset = self.fields["staff"].queryset.filter(campus=campus_scope)
 
     def clean(self):
         cleaned = super().clean()

@@ -41,6 +41,54 @@ def _parse_per_page(request, default=25):
         return default
 
 
+def _student_queryset_for(user):
+    qs = StudentProfile.objects.filter(is_active=True)
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
+def _snapshot_queryset_for(user):
+    qs = StudentPerformanceSnapshot.objects.select_related("student", "stream", "term")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(student__campus=scoped)
+    return qs
+
+
+def _stream_queryset_for(user):
+    qs = Stream.objects.filter(is_active=True).select_related("class_group")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(class_group__campus=scoped)
+    return qs
+
+
+def _class_report_queryset_for(user):
+    qs = ClassPerformanceReport.objects.select_related("stream", "term")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(stream__class_group__campus=scoped)
+    return qs
+
+
+def _alert_queryset_for(user):
+    qs = AtRiskAlert.objects.select_related("student", "assigned_to", "snapshot__term")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(student__campus=scoped)
+    return qs
+
+
+def _teacher_queryset_for(user):
+    qs = TeacherProfile.objects.filter(user__is_active=True).select_related("user")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(campus=scoped)
+    return qs
+
+
 @admin_portal_required
 def charts_overview(request):
     """Visual charts (Chart.js) for headcount and billing mix."""
@@ -94,9 +142,9 @@ def analytics_dashboard(request):
         return render(request, "portals/admin/analytics/dashboard.html", {})
     
     # Overall statistics
-    total_students = StudentProfile.objects.filter(is_active=True).count()
+    total_students = _student_queryset_for(request.user).count()
     
-    snapshots = StudentPerformanceSnapshot.objects.filter(term=current_term)
+    snapshots = _snapshot_queryset_for(request.user).filter(term=current_term)
     
     stats = {
         "total_students": total_students,
@@ -116,12 +164,12 @@ def analytics_dashboard(request):
     }
     
     # Recent at-risk alerts
-    recent_alerts = AtRiskAlert.objects.filter(
+    recent_alerts = _alert_queryset_for(request.user).filter(
         status__in=["OPEN", "ACKNOWLEDGED"]
     ).order_by("-created_at")[:10]
     
     # Top performing classes
-    class_reports = ClassPerformanceReport.objects.filter(
+    class_reports = _class_report_queryset_for(request.user).filter(
         term=current_term
     ).order_by("-average_gpa")[:5]
     
@@ -143,7 +191,8 @@ def analytics_dashboard(request):
 @admin_portal_required
 def student_risk_radar(request):
     """Early-warning list combining attendance, fees, assessments, discipline and coursework."""
-    campus_id = request.GET.get("campus") or None
+    scoped = get_user_campus_scope(request.user)
+    campus_id = scoped.id if scoped is not None else request.GET.get("campus") or None
     rows = build_student_risk_radar(limit=100, campus_id=campus_id)
     counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
     for row in rows:
@@ -169,9 +218,7 @@ def student_performance_list(request):
     else:
         term = AcademicTerm.objects.filter(is_current=True).first()
     
-    snapshots = StudentPerformanceSnapshot.objects.filter(term=term).select_related(
-        "student", "stream", "term"
-    )
+    snapshots = _snapshot_queryset_for(request.user).filter(term=term)
     
     if stream_id:
         snapshots = snapshots.filter(stream_id=stream_id)
@@ -199,7 +246,7 @@ def student_performance_list(request):
     
     # Get filters
     terms = AcademicTerm.objects.all()[:10]
-    streams = Stream.objects.filter(is_active=True).select_related("class_group")
+    streams = _stream_queryset_for(request.user)
     
     context = {
         "page_obj": page_obj,
@@ -217,7 +264,7 @@ def student_performance_list(request):
 @admin_portal_required
 def student_performance_detail(request, student_id):
     """Detailed performance view for a student"""
-    student = get_object_or_404(StudentProfile, id=student_id)
+    student = get_object_or_404(_student_queryset_for(request.user), id=student_id)
     term_id = request.GET.get("term")
     
     if term_id:
@@ -276,7 +323,7 @@ def student_performance_detail(request, student_id):
 @admin_portal_required
 def class_performance_report_view(request, stream_id):
     """Class/stream performance report"""
-    stream = get_object_or_404(Stream, id=stream_id)
+    stream = get_object_or_404(_stream_queryset_for(request.user), id=stream_id)
     term_id = request.GET.get("term")
     
     if term_id:
@@ -335,9 +382,7 @@ def at_risk_alerts_list(request):
     severity_filter = request.GET.get("severity")
     search = request.GET.get("search", "").strip()
     
-    alerts = AtRiskAlert.objects.select_related(
-        "student", "assigned_to", "snapshot__term"
-    )
+    alerts = _alert_queryset_for(request.user)
     
     if status_filter and status_filter != "ALL":
         alerts = alerts.filter(status=status_filter)
@@ -372,7 +417,8 @@ def at_risk_alerts_list(request):
 @admin_portal_required
 def at_risk_alert_detail(request, alert_id):
     """View and manage individual at-risk alert"""
-    alert = get_object_or_404(AtRiskAlert, id=alert_id)
+    alert = get_object_or_404(_alert_queryset_for(request.user), id=alert_id)
+    teachers = _teacher_queryset_for(request.user)
     
     if request.method == "POST":
         action = request.POST.get("action")
@@ -405,14 +451,12 @@ def at_risk_alert_detail(request, alert_id):
         elif action == "assign":
             teacher_id = request.POST.get("teacher_id")
             if teacher_id:
-                alert.assigned_to_id = teacher_id
+                teacher = get_object_or_404(teachers, id=teacher_id)
+                alert.assigned_to = teacher
                 alert.save()
                 messages.success(request, "Alert assigned successfully.")
         
         return redirect("admin_analytics_alert_detail", alert_id=alert.id)
-    
-    # Get available teachers for assignment
-    teachers = TeacherProfile.objects.filter(user__is_active=True).select_related("user")
     
     context = {
         "alert": alert,
@@ -436,6 +480,9 @@ def teacher_performance_metrics_view(request):
     metrics = TeacherPerformanceMetrics.objects.filter(
         term=term
     ).select_related("teacher__user", "course")
+    scoped = get_user_campus_scope(request.user)
+    if scoped is not None:
+        metrics = metrics.filter(teacher__campus=scoped)
     
     if course_id:
         metrics = metrics.filter(course_id=course_id)
@@ -474,7 +521,7 @@ def generate_snapshots_bulk(request):
         
         term = get_object_or_404(AcademicTerm, id=term_id)
         
-        students = StudentProfile.objects.filter(is_active=True)
+        students = _student_queryset_for(request.user)
         
         if stream_id:
             students = students.filter(stream_id=stream_id)
@@ -491,7 +538,7 @@ def generate_snapshots_bulk(request):
         return redirect("admin_analytics_dashboard")
     
     terms = AcademicTerm.objects.all()[:10]
-    streams = Stream.objects.filter(is_active=True).select_related("class_group")
+    streams = _stream_queryset_for(request.user)
     
     context = {
         "terms": terms,
@@ -504,7 +551,7 @@ def generate_snapshots_bulk(request):
 @admin_portal_required
 def performance_trends_chart_data(request, student_id):
     """API endpoint for performance trends chart data"""
-    student = get_object_or_404(StudentProfile, id=student_id)
+    student = get_object_or_404(_student_queryset_for(request.user), id=student_id)
     
     trends = PerformanceTrend.objects.filter(
         student=student,
@@ -524,7 +571,7 @@ def performance_trends_chart_data(request, student_id):
 @admin_portal_required
 def subject_performance_chart_data(request, student_id, term_id):
     """API endpoint for subject performance chart data"""
-    student = get_object_or_404(StudentProfile, id=student_id)
+    student = get_object_or_404(_student_queryset_for(request.user), id=student_id)
     term = get_object_or_404(AcademicTerm, id=term_id)
     
     snapshot = StudentPerformanceSnapshot.objects.filter(
@@ -551,10 +598,10 @@ def subject_performance_chart_data(request, student_id, term_id):
 @admin_portal_required
 def class_performance_chart_data(request, stream_id, term_id):
     """API endpoint for class performance distribution chart"""
-    stream = get_object_or_404(Stream, id=stream_id)
+    stream = get_object_or_404(_stream_queryset_for(request.user), id=stream_id)
     term = get_object_or_404(AcademicTerm, id=term_id)
     
-    report = ClassPerformanceReport.objects.filter(
+    report = _class_report_queryset_for(request.user).filter(
         stream=stream,
         term=term
     ).first()

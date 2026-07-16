@@ -5,6 +5,7 @@ import json
 
 from django.test import Client
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from apps.tenant.announcements.models import Announcement
 from apps.tenant.finance.models import (
@@ -31,7 +32,10 @@ from apps.tenant.finance.services import (
     send_fee_reminder_for_invoice,
 )
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
+from apps.tenant.orgsettings.models import Campus
+from apps.tenant.orgsettings.services import get_or_create_organization
 from apps.tenant.students.models import StudentProfile
+from apps.tenant.users.models import Role, User, UserRole
 
 
 class FinanceReminderPhaseOneTests(TestCase):
@@ -302,7 +306,10 @@ class FinanceReminderPhaseOneTests(TestCase):
         payload = response.json()
         self.assertIn("results", payload)
 
-    @override_settings(FEE_REMINDER_CHANNEL="SMS")
+    @override_settings(
+        FEE_REMINDER_CHANNEL="SMS",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
     def test_webhook_delivery_record_created_for_message_log_event(self):
         WebhookEndpoint.objects.create(
             name="Failing endpoint",
@@ -383,3 +390,169 @@ class FinanceReminderPhaseOneTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(InboundWebhookEvent.objects.filter(signature_valid=False).count(), 1)
+
+
+class FinanceAdminCampusScopeTests(TestCase):
+    def setUp(self):
+        org = get_or_create_organization()
+        self.campus = Campus.objects.filter(organization=org).first()
+        self.other_campus = Campus.objects.create(
+            organization=org,
+            name="Other Finance Campus",
+            is_active=True,
+        )
+        self.student = StudentProfile.objects.create(
+            first_name="Visible",
+            last_name="Finance",
+            student_id="FIN-VISIBLE",
+            campus=self.campus,
+        )
+        self.hidden_student = StudentProfile.objects.create(
+            first_name="Hidden",
+            last_name="Finance",
+            student_id="FIN-HIDDEN",
+            campus=self.other_campus,
+        )
+        self.invoice = Invoice.objects.create(student=self.student, reference="INV-VISIBLE")
+        self.hidden_invoice = Invoice.objects.create(student=self.hidden_student, reference="INV-HIDDEN")
+        self.payment = Payment.objects.create(invoice=self.invoice, amount=Decimal("1000"))
+        self.hidden_payment = Payment.objects.create(invoice=self.hidden_invoice, amount=Decimal("2000"))
+
+        campus_role, _ = Role.objects.get_or_create(code=Role.CAMPUS_ADMIN, defaults={"name": "Campus Admin"})
+        self.user = User.objects.create_user(username="finance_campus_admin", password="test-pass-123")
+        self.user.roles.add(campus_role)
+        UserRole.objects.create(user=self.user, role=campus_role, campus=self.campus)
+
+    def test_campus_admin_invoice_list_and_export_ignore_other_campus_filter(self):
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+
+        list_response = self.client.get(reverse("admin_invoices_list"), {"campus": self.other_campus.pk})
+        export_response = self.client.get(reverse("admin_invoices_export_csv"), {"campus": self.other_campus.pk})
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertContains(list_response, "INV-VISIBLE")
+        self.assertNotContains(list_response, "INV-HIDDEN")
+        self.assertContains(export_response, "INV-VISIBLE")
+        self.assertNotContains(export_response, "INV-HIDDEN")
+
+    def test_campus_admin_cannot_access_other_campus_invoice_or_payment_views(self):
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+
+        urls = [
+            reverse("admin_invoices_detail", kwargs={"pk": self.hidden_invoice.pk}),
+            reverse("admin_invoices_edit", kwargs={"pk": self.hidden_invoice.pk}),
+            reverse("admin_invoices_print", kwargs={"pk": self.hidden_invoice.pk}),
+            reverse("admin_invoices_clone", kwargs={"pk": self.hidden_invoice.pk}),
+            reverse("admin_invoices_carry_forward", kwargs={"pk": self.hidden_invoice.pk}),
+            reverse("admin_payment_receipt_pdf", kwargs={"pk": self.hidden_payment.pk}),
+            reverse("admin_payments_detail", kwargs={"pk": self.hidden_payment.pk}),
+        ]
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_campus_admin_cannot_mutate_other_campus_invoice(self):
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+
+        detail_response = self.client.post(
+            reverse("admin_invoices_detail", kwargs={"pk": self.hidden_invoice.pk}),
+            {"action": "add_payment", "amount": "100", "method": Payment.CASH},
+        )
+        line_remove_response = self.client.post(
+            reverse("admin_invoices_line_remove", kwargs={"pk": self.hidden_invoice.pk, "line_id": 999999}),
+        )
+        payment_remove_response = self.client.post(
+            reverse("admin_invoices_payment_remove", kwargs={"pk": self.hidden_invoice.pk, "payment_id": self.hidden_payment.pk}),
+        )
+
+        self.assertEqual(detail_response.status_code, 404)
+        self.assertEqual(line_remove_response.status_code, 404)
+        self.assertEqual(payment_remove_response.status_code, 404)
+        self.assertEqual(self.hidden_invoice.payments.count(), 1)
+
+    def test_campus_admin_cannot_create_invoice_for_other_campus_student(self):
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+
+        response = self.client.post(
+            reverse("admin_invoices_create"),
+            {
+                "student": self.hidden_student.pk,
+                "reference": "INV-FORGED",
+                "opening_balance": "0",
+                "status": Invoice.ACTIVE,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Invoice.objects.filter(reference="INV-FORGED").exists())
+
+    def test_campus_admin_finance_dashboard_is_scoped(self):
+        OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.FEE_REMINDER,
+            invoice=self.invoice,
+            phone_raw="0772000001",
+            status=OutboundMessageLog.FAILED,
+            message="visible failure",
+        )
+        OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.FEE_REMINDER,
+            invoice=self.hidden_invoice,
+            phone_raw="0772000002",
+            status=OutboundMessageLog.FAILED,
+            message="hidden failure",
+        )
+
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+        response = self.client.get(reverse("admin_finance_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "INV-VISIBLE")
+        self.assertContains(response, "1 active")
+        self.assertNotContains(response, "INV-HIDDEN")
+        self.assertNotContains(response, "Finance Hidden")
+
+    def test_campus_admin_communication_operations_logs_and_retry_are_scoped(self):
+        visible_log = OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.FEE_REMINDER,
+            invoice=self.invoice,
+            phone_raw="0772000001",
+            status=OutboundMessageLog.FAILED,
+            message="visible retry",
+        )
+        hidden_log = OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.FEE_REMINDER,
+            invoice=self.hidden_invoice,
+            phone_raw="0772000002",
+            status=OutboundMessageLog.FAILED,
+            message="hidden retry",
+        )
+
+        self.client.login(username="finance_campus_admin", password="test-pass-123")
+        get_response = self.client.get(reverse("admin_finance_communication_operations"))
+        post_response = self.client.post(
+            reverse("admin_finance_communication_operations"),
+            {
+                "action": "retry_failed_messages",
+                "message_type": OutboundMessageLog.FEE_REMINDER,
+                "limit": "20",
+                "dry_run": "1",
+            },
+        )
+
+        self.assertEqual(get_response.status_code, 200)
+        self.assertContains(get_response, "0772000001")
+        self.assertNotContains(get_response, "0772000002")
+        self.assertEqual(post_response.status_code, 302)
+        self.assertTrue(
+            OutboundMessageLog.objects.filter(
+                provider_response__retry_of_log_id=visible_log.pk,
+                status=OutboundMessageLog.DRY_RUN,
+            ).exists()
+        )
+        self.assertFalse(
+            OutboundMessageLog.objects.filter(
+                provider_response__retry_of_log_id=hidden_log.pk,
+                status=OutboundMessageLog.DRY_RUN,
+            ).exists()
+        )

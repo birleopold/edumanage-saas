@@ -1081,16 +1081,37 @@ def term_report_cards(request, term_id: int):
     term = get_object_or_404(AcademicTerm, pk=term_id)
     stream_id = request.GET.get("stream")
     class_group_id = request.GET.get("class_group")
+    q = (request.GET.get("q") or "").strip()
     
     streams = Stream.objects.select_related("class_group").filter(is_active=True)
     class_groups = ClassGroup.objects.filter(is_active=True)
     
-    report_cards = []
-    if stream_id or class_group_id:
-        report_cards = generate_class_report_cards(
-            term_id,
-            stream_id=int(stream_id) if stream_id else None,
-            class_group_id=int(class_group_id) if class_group_id else None
+    report_cards = generate_class_report_cards(
+        term_id,
+        stream_id=int(stream_id) if stream_id else None,
+        class_group_id=int(class_group_id) if class_group_id else None,
+    )
+    rows = []
+    averages = []
+    for report_card in report_cards:
+        student = report_card.student
+        if q and q.lower() not in f"{student.first_name} {student.last_name} {student.student_id}".lower():
+            continue
+        summary = report_card.get_summary()
+        ranking = report_card.get_ranking() or {}
+        average = summary.get("average")
+        if average is not None:
+            averages.append(average)
+        rows.append(
+            {
+                "id": student.id,
+                "name": str(student),
+                "student_id": student.student_id,
+                "stream": student.stream,
+                "average": average,
+                "rank": ranking.get("rank"),
+                "total": ranking.get("total"),
+            }
         )
     
     return render(
@@ -1098,9 +1119,15 @@ def term_report_cards(request, term_id: int):
         "portals/admin/academics/term_report_cards.html",
         {
             "term": term,
-            "report_cards": report_cards,
+            "students": rows,
+            "total_students": len(rows),
+            "generated_count": len(rows),
+            "pending_count": 0,
+            "average_gpa": (sum(averages) / len(averages)) if averages else None,
             "streams": streams,
             "class_groups": class_groups,
+            "q": q,
+            "selected_stream": stream_id or "",
             "selected_stream_id": int(stream_id) if stream_id else None,
             "selected_class_group_id": int(class_group_id) if class_group_id else None,
         },

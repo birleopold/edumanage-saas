@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.academics.models import CourseOffering, Enrollment
 from apps.tenant.orgsettings.services import get_current_campus
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 
@@ -15,19 +16,44 @@ from .models import Assessment, AssessmentScore
 from .services import score_result, validate_score
 
 
-@admin_portal_required
-def assessment_list(request):
-    q = (request.GET.get("q") or "").strip()
-    per_page_raw = request.GET.get("per_page")
-    page_number = request.GET.get("page") or 1
+def _offering_queryset_for(user, current_campus=None):
+    qs = (
+        CourseOffering.objects.filter(is_active=True)
+        .select_related("course", "term", "term__year", "class_group", "campus")
+        .order_by("-term__year__name", "term__order", "course__name")
+    )
+    campus = get_user_campus_scope(user) or current_campus
+    if campus:
+        qs = qs.filter(Q(campus=campus) | Q(campus__isnull=True, class_group__campus=campus)).distinct()
+    return qs
 
+
+def _assessment_queryset_for(user):
     qs = Assessment.objects.select_related(
         "offering",
         "offering__course",
         "offering__term",
         "offering__term__year",
         "offering__class_group",
-    ).all()
+        "offering__class_group__campus",
+        "offering__campus",
+    )
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(
+            Q(offering__campus=scoped)
+            | Q(offering__campus__isnull=True, offering__class_group__campus=scoped)
+        ).distinct()
+    return qs
+
+
+@admin_portal_required
+def assessment_list(request):
+    q = (request.GET.get("q") or "").strip()
+    per_page_raw = request.GET.get("per_page")
+    page_number = request.GET.get("page") or 1
+
+    qs = _assessment_queryset_for(request.user)
 
     if q:
         qs = qs.filter(
@@ -57,28 +83,30 @@ def assessment_list(request):
 
 @admin_portal_required
 def assessment_create(request):
+    offerings = _offering_queryset_for(request.user)
     if request.method == "POST":
-        form = AssessmentForm(request.POST)
+        form = AssessmentForm(request.POST, offerings=offerings)
         if form.is_valid():
             form.save()
             messages.success(request, "Assessment created.")
             return redirect("admin_assessments_list")
     else:
-        form = AssessmentForm()
+        form = AssessmentForm(offerings=offerings)
     return render(request, "portals/admin/assessments/assessment_form.html", {"form": form, "mode": "create"})
 
 
 @admin_portal_required
 def assessment_edit(request, pk: int):
-    obj = get_object_or_404(Assessment, pk=pk)
+    offerings = _offering_queryset_for(request.user)
+    obj = get_object_or_404(_assessment_queryset_for(request.user), pk=pk)
     if request.method == "POST":
-        form = AssessmentForm(request.POST, instance=obj)
+        form = AssessmentForm(request.POST, instance=obj, offerings=offerings)
         if form.is_valid():
             form.save()
             messages.success(request, "Assessment updated.")
             return redirect("admin_assessments_list")
     else:
-        form = AssessmentForm(instance=obj)
+        form = AssessmentForm(instance=obj, offerings=offerings)
     return render(
         request,
         "portals/admin/assessments/assessment_form.html",
@@ -89,13 +117,7 @@ def assessment_edit(request, pk: int):
 @admin_portal_required
 def assessment_scores(request, pk: int):
     assessment = get_object_or_404(
-        Assessment.objects.select_related(
-            "offering",
-            "offering__course",
-            "offering__term",
-            "offering__term__year",
-            "offering__class_group",
-        ),
+        _assessment_queryset_for(request.user),
         pk=pk,
     )
 
@@ -120,10 +142,14 @@ def assessment_scores(request, pk: int):
             return redirect("admin_assessments_scores", pk=assessment.pk)
 
         student_ids = request.POST.getlist("student_ids")
+        allowed_student_ids = {str(sid) for sid in enrollments_qs.values_list("student_id", flat=True)}
         updated = 0
         errors = []
         with transaction.atomic():
             for sid in student_ids:
+                if sid not in allowed_student_ids:
+                    errors.append(f"Student #{sid}: not enrolled for this assessment.")
+                    continue
                 score_raw = request.POST.get(f"score_{sid}")
                 note = request.POST.get(f"note_{sid}") or ""
                 report_comment = request.POST.get(f"report_comment_{sid}") or ""
@@ -190,23 +216,11 @@ def assessment_tabulation(request):
     """
     Matrix of students (rows) by assessments (columns) for one course offering.
     """
-    campus = get_current_campus(request)
+    campus = get_user_campus_scope(request.user) or get_current_campus(request)
     offering_id = request.GET.get("offering")
     print_mode = request.GET.get("print") == "1"
 
-    offerings_qs = (
-        CourseOffering.objects.filter(is_active=True)
-        .select_related("course", "term", "term__year", "class_group", "campus")
-        .order_by("-term__year__name", "term__order", "course__name")
-    )
-    if campus:
-        offerings_qs = (
-            offerings_qs.filter(
-                Q(campus=campus)
-                | Q(campus__isnull=True, class_group__campus=campus)
-            )
-            .distinct()
-        )
+    offerings_qs = _offering_queryset_for(request.user, current_campus=campus)
 
     if not offering_id:
         return render(

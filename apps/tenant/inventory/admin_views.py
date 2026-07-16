@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
@@ -19,6 +20,20 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
         except (TypeError, ValueError):
             per_page = default
     return max(1, min(per_page, max_value))
+
+
+def _asset_assignment_queryset_for(user):
+    qs = AssetAssignment.objects.select_related(
+        "item",
+        "assigned_to_user",
+        "assigned_to_student",
+        "assigned_to_student__campus",
+        "created_by",
+    )
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(Q(assigned_to_student__campus=scoped) | Q(assigned_to_student__isnull=True))
+    return qs
 
 
 @admin_portal_required
@@ -121,12 +136,7 @@ def assignment_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = AssetAssignment.objects.select_related(
-        "item",
-        "assigned_to_user",
-        "assigned_to_student",
-        "created_by",
-    ).all()
+    qs = _asset_assignment_queryset_for(request.user)
 
     if q:
         qs = qs.filter(
@@ -151,8 +161,9 @@ def assignment_list(request):
 
 @admin_portal_required
 def assignment_create(request):
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = AssetAssignmentForm(request.POST)
+        form = AssetAssignmentForm(request.POST, campus_scope=scoped)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
@@ -160,23 +171,24 @@ def assignment_create(request):
             messages.success(request, "Assignment created.")
             return redirect("admin_inventory_assignments_list")
     else:
-        form = AssetAssignmentForm()
+        form = AssetAssignmentForm(campus_scope=scoped)
 
     return render(request, "portals/admin/inventory/assignment_form.html", {"form": form, "mode": "create"})
 
 
 @admin_portal_required
 def assignment_edit(request, pk: int):
-    obj = get_object_or_404(AssetAssignment, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    obj = get_object_or_404(_asset_assignment_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = AssetAssignmentForm(request.POST, instance=obj)
+        form = AssetAssignmentForm(request.POST, instance=obj, campus_scope=scoped)
         if form.is_valid():
             form.save()
             messages.success(request, "Assignment updated.")
             return redirect("admin_inventory_assignments_list")
     else:
-        form = AssetAssignmentForm(instance=obj)
+        form = AssetAssignmentForm(instance=obj, campus_scope=scoped)
 
     return render(
         request,

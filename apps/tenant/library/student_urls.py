@@ -8,5 +8,6 @@ urlpatterns = [
     path("books/<int:pk>/reserve/", student_views.reserve_book, name="student_library_reserve_book"),
     path("my-loans/", student_views.my_loans, name="student_library_loans"),
     path("my-reservations/", student_views.my_reservations, name="student_library_reservations"),
+    path("my-reservations/<int:pk>/cancel/", student_views.cancel_reservation, name="student_library_cancel_reservation"),
     path("my-fines/", student_views.my_fines, name="student_library_fines"),
 ]

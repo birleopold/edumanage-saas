@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from django import forms
 
+from apps.tenant.students.models import StudentProfile
+
 from .models import AssetAssignment, InventoryItem, StockMovement
 
 
@@ -51,6 +53,13 @@ class AssetAssignmentForm(forms.ModelForm):
             "assigned_at": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
             "returned_at": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+        self.fields["assigned_to_student"].queryset = StudentProfile.objects.select_related("campus").all()
+        if campus_scope:
+            self.fields["assigned_to_student"].queryset = self.fields["assigned_to_student"].queryset.filter(campus=campus_scope)
 
     def clean_quantity(self):
         qty = self.cleaned_data.get("quantity")

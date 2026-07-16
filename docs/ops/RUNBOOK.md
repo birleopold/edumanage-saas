@@ -42,3 +42,19 @@ Plain-language checks and commands for day-two operations. Paths are from the re
 | Messaging provider vars | As documented in `docs/WHATSAPP_PHASE1_SETUP.md` or your integrator setup. |
 
 For detailed product UX status, see `docs/UX_PROFESSIONAL_ROADMAP.md`.
+
+## Release gates
+
+Run these before merging or deploying:
+
+```bash
+python manage.py check
+DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy
+python verify_routes.py
+python manage.py test
+npm audit --omit=dev
+```
+
+Production must use `config.settings.prod`. It enables HTTPS-oriented settings such as secure cookies, SSL redirect, HSTS, frame protection, content-type sniffing protection, and a same-origin referrer policy. If SSL redirect or HSTS is terminated outside Django, keep the proxy configuration documented with the release notes.
+
+For the implementation roadmap and acceptance checks, see `docs/APP_IMPROVEMENT_ROADMAP.md`.

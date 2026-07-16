@@ -460,11 +460,12 @@ def retry_outbound_message_log(log, *, dry_run: bool = False) -> dict:
     return {"status": "sent" if ok else "failed"}
 
 
-def retry_outbound_message_logs(*, limit: int = 100, dry_run: bool = False, only_failed: bool = True, message_type: str = "") -> dict:
+def retry_outbound_message_logs(*, limit: int = 100, dry_run: bool = False, only_failed: bool = True, message_type: str = "", log_queryset=None) -> dict:
     from .models import OutboundMessageLog
 
     max_limit = max(1, min(int(limit or 100), 1000))
-    qs = OutboundMessageLog.objects.select_related("invoice", "payment").order_by("-created_at")
+    qs = log_queryset if log_queryset is not None else OutboundMessageLog.objects.select_related("invoice", "payment")
+    qs = qs.order_by("-created_at")
     if only_failed:
         qs = qs.filter(status=OutboundMessageLog.FAILED)
     if message_type:
@@ -493,7 +494,7 @@ def retry_outbound_message_log_by_id(log_id: int, *, dry_run: bool = False) -> d
     return retry_outbound_message_log(log, dry_run=dry_run)
 
 
-def messaging_readiness_snapshot(*, sample_limit: int = 50) -> dict:
+def messaging_readiness_snapshot(*, sample_limit: int = 50, invoice_queryset=None, log_queryset=None) -> dict:
     from .models import Invoice, OutboundMessageLog
 
     handler = _fee_reminder_handler()
@@ -501,7 +502,9 @@ def messaging_readiness_snapshot(*, sample_limit: int = 50) -> dict:
     token = (getattr(settings, "WHATSAPP_CLOUD_ACCESS_TOKEN", "") or "").strip()
     phone_id = (getattr(settings, "WHATSAPP_CLOUD_PHONE_NUMBER_ID", "") or "").strip()
     portal_base = (getattr(settings, "FEE_REMINDER_PORTAL_BASE_URL", "") or "").strip()
-    invoices = list(Invoice.objects.select_related("student").prefetch_related("lines", "payments")[: max(sample_limit, 1)])
+    invoice_qs = invoice_queryset if invoice_queryset is not None else Invoice.objects.select_related("student").prefetch_related("lines", "payments")
+    log_qs = log_queryset if log_queryset is not None else OutboundMessageLog.objects.all()
+    invoices = list(invoice_qs[: max(sample_limit, 1)])
     outstanding = [invoice for invoice in invoices if invoice.balance() > 0]
     return {
         "channel": channel,
@@ -513,7 +516,7 @@ def messaging_readiness_snapshot(*, sample_limit: int = 50) -> dict:
         "invoice_sample_size": len(invoices),
         "outstanding_invoices_in_sample": len(outstanding),
         "outstanding_with_parent_phone_in_sample": sum(1 for invoice in outstanding if parent_phones_for_student(invoice.student)),
-        "failed_logs_count": OutboundMessageLog.objects.filter(status=OutboundMessageLog.FAILED).count(),
+        "failed_logs_count": log_qs.filter(status=OutboundMessageLog.FAILED).count(),
     }
 
 

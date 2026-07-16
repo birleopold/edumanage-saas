@@ -2,6 +2,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
@@ -18,6 +19,20 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
         except (TypeError, ValueError):
             per_page = default
     return max(1, min(per_page, max_value))
+
+
+def _allocation_queryset_for(user):
+    qs = BedAllocation.objects.select_related(
+        "student",
+        "student__campus",
+        "bed",
+        "bed__room",
+        "bed__room__hostel",
+    )
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(student__campus=scoped)
+    return qs
 
 
 @admin_portal_required
@@ -186,12 +201,7 @@ def allocation_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = BedAllocation.objects.select_related(
-        "student",
-        "bed",
-        "bed__room",
-        "bed__room__hostel",
-    ).all()
+    qs = _allocation_queryset_for(request.user)
 
     if q:
         qs = qs.filter(
@@ -215,13 +225,14 @@ def allocation_list(request):
 
 @admin_portal_required
 def allocation_create(request):
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = BedAllocationForm(request.POST)
+        form = BedAllocationForm(request.POST, campus_scope=scoped)
         if form.is_valid():
             form.save()
             return redirect("admin_bed_allocations_list")
     else:
-        form = BedAllocationForm()
+        form = BedAllocationForm(campus_scope=scoped)
 
     return render(
         request,
@@ -232,15 +243,16 @@ def allocation_create(request):
 
 @admin_portal_required
 def allocation_edit(request, pk: int):
-    obj = get_object_or_404(BedAllocation, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    obj = get_object_or_404(_allocation_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = BedAllocationForm(request.POST, instance=obj)
+        form = BedAllocationForm(request.POST, instance=obj, campus_scope=scoped)
         if form.is_valid():
             form.save()
             return redirect("admin_bed_allocations_list")
     else:
-        form = BedAllocationForm(instance=obj)
+        form = BedAllocationForm(instance=obj, campus_scope=scoped)
 
     return render(
         request,

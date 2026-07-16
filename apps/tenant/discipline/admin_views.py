@@ -4,8 +4,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
-from apps.tenant.users.models import Role
 
 from .forms import IncidentActionForm, IncidentForm
 from .models import Incident, IncidentAction
@@ -22,13 +22,21 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(per_page, max_value))
 
 
+def _incident_queryset_for(user):
+    qs = Incident.objects.select_related("student", "student__campus", "reported_by")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(student__campus=scoped)
+    return qs
+
+
 @admin_portal_required
 def incident_list(request):
     q = (request.GET.get("q") or "").strip()
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Incident.objects.select_related("student", "reported_by").all()
+    qs = _incident_queryset_for(request.user)
 
     if q:
         qs = qs.filter(
@@ -51,14 +59,15 @@ def incident_list(request):
 
 @admin_portal_required
 def incident_create(request):
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = IncidentForm(request.POST)
+        form = IncidentForm(request.POST, campus_scope=scoped)
         if form.is_valid():
             form.save()
             messages.success(request, "Incident created.")
             return redirect("admin_incidents_list")
     else:
-        form = IncidentForm()
+        form = IncidentForm(campus_scope=scoped)
 
     return render(
         request,
@@ -69,16 +78,17 @@ def incident_create(request):
 
 @admin_portal_required
 def incident_edit(request, pk: int):
-    incident = get_object_or_404(Incident, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    incident = get_object_or_404(_incident_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = IncidentForm(request.POST, instance=incident)
+        form = IncidentForm(request.POST, instance=incident, campus_scope=scoped)
         if form.is_valid():
             form.save()
             messages.success(request, "Incident updated.")
             return redirect("admin_incidents_detail", pk=incident.pk)
     else:
-        form = IncidentForm(instance=incident)
+        form = IncidentForm(instance=incident, campus_scope=scoped)
 
     return render(
         request,
@@ -90,7 +100,7 @@ def incident_edit(request, pk: int):
 @admin_portal_required
 def incident_detail(request, pk: int):
     incident = get_object_or_404(
-        Incident.objects.select_related("student", "reported_by").prefetch_related("actions"),
+        _incident_queryset_for(request.user).prefetch_related("actions"),
         pk=pk,
     )
 

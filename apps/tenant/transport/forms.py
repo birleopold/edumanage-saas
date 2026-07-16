@@ -176,6 +176,12 @@ class StudentTransportAssignmentForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+        if campus_scope:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+
     def clean(self):
         cleaned = super().clean()
         student = cleaned.get("student")

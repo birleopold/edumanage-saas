@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from apps.tenant.finance import services as finance_services
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .models import AttendanceEntry, AttendanceSession
@@ -17,8 +18,33 @@ def _campus_queryset():
     return Campus.objects.filter(organization=org).order_by("name")
 
 
+def _campus_queryset_for(user):
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        return Campus.objects.filter(pk=scoped.pk)
+    return _campus_queryset()
+
+
+def _session_queryset_for(user):
+    qs = AttendanceSession.objects.select_related(
+        "offering",
+        "offering__course",
+        "offering__term",
+        "offering__term__year",
+        "offering__class_group",
+        "taken_by",
+    ).prefetch_related("entries")
+    scoped = get_user_campus_scope(user)
+    if scoped is not None:
+        qs = qs.filter(offering__campus=scoped)
+    return qs
+
+
 def _selected_campus_id(request):
-    current = get_current_campus(request)
+    scoped = get_user_campus_scope(request.user)
+    current = scoped or get_current_campus(request)
+    if scoped is not None:
+        return scoped.id
     if "campus" in request.GET:
         raw = request.GET.get("campus")
         if raw == "":
@@ -44,17 +70,10 @@ def session_list(request):
     q = (request.GET.get("q") or "").strip()
     page_number = request.GET.get("page") or 1
 
-    campuses = _campus_queryset()
+    campuses = _campus_queryset_for(request.user)
     campus_id = _selected_campus_id(request)
 
-    qs = AttendanceSession.objects.select_related(
-        "offering",
-        "offering__course",
-        "offering__term",
-        "offering__term__year",
-        "offering__class_group",
-        "taken_by",
-    ).prefetch_related("entries").all()
+    qs = _session_queryset_for(request.user)
 
     if campus_id:
         qs = qs.filter(offering__campus_id=campus_id)
@@ -95,14 +114,7 @@ def session_list(request):
 @admin_portal_required
 def session_detail(request, pk: int):
     session = get_object_or_404(
-        AttendanceSession.objects.select_related(
-            "offering",
-            "offering__course",
-            "offering__term",
-            "offering__term__year",
-            "offering__class_group",
-            "taken_by",
-        ),
+        _session_queryset_for(request.user),
         pk=pk,
     )
 

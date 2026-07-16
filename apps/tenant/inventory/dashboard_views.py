@@ -1,5 +1,7 @@
 from django.shortcuts import render
+from django.db.models import Q
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .models import AssetAssignment, InventoryItem, StockMovement
@@ -7,11 +9,16 @@ from .models import AssetAssignment, InventoryItem, StockMovement
 
 @admin_portal_required
 def inventory_dashboard(request):
+    scoped = get_user_campus_scope(request.user)
+    assignment_qs = AssetAssignment.objects.select_related(
+        "item", "assigned_to_user", "assigned_to_student", "assigned_to_student__campus"
+    )
+    if scoped:
+        assignment_qs = assignment_qs.filter(Q(assigned_to_student__campus=scoped) | Q(assigned_to_student__isnull=True))
+
     recent_items = InventoryItem.objects.order_by("-created_at")[:8]
     recent_movements = StockMovement.objects.select_related("item", "created_by").order_by("-created_at")[:8]
-    recent_assignments = AssetAssignment.objects.select_related(
-        "item", "assigned_to_user", "assigned_to_student"
-    ).order_by("-created_at")[:8]
+    recent_assignments = assignment_qs.order_by("-created_at")[:8]
 
     low_stock_count = 0
     for item in InventoryItem.objects.filter(is_active=True)[:500]:
@@ -25,7 +32,7 @@ def inventory_dashboard(request):
         "item_count": InventoryItem.objects.count(),
         "active_item_count": InventoryItem.objects.filter(is_active=True).count(),
         "movement_count": StockMovement.objects.count(),
-        "assignment_count": AssetAssignment.objects.count(),
+        "assignment_count": assignment_qs.count(),
         "low_stock_count": low_stock_count,
         "recent_items": recent_items,
         "recent_movements": recent_movements,

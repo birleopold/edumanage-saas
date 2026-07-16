@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
@@ -20,6 +21,34 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
         except (TypeError, ValueError):
             per_page = default
     return max(1, min(per_page, max_value))
+
+
+def _borrower_scope_filter(scoped):
+    return Q(student__campus=scoped) | Q(staff__campus=scoped)
+
+
+def _loan_queryset_for(user):
+    qs = BookLoan.objects.select_related("copy", "copy__book", "student", "student__campus", "staff", "staff__campus")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(_borrower_scope_filter(scoped))
+    return qs
+
+
+def _reservation_queryset_for(user):
+    qs = Reservation.objects.select_related("book", "student", "student__campus", "staff", "staff__campus")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(_borrower_scope_filter(scoped))
+    return qs
+
+
+def _fine_queryset_for(user):
+    qs = Fine.objects.select_related("loan", "student", "student__campus", "staff", "staff__campus", "waived_by")
+    scoped = get_user_campus_scope(user)
+    if scoped:
+        qs = qs.filter(_borrower_scope_filter(scoped))
+    return qs
 
 
 @admin_portal_required
@@ -140,7 +169,7 @@ def loan_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = BookLoan.objects.select_related("copy", "copy__book", "student", "staff").all()
+    qs = _loan_queryset_for(request.user)
     if q:
         qs = qs.filter(
             Q(student__first_name__icontains=q)
@@ -162,8 +191,9 @@ def loan_list(request):
 
 @admin_portal_required
 def loan_create(request):
+    scoped = get_user_campus_scope(request.user)
     if request.method == "POST":
-        form = BookLoanForm(request.POST)
+        form = BookLoanForm(request.POST, campus_scope=scoped)
         if form.is_valid():
             loan = form.save(commit=False)
             loan.checked_out_by = request.user
@@ -177,23 +207,24 @@ def loan_create(request):
             messages.success(request, f"Book checked out successfully to {loan.student or loan.staff}.")
             return redirect("admin_library_loans_list")
     else:
-        form = BookLoanForm()
+        form = BookLoanForm(campus_scope=scoped)
 
     return render(request, "portals/admin/library/loan_form.html", {"form": form, "mode": "create"})
 
 
 @admin_portal_required
 def loan_edit(request, pk: int):
-    obj = get_object_or_404(BookLoan, pk=pk)
+    scoped = get_user_campus_scope(request.user)
+    obj = get_object_or_404(_loan_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
-        form = BookLoanForm(request.POST, instance=obj)
+        form = BookLoanForm(request.POST, instance=obj, campus_scope=scoped)
         if form.is_valid():
             form.save()
             messages.success(request, "Loan updated successfully.")
             return redirect("admin_library_loans_list")
     else:
-        form = BookLoanForm(instance=obj)
+        form = BookLoanForm(instance=obj, campus_scope=scoped)
 
     return render(
         request,
@@ -204,7 +235,7 @@ def loan_edit(request, pk: int):
 
 @admin_portal_required
 def loan_mark_returned(request, pk: int):
-    loan = get_object_or_404(BookLoan, pk=pk)
+    loan = get_object_or_404(_loan_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
         loan.status = BookLoan.RETURNED
@@ -352,7 +383,7 @@ def checkin(request):
                 messages.error(request, f"No book copy found with code/barcode: {code}")
             else:
                 # Find active loan for this copy
-                loan = BookLoan.objects.filter(copy=copy, status=BookLoan.OPEN).first()
+                loan = _loan_queryset_for(request.user).filter(copy=copy, status=BookLoan.OPEN).first()
                 
                 if not loan:
                     messages.warning(request, f"No active loan found for {copy}.")
@@ -395,7 +426,7 @@ def reservation_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Reservation.objects.select_related("book", "student", "staff").all()
+    qs = _reservation_queryset_for(request.user)
     if q:
         qs = qs.filter(
             Q(book__title__icontains=q)
@@ -423,7 +454,7 @@ def fine_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Fine.objects.select_related("loan", "student", "staff", "waived_by").all()
+    qs = _fine_queryset_for(request.user)
     if q:
         qs = qs.filter(
             Q(student__first_name__icontains=q)
@@ -446,7 +477,7 @@ def fine_list(request):
 
 @admin_portal_required
 def fine_mark_paid(request, pk: int):
-    fine = get_object_or_404(Fine, pk=pk)
+    fine = get_object_or_404(_fine_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
         fine.status = Fine.PAID
@@ -459,7 +490,7 @@ def fine_mark_paid(request, pk: int):
 
 @admin_portal_required
 def fine_waive(request, pk: int):
-    fine = get_object_or_404(Fine, pk=pk)
+    fine = get_object_or_404(_fine_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":
         fine.status = Fine.WAIVED

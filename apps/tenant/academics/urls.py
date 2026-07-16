@@ -61,5 +61,6 @@ urlpatterns = [
     ),
 
     path("report-cards/<int:student_id>/<int:term_id>/", views.report_card_view, name="admin_report_card_view"),
+    path("terms/<int:term_id>/report-cards/<int:student_id>/", views.report_card_view, name="admin_report_card"),
     path("terms/<int:term_id>/report-cards/", views.term_report_cards, name="admin_term_report_cards"),
 ]

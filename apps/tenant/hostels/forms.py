@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.tenant.students.models import StudentProfile
+
 from .models import Bed, BedAllocation, Hostel, HostelRoom
 
 
@@ -59,6 +61,13 @@ class BedAllocationForm(forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
             "end_date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+        self.fields["student"].queryset = StudentProfile.objects.select_related("campus").all()
+        if campus_scope:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
 
     def clean(self):
         cleaned = super().clean()

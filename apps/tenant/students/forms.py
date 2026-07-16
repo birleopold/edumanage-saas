@@ -30,6 +30,7 @@ class StudentProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         campus = kwargs.pop("campus", None)
+        campus_queryset = kwargs.pop("campus_queryset", None)
         super().__init__(*args, **kwargs)
         from apps.tenant.academics.models import Stream
 
@@ -37,3 +38,5 @@ class StudentProfileForm(forms.ModelForm):
         if campus is not None:
             stream_qs = stream_qs.filter(class_group__campus=campus)
         self.fields["stream"].queryset = stream_qs
+        if campus_queryset is not None:
+            self.fields["campus"].queryset = campus_queryset

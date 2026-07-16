@@ -17,6 +17,7 @@ from apps.tenant.finance.models import Invoice, InvoiceLine, Payment
 from apps.tenant.parents.models import ParentProfile
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
+from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
@@ -56,12 +57,19 @@ def _range_obj(start: date, end: date) -> DateRange:
     return DateRange(start=start, end=end)
 
 
-def _campus_queryset():
+def _campus_queryset(user=None):
     org = get_or_create_organization()
-    return Campus.objects.filter(organization=org).order_by("name")
+    qs = Campus.objects.filter(organization=org).order_by("name")
+    scoped = get_user_campus_scope(user) if user is not None else None
+    if scoped:
+        qs = qs.filter(pk=scoped.pk)
+    return qs
 
 
 def _selected_campus_id(request) -> Optional[int]:
+    scoped = get_user_campus_scope(request.user)
+    if scoped:
+        return scoped.pk
     current = get_current_campus(request)
     if "campus" in request.GET:
         raw = request.GET.get("campus")
@@ -81,7 +89,7 @@ def _base_context(request):
         "start": start,
         "end": end,
         "date_range": _range_obj(start, end),
-        "campuses": _campus_queryset(),
+        "campuses": _campus_queryset(request.user),
         "selected_campus_id": campus_id,
     }
 

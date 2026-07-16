@@ -4,6 +4,11 @@ from .models import Incident, IncidentAction
 
 
 class IncidentForm(forms.ModelForm):
+    def __init__(self, *args, campus_scope=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if campus_scope is not None:
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+
     class Meta:
         model = Incident
         fields = [
