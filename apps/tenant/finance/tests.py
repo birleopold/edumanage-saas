@@ -12,8 +12,10 @@ from apps.tenant.finance.models import (
     CommunicationTemplate,
     IntegrationApiKey,
     Invoice,
+    MobilePaymentRequest,
     OutboundMessageLog,
     Payment,
+    PaymentGatewayEvent,
     InboundWebhookEvent,
     WebhookDelivery,
     WebhookEndpoint,
@@ -390,6 +392,87 @@ class FinanceReminderPhaseOneTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(InboundWebhookEvent.objects.filter(signature_valid=False).count(), 1)
+
+    @override_settings(
+        MTN_MOMO_CALLBACK_SECRET="supersecret",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
+    def test_payment_callback_rejects_missing_signature(self):
+        payment_request = MobilePaymentRequest.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("50000"),
+            phone_number="0772123456",
+            network=Payment.MTN_MOMO,
+            provider_reference="mtn-ref-001",
+            status=MobilePaymentRequest.PROCESSING,
+        )
+
+        response = self.client.post(
+            reverse("finance_mtn_collection_update"),
+            data={"reference": "mtn-ref-001", "status": "SUCCESSFUL"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        payment_request.refresh_from_db()
+        self.assertEqual(payment_request.status, MobilePaymentRequest.PROCESSING)
+        self.assertFalse(PaymentGatewayEvent.objects.exists())
+        self.assertFalse(Payment.objects.exists())
+
+    @override_settings(
+        MTN_MOMO_CALLBACK_SECRET="supersecret",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
+    def test_payment_callback_accepts_valid_hmac_signature(self):
+        payment_request = MobilePaymentRequest.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("50000"),
+            phone_number="0772123456",
+            network=Payment.MTN_MOMO,
+            provider_reference="mtn-ref-002",
+            status=MobilePaymentRequest.PROCESSING,
+        )
+        payload = {"reference": "mtn-ref-002", "status": "SUCCESSFUL"}
+        raw = json.dumps(payload).encode("utf-8")
+        sig = hmac.new(b"supersecret", raw, hashlib.sha256).hexdigest()
+
+        response = self.client.post(
+            reverse("finance_mtn_collection_update"),
+            data=raw,
+            content_type="application/json",
+            HTTP_X_WEBHOOK_SIGNATURE_256=f"sha256={sig}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payment_request.refresh_from_db()
+        self.assertEqual(payment_request.status, MobilePaymentRequest.SUCCESSFUL)
+        self.assertEqual(PaymentGatewayEvent.objects.filter(processed=True).count(), 1)
+        self.assertEqual(Payment.objects.filter(reference="mtn-ref-002").count(), 1)
+
+    @override_settings(
+        AIRTEL_MONEY_CALLBACK_SECRET="supersecret",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
+    def test_payment_callback_accepts_shared_secret_header(self):
+        payment_request = MobilePaymentRequest.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("25000"),
+            phone_number="0752123456",
+            network=Payment.AIRTEL_MONEY,
+            provider_reference="airtel-ref-001",
+            status=MobilePaymentRequest.PROCESSING,
+        )
+
+        response = self.client.post(
+            reverse("finance_airtel_collection_update"),
+            data={"reference": "airtel-ref-001", "status": "SUCCESSFUL"},
+            HTTP_X_CALLBACK_SECRET="supersecret",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payment_request.refresh_from_db()
+        self.assertEqual(payment_request.status, MobilePaymentRequest.SUCCESSFUL)
+        self.assertEqual(PaymentGatewayEvent.objects.filter(processed=True).count(), 1)
+        self.assertEqual(Payment.objects.filter(reference="airtel-ref-001").count(), 1)
 
 
 class FinanceAdminCampusScopeTests(TestCase):
