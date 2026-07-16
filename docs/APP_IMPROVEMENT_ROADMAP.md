@@ -84,6 +84,7 @@ Progress:
 - [x] Regression tests cover the full five-step school creation wizard and the owner handoff pack shown on tenant detail.
 - [x] Teacher dashboard shows a data-backed daily workflow across timetable, attendance, coursework, grading, incidents and announcements.
 - [x] Parent dashboard shows a data-backed family workflow across fees, attendance, report cards, announcements, documents and communication preferences.
+- [x] Admin dashboard shows a workflow rail for fast search, bulk actions, exports, audit trails, recovery evidence and dashboard drill-downs.
 
 ## Phase 6: Dependency Lifecycle
 

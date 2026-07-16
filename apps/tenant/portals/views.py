@@ -17,6 +17,7 @@ from apps.tenant.orgsettings.services import (
 from apps.tenant.academics.models import AcademicTerm, AcademicYear, CourseOffering, Enrollment
 from apps.tenant.announcements.models import Announcement
 from apps.tenant.assessments.models import AssessmentScore
+from apps.tenant.audit.models import AuditEvent, BackupJob
 from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
 from apps.tenant.coursework.models import Assignment, AssignmentSubmission
 from apps.tenant.discipline.models import Incident
@@ -24,6 +25,7 @@ from apps.tenant.documents.models import Document
 from apps.tenant.finance.models import Invoice
 from apps.tenant.finance.services import filter_invoices_outstanding, filter_invoices_overdue
 from apps.tenant.grievances.models import Grievance
+from apps.tenant.orgsettings.models import ActionLog, StatusHistory
 from apps.tenant.parents.forms import ParentResultsPinSelfServiceForm
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.polls.portal_services import polls_for_user
@@ -268,6 +270,92 @@ def _parent_daily_workflow(parent_profile, links):
     }
 
 
+def _admin_operations_workflow(*, students_count, teachers_count, parents_count, invoices_overdue_count, grievances_open_count, school_health):
+    searchable_records = students_count + teachers_count + parents_count
+    audit_count = AuditEvent.objects.count() + ActionLog.objects.count() + StatusHistory.objects.count()
+    backup_count = BackupJob.objects.filter(status__in=(BackupJob.SUCCESS, BackupJob.RESTORE_TESTED)).count()
+    health_gap_count = len(school_health.get("top_gaps", [])) if school_health else 0
+    cards = [
+        {
+            "key": "search",
+            "title": "Fast Search",
+            "metric": searchable_records,
+            "detail": "people records indexed for admin lookup",
+            "url": reverse("admin_global_search"),
+            "icon": "ph-magnifying-glass",
+            "ready": searchable_records > 0,
+        },
+        {
+            "key": "bulk_actions",
+            "title": "Bulk Actions",
+            "metric": 3,
+            "detail": "student import, enrollment and invoice bulk tools",
+            "url": reverse("admin_students_bulk_import"),
+            "icon": "ph-stack-plus",
+            "ready": True,
+            "secondary_links": [
+                {"label": "Bulk enroll", "url": reverse("admin_enrollment_bulk")},
+                {"label": "Bulk invoices", "url": reverse("admin_invoices_bulk_create")},
+            ],
+        },
+        {
+            "key": "exports",
+            "title": "Exports",
+            "metric": 5,
+            "detail": "student, invoice and report CSV exports",
+            "url": reverse("audit_export_center"),
+            "icon": "ph-file-arrow-down",
+            "ready": True,
+            "secondary_links": [
+                {"label": "Students CSV", "url": reverse("admin_students_export_csv")},
+                {"label": "Invoices CSV", "url": reverse("admin_invoices_export_csv")},
+                {"label": "Reports CSV", "url": reverse("admin_reports_overview_csv")},
+            ],
+        },
+        {
+            "key": "audit_trails",
+            "title": "Audit Trails",
+            "metric": audit_count,
+            "detail": "audit, action and status records",
+            "url": reverse("audit_activity_timeline"),
+            "icon": "ph-shield-check",
+            "ready": audit_count > 0,
+            "secondary_links": [
+                {"label": "Audit center", "url": reverse("audit_dashboard")},
+                {"label": "Backups", "url": reverse("audit_backup_jobs")},
+            ],
+        },
+        {
+            "key": "drilldowns",
+            "title": "Dashboard Drill-downs",
+            "metric": invoices_overdue_count + grievances_open_count + health_gap_count,
+            "detail": "open operational items needing review",
+            "url": reverse("admin_reports_overview"),
+            "icon": "ph-chart-line-up",
+            "ready": True,
+            "secondary_links": [
+                {"label": "Overdue fees", "url": f"{reverse('admin_invoices_list')}?overdue=1"},
+                {"label": "Open concerns", "url": f"{reverse('admin_grievances_list')}?status=OPEN"},
+                {"label": "Health gaps", "url": reverse("admin_school_health_score")},
+            ],
+        },
+        {
+            "key": "recovery",
+            "title": "Recovery Evidence",
+            "metric": backup_count,
+            "detail": "successful backup or restore audit records",
+            "url": reverse("audit_backup_jobs"),
+            "icon": "ph-database",
+            "ready": backup_count > 0,
+        },
+    ]
+    return {
+        "cards": cards,
+        "ready_count": sum(1 for card in cards if card["ready"]),
+        "total": len(cards),
+    }
+
+
 def landing_page(request):
     """
     Landing page with smart redirect based on user authentication and role.
@@ -333,6 +421,14 @@ def admin_home(request):
 
     school_setup = school_setup_progress()
     school_health = build_school_health_score()
+    admin_operations = _admin_operations_workflow(
+        students_count=students_total,
+        teachers_count=teachers_total,
+        parents_count=parents_total,
+        invoices_overdue_count=invoices_overdue_count,
+        grievances_open_count=grievances_open_count,
+        school_health=school_health,
+    )
 
     return render(
         request,
@@ -356,6 +452,7 @@ def admin_home(request):
             "grievances_in_progress_count": grievances_in_progress_count,
             "school_setup": school_setup,
             "school_health": school_health,
+            "admin_operations": admin_operations,
             "poll_dashboard_items": _poll_items(request),
         },
     )

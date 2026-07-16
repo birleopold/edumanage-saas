@@ -65,6 +65,36 @@
   </section>
   {% endif %}
 
+  <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.16em] text-primary-600">Admin operations workflow</p>
+        <h2 class="mt-1 text-xl font-black text-slate-950">{{ admin_operations.ready_count }} of {{ admin_operations.total }} workflow checks ready</h2>
+        <p class="mt-1 text-sm font-semibold text-slate-500">Fast search, bulk work, exports, audit trails and dashboard drill-downs in one operational rail.</p>
+      </div>
+      <a href="{% url 'admin_global_search' %}" class="inline-flex items-center justify-center rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-magnifying-glass mr-1"></i> Search records</a>
+    </div>
+    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {% for card in admin_operations.cards %}
+        <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-700 shadow-sm"><i class="ph {{ card.icon }} text-2xl"></i></span>
+            <span class="rounded-full px-2.5 py-1 text-xs font-black {% if card.ready %}bg-green-100 text-green-700{% else %}bg-amber-100 text-amber-800{% endif %}">{% if card.ready %}Ready{% else %}Review{% endif %}</span>
+          </div>
+          <h3 class="mt-4 font-black text-slate-950">{{ card.title }}</h3>
+          <p class="mt-1 text-2xl font-black text-slate-900">{{ card.metric }}</p>
+          <p class="mt-1 text-sm font-semibold text-slate-500">{{ card.detail }}</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a href="{{ card.url }}" class="rounded-xl bg-white px-3 py-1.5 text-xs font-black text-primary-700 ring-1 ring-slate-200 hover:bg-primary-50">Open</a>
+            {% for link in card.secondary_links %}
+              <a href="{{ link.url }}" class="rounded-xl bg-white px-3 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">{{ link.label }}</a>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
   <section>
     <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
       <div><h2 class="text-xl font-black text-slate-900">10/10 workflow command center</h2><p class="text-sm text-slate-500">The most important operational areas are now one click away.</p></div>
