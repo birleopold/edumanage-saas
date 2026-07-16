@@ -44,6 +44,10 @@ This checklist should be completed before onboarding real school clients.
    - Keep tenant export/backup tools available to schools.
    - Test restore on a separate environment.
    - Document backup retention and restore responsibility.
+   - Record backup evidence after each successful automated backup:
+     `python manage.py record_backup --status SUCCESS --file-path <backup-uri> --checksum <sha256>`.
+   - Record quarterly restore drill evidence after testing a restore:
+     `python manage.py record_backup --status RESTORE_TESTED --notes "Restored YYYY-MM-DD backup into staging and verified login/report smoke tests"`.
 
 7. **Admin security**
    - Keep the Platform Console restricted to trusted superusers.

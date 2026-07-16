@@ -846,6 +846,43 @@ class OperationalReadinessCommandTests(TestCase):
         self.assertIn("manual", statuses)
         self.assertIn("pass", statuses)
 
+    def test_command_reports_backup_and_restore_evidence(self):
+        BackupJob.objects.create(
+            status=BackupJob.SUCCESS,
+            file_path="s3://backups/nightly.sql.gz",
+            checksum="abc123",
+            finished_at=timezone.now(),
+        )
+        BackupJob.objects.create(
+            status=BackupJob.RESTORE_TESTED,
+            notes="Restored into staging and verified smoke tests.",
+            finished_at=timezone.now(),
+        )
+
+        out = StringIO()
+        call_command("check_operational_readiness", "--json", "--strict", stdout=out)
+        payload = json.loads(out.getvalue())
+        checks = {item["name"]: item for item in payload["checks"]}
+
+        self.assertEqual(checks["Recent successful backup audit"]["status"], "pass")
+        self.assertEqual(checks["Quarterly restore drill audit"]["status"], "pass")
+
+    def test_record_backup_command_records_restore_drill(self):
+        out = StringIO()
+        call_command(
+            "record_backup",
+            "--status",
+            BackupJob.RESTORE_TESTED,
+            "--notes",
+            "Quarterly restore drill completed.",
+            stdout=out,
+        )
+
+        job = BackupJob.objects.get(status=BackupJob.RESTORE_TESTED)
+        self.assertIsNotNone(job.started_at)
+        self.assertIsNotNone(job.finished_at)
+        self.assertIn("Backup audit record created", out.getvalue())
+
     def test_command_strict_fails_when_production_settings_are_required_in_test_settings(self):
         with self.assertRaises(CommandError):
             call_command(

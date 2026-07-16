@@ -4,6 +4,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.urls import NoReverseMatch, reverse
+from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -56,6 +57,8 @@ class Command(BaseCommand):
             self._route_check("health", "Public health route", fallback_path="/health/"),
             self._route_check("public_status", "Public status route"),
             self._command_check("apps.tenant.audit.management.commands.record_backup", "Backup audit command"),
+            self._backup_audit_check(),
+            self._restore_drill_check(),
             {
                 "name": "External health/status monitoring",
                 "status": "manual",
@@ -101,6 +104,30 @@ class Command(BaseCommand):
         except ImportError as exc:
             return {"name": name, "status": "fail", "detail": str(exc)}
         return {"name": name, "status": "pass", "detail": module_path}
+
+    def _backup_audit_check(self):
+        from apps.tenant.audit.models import BackupJob
+
+        cutoff = timezone.now() - timezone.timedelta(hours=36)
+        latest = BackupJob.objects.filter(status__in=[BackupJob.SUCCESS, BackupJob.RESTORE_TESTED]).order_by("-finished_at", "-created_at").first()
+        recent = latest and (latest.finished_at or latest.created_at) >= cutoff
+        return {
+            "name": "Recent successful backup audit",
+            "status": "pass" if recent else "manual",
+            "detail": f"Latest successful backup/restore audit: {latest.status} at {(latest.finished_at or latest.created_at).isoformat()}" if latest else "Record nightly backup success with: python manage.py record_backup --status SUCCESS",
+        }
+
+    def _restore_drill_check(self):
+        from apps.tenant.audit.models import BackupJob
+
+        cutoff = timezone.now() - timezone.timedelta(days=120)
+        latest = BackupJob.objects.filter(status=BackupJob.RESTORE_TESTED).order_by("-finished_at", "-created_at").first()
+        recent = latest and (latest.finished_at or latest.created_at) >= cutoff
+        return {
+            "name": "Quarterly restore drill audit",
+            "status": "pass" if recent else "manual",
+            "detail": f"Latest restore drill: {(latest.finished_at or latest.created_at).date().isoformat()}" if latest else "After a restore drill, record: python manage.py record_backup --status RESTORE_TESTED",
+        }
 
     def _setting_check(self, setting_name: str, expected, name: str):
         value = getattr(settings, setting_name, None)

@@ -30,6 +30,8 @@ Plain-language checks and commands for day-two operations. Paths are from the re
 ## Backups and recovery (baseline)
 
 - **Database**: follow your host’s automated backup schedule; test a restore quarterly.
+- **Nightly evidence**: after an automated backup completes, record it in the app audit trail with `python manage.py record_backup --status SUCCESS --file-path <backup-uri> --checksum <sha256>`.
+- **Quarterly restore drill evidence**: after restoring into staging and smoke-testing login, tenant access, finance reports, and document/media access, record `python manage.py record_backup --status RESTORE_TESTED --notes "Restored <date> backup into staging and verified smoke tests"`.
 - **Secrets**: WhatsApp/SMS provider keys and Django `SECRET_KEY` must be restored from a secure vault, not from application DB backups alone.
 - **Incident communication**: use the public status page or external status vendor if the app is unreachable; update `PUBLIC_STATUS_PAGE_ENABLED` only if the route must be hidden during an investigation.
 
