@@ -22,14 +22,16 @@ from apps.tenant.academics.models import (
 )
 from apps.tenant.admissions.models import Applicant
 from apps.tenant.announcements.models import Announcement
-from apps.tenant.attendance.models import AttendanceSession
+from apps.tenant.assessments.models import Assessment, AssessmentScore
+from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
 from apps.tenant.coursework.models import Assignment, AssignmentSubmission
 from apps.tenant.discipline.models import Incident
+from apps.tenant.documents.models import Document
 from apps.tenant.admissions.pdf_letter import generate_admission_letter_pdf
 from apps.tenant.assessments.parent_session import PIN_SESSION_KEY
 from apps.tenant.audit.models import BackupJob
 from apps.tenant.finance.integration_models import IntegrationProviderConfig
-from apps.tenant.finance.models import FeeItem, Invoice, Payment
+from apps.tenant.finance.models import FeeItem, Invoice, InvoiceLine, Payment
 from apps.tenant.grievances.models import Grievance
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.hostels.models import Bed, BedAllocation, Hostel, HostelRoom
@@ -396,9 +398,50 @@ class FeatureEntryPointTests(TestCase):
     def test_parent_home_links_digests_and_sickbay(self):
         user = User.objects.create_user(username="feature_parent", password="test-pass-123")
         user.roles.add(self.role_parent)
-        parent = ParentProfile.objects.create(user=user, first_name="Feature", last_name="Parent")
+        parent = ParentProfile.objects.create(
+            user=user,
+            first_name="Feature",
+            last_name="Parent",
+            allow_sms_alerts=True,
+            digest_enabled=True,
+        )
         student = StudentProfile.objects.create(first_name="Feature", last_name="Child", campus=self.campus)
         ParentStudentLink.objects.create(parent=parent, student=student)
+        year, _ = AcademicYear.objects.get_or_create(name="2100", defaults={"is_current": True})
+        term, _ = AcademicTerm.objects.get_or_create(year=year, name="Term 1", defaults={"is_current": True, "order": 1})
+        class_group = ClassGroup.objects.create(name="Parent Feature Class", campus=self.campus)
+        course = Course.objects.create(name="Parent Workflow")
+        teacher_user = User.objects.create_user(username="parent_feature_teacher", password="test-pass-123")
+        teacher = TeacherProfile.objects.create(user=teacher_user, first_name="P", last_name="Teacher", campus=self.campus)
+        offering = CourseOffering.objects.create(
+            campus=self.campus,
+            course=course,
+            term=term,
+            class_group=class_group,
+            teacher=teacher,
+        )
+        Enrollment.objects.create(campus=self.campus, offering=offering, student=student)
+        session = AttendanceSession.objects.create(offering=offering, date=timezone.localdate(), taken_by=teacher)
+        AttendanceEntry.objects.create(session=session, student=student, status=AttendanceEntry.PRESENT)
+        assessment = Assessment.objects.create(offering=offering, name="Midterm", is_published=True)
+        AssessmentScore.objects.create(assessment=assessment, student=student, score=Decimal("82"))
+        invoice = Invoice.objects.create(student=student, academic_year=year, academic_term=term, reference="PF-001")
+        fee_item = FeeItem.objects.create(code="PF-TUITION", name="Parent Feature Tuition", amount=Decimal("1000"))
+        InvoiceLine.objects.create(invoice=invoice, fee_item=fee_item, description="Tuition", quantity=1, unit_amount=Decimal("1000"))
+        Announcement.objects.create(
+            title="Parent briefing",
+            body="Bring report card questions.",
+            audience=Announcement.PARENTS,
+            is_active=True,
+            is_urgent=True,
+        )
+        Document.objects.create(
+            title="Parent Handbook",
+            description="Daily family reference.",
+            file=SimpleUploadedFile("parent-handbook.pdf", b"pdf"),
+            audience=Document.PARENTS,
+            is_active=True,
+        )
         self.client.login(username="feature_parent", password="test-pass-123")
 
         resp = self.client.get(reverse("parent_home"))
@@ -407,6 +450,18 @@ class FeatureEntryPointTests(TestCase):
         self.assertContains(resp, reverse("parent_digest_history"))
         self.assertContains(resp, reverse("parent_sickbay_visits"))
         self.assertContains(resp, "Weekly Digests")
+        self.assertContains(resp, "Today&apos;s family workflow")
+        self.assertContains(resp, reverse("parent_invoices_list"))
+        self.assertContains(resp, reverse("parent_attendance_home"))
+        self.assertContains(resp, reverse("parent_results_home"))
+        self.assertContains(resp, reverse("parent_announcements_list"))
+        self.assertContains(resp, reverse("parent_documents_list"))
+        self.assertContains(resp, reverse("parent_communication_preferences"))
+        self.assertContains(resp, "invoice(s) with balance to review")
+        self.assertContains(resp, "attendance record(s) available")
+        self.assertContains(resp, "published result(s)")
+        self.assertContains(resp, "Parent briefing")
+        self.assertContains(resp, "Parent Handbook")
 
 
 class ParentChildIdCardPdfViewTests(TestCase):

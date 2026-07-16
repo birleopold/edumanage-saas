@@ -16,9 +16,11 @@ from apps.tenant.orgsettings.services import (
 
 from apps.tenant.academics.models import AcademicTerm, AcademicYear, CourseOffering, Enrollment
 from apps.tenant.announcements.models import Announcement
-from apps.tenant.attendance.models import AttendanceSession
+from apps.tenant.assessments.models import AssessmentScore
+from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
 from apps.tenant.coursework.models import Assignment, AssignmentSubmission
 from apps.tenant.discipline.models import Incident
+from apps.tenant.documents.models import Document
 from apps.tenant.finance.models import Invoice
 from apps.tenant.finance.services import filter_invoices_outstanding, filter_invoices_overdue
 from apps.tenant.grievances.models import Grievance
@@ -156,6 +158,111 @@ def _teacher_daily_workflow(teacher):
         "today": today,
         "cards": cards,
         "announcements": announcements,
+        "ready_count": sum(1 for card in cards if card["ready"]),
+        "total": len(cards),
+    }
+
+
+def _parent_daily_workflow(parent_profile, links):
+    today = timezone.localdate()
+    students = [link.student for link in links]
+    student_ids = [student.id for student in students]
+    if not parent_profile:
+        return {
+            "today": today,
+            "cards": [],
+            "announcements": [],
+            "ready_count": 0,
+            "total": 0,
+        }
+
+    invoices = Invoice.objects.filter(student_id__in=student_ids)
+    outstanding_count = filter_invoices_outstanding(invoices).count()
+    attendance_count = AttendanceEntry.objects.filter(student_id__in=student_ids).count()
+    published_scores_count = AssessmentScore.objects.filter(
+        student_id__in=student_ids,
+        assessment__is_published=True,
+    ).count()
+    announcements = list(
+        Announcement.objects.filter(is_active=True)
+        .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.PARENTS))
+        .order_by("-is_urgent", "-created_at")[:3]
+    )
+    documents_qs = Document.objects.filter(is_active=True).filter(
+        Q(audience=Document.ALL) | Q(audience=Document.PARENTS)
+    )
+    documents = list(documents_qs.order_by("-created_at")[:3])
+    document_count = documents_qs.count()
+    preferences_ready = (
+        bool(parent_profile.communication_consent_updated_at)
+        and (
+            parent_profile.allow_sms_alerts
+            or parent_profile.allow_whatsapp_alerts
+            or parent_profile.digest_enabled
+        )
+    )
+
+    cards = [
+        {
+            "key": "fees",
+            "title": "Fees",
+            "metric": outstanding_count,
+            "detail": "invoice(s) with balance to review",
+            "url": reverse("parent_invoices_list"),
+            "icon": "ph-wallet",
+            "ready": outstanding_count == 0,
+        },
+        {
+            "key": "attendance",
+            "title": "Attendance",
+            "metric": attendance_count,
+            "detail": "attendance record(s) available",
+            "url": reverse("parent_attendance_home"),
+            "icon": "ph-calendar-check",
+            "ready": attendance_count > 0,
+        },
+        {
+            "key": "report_cards",
+            "title": "Report Cards",
+            "metric": published_scores_count,
+            "detail": "published result(s)",
+            "url": reverse("parent_results_home"),
+            "icon": "ph-chart-bar",
+            "ready": published_scores_count > 0,
+        },
+        {
+            "key": "announcements",
+            "title": "Announcements",
+            "metric": len(announcements),
+            "detail": "recent notice(s)",
+            "url": reverse("parent_announcements_list"),
+            "icon": "ph-megaphone",
+            "ready": True,
+        },
+        {
+            "key": "documents",
+            "title": "Documents",
+            "metric": document_count,
+            "detail": "school document(s)",
+            "url": reverse("parent_documents_list"),
+            "icon": "ph-file-doc",
+            "ready": document_count > 0,
+        },
+        {
+            "key": "preferences",
+            "title": "Preferences",
+            "metric": "On" if preferences_ready else "Off",
+            "detail": "message consent and digest settings",
+            "url": reverse("parent_communication_preferences"),
+            "icon": "ph-bell",
+            "ready": preferences_ready,
+        },
+    ]
+    return {
+        "today": today,
+        "cards": cards,
+        "announcements": announcements,
+        "documents": documents,
         "ready_count": sum(1 for card in cards if card["ready"]),
         "total": len(cards),
     }
@@ -374,6 +481,7 @@ def parent_home(request):
             "selected_campus_id": selected_campus_id,
             "parent_invoices_outstanding": parent_invoices_outstanding,
             "parent_invoices_overdue": parent_invoices_overdue,
+            "parent_daily_workflow": _parent_daily_workflow(parent_profile, links),
             "poll_dashboard_items": _poll_items(request),
         },
     )

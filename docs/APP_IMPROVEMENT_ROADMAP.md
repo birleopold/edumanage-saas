@@ -83,6 +83,7 @@ Progress:
 - [x] Platform tenant detail now shows a school-owner handoff panel with tenant, domain, DNS, SSL, subscription and first-login readiness checks.
 - [x] Regression tests cover the full five-step school creation wizard and the owner handoff pack shown on tenant detail.
 - [x] Teacher dashboard shows a data-backed daily workflow across timetable, attendance, coursework, grading, incidents and announcements.
+- [x] Parent dashboard shows a data-backed family workflow across fees, attendance, report cards, announcements, documents and communication preferences.
 
 ## Phase 6: Dependency Lifecycle
 
