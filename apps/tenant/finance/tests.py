@@ -13,6 +13,7 @@ from apps.tenant.finance.models import (
     IntegrationApiKey,
     IntegrationApiKeyScope,
     IntegrationScope,
+    IntegrationEventLog,
     Invoice,
     MobilePaymentRequest,
     OutboundMessageLog,
@@ -407,6 +408,83 @@ class FinanceReminderPhaseOneTests(TestCase):
         self.assertEqual(summary["processed"], 1)
         item.refresh_from_db()
         self.assertTrue(item.is_active)
+
+    @override_settings(WEBHOOK_MAX_RETRY_ATTEMPTS=2, WEBHOOK_RETRY_BASE_SECONDS=1)
+    def test_process_webhook_retry_queue_caps_attempts_and_audits_terminal_failure(self):
+        endpoint = WebhookEndpoint.objects.create(
+            name="Terminal retry endpoint",
+            target_url="https://127.0.0.1:1/unreachable",
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            is_active=True,
+        )
+        item = WebhookRetryQueueItem.objects.create(
+            endpoint=endpoint,
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            payload={"event": "message_log.created"},
+            attempt_count=1,
+            max_attempts=99,
+            is_active=True,
+        )
+
+        summary = process_webhook_retry_queue(limit=10)
+
+        self.assertEqual(summary["processed"], 1)
+        self.assertEqual(summary["failed"], 1)
+        self.assertEqual(summary["deactivated"], 1)
+        item.refresh_from_db()
+        self.assertFalse(item.is_active)
+        self.assertEqual(item.attempt_count, 2)
+        self.assertEqual(item.max_attempts, 2)
+        self.assertTrue(WebhookDelivery.objects.filter(endpoint=endpoint, success=False).exists())
+        self.assertTrue(
+            IntegrationEventLog.objects.filter(
+                event_type="webhook.retry.terminal",
+                status=IntegrationEventLog.FAILED,
+                external_reference=str(item.pk),
+            ).exists()
+        )
+
+    def test_webhook_deliveries_api_includes_retry_failure_summary(self):
+        key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Webhook Dashboard")
+        endpoint = WebhookEndpoint.objects.create(
+            name="Dashboard endpoint",
+            target_url="https://127.0.0.1:1/unreachable",
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            is_active=True,
+        )
+        WebhookDelivery.objects.create(
+            endpoint=endpoint,
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            payload={"event": "message_log.created"},
+            success=False,
+            error_message="failed",
+        )
+        WebhookRetryQueueItem.objects.create(
+            endpoint=endpoint,
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            payload={"event": "message_log.created"},
+            is_active=True,
+        )
+        WebhookRetryQueueItem.objects.create(
+            endpoint=endpoint,
+            event_type=WebhookEndpoint.EVENT_MESSAGE_LOG_CREATED,
+            payload={"event": "message_log.created"},
+            attempt_count=5,
+            is_active=False,
+        )
+
+        response = self.client.get(
+            "/api/v1/integrations/webhook-deliveries/",
+            HTTP_X_API_KEY=raw_key,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["failed_delivery_count"], 1)
+        self.assertEqual(payload["active_retry_count"], 1)
+        self.assertEqual(payload["terminal_retry_count"], 1)
+        key_obj.refresh_from_db()
+        self.assertIsNotNone(key_obj.last_used_at)
 
     @override_settings(WHATSAPP_STATUS_WEBHOOK_SECRET="supersecret")
     def test_whatsapp_status_callback_updates_delivery_status(self):

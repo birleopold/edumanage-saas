@@ -544,7 +544,7 @@ def _deliver_webhook(endpoint, event_type: str, payload: dict) -> dict:
 
 def _enqueue_webhook_retry_item(endpoint, event_type: str, payload: dict, error_message: str, status_code=None) -> None:
     from .models import WebhookRetryQueueItem
-    WebhookRetryQueueItem.objects.create(endpoint=endpoint, event_type=event_type, payload=payload, attempt_count=0, max_attempts=int(getattr(settings, "WEBHOOK_MAX_RETRY_ATTEMPTS", 5) or 5), next_attempt_at=timezone.now() + timedelta(seconds=int(getattr(settings, "WEBHOOK_RETRY_BASE_SECONDS", 30) or 30)), is_active=True, last_error_message=error_message or "", last_status_code=status_code)
+    WebhookRetryQueueItem.objects.create(endpoint=endpoint, event_type=event_type, payload=payload, attempt_count=0, max_attempts=_webhook_retry_limit(), next_attempt_at=timezone.now() + timedelta(seconds=int(getattr(settings, "WEBHOOK_RETRY_BASE_SECONDS", 30) or 30)), is_active=True, last_error_message=error_message or "", last_status_code=status_code)
 
 
 def _dispatch_webhook_event_for_message_log(log_obj) -> None:
@@ -562,6 +562,23 @@ def _dispatch_webhook_event_for_message_log(log_obj) -> None:
         logger.exception("Webhook dispatch failed for message log")
 
 
+def _webhook_retry_limit() -> int:
+    return max(1, min(int(getattr(settings, "WEBHOOK_MAX_RETRY_ATTEMPTS", 5) or 5), 25))
+
+
+def _record_webhook_retry_audit(item, status: str, payload: dict | None = None, error_message: str = "") -> None:
+    from .models import IntegrationEventLog
+
+    IntegrationEventLog.objects.create(
+        event_type=f"webhook.retry.{status}",
+        direction=IntegrationEventLog.OUTBOUND,
+        status=IntegrationEventLog.SUCCESS if status == "sent" else IntegrationEventLog.FAILED if status == "terminal" else IntegrationEventLog.PENDING,
+        request_payload={"retry_item_id": item.pk, "endpoint_id": item.endpoint_id, "event_type": item.event_type, **(payload or {})},
+        error_message=error_message,
+        external_reference=str(item.pk),
+    )
+
+
 def process_webhook_retry_queue(*, limit: int = 100, dry_run: bool = False) -> dict:
     from .models import WebhookDelivery, WebhookRetryQueueItem
 
@@ -574,6 +591,9 @@ def process_webhook_retry_queue(*, limit: int = 100, dry_run: bool = False) -> d
         if dry_run:
             details.append({"item_id": item.pk, "status": "dry_run"})
             continue
+        effective_max_attempts = min(max(1, int(item.max_attempts or 1)), _webhook_retry_limit())
+        if item.max_attempts != effective_max_attempts:
+            item.max_attempts = effective_max_attempts
         result = _deliver_webhook(item.endpoint, item.event_type, item.payload)
         WebhookDelivery.objects.create(endpoint=item.endpoint, event_type=item.event_type, payload=item.payload, status_code=result["status_code"], success=result["success"], response_body=result["response_body"], error_message=result["error_message"])
         item.attempt_count += 1
@@ -584,17 +604,20 @@ def process_webhook_retry_queue(*, limit: int = 100, dry_run: bool = False) -> d
             sent += 1
             deactivated += 1
             details.append({"item_id": item.pk, "status": "sent"})
+            _record_webhook_retry_audit(item, "sent", {"attempt_count": item.attempt_count})
         else:
             failed += 1
-            if item.attempt_count >= item.max_attempts:
+            if item.attempt_count >= effective_max_attempts:
                 item.is_active = False
                 deactivated += 1
                 details.append({"item_id": item.pk, "status": "failed_terminal"})
+                _record_webhook_retry_audit(item, "terminal", {"attempt_count": item.attempt_count, "max_attempts": effective_max_attempts}, result["error_message"])
             else:
                 delay = base_delay * (2 ** max(item.attempt_count - 1, 0))
                 item.next_attempt_at = timezone.now() + timedelta(seconds=delay)
                 details.append({"item_id": item.pk, "status": "failed_retry_scheduled", "next_delay_s": delay})
-        item.save(update_fields=["attempt_count", "last_error_message", "last_status_code", "next_attempt_at", "is_active", "updated_at"])
+                _record_webhook_retry_audit(item, "scheduled", {"attempt_count": item.attempt_count, "max_attempts": effective_max_attempts, "next_delay_s": delay}, result["error_message"])
+        item.save(update_fields=["attempt_count", "max_attempts", "last_error_message", "last_status_code", "next_attempt_at", "is_active", "updated_at"])
     return {"processed": processed, "sent": sent, "failed": failed, "deactivated": deactivated, "dry_run": dry_run, "details": details}
 
 

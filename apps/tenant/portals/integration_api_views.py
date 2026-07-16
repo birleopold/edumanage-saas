@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenant.finance import services as finance_services
-from apps.tenant.finance.models import IntegrationApiKey, OutboundMessageLog, WebhookDelivery
+from apps.tenant.finance.models import IntegrationApiKey, OutboundMessageLog, WebhookDelivery, WebhookRetryQueueItem
 
 
 class HasIntegrationApiKey(BasePermission):
@@ -114,7 +114,16 @@ class IntegrationWebhookDeliveries(APIView):
                     "created_at": d.created_at.isoformat() if d.created_at else None,
                 }
             )
-        return Response({"count": len(rows), "results": rows})
+        retry_qs = WebhookRetryQueueItem.objects.all()
+        return Response(
+            {
+                "count": len(rows),
+                "active_retry_count": retry_qs.filter(is_active=True).count(),
+                "terminal_retry_count": retry_qs.filter(is_active=False, attempt_count__gte=1).count(),
+                "failed_delivery_count": WebhookDelivery.objects.filter(success=False).count(),
+                "results": rows,
+            }
+        )
 
 
 class WhatsAppStatusCallback(APIView):
