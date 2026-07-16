@@ -35,6 +35,13 @@ jobs:
       - name: Install asset dependencies
         run: npm ci
 
+      - name: Check dependency lifecycle
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py check_dependency_lifecycle --strict
+
       - name: Run Django checks
         env:
           DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks

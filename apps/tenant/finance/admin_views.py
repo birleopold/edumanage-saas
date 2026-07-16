@@ -250,7 +250,7 @@ def invoice_export_csv(request):
             "balance",
         ]
     )
-    for inv in qs.iterator():
+    for inv in qs.iterator(chunk_size=500):
         ob = inv.opening_balance if inv.opening_balance is not None else 0
         lines_total = inv._lines_sum
         paid = inv._paid_sum

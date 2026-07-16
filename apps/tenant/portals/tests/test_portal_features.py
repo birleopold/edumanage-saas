@@ -1026,6 +1026,30 @@ class OperationalReadinessCommandTests(TestCase):
             )
 
 
+class DependencyLifecycleCommandTests(TestCase):
+    def test_command_reports_supported_lts_stack_and_ci_gate(self):
+        out = StringIO()
+        call_command("check_dependency_lifecycle", "--json", "--strict", stdout=out)
+        payload = json.loads(out.getvalue())
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["policy"]["django_lts_target"], "5.2")
+        checks = {item["name"]: item for item in payload["checks"]}
+        self.assertEqual(checks["Django LTS pin"]["status"], "pass")
+        self.assertEqual(checks["django-tenants compatibility"]["status"], "pass")
+        self.assertEqual(checks["CI dependency lifecycle gate"]["status"], "pass")
+        self.assertEqual(checks["Monthly review procedure"]["status"], "pass")
+
+    def test_command_prints_monthly_review_context(self):
+        out = StringIO()
+        call_command("check_dependency_lifecycle", stdout=out)
+        text = out.getvalue()
+
+        self.assertIn("Dependency lifecycle checklist", text)
+        self.assertIn("Django LTS pin", text)
+        self.assertIn("Monthly review procedure", text)
+
+
 class BulkImportPreviewFlowTests(TestCase):
     def setUp(self):
         self.role_admin, _ = Role.objects.get_or_create(

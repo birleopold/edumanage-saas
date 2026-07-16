@@ -52,6 +52,7 @@ Run these before merging or deploying:
 
 ```bash
 python manage.py check_operational_readiness --strict
+python manage.py check_dependency_lifecycle --strict
 python manage.py check
 DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy
 python verify_routes.py
@@ -60,5 +61,7 @@ npm audit --omit=dev
 ```
 
 Production must use `config.settings.prod`. It enables HTTPS-oriented settings such as secure cookies, SSL redirect, HSTS, frame protection, content-type sniffing protection, and a same-origin referrer policy. If SSL redirect or HSTS is terminated outside Django, keep the proxy configuration documented with the release notes.
+
+Dependency support windows are release gates too. See `docs/ops/DEPENDENCY_LIFECYCLE.md` for the monthly dependency review, Django LTS policy, and release-note review procedure.
 
 For the implementation roadmap and acceptance checks, see `docs/APP_IMPROVEMENT_ROADMAP.md`.

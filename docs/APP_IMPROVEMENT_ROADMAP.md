@@ -5,8 +5,8 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 208 tests.
-- Route verification reports 620 URL names, 442 templates, 1,331 template URL references, and 0 broken template references.
+- Full local test suite passes with 214 tests.
+- Route verification reports 620 URL names, 442 templates, 1,346 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
 - Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
 
@@ -89,14 +89,21 @@ Progress:
 
 ## Phase 6: Dependency Lifecycle
 
-Status: planned.
+Status: complete.
 
 Acceptance checks:
 
-- Upgrade path from Django 4.2 to a supported LTS line is tested on a branch.
-- Dependencies are reviewed monthly for security and support status.
-- Release notes are checked before major framework upgrades.
-- CI pins supported Python and Node versions.
+- [x] Upgrade path from Django 4.2 to a supported LTS line is tested on a branch.
+- [x] Dependencies are reviewed monthly for security and support status.
+- [x] Release notes are checked before major framework upgrades.
+- [x] CI pins supported Python and Node versions.
+
+Progress:
+
+- [x] Django is pinned to `5.2.16` LTS and `django-tenants` is pinned to `3.10.2`, replacing the unsupported Django 4.2 stack.
+- [x] `check_dependency_lifecycle --strict` verifies Django LTS, django-tenants compatibility, Python/Node runtime pins, CI wiring and monthly review documentation.
+- [x] CI runs the dependency lifecycle gate before Django checks and tests.
+- [x] `docs/ops/DEPENDENCY_LIFECYCLE.md` records monthly review cadence, release-note review expectations and the 4.2-to-5.2 compatibility finding.
 
 ## Working Rule
 
