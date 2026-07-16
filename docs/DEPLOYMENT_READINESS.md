@@ -75,10 +75,17 @@ This checklist should be completed before onboarding real school clients.
 ## Important production commands
 
 ```bash
+python manage.py check_operational_readiness --strict
 python manage.py migrate_schemas --shared
 python manage.py migrate_schemas --tenant
 python manage.py collectstatic --noinput
 python manage.py check --deploy
+```
+
+For production-settings verification, run the command with the production settings module:
+
+```bash
+DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check_operational_readiness --strict --require-production-settings
 ```
 
 ## Suggested environment variables

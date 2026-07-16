@@ -48,6 +48,7 @@ For detailed product UX status, see `docs/UX_PROFESSIONAL_ROADMAP.md`.
 Run these before merging or deploying:
 
 ```bash
+python manage.py check_operational_readiness --strict
 python manage.py check
 DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy
 python verify_routes.py

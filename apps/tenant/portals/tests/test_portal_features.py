@@ -1,4 +1,5 @@
 import re
+import json
 from decimal import Decimal
 from io import StringIO
 
@@ -823,6 +824,36 @@ class PublicStatusPageTests(TestCase):
         resp = self.client.get(reverse("public_status"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Service status")
+
+
+class OperationalReadinessCommandTests(TestCase):
+    def test_command_prints_release_gates(self):
+        out = StringIO()
+        call_command("check_operational_readiness", stdout=out)
+        text = out.getvalue()
+
+        self.assertIn("Operational readiness checklist", text)
+        self.assertIn("python manage.py check", text)
+        self.assertIn("Public health route", text)
+
+    def test_command_json_reports_manual_external_checks_without_failing_strict(self):
+        out = StringIO()
+        call_command("check_operational_readiness", "--json", "--strict", stdout=out)
+        payload = json.loads(out.getvalue())
+
+        self.assertTrue(payload["ok"])
+        statuses = {item["status"] for item in payload["checks"]}
+        self.assertIn("manual", statuses)
+        self.assertIn("pass", statuses)
+
+    def test_command_strict_fails_when_production_settings_are_required_in_test_settings(self):
+        with self.assertRaises(CommandError):
+            call_command(
+                "check_operational_readiness",
+                "--strict",
+                "--require-production-settings",
+                stdout=StringIO(),
+            )
 
 
 class BulkImportPreviewFlowTests(TestCase):

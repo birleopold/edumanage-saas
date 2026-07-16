@@ -5,7 +5,7 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 200 tests.
+- Full local test suite passes with 203 tests.
 - Route verification reports 620 URL names, 442 templates, 1,331 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
 - Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
@@ -54,11 +54,11 @@ Acceptance checks:
 
 ## Phase 4: Operational Readiness
 
-Status: next.
+Status: in progress.
 
 Acceptance checks:
 
-- Production deploy checklist is run before each release.
+- [x] Production deploy checklist is run before each release.
 - Nightly PostgreSQL backup and quarterly restore drill are documented.
 - `/health/` and public status routes are monitored externally.
 - Error tracking captures stack traces outside the user UI.
