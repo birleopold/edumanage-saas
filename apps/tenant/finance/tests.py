@@ -449,6 +449,91 @@ class FinanceReminderPhaseOneTests(TestCase):
         self.assertEqual(Payment.objects.filter(reference="mtn-ref-002").count(), 1)
 
     @override_settings(
+        MTN_MOMO_CALLBACK_SECRET="supersecret",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
+    def test_payment_callback_replay_does_not_create_duplicate_payment(self):
+        payment_request = MobilePaymentRequest.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("50000"),
+            phone_number="0772123456",
+            network=Payment.MTN_MOMO,
+            provider_reference="mtn-ref-003",
+            status=MobilePaymentRequest.PROCESSING,
+        )
+        payload = {"reference": "mtn-ref-003", "status": "SUCCESSFUL"}
+        raw = json.dumps(payload).encode("utf-8")
+        sig = hmac.new(b"supersecret", raw, hashlib.sha256).hexdigest()
+
+        first_response = self.client.post(
+            reverse("finance_mtn_collection_update"),
+            data=raw,
+            content_type="application/json",
+            HTTP_X_WEBHOOK_SIGNATURE_256=sig,
+        )
+        replay_response = self.client.post(
+            reverse("finance_mtn_collection_update"),
+            data=raw,
+            content_type="application/json",
+            HTTP_X_WEBHOOK_SIGNATURE_256=sig,
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(replay_response.status_code, 200)
+        payment_request.refresh_from_db()
+        self.assertEqual(payment_request.status, MobilePaymentRequest.SUCCESSFUL)
+        self.assertEqual(Payment.objects.filter(reference="mtn-ref-003").count(), 1)
+        self.assertEqual(PaymentGatewayEvent.objects.filter(provider_reference="mtn-ref-003").count(), 2)
+        self.assertTrue(
+            PaymentGatewayEvent.objects.filter(
+                provider_reference="mtn-ref-003",
+                error_message="Replay callback ignored.",
+                processed=True,
+            ).exists()
+        )
+
+    @override_settings(
+        MTN_MOMO_CALLBACK_SECRET="supersecret",
+        FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
+    )
+    def test_completed_payment_callback_cannot_be_downgraded(self):
+        payment = Payment.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("50000"),
+            method=Payment.MOBILE,
+            mobile_network=Payment.MTN_MOMO,
+            reference="mtn-ref-004",
+        )
+        payment_request = MobilePaymentRequest.objects.create(
+            invoice=self.invoice,
+            amount=Decimal("50000"),
+            phone_number="0772123456",
+            network=Payment.MTN_MOMO,
+            provider_reference="mtn-ref-004",
+            status=MobilePaymentRequest.SUCCESSFUL,
+            created_payment=payment,
+        )
+
+        response = self.client.post(
+            reverse("finance_mtn_collection_update"),
+            data={"reference": "mtn-ref-004", "status": "FAILED"},
+            HTTP_X_CALLBACK_SECRET="supersecret",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payment_request.refresh_from_db()
+        self.assertEqual(payment_request.status, MobilePaymentRequest.SUCCESSFUL)
+        self.assertEqual(payment_request.created_payment, payment)
+        self.assertEqual(Payment.objects.filter(reference="mtn-ref-004").count(), 1)
+        self.assertTrue(
+            PaymentGatewayEvent.objects.filter(
+                provider_reference="mtn-ref-004",
+                error_message="Payment request already completed.",
+                processed=True,
+            ).exists()
+        )
+
+    @override_settings(
         AIRTEL_MONEY_CALLBACK_SECRET="supersecret",
         FEE_REMINDER_HANDLER="apps.tenant.finance.sms_defaults.log_fee_reminder_to_logger",
     )

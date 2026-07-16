@@ -78,6 +78,31 @@ def detect_duplicate_payment(invoice, amount, reference=""):
     return qs.filter(created_at__date=timezone.localdate()).first()
 
 
+def _matching_mobile_payment(payment_request, reference):
+    if not reference:
+        return None
+    return Payment.objects.filter(
+        invoice=payment_request.invoice,
+        amount=payment_request.amount,
+        method=Payment.MOBILE,
+        mobile_network=payment_request.network,
+        reference__iexact=reference,
+    ).first()
+
+
+def _record_replay_event(provider, reference, provider_status, payload, existing_event):
+    return PaymentGatewayEvent.objects.create(
+        provider=provider,
+        event_type=PaymentGatewayEvent.CALLBACK,
+        payment_request=existing_event.payment_request,
+        provider_reference=reference,
+        provider_status=provider_status,
+        payload=payload,
+        processed=True,
+        error_message="Replay callback ignored.",
+    )
+
+
 @transaction.atomic
 def initiate_collection(*, invoice, amount, phone_number, network, requested_by=None):
     amounts = invoice_amounts(invoice)
@@ -114,29 +139,53 @@ def _callback_reference(payload):
 @transaction.atomic
 def process_gateway_callback(provider, payload):
     reference = _callback_reference(payload)
-    event = PaymentGatewayEvent.objects.create(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, provider_reference=reference, provider_status=str(payload.get("status") or ""), payload=payload)
-    payment_request = MobilePaymentRequest.objects.filter(provider_reference=reference).select_related("invoice").first()
+    provider_status = str(payload.get("status") or "")
+    existing_event = PaymentGatewayEvent.objects.filter(
+        provider=provider,
+        event_type=PaymentGatewayEvent.CALLBACK,
+        provider_reference=reference,
+        provider_status=provider_status,
+        payload=payload,
+        processed=True,
+    ).select_related("payment_request").first() if reference else None
+    if existing_event:
+        return _record_replay_event(provider, reference, provider_status, payload, existing_event)
+
+    event = PaymentGatewayEvent.objects.create(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, provider_reference=reference, provider_status=provider_status, payload=payload)
+    payment_request = MobilePaymentRequest.objects.select_for_update().filter(provider_reference=reference).select_related("invoice").first()
     if not payment_request:
         event.error_message = "No matching payment request."
         event.save(update_fields=["error_message"])
         return event
     event.payment_request = payment_request
     status = _callback_status(payload)
+
+    if payment_request.status == MobilePaymentRequest.SUCCESSFUL and payment_request.created_payment_id:
+        event.processed = True
+        event.error_message = "Payment request already completed."
+        event.save(update_fields=["payment_request", "processed", "error_message"])
+        return event
+
     payment_request.status = status
     payment_request.provider_response = payload
     if status == MobilePaymentRequest.SUCCESSFUL and not payment_request.created_payment:
-        duplicate = detect_duplicate_payment(payment_request.invoice, payment_request.amount, reference)
-        if duplicate:
-            DuplicatePaymentAlert.objects.create(payment=duplicate, duplicate_of=duplicate, reason=f"Gateway callback duplicate: {reference}")
-            event.error_message = "Duplicate payment detected."
+        existing_payment = _matching_mobile_payment(payment_request, reference)
+        if existing_payment:
+            payment_request.created_payment = existing_payment
+            event.error_message = "Existing payment matched callback."
         else:
-            payment = Payment.objects.create(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference=reference, received_at=timezone.localdate())
-            payment_request.created_payment = payment
-            try:
-                from .services import send_payment_receipt_for_payment
-                send_payment_receipt_for_payment(payment)
-            except Exception:
-                pass
+            duplicate = detect_duplicate_payment(payment_request.invoice, payment_request.amount, reference)
+            if duplicate:
+                DuplicatePaymentAlert.objects.create(payment=duplicate, duplicate_of=duplicate, reason=f"Gateway callback duplicate: {reference}")
+                event.error_message = "Duplicate payment detected."
+            else:
+                payment = Payment.objects.create(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference=reference, received_at=timezone.localdate())
+                payment_request.created_payment = payment
+                try:
+                    from .services import send_payment_receipt_for_payment
+                    send_payment_receipt_for_payment(payment)
+                except Exception:
+                    pass
     payment_request.save(update_fields=["status", "provider_response", "created_payment"])
     event.processed = True
     event.save(update_fields=["payment_request", "processed", "error_message"])
