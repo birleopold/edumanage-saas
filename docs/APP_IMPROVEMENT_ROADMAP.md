@@ -5,7 +5,7 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 206 tests.
+- Full local test suite passes with 208 tests.
 - Route verification reports 620 URL names, 442 templates, 1,331 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
 - Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
@@ -67,7 +67,7 @@ Acceptance checks:
 
 ## Phase 5: Product Workflow Quality
 
-Status: planned.
+Status: in progress.
 
 Acceptance checks:
 
@@ -76,6 +76,12 @@ Acceptance checks:
 - Parent daily workflow covers fees, attendance, report cards, announcements, documents, and communication preferences from mobile.
 - Admin workflow provides fast search, bulk actions, exports, audit trails, and dashboard drill-downs.
 - Offline/PWA flows are tested for attendance and high-frequency mobile use.
+
+Progress:
+
+- [x] Platform Create School Wizard records tenant-created audit evidence with owner username, login URL, setup guide URL, campus, academic period, feature flag and schema-context metadata.
+- [x] Platform tenant detail now shows a school-owner handoff panel with tenant, domain, DNS, SSL, subscription and first-login readiness checks.
+- [x] Regression tests cover the full five-step school creation wizard and the owner handoff pack shown on tenant detail.
 
 ## Phase 6: Dependency Lifecycle
 

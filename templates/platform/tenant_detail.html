@@ -49,6 +49,69 @@
     </div>
   </section>
 
+  <section class="rounded-3xl border border-emerald-100 bg-white shadow-sm">
+    <div class="flex flex-col gap-4 border-b border-emerald-100 bg-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider text-emerald-700">School owner handoff</p>
+        <h3 class="mt-1 text-xl font-black text-emerald-950">{{ onboarding_handoff.done_count }} of {{ onboarding_handoff.total }} onboarding checks ready</h3>
+        <p class="mt-2 text-sm font-semibold text-emerald-900">Use this panel to send the school owner from tenant creation into first login and the in-tenant setup checklist.</p>
+      </div>
+      <div class="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+        <p class="text-3xl font-black {% if onboarding_handoff.ready %}text-green-700{% else %}text-amber-700{% endif %}">{{ onboarding_handoff.percent }}%</p>
+        <p class="mt-1 text-xs font-black uppercase tracking-wider text-slate-500">{% if onboarding_handoff.ready %}Ready to hand off{% else %}Needs attention{% endif %}</p>
+      </div>
+    </div>
+    <div class="grid gap-5 p-5 lg:grid-cols-[1fr_.75fr]">
+      <div class="grid gap-3 sm:grid-cols-2">
+        {% for step in onboarding_handoff.steps %}
+          <article class="rounded-2xl border {% if step.done %}border-green-100 bg-green-50{% else %}border-amber-100 bg-amber-50{% endif %} p-4">
+            <div class="flex gap-3">
+              <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {% if step.done %}bg-green-600 text-white{% else %}bg-amber-500 text-white{% endif %}">
+                <i class="ph {% if step.done %}ph-check-bold{% else %}ph-warning{% endif %}"></i>
+              </span>
+              <div class="min-w-0">
+                <h4 class="font-black text-slate-950">{{ step.title }}</h4>
+                <p class="mt-1 text-sm font-semibold leading-5 text-slate-600">{{ step.description }}</p>
+                <p class="mt-2 break-all text-xs font-black uppercase tracking-wider {% if step.done %}text-green-700{% else %}text-amber-800{% endif %}">{{ step.detail }}</p>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+      <aside class="space-y-4">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <p class="text-xs font-black uppercase tracking-wider text-slate-500">Owner login pack</p>
+          <dl class="mt-4 space-y-3 text-sm">
+            <div>
+              <dt class="font-black text-slate-700">Username</dt>
+              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.admin_username|default:"Not recorded" }}</dd>
+            </div>
+            <div>
+              <dt class="font-black text-slate-700">Login URL</dt>
+              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.login_url|default:"Add a primary domain first" }}</dd>
+            </div>
+            <div>
+              <dt class="font-black text-slate-700">First-login checklist</dt>
+              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.setup_guide_url|default:"Add a primary domain first" }}</dd>
+            </div>
+          </dl>
+          <div class="mt-5 flex flex-wrap gap-2">
+            {% if onboarding_handoff.login_url %}
+              <a href="{{ onboarding_handoff.login_url }}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">Open login</a>
+            {% endif %}
+            {% if onboarding_handoff.setup_guide_url %}
+              <a href="{{ onboarding_handoff.setup_guide_url }}" target="_blank" rel="noopener" class="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-800 hover:bg-emerald-50">Open setup guide</a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
+          <h4 class="font-black">Handoff script</h4>
+          <p class="mt-2 font-semibold leading-6">Confirm DNS and SSL, share the login URL and owner username, then ask the owner to open the setup checklist after their first sign-in.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
   <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
     <div class="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div>

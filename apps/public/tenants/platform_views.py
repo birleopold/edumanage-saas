@@ -21,6 +21,8 @@ from .subscription_services import create_subscription_for_tenant
 PLATFORM_PAGE_SIZE = 25
 PLATFORM_CNAME_TARGET = "edumanage.com"
 PLATFORM_A_RECORD_TARGET = "YOUR_EDUMANAGE_SERVER_IP"
+TENANT_LOGIN_PATH = "/login/"
+TENANT_SETUP_GUIDE_PATH = "/admin/school-setup/"
 
 
 def _login_redirect_url(request):
@@ -85,6 +87,94 @@ def _record_platform_event(request, action, *, tenant=None, domain=None, object_
         ip_address=_client_ip(request),
         user_agent=request.META.get("HTTP_USER_AGENT", ""),
     )
+
+
+def _tenant_absolute_url(domain_name: str, path: str = "/") -> str:
+    path = path if path.startswith("/") else f"/{path}"
+    return f"https://{domain_name}{path}"
+
+
+def _onboarding_event_metadata(onboarding):
+    return {
+        "admin_username": onboarding.admin_user.username,
+        "login_domain": onboarding.login_domain,
+        "login_url": _tenant_absolute_url(onboarding.login_domain, TENANT_LOGIN_PATH),
+        "setup_guide_path": TENANT_SETUP_GUIDE_PATH,
+        "setup_guide_url": _tenant_absolute_url(onboarding.login_domain, TENANT_SETUP_GUIDE_PATH),
+        "organization_id": getattr(onboarding.organization, "id", None),
+        "campus_id": getattr(onboarding.campus, "id", None),
+        "campus_name": getattr(onboarding.campus, "name", ""),
+        "setup_token_created": onboarding.setup_token is not None,
+        "tenant_schema_used": onboarding.tenant_schema_used,
+        "academic_year": getattr(onboarding.academic_year, "name", ""),
+        "academic_term": str(onboarding.academic_term),
+        "feature_flags_created": onboarding.feature_flags_created,
+        "feature_flags_total": onboarding.feature_flags_total,
+    }
+
+
+def _tenant_onboarding_handoff(tenant, domains, subscription):
+    primary_domain = next((domain for domain in domains if domain.is_primary), domains[0] if domains else None)
+    created_event = (
+        PlatformAuditEvent.objects.filter(tenant=tenant, action=PlatformAuditEvent.TENANT_CREATED)
+        .order_by("-created_at")
+        .first()
+    )
+    metadata = created_event.metadata if created_event else {}
+    domain_name = metadata.get("login_domain") or getattr(primary_domain, "domain", "")
+    login_url = metadata.get("login_url") or (_tenant_absolute_url(domain_name, TENANT_LOGIN_PATH) if domain_name else "")
+    setup_guide_url = metadata.get("setup_guide_url") or (_tenant_absolute_url(domain_name, TENANT_SETUP_GUIDE_PATH) if domain_name else "")
+    steps = [
+        {
+            "title": "Tenant activated",
+            "description": "School status allows users into the tenant portal.",
+            "done": tenant.status == "active",
+            "detail": tenant.status.title(),
+        },
+        {
+            "title": "Primary login domain assigned",
+            "description": "The school has a primary web address for first login.",
+            "done": primary_domain is not None,
+            "detail": getattr(primary_domain, "domain", "No domain"),
+        },
+        {
+            "title": "DNS verified",
+            "description": "DNS has been checked before the school is sent live credentials.",
+            "done": bool(primary_domain and primary_domain.is_verified),
+            "detail": primary_domain.get_dns_status_display() if primary_domain else "Pending",
+        },
+        {
+            "title": "SSL active",
+            "description": "The login address is ready for secure browser access.",
+            "done": bool(primary_domain and primary_domain.is_ssl_active),
+            "detail": primary_domain.get_ssl_status_display() if primary_domain else "Pending",
+        },
+        {
+            "title": "Subscription usable",
+            "description": "Billing state permits the school to operate.",
+            "done": bool(subscription and subscription.is_usable),
+            "detail": subscription.get_status_display() if subscription else "Missing",
+        },
+        {
+            "title": "Owner first-login path ready",
+            "description": "Platform staff can hand the owner their username, login URL and setup checklist.",
+            "done": bool(metadata.get("admin_username") and login_url and setup_guide_url),
+            "detail": metadata.get("admin_username") or "Not recorded",
+        },
+    ]
+    done_count = sum(1 for step in steps if step["done"])
+    return {
+        "primary_domain": primary_domain,
+        "admin_username": metadata.get("admin_username", ""),
+        "login_url": login_url,
+        "setup_guide_url": setup_guide_url,
+        "metadata": metadata,
+        "steps": steps,
+        "done_count": done_count,
+        "total": len(steps),
+        "percent": round((done_count / len(steps)) * 100) if steps else 100,
+        "ready": done_count == len(steps),
+    }
 
 
 def _domain_dns_instructions(domain):
@@ -232,6 +322,7 @@ def tenant_create(request):
             onboarding = getattr(form, "onboarding_result", None)
             subscription = getattr(form, "subscription_result", None)
             primary_domain = tenant.domains.filter(is_primary=True).first()
+            onboarding_metadata = _onboarding_event_metadata(onboarding) if onboarding else {}
             _record_platform_event(
                 request,
                 PlatformAuditEvent.TENANT_CREATED,
@@ -239,6 +330,7 @@ def tenant_create(request):
                 domain=primary_domain,
                 object_label=tenant.name,
                 after={"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status, "primary_domain": getattr(primary_domain, "domain", "")},
+                metadata=onboarding_metadata,
             )
             if subscription:
                 _record_platform_event(
@@ -307,6 +399,7 @@ def tenant_detail(request, pk):
             "domains": domains,
             "subscription": subscription,
             "domain_management": _domain_management_rows(domains),
+            "onboarding_handoff": _tenant_onboarding_handoff(tenant, domains, subscription),
             "schema_status": _schema_status(tenant.schema_name),
             "status_form": TenantStatusForm(initial={"status": tenant.status}),
             "recent_platform_events": PlatformAuditEvent.objects.select_related("actor", "tenant", "domain").filter(tenant=tenant)[:20],

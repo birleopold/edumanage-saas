@@ -6,7 +6,7 @@ from django.utils.http import urlencode
 
 from .models import Domain, PlatformAuditEvent, Tenant
 from .onboarding import provision_school_tenant
-from .platform_views import _record_platform_event, platform_admin_required
+from .platform_views import _onboarding_event_metadata, _record_platform_event, platform_admin_required
 from .subscription_services import create_subscription_for_tenant
 from .wizard_forms import (
     ConfirmActivationStepForm,
@@ -199,6 +199,20 @@ def create_school_wizard(request):
                         enabled_feature_codes=features["feature_flags"],
                     )
                     subscription = create_subscription_for_tenant(tenant, package_code=features.get("package") or "standard")
+                    _record_platform_event(
+                        request,
+                        PlatformAuditEvent.TENANT_CREATED,
+                        tenant=tenant,
+                        domain=domain,
+                        object_label=tenant.name,
+                        after={
+                            "name": tenant.name,
+                            "schema_name": tenant.schema_name,
+                            "status": tenant.status,
+                            "primary_domain": domain.domain,
+                        },
+                        metadata=_onboarding_event_metadata(onboarding),
+                    )
                     _record_platform_event(
                         request,
                         PlatformAuditEvent.SUBSCRIPTION_CREATED,
