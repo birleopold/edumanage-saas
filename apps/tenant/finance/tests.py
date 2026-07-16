@@ -35,6 +35,7 @@ from apps.tenant.finance.services import (
     process_webhook_retry_queue,
     send_payment_receipt_for_payment,
     send_fee_reminder_for_invoice,
+    send_test_message,
 )
 from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.orgsettings.models import Campus
@@ -199,7 +200,57 @@ class FinanceReminderPhaseOneTests(TestCase):
         self.assertIn("channel", snap)
         self.assertIn("handler_resolved", snap)
         self.assertIn("failed_logs_count", snap)
+        self.assertIn("failure_by_type", snap)
+        self.assertIn("failure_by_channel", snap)
+        self.assertIn("recent_failure_reasons", snap)
         self.assertGreaterEqual(snap["invoice_sample_size"], 1)
+
+    def test_messaging_readiness_snapshot_summarizes_failures(self):
+        OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.FEE_REMINDER,
+            channel=OutboundMessageLog.SMS,
+            invoice=self.invoice,
+            phone_raw="0772123456",
+            status=OutboundMessageLog.FAILED,
+            message="failed reminder",
+            error_message="network timeout",
+        )
+        OutboundMessageLog.objects.create(
+            message_type=OutboundMessageLog.PAYMENT_RECEIPT,
+            channel=OutboundMessageLog.WHATSAPP,
+            invoice=self.invoice,
+            phone_raw="0772123000",
+            status=OutboundMessageLog.FAILED,
+            message="failed receipt",
+            error_message="network timeout",
+        )
+
+        snap = messaging_readiness_snapshot(sample_limit=10)
+
+        self.assertEqual(snap["failed_logs_count"], 2)
+        self.assertIn({"message_type": OutboundMessageLog.FEE_REMINDER, "count": 1}, snap["failure_by_type"])
+        self.assertIn({"channel": OutboundMessageLog.SMS, "count": 1}, snap["failure_by_channel"])
+        self.assertEqual(snap["recent_failure_reasons"][0]["error_message"], "network timeout")
+        self.assertEqual(snap["recent_failure_reasons"][0]["count"], 2)
+
+    def test_send_test_message_dry_run_records_log_without_dispatch(self):
+        result = send_test_message(
+            phone="0772123456",
+            message="Dry run provider test",
+            channel=OutboundMessageLog.SMS,
+            dry_run=True,
+        )
+
+        self.assertEqual(result["status"], "dry_run")
+        self.assertEqual(
+            OutboundMessageLog.objects.filter(
+                message_type=OutboundMessageLog.URGENT_ANNOUNCEMENT,
+                status=OutboundMessageLog.DRY_RUN,
+                phone_raw="0772123456",
+                provider_response__manual_test=True,
+            ).count(),
+            1,
+        )
 
     @override_settings(FEE_REMINDER_CHANNEL="WHATSAPP", FEE_REMINDER_DEFAULT_COUNTRY_CODE="256")
     def test_retry_outbound_message_logs_retries_failed_entry(self):

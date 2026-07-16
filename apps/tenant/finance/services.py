@@ -18,7 +18,7 @@ from urllib import error, request
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import DecimalField, ExpressionWrapper, F, OuterRef, Subquery, Sum, Value
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -506,6 +506,15 @@ def messaging_readiness_snapshot(*, sample_limit: int = 50, invoice_queryset=Non
     log_qs = log_queryset if log_queryset is not None else OutboundMessageLog.objects.all()
     invoices = list(invoice_qs[: max(sample_limit, 1)])
     outstanding = [invoice for invoice in invoices if invoice.balance() > 0]
+    failed_qs = log_qs.filter(status=OutboundMessageLog.FAILED)
+    failure_by_type = list(failed_qs.values("message_type").annotate(count=Count("id")).order_by("-count", "message_type")[:10])
+    failure_by_channel = list(failed_qs.values("channel").annotate(count=Count("id")).order_by("-count", "channel")[:10])
+    recent_failure_reasons = list(
+        failed_qs.exclude(error_message="")
+        .values("error_message")
+        .annotate(count=Count("id"))
+        .order_by("-count", "error_message")[:5]
+    )
     return {
         "channel": channel,
         "handler_configured": bool(getattr(settings, "FEE_REMINDER_HANDLER", None) or getattr(settings, "FEE_REMINDER_SMS_HANDLER", None)),
@@ -516,7 +525,10 @@ def messaging_readiness_snapshot(*, sample_limit: int = 50, invoice_queryset=Non
         "invoice_sample_size": len(invoices),
         "outstanding_invoices_in_sample": len(outstanding),
         "outstanding_with_parent_phone_in_sample": sum(1 for invoice in outstanding if parent_phones_for_student(invoice.student)),
-        "failed_logs_count": log_qs.filter(status=OutboundMessageLog.FAILED).count(),
+        "failed_logs_count": failed_qs.count(),
+        "failure_by_type": failure_by_type,
+        "failure_by_channel": failure_by_channel,
+        "recent_failure_reasons": recent_failure_reasons,
     }
 
 

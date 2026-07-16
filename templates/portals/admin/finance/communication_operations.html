@@ -37,6 +37,24 @@
     </div>
   </section>
 
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <h2 class="text-lg font-bold text-gray-900 mb-3">Failure Review</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-sm">
+      <div>
+        <p class="text-xs uppercase text-gray-500 font-bold mb-2">By Type</p>
+        <div class="space-y-2">{% for row in readiness.failure_by_type %}<div class="flex items-center justify-between border border-gray-100 rounded-lg p-2"><span>{{ row.message_type|default:'Unknown' }}</span><span class="font-bold text-red-700">{{ row.count }}</span></div>{% empty %}<p class="text-gray-500">No failures.</p>{% endfor %}</div>
+      </div>
+      <div>
+        <p class="text-xs uppercase text-gray-500 font-bold mb-2">By Channel</p>
+        <div class="space-y-2">{% for row in readiness.failure_by_channel %}<div class="flex items-center justify-between border border-gray-100 rounded-lg p-2"><span>{{ row.channel|default:'Unknown' }}</span><span class="font-bold text-red-700">{{ row.count }}</span></div>{% empty %}<p class="text-gray-500">No failures.</p>{% endfor %}</div>
+      </div>
+      <div>
+        <p class="text-xs uppercase text-gray-500 font-bold mb-2">Top Reasons</p>
+        <div class="space-y-2">{% for row in readiness.recent_failure_reasons %}<div class="border border-gray-100 rounded-lg p-2"><div class="flex items-center justify-between gap-3"><span class="truncate">{{ row.error_message|truncatechars:80 }}</span><span class="font-bold text-red-700">{{ row.count }}</span></div></div>{% empty %}<p class="text-gray-500">No failure reasons.</p>{% endfor %}</div>
+      </div>
+    </div>
+  </section>
+
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
       <h2 class="text-lg font-bold text-gray-900 mb-3">Send Live Test</h2>

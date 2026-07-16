@@ -5,7 +5,7 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 198 tests.
+- Full local test suite passes with 200 tests.
 - Route verification reports 620 URL names, 442 templates, 1,331 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
 - Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
@@ -42,7 +42,7 @@ High-priority modules:
 
 ## Phase 3: Provider and Webhook Trust
 
-Status: in progress.
+Status: complete.
 
 Acceptance checks:
 
@@ -50,7 +50,7 @@ Acceptance checks:
 - [x] Callback processing is idempotent and replay-safe.
 - [x] Webhook retry workers have bounded retries, audit logs, and failure dashboards.
 - [x] External API keys have rotation, scope enforcement, and last-used tracking.
-- Messaging providers have dry-run, test-send, readiness, and failure-review flows.
+- [x] Messaging providers have dry-run, test-send, readiness, and failure-review flows.
 
 ## Phase 4: Operational Readiness
 
