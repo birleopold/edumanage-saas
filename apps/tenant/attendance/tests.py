@@ -105,6 +105,20 @@ class OfflineAttendanceSyncTests(TestCase):
         self.assertContains(response, "data-offline-attendance-form")
         self.assertContains(response, "OfflineAttendanceConfig")
         self.assertContains(response, "offline-attendance.js")
+        self.assertContains(response, reverse("teacher_roll_call_save"))
+
+    def test_roll_call_page_includes_offline_queue_wiring(self):
+        self.client.login(username="offline_teacher", password="test-pass-123")
+        response = self.client.get(
+            reverse("teacher_roll_call"),
+            {"offering": self.offering.id, "date": "2026-07-13"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-offline-attendance-status")
+        self.assertContains(response, "OfflineAttendanceConfig")
+        self.assertContains(response, "offline-attendance.js")
+        self.assertContains(response, reverse("teacher_roll_call_save"))
 
 
 class AttendanceAdminCampusScopeTests(TestCase):

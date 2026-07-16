@@ -115,6 +115,37 @@ class PwaPushEndpointTests(TestCase):
         send_single.assert_not_called()
 
 
+class PwaOfflineAttendanceShellTests(TestCase):
+    def test_service_worker_precaches_offline_attendance_assets(self):
+        response = self.client.get(reverse("pwa_service_worker"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Service-Worker-Allowed"], "/")
+        content = response.content.decode("utf-8")
+        self.assertIn("/static/js/offline-attendance.js", content)
+        self.assertIn("/static/css/mobile-pwa.css", content)
+        self.assertIn('const CACHE_NAME = "edumanage-static-v2";', content)
+
+    def test_service_worker_keeps_teacher_attendance_pages_available_after_visit(self):
+        response = self.client.get(reverse("pwa_service_worker"))
+
+        content = response.content.decode("utf-8")
+        self.assertIn('url.pathname.startsWith("/teacher/attendance/roll-call/")', content)
+        self.assertIn('url.pathname.startsWith("/teacher/attendance/take/")', content)
+        self.assertIn("cache.put(request, copy)", content)
+        self.assertIn("cached || new Response(OFFLINE_HTML", content)
+
+    def test_manifest_is_mobile_install_ready_for_teacher_workflows(self):
+        response = self.client.get(reverse("pwa_manifest"))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["display"], "standalone")
+        self.assertEqual(payload["orientation"], "portrait-primary")
+        self.assertEqual(payload["scope"], "/")
+        self.assertTrue(any(icon["src"] == "/static/img/pwa-icon.svg" for icon in payload["icons"]))
+
+
 class AdminPwaPushTests(TestCase):
     def setUp(self):
         self.admin_role, _ = Role.objects.get_or_create(code=Role.ADMIN, defaults={"name": "Admin"})

@@ -67,7 +67,7 @@ Acceptance checks:
 
 ## Phase 5: Product Workflow Quality
 
-Status: in progress.
+Status: complete.
 
 Acceptance checks:
 
@@ -75,7 +75,7 @@ Acceptance checks:
 - Teacher daily workflow covers timetable, attendance, coursework, grading, incidents, and announcements from mobile.
 - Parent daily workflow covers fees, attendance, report cards, announcements, documents, and communication preferences from mobile.
 - Admin workflow provides fast search, bulk actions, exports, audit trails, and dashboard drill-downs.
-- Offline/PWA flows are tested for attendance and high-frequency mobile use.
+- [x] Offline/PWA flows are tested for attendance and high-frequency mobile use.
 
 Progress:
 
@@ -85,6 +85,7 @@ Progress:
 - [x] Teacher dashboard shows a data-backed daily workflow across timetable, attendance, coursework, grading, incidents and announcements.
 - [x] Parent dashboard shows a data-backed family workflow across fees, attendance, report cards, announcements, documents and communication preferences.
 - [x] Admin dashboard shows a workflow rail for fast search, bulk actions, exports, audit trails, recovery evidence and dashboard drill-downs.
+- [x] Offline attendance tests cover replay-safe JSON sync, idempotent updates, roll-call wiring, take-attendance wiring, PWA install metadata and service-worker caching for teacher attendance routes.
 
 ## Phase 6: Dependency Lifecycle
 
