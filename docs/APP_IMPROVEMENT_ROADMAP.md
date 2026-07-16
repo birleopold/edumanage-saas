@@ -82,6 +82,7 @@ Progress:
 - [x] Platform Create School Wizard records tenant-created audit evidence with owner username, login URL, setup guide URL, campus, academic period, feature flag and schema-context metadata.
 - [x] Platform tenant detail now shows a school-owner handoff panel with tenant, domain, DNS, SSL, subscription and first-login readiness checks.
 - [x] Regression tests cover the full five-step school creation wizard and the owner handoff pack shown on tenant detail.
+- [x] Teacher dashboard shows a data-backed daily workflow across timetable, attendance, coursework, grading, incidents and announcements.
 
 ## Phase 6: Dependency Lifecycle
 

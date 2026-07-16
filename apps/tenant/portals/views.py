@@ -3,6 +3,8 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils import timezone
 
 from apps.tenant.assessments.parent_session import PIN_SESSION_KEY as PARENT_RESULTS_PIN_SESSION_KEY
 from apps.tenant.orgsettings.services import (
@@ -13,6 +15,10 @@ from apps.tenant.orgsettings.services import (
 )
 
 from apps.tenant.academics.models import AcademicTerm, AcademicYear, CourseOffering, Enrollment
+from apps.tenant.announcements.models import Announcement
+from apps.tenant.attendance.models import AttendanceSession
+from apps.tenant.coursework.models import Assignment, AssignmentSubmission
+from apps.tenant.discipline.models import Incident
 from apps.tenant.finance.models import Invoice
 from apps.tenant.finance.services import filter_invoices_outstanding, filter_invoices_overdue
 from apps.tenant.grievances.models import Grievance
@@ -21,6 +27,7 @@ from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.polls.portal_services import polls_for_user
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
+from apps.tenant.timetable.models import TimetableEntry
 from apps.tenant.users.models import Role
 
 from .campus_permissions import get_user_campus_scope
@@ -28,11 +35,130 @@ from .experience_services import build_school_health_score, school_setup_progres
 from .permissions import admin_portal_required, role_required
 
 
+_TIMETABLE_WEEKDAY_CODES = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
+
 def _poll_items(request):
     try:
         return list(polls_for_user(request)[:3])
     except Exception:
         return []
+
+
+def _teacher_daily_workflow(teacher):
+    today = timezone.localdate()
+    if not teacher:
+        return {
+            "today": today,
+            "cards": [],
+            "announcements": [],
+            "ready_count": 0,
+            "total": 0,
+        }
+
+    offerings = CourseOffering.objects.filter(teacher=teacher, is_active=True)
+    weekday_code = _TIMETABLE_WEEKDAY_CODES[today.weekday()]
+
+    timetable_count = TimetableEntry.objects.filter(
+        offering__in=offerings,
+        weekday=weekday_code,
+        is_active=True,
+    ).count()
+
+    attendance_count = AttendanceSession.objects.filter(
+        offering__in=offerings,
+        date=today,
+    ).count()
+    unmarked_attendance_count = max(offerings.count() - attendance_count, 0)
+    pending_submissions_count = AssignmentSubmission.objects.filter(
+        assignment__offering__in=offerings,
+        submitted_at__isnull=False,
+        score__isnull=True,
+    ).count()
+    active_assignments_count = Assignment.objects.filter(
+        offering__in=offerings,
+        is_active=True,
+        publish_at__lte=timezone.now(),
+    ).count()
+    open_incidents_count = Incident.objects.filter(
+        reported_by=teacher,
+        status=Incident.OPEN,
+    ).count()
+    announcements = list(
+        Announcement.objects.filter(is_active=True)
+        .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.TEACHERS))
+        .order_by("-is_urgent", "-created_at")[:3]
+    )
+
+    cards = [
+        {
+            "key": "timetable",
+            "title": "Timetable",
+            "metric": timetable_count,
+            "detail": "lesson(s) scheduled today",
+            "url": reverse("teacher_timetable"),
+            "icon": "ph-calendar",
+            "tone": "blue",
+            "ready": timetable_count > 0,
+        },
+        {
+            "key": "attendance",
+            "title": "Attendance",
+            "metric": unmarked_attendance_count,
+            "detail": "active class(es) still need roll call",
+            "url": reverse("teacher_roll_call"),
+            "icon": "ph-calendar-check",
+            "tone": "green",
+            "ready": unmarked_attendance_count == 0 and offerings.exists(),
+        },
+        {
+            "key": "coursework",
+            "title": "Coursework",
+            "metric": active_assignments_count,
+            "detail": "active assignment(s)",
+            "url": reverse("teacher_coursework_home"),
+            "icon": "ph-notebook",
+            "tone": "purple",
+            "ready": active_assignments_count > 0,
+        },
+        {
+            "key": "grading",
+            "title": "Grading",
+            "metric": pending_submissions_count,
+            "detail": "submission(s) awaiting marks",
+            "url": reverse("teacher_coursework_home"),
+            "icon": "ph-exam",
+            "tone": "indigo",
+            "ready": pending_submissions_count == 0,
+        },
+        {
+            "key": "incidents",
+            "title": "Incidents",
+            "metric": open_incidents_count,
+            "detail": "open report(s) from you",
+            "url": reverse("teacher_incidents_list"),
+            "icon": "ph-warning-circle",
+            "tone": "amber",
+            "ready": open_incidents_count == 0,
+        },
+        {
+            "key": "announcements",
+            "title": "Announcements",
+            "metric": len(announcements),
+            "detail": "recent notice(s)",
+            "url": reverse("teacher_announcements_list"),
+            "icon": "ph-megaphone",
+            "tone": "pink",
+            "ready": True,
+        },
+    ]
+    return {
+        "today": today,
+        "cards": cards,
+        "announcements": announcements,
+        "ready_count": sum(1 for card in cards if card["ready"]),
+        "total": len(cards),
+    }
 
 
 def landing_page(request):
@@ -175,6 +301,7 @@ def teacher_home(request):
             "teacher_offerings_active": offerings_active,
             "teacher_current_year": current_year,
             "teacher_current_term": current_term,
+            "teacher_daily_workflow": _teacher_daily_workflow(teacher),
             "poll_dashboard_items": _poll_items(request),
         },
     )

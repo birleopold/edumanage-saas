@@ -22,7 +22,9 @@ from apps.tenant.academics.models import (
 )
 from apps.tenant.admissions.models import Applicant
 from apps.tenant.announcements.models import Announcement
-from apps.tenant.coursework.models import Assignment
+from apps.tenant.attendance.models import AttendanceSession
+from apps.tenant.coursework.models import Assignment, AssignmentSubmission
+from apps.tenant.discipline.models import Incident
 from apps.tenant.admissions.pdf_letter import generate_admission_letter_pdf
 from apps.tenant.assessments.parent_session import PIN_SESSION_KEY
 from apps.tenant.audit.models import BackupJob
@@ -37,6 +39,7 @@ from apps.tenant.parents.models import ParentProfile, ParentStudentLink
 from apps.tenant.portals.experience_services import build_school_health_score
 from apps.tenant.portals.models import WebPushSubscription
 from apps.tenant.students.models import StudentProfile
+from apps.tenant.timetable.models import Period, TimetableEntry
 from apps.tenant.finance.pdf_receipt import generate_payment_receipt_pdf
 from apps.tenant.students.pdf_id_card import generate_student_id_card_pdf
 from apps.tenant.users.models import Role, User, UserRole
@@ -317,7 +320,50 @@ class FeatureEntryPointTests(TestCase):
     def test_teacher_home_mentions_offline_attendance_and_report_comments(self):
         user = User.objects.create_user(username="feature_teacher", password="test-pass-123")
         user.roles.add(self.role_teacher)
-        TeacherProfile.objects.create(user=user, first_name="Feature", last_name="Teacher", campus=self.campus)
+        teacher = TeacherProfile.objects.create(user=user, first_name="Feature", last_name="Teacher", campus=self.campus)
+        year, _ = AcademicYear.objects.get_or_create(name="2099", defaults={"is_current": True})
+        term, _ = AcademicTerm.objects.get_or_create(year=year, name="Term 1", defaults={"is_current": True, "order": 1})
+        class_group = ClassGroup.objects.create(name="Feature Class", campus=self.campus)
+        course = Course.objects.create(name="Daily Workflow")
+        offering = CourseOffering.objects.create(
+            campus=self.campus,
+            course=course,
+            term=term,
+            class_group=class_group,
+            teacher=teacher,
+        )
+        student = StudentProfile.objects.create(first_name="Feature", last_name="Learner", campus=self.campus)
+        Enrollment.objects.create(campus=self.campus, offering=offering, student=student)
+        period = Period.objects.create(name="Period 1", order=1)
+        today_code = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")[timezone.localdate().weekday()]
+        TimetableEntry.objects.create(offering=offering, weekday=today_code, period=period)
+        AttendanceSession.objects.create(offering=offering, date=timezone.localdate(), taken_by=teacher)
+        assignment = Assignment.objects.create(
+            title="Mark me",
+            offering=offering,
+            campus=self.campus,
+            class_group=class_group,
+            created_by=user,
+            publish_at=timezone.now(),
+        )
+        AssignmentSubmission.objects.create(
+            assignment=assignment,
+            student=student,
+            submitted_at=timezone.now(),
+        )
+        Incident.objects.create(
+            student=student,
+            reported_by=teacher,
+            title="Uniform concern",
+            status=Incident.OPEN,
+        )
+        Announcement.objects.create(
+            title="Staff briefing",
+            body="Meet after class.",
+            audience=Announcement.TEACHERS,
+            is_active=True,
+            is_urgent=True,
+        )
         self.client.login(username="feature_teacher", password="test-pass-123")
 
         resp = self.client.get(reverse("teacher_home"))
@@ -325,6 +371,15 @@ class FeatureEntryPointTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "work offline")
         self.assertContains(resp, "draft report comments")
+        self.assertContains(resp, "Today&apos;s teacher workflow")
+        self.assertContains(resp, reverse("teacher_timetable"))
+        self.assertContains(resp, reverse("teacher_roll_call"))
+        self.assertContains(resp, reverse("teacher_coursework_home"))
+        self.assertContains(resp, reverse("teacher_incidents_report"))
+        self.assertContains(resp, "lesson(s) scheduled today")
+        self.assertContains(resp, "submission(s) awaiting marks")
+        self.assertContains(resp, "open report(s) from you")
+        self.assertContains(resp, "Staff briefing")
 
     def test_student_home_links_sickbay(self):
         user = User.objects.create_user(username="feature_student", password="test-pass-123")
