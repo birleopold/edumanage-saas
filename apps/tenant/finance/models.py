@@ -231,11 +231,11 @@ class IntegrationApiKey(models.Model):
         if not raw_key:
             return None
         hashed = cls.hash_key(raw_key)
-        key_obj = cls.objects.filter(key_hash=hashed, is_active=True).first()
-        if key_obj:
-            key_obj.last_used_at = timezone.now()
-            key_obj.save(update_fields=["last_used_at"])
-        return key_obj
+        return cls.objects.filter(key_hash=hashed, is_active=True).first()
+
+    def mark_used(self):
+        self.last_used_at = timezone.now()
+        self.save(update_fields=["last_used_at"])
 
 
 class WebhookEndpoint(models.Model):

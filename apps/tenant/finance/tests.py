@@ -11,6 +11,8 @@ from apps.tenant.announcements.models import Announcement
 from apps.tenant.finance.models import (
     CommunicationTemplate,
     IntegrationApiKey,
+    IntegrationApiKeyScope,
+    IntegrationScope,
     Invoice,
     MobilePaymentRequest,
     OutboundMessageLog,
@@ -300,6 +302,7 @@ class FinanceReminderPhaseOneTests(TestCase):
     def test_integration_api_key_auth_for_message_logs_endpoint(self):
         key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Test Key")
         self.assertTrue(key_obj.is_active)
+        self.assertIsNone(key_obj.last_used_at)
         response = self.client.get(
             "/api/v1/integrations/message-logs/",
             HTTP_X_API_KEY=raw_key,
@@ -307,6 +310,62 @@ class FinanceReminderPhaseOneTests(TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertIn("results", payload)
+        key_obj.refresh_from_db()
+        self.assertIsNotNone(key_obj.last_used_at)
+
+    def test_scoped_integration_key_denies_wrong_scope_without_marking_used(self):
+        key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Attendance Only")
+        attendance_scope = IntegrationScope.objects.get(code="attendance-write")
+        IntegrationApiKeyScope.objects.create(api_key=key_obj, scope=attendance_scope)
+
+        response = self.client.get(
+            "/api/v1/integrations/ready/",
+            HTTP_X_API_KEY=raw_key,
+        )
+
+        self.assertEqual(response.status_code, 403)
+        key_obj.refresh_from_db()
+        self.assertIsNone(key_obj.last_used_at)
+
+    def test_scoped_integration_key_marks_used_after_scope_passes(self):
+        key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Integration Admin")
+        admin_scope = IntegrationScope.objects.get(code="integrations-admin")
+        IntegrationApiKeyScope.objects.create(api_key=key_obj, scope=admin_scope)
+
+        response = self.client.get(
+            "/api/v1/integrations/ready/",
+            HTTP_X_API_KEY=raw_key,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        key_obj.refresh_from_db()
+        self.assertIsNotNone(key_obj.last_used_at)
+
+    def test_api_key_rotation_disables_old_key_and_preserves_scopes(self):
+        admin_user = User.objects.create_superuser(
+            username="integration_key_admin",
+            email="integration-key-admin@example.com",
+            password="test-pass-123",
+        )
+        self.client.login(username="integration_key_admin", password="test-pass-123")
+        old_key, _ = IntegrationApiKey.create_with_plaintext("Rotating Key")
+        admin_scope = IntegrationScope.objects.get(code="integrations-admin")
+        gps_scope = IntegrationScope.objects.get(code="transport-gps")
+        IntegrationApiKeyScope.objects.create(api_key=old_key, scope=admin_scope)
+        IntegrationApiKeyScope.objects.create(api_key=old_key, scope=gps_scope)
+
+        response = self.client.post(reverse("admin_connectors_api_key_rotate", kwargs={"pk": old_key.pk}))
+
+        self.assertEqual(response.status_code, 302)
+        old_key.refresh_from_db()
+        self.assertFalse(old_key.is_active)
+        new_key = IntegrationApiKey.objects.exclude(pk=old_key.pk).get(name="Rotating Key rotated")
+        self.assertTrue(new_key.is_active)
+        self.assertIsNone(new_key.last_used_at)
+        self.assertEqual(
+            set(new_key.scope_links.values_list("scope__code", flat=True)),
+            {"integrations-admin", "transport-gps"},
+        )
 
     @override_settings(
         FEE_REMINDER_CHANNEL="SMS",

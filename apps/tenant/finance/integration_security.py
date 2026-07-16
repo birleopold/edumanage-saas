@@ -14,5 +14,9 @@ class HasScopedIntegrationKey(BasePermission):
         request.integration_api_key = key_obj
         required = getattr(view, "required_scope", "")
         if not required:
+            key_obj.mark_used()
             return True
-        return IntegrationApiKeyScope.objects.filter(api_key=key_obj, scope__code=required, scope__is_active=True).exists()
+        allowed = IntegrationApiKeyScope.objects.filter(api_key=key_obj, scope__code=required, scope__is_active=True).exists()
+        if allowed:
+            key_obj.mark_used()
+        return allowed

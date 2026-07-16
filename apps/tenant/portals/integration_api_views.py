@@ -20,6 +20,7 @@ class HasIntegrationApiKey(BasePermission):
         key_obj = IntegrationApiKey.resolve_active_key(raw)
         if not key_obj:
             return False
+        key_obj.mark_used()
         request.integration_api_key = key_obj
         return True
 
