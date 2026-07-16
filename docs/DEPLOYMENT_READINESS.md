@@ -58,9 +58,11 @@ This checklist should be completed before onboarding real school clients.
 
 8. **Monitoring and uptime checks**
    - Monitor `/health/` externally.
+   - Monitor `/status/?format=json` externally.
    - Monitor CPU, memory, disk, database size, and response time.
    - Add disk-space alerts for media and backups.
    - Define support escalation/on-call contact.
+   - Use `docs/ops/MONITORING.md` as the production monitoring contract.
 
 9. **Error logging and provider setup**
    - Keep friendly error pages for users.

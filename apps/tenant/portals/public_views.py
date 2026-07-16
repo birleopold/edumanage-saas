@@ -21,6 +21,8 @@ def public_status(request):
     snap = messaging_readiness_snapshot(sample_limit=3)
     payload = {
         "ok": True,
+        "status": "ok",
+        "service": "edumanage",
         "time": timezone.now().isoformat(),
         "web": "up",
         "fee_messaging": {
@@ -38,5 +40,7 @@ def public_status(request):
         request.headers.get("Accept") or ""
     )
     if want_json:
-        return JsonResponse(payload)
+        response = JsonResponse(payload)
+        response["Cache-Control"] = "no-store"
+        return response
     return render(request, "public/status.html", {"payload": payload})

@@ -818,7 +818,10 @@ class PublicStatusPageTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertTrue(data.get("ok"))
+        self.assertEqual(data.get("status"), "ok")
+        self.assertEqual(data.get("service"), "edumanage")
         self.assertIn("fee_messaging", data)
+        self.assertEqual(resp.headers["Cache-Control"], "no-store")
 
     def test_html_renders(self):
         resp = self.client.get(reverse("public_status"))
@@ -835,6 +838,7 @@ class OperationalReadinessCommandTests(TestCase):
         self.assertIn("Operational readiness checklist", text)
         self.assertIn("python manage.py check", text)
         self.assertIn("Public health route", text)
+        self.assertIn("External monitoring plan", text)
 
     def test_command_json_reports_manual_external_checks_without_failing_strict(self):
         out = StringIO()
@@ -866,6 +870,7 @@ class OperationalReadinessCommandTests(TestCase):
 
         self.assertEqual(checks["Recent successful backup audit"]["status"], "pass")
         self.assertEqual(checks["Quarterly restore drill audit"]["status"], "pass")
+        self.assertEqual(checks["External monitoring plan"]["status"], "pass")
 
     def test_record_backup_command_records_restore_drill(self):
         out = StringIO()

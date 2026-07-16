@@ -6,6 +6,7 @@ Plain-language checks and commands for day-two operations. Paths are from the re
 
 - **Staff-facing checks** (authenticated admin): open **System status** in the admin portal (`admin_system_status`). Uses the same readiness logic as automation.
 - **Public status** (no login): `GET /status/` returns HTML; append `?format=json` or send `Accept: application/json` for machine-readable output. Safe for uptime monitors—no secrets in the payload.
+- **External monitoring plan**: configure probes and infrastructure alerts from `docs/ops/MONITORING.md`.
 - **Disable public status** (e.g. private deployment): set `PUBLIC_STATUS_PAGE_ENABLED=false` in environment (see `config/settings/base.py`).
 
 - **Accessibility (roadmap scope):** hot-path WCAG 2.1 AA-oriented implementation and checklist — `docs/accessibility/WCAG_HOT_PATH_SIGNOFF.md`.

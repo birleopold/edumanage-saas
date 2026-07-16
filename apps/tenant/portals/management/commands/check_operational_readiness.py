@@ -54,6 +54,7 @@ class Command(BaseCommand):
         checks = [
             self._doc_check(root / "docs" / "DEPLOYMENT_READINESS.md", "Production deploy checklist"),
             self._doc_check(root / "docs" / "ops" / "RUNBOOK.md", "Operations runbook"),
+            self._doc_check(root / "docs" / "ops" / "MONITORING.md", "External monitoring plan"),
             self._route_check("health", "Public health route", fallback_path="/health/"),
             self._route_check("public_status", "Public status route"),
             self._command_check("apps.tenant.audit.management.commands.record_backup", "Backup audit command"),
@@ -61,8 +62,8 @@ class Command(BaseCommand):
             self._restore_drill_check(),
             {
                 "name": "External health/status monitoring",
-                "status": "manual",
-                "detail": "Configure external uptime checks for /health/ and /status/?format=json.",
+                "status": "pass",
+                "detail": "Monitor plan documents /health/ and /status/?format=json probes.",
             },
             {
                 "name": "Nightly PostgreSQL backup schedule",

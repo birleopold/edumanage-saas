@@ -7,6 +7,20 @@ from django.test import RequestFactory, SimpleTestCase, override_settings
 from .forms import normalize_domain
 from .middleware import TenantStatusMiddleware
 from .platform_views import _login_redirect_url, _safe_next_url
+from .views import health
+
+
+class PublicHealthViewTests(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_health_returns_monitor_friendly_json(self):
+        response = health(self.factory.get("/health/"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/json")
+        self.assertIn(b'"status": "ok"', response.content)
+        self.assertIn(b'"service": "edumanage"', response.content)
 
 
 class TenantStatusMiddlewareTests(SimpleTestCase):
