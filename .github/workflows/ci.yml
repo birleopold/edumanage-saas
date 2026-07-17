@@ -42,6 +42,22 @@ jobs:
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
         run: python manage.py check_dependency_lifecycle --strict
 
+      - name: Check release gates
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_SECURE_HSTS_PRELOAD: "True"
+        run: python manage.py check_release_gates --strict
+
+      - name: Check access-control evidence
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py check_access_control_evidence --strict
+
       - name: Run Django checks
         env:
           DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks

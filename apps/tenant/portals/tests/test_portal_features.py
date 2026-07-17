@@ -1055,6 +1055,45 @@ class DependencyLifecycleCommandTests(TestCase):
         self.assertIn("Monthly review procedure", text)
 
 
+class ReleaseGateCommandTests(TestCase):
+    def test_command_reports_ci_and_production_hardening_evidence(self):
+        out = StringIO()
+        with self.settings(
+            DEBUG=False,
+            SESSION_COOKIE_SECURE=True,
+            CSRF_COOKIE_SECURE=True,
+            SECURE_SSL_REDIRECT=True,
+            SECURE_CONTENT_TYPE_NOSNIFF=True,
+            SECURE_REFERRER_POLICY="same-origin",
+            X_FRAME_OPTIONS="DENY",
+            SECURE_HSTS_SECONDS=31536000,
+        ):
+            call_command("check_release_gates", "--json", "--strict", stdout=out)
+        payload = json.loads(out.getvalue())
+        checks = {item["name"]: item for item in payload["checks"]}
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(checks["Django system check"]["status"], "pass")
+        self.assertEqual(checks["Production deploy check"]["status"], "pass")
+        self.assertEqual(checks[".env production settings module"]["status"], "pass")
+        self.assertEqual(checks["Production setting SESSION_COOKIE_SECURE"]["status"], "pass")
+
+
+class AccessControlEvidenceCommandTests(TestCase):
+    def test_command_reports_scope_and_tenant_isolation_evidence(self):
+        out = StringIO()
+        call_command("check_access_control_evidence", "--json", "--strict", stdout=out)
+        payload = json.loads(out.getvalue())
+        checks = {item["name"]: item for item in payload["checks"]}
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(checks["Role gate primitive"]["status"], "pass")
+        self.assertEqual(checks["Campus scope helpers"]["status"], "pass")
+        self.assertEqual(checks["Finance campus scope"]["status"], "pass")
+        self.assertEqual(checks["Coursework self-service scope"]["status"], "pass")
+        self.assertEqual(checks["Tenant status isolation"]["status"], "pass")
+
+
 class BulkImportPreviewFlowTests(TestCase):
     def setUp(self):
         self.role_admin, _ = Role.objects.get_or_create(

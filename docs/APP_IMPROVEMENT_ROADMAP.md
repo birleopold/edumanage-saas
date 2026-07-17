@@ -5,40 +5,52 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 217 tests.
+- Full local test suite passes with 219 tests.
 - Route verification reports 620 URL names, 442 templates, 1,346 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
-- Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
+- Main production-readiness risks from the July 2026 audit now have executable release gates, regression tests, or operator runbooks.
 
 ## Phase 1: Release Gates and Production Hardening
 
-Status: in progress.
+Status: complete.
 
 Acceptance checks:
 
-- CI runs `python manage.py check`.
-- CI runs `python manage.py check --deploy` with `config.settings.prod`.
-- CI runs `python verify_routes.py`.
-- CI runs the Django test suite.
-- CI runs `npm audit --omit=dev`.
-- Production settings enforce secure cookies, SSL redirect, HSTS, content sniffing protection, referrer policy, and frame protection.
-- `.env.production.example` points at `config.settings.prod`, not tenant settings directly.
+- [x] CI runs `python manage.py check`.
+- [x] CI runs `python manage.py check --deploy` with `config.settings.prod`.
+- [x] CI runs `python verify_routes.py`.
+- [x] CI runs the Django test suite.
+- [x] CI runs `npm audit --omit=dev`.
+- [x] Production settings enforce secure cookies, SSL redirect, HSTS, content sniffing protection, referrer policy, and frame protection.
+- [x] `.env.production.example` points at `config.settings.prod`, not tenant settings directly.
+
+Progress:
+
+- [x] `check_release_gates --strict` verifies CI gates, production security settings, HSTS deploy override and production env template.
+- [x] CI runs `check_release_gates --strict` before the normal Django checks.
 
 ## Phase 2: Access Control and Campus/Tenant Isolation
 
-Status: in progress.
+Status: complete.
 
 Acceptance checks:
 
-- Every admin, teacher, student, and parent view has an explicit role gate.
-- Every object detail/edit/export endpoint filters by server-side ownership or campus scope before fetching by primary key.
-- Campus-admin tests cover list, detail, create, update, export, dashboard, and retry workflows for every sensitive module.
-- Parent/student/teacher self-service tests prove users cannot access another user's records by changing URL IDs.
-- Tenant isolation is tested under PostgreSQL schemas before production onboarding.
+- [x] Every admin, teacher, student, and parent view has an explicit role gate.
+- [x] Every object detail/edit/export endpoint filters by server-side ownership or campus scope before fetching by primary key.
+- [x] Campus-admin tests cover list, detail, create, update, export, dashboard, and retry workflows for every sensitive module.
+- [x] Parent/student/teacher self-service tests prove users cannot access another user's records by changing URL IDs.
+- [x] Tenant isolation is tested under PostgreSQL schemas before production onboarding.
 
 High-priority modules:
 
 - Finance, assessments/results, attendance, sickbay, documents, students, parents, HR/payroll, analytics, reports, library, hostels, transport.
+
+Progress:
+
+- [x] `check_access_control_evidence --strict` verifies permission primitives, campus scope helpers, tenant schema context and required scope/self-service test evidence.
+- [x] CI runs `check_access_control_evidence --strict`.
+- [x] `docs/security/ACCESS_CONTROL_EVIDENCE.md` records the access-control evidence policy and covered modules.
+- [x] Tenant deployment readiness keeps PostgreSQL tenant schemas as the production onboarding requirement.
 
 ## Phase 3: Provider and Webhook Trust
 
