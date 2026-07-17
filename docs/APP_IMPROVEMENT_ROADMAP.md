@@ -5,7 +5,7 @@ This roadmap turns the July 2026 audit into implementation tracks. It favors pro
 ## Current Baseline
 
 - Django system check passes.
-- Full local test suite passes with 214 tests.
+- Full local test suite passes with 217 tests.
 - Route verification reports 620 URL names, 442 templates, 1,346 template URL references, and 0 broken template references.
 - Node production dependency audit reports 0 vulnerabilities.
 - Main risks are production hardening, dependency lifecycle, campus/tenant access-control proof, and day-two operations.
@@ -54,16 +54,23 @@ Acceptance checks:
 
 ## Phase 4: Operational Readiness
 
-Status: in progress.
+Status: complete.
 
 Acceptance checks:
 
 - [x] Production deploy checklist is run before each release.
 - [x] Nightly PostgreSQL backup and quarterly restore drill are documented.
 - [x] `/health/` and public status routes are monitored externally.
-- Error tracking captures stack traces outside the user UI.
-- Slow request and slow query thresholds are logged.
-- Runbook includes incident response, rollback, backup restore, provider outage, and tenant suspension procedures.
+- [x] Error tracking captures stack traces outside the user UI.
+- [x] Slow request and slow query thresholds are logged.
+- [x] Runbook includes incident response, rollback, backup restore, provider outage, and tenant suspension procedures.
+
+Progress:
+
+- [x] `ObservabilityMiddleware` logs unhandled request exceptions with stack traces and request context through `edumanage.observability`.
+- [x] Slow request and high query count warnings are controlled by `SLOW_REQUEST_THRESHOLD_MS` and `SLOW_QUERY_COUNT_THRESHOLD`.
+- [x] `check_operational_readiness --strict` verifies observability middleware, logger configuration and performance thresholds.
+- [x] `docs/ops/RUNBOOK.md` includes incident response, rollback, backup restore, provider outage and tenant suspension procedures.
 
 ## Phase 5: Product Workflow Quality
 

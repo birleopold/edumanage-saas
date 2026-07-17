@@ -58,6 +58,13 @@ class Command(BaseCommand):
             self._route_check("health", "Public health route", fallback_path="/health/"),
             self._route_check("public_status", "Public status route"),
             self._command_check("apps.tenant.audit.management.commands.record_backup", "Backup audit command"),
+            self._middleware_check(
+                "apps.tenant.audit.observability.ObservabilityMiddleware",
+                "Observability middleware",
+            ),
+            self._logger_check("edumanage.observability", "Error and performance logger"),
+            self._threshold_check("SLOW_REQUEST_THRESHOLD_MS", "Slow request threshold"),
+            self._threshold_check("SLOW_QUERY_COUNT_THRESHOLD", "Slow query count threshold"),
             self._backup_audit_check(),
             self._restore_drill_check(),
             {
@@ -105,6 +112,30 @@ class Command(BaseCommand):
         except ImportError as exc:
             return {"name": name, "status": "fail", "detail": str(exc)}
         return {"name": name, "status": "pass", "detail": module_path}
+
+    def _middleware_check(self, dotted_path: str, name: str):
+        return {
+            "name": name,
+            "status": "pass" if dotted_path in settings.MIDDLEWARE else "fail",
+            "detail": dotted_path,
+        }
+
+    def _logger_check(self, logger_name: str, name: str):
+        logging_config = getattr(settings, "LOGGING", {})
+        configured = logger_name in (logging_config.get("loggers") or {})
+        return {
+            "name": name,
+            "status": "pass" if configured else "fail",
+            "detail": logger_name,
+        }
+
+    def _threshold_check(self, setting_name: str, name: str):
+        value = getattr(settings, setting_name, 0)
+        return {
+            "name": name,
+            "status": "pass" if isinstance(value, int) and value > 0 else "fail",
+            "detail": f"{setting_name}={value!r}",
+        }
 
     def _backup_audit_check(self):
         from apps.tenant.audit.models import BackupJob

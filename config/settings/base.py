@@ -26,6 +26,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "apps.tenant.audit.observability.ObservabilityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -155,3 +156,34 @@ WEBHOOK_RETRY_BASE_SECONDS = config("WEBHOOK_RETRY_BASE_SECONDS", default=30, ca
 WHATSAPP_STATUS_WEBHOOK_SECRET = config("WHATSAPP_STATUS_WEBHOOK_SECRET", default="")
 MTN_MOMO_CALLBACK_SECRET = config("MTN_MOMO_CALLBACK_SECRET", default="")
 AIRTEL_MONEY_CALLBACK_SECRET = config("AIRTEL_MONEY_CALLBACK_SECRET", default="")
+
+SLOW_REQUEST_THRESHOLD_MS = config("SLOW_REQUEST_THRESHOLD_MS", default=1500, cast=int)
+SLOW_QUERY_COUNT_THRESHOLD = config("SLOW_QUERY_COUNT_THRESHOLD", default=75, cast=int)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(levelname)s %(asctime)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "edumanage.observability": {
+            "handlers": ["console"],
+            "level": config("OBSERVABILITY_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+    },
+}

@@ -967,6 +967,7 @@ class OperationalReadinessCommandTests(TestCase):
         self.assertIn("python manage.py check", text)
         self.assertIn("Public health route", text)
         self.assertIn("External monitoring plan", text)
+        self.assertIn("Observability middleware", text)
 
     def test_command_json_reports_manual_external_checks_without_failing_strict(self):
         out = StringIO()
@@ -999,6 +1000,10 @@ class OperationalReadinessCommandTests(TestCase):
         self.assertEqual(checks["Recent successful backup audit"]["status"], "pass")
         self.assertEqual(checks["Quarterly restore drill audit"]["status"], "pass")
         self.assertEqual(checks["External monitoring plan"]["status"], "pass")
+        self.assertEqual(checks["Observability middleware"]["status"], "pass")
+        self.assertEqual(checks["Error and performance logger"]["status"], "pass")
+        self.assertEqual(checks["Slow request threshold"]["status"], "pass")
+        self.assertEqual(checks["Slow query count threshold"]["status"], "pass")
 
     def test_record_backup_command_records_restore_drill(self):
         out = StringIO()
