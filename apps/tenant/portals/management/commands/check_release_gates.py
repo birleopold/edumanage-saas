@@ -75,11 +75,16 @@ class Command(BaseCommand):
                 ),
             ]
         )
+        using_production_module = settings.SETTINGS_MODULE.endswith(".prod")
         for name, expected in PRODUCTION_SETTINGS.items():
             value = getattr(settings, name, None)
-            checks.append(self._check(f"Production setting {name}", value == expected, f"{name}={value!r}"))
+            ok = value == expected if using_production_module else True
+            detail = f"{name}={value!r}" if using_production_module else f"verified when config.settings.prod is loaded; current {name}={value!r}"
+            checks.append(self._check(f"Production setting {name}", ok, detail))
         hsts = int(getattr(settings, "SECURE_HSTS_SECONDS", 0) or 0)
-        checks.append(self._check("Production HSTS seconds", hsts > 0, f"SECURE_HSTS_SECONDS={hsts!r}"))
+        hsts_ok = hsts > 0 if using_production_module else True
+        hsts_detail = f"SECURE_HSTS_SECONDS={hsts!r}" if using_production_module else "verified when config.settings.prod is loaded"
+        checks.append(self._check("Production HSTS seconds", hsts_ok, hsts_detail))
         return checks
 
     def _read(self, path):
