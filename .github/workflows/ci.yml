@@ -122,6 +122,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.tenants
+      DJANGO_SECRET_KEY: ci-tenant-secret-key-not-for-production
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      POSTGRES_DB: edumanage_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -137,18 +148,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create shared schema and prove tenant isolation
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.tenants
-          DJANGO_SECRET_KEY: ci-tenant-secret-key-not-for-production
-          DJANGO_DEBUG: "False"
-          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
-          POSTGRES_DB: edumanage_saas
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_HOST: 127.0.0.1
-          POSTGRES_PORT: "5432"
-        run: |
-          python manage.py check --settings=config.settings.tenants
-          python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants
-          python manage.py check_tenant_isolation --strict --settings=config.settings.tenants
+      - name: Check tenant settings
+        run: python manage.py check --settings=config.settings.tenants
+
+      - name: Migrate PostgreSQL shared schema
+        run: python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants
+
+      - name: Prove PostgreSQL tenant isolation
+        run: python manage.py check_tenant_isolation --json --strict --settings=config.settings.tenants
