@@ -10,7 +10,9 @@ CI_GATES = {
     "Production deploy check": "python manage.py check --deploy",
     "Template route verification": "python verify_routes.py",
     "Django test suite": "python manage.py test",
-    "Node production audit": "npm audit --omit=dev",
+    "Migration drift check": "python manage.py makemigrations --check --dry-run",
+    "Python dependency audit": "pip-audit -r requirements.txt",
+    "PostgreSQL tenant tests": "python manage.py test apps.public.tenants.tests --settings=config.settings.tenants",
 }
 
 PRODUCTION_SETTINGS = {
@@ -21,11 +23,14 @@ PRODUCTION_SETTINGS = {
     "SECURE_CONTENT_TYPE_NOSNIFF": True,
     "SECURE_REFERRER_POLICY": "same-origin",
     "X_FRAME_OPTIONS": "DENY",
+    "ADMIN_2FA_REQUIRED": True,
+    "MOBILE_MONEY_DRY_RUN_ENABLED": False,
+    "WEBHOOK_ALLOW_PRIVATE_TARGETS": False,
 }
 
 
 class Command(BaseCommand):
-    help = "Verify Phase 1 release gates and production hardening evidence."
+    help = "Verify Django-only release gates and production hardening evidence."
 
     def add_arguments(self, parser):
         parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
@@ -34,7 +39,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         checks = self._checks()
         summary = {"ok": all(item["status"] == "pass" for item in checks), "checks": checks}
-
         if options["json"]:
             self.stdout.write(json.dumps(summary, indent=2))
         else:
@@ -42,7 +46,6 @@ class Command(BaseCommand):
             self.stdout.write("=" * 24)
             for item in checks:
                 self.stdout.write(f"[{item['status'].upper()}] {item['name']}: {item['detail']}")
-
         if options["strict"] and not summary["ok"]:
             failing = ", ".join(item["name"] for item in checks if item["status"] != "pass")
             raise CommandError(f"Release gate check failed: {failing}")
@@ -51,24 +54,12 @@ class Command(BaseCommand):
         root = Path(settings.BASE_DIR)
         ci = self._read_text(root / ".github" / "workflows" / "ci.yml")
         env_template = self._read_text(root / ".env.production.example")
-        checks = [
-            self._check(name, command in ci, command)
-            for name, command in CI_GATES.items()
-        ]
-        checks.extend(
-            [
-                self._check(
-                    ".env production settings module",
-                    "DJANGO_SETTINGS_MODULE=config.settings.prod" in env_template,
-                    "DJANGO_SETTINGS_MODULE=config.settings.prod",
-                ),
-                self._check(
-                    "Production HSTS preload deploy override",
-                    'DJANGO_SECURE_HSTS_PRELOAD: "True"' in ci,
-                    "CI sets DJANGO_SECURE_HSTS_PRELOAD=True for check --deploy",
-                ),
-            ]
-        )
+        checks = [self._check(name, command in ci, command) for name, command in CI_GATES.items()]
+        checks.extend([
+            self._check("Django-only repository", not (root / "package.json").exists() and not (root / "package-lock.json").exists(), "No package.json/package-lock.json or npm build dependency"),
+            self._check(".env production settings module", "DJANGO_SETTINGS_MODULE=config.settings.prod" in env_template, "DJANGO_SETTINGS_MODULE=config.settings.prod"),
+            self._check("Production HSTS preload deploy override", 'DJANGO_SECURE_HSTS_PRELOAD: "True"' in ci, "CI sets DJANGO_SECURE_HSTS_PRELOAD=True for check --deploy"),
+        ])
         checks.extend(self._production_setting_checks())
         return checks
 
@@ -76,20 +67,8 @@ class Command(BaseCommand):
         checks = []
         for setting_name, expected in PRODUCTION_SETTINGS.items():
             value = getattr(settings, setting_name, None)
-            checks.append(
-                self._check(
-                    f"Production setting {setting_name}",
-                    value == expected,
-                    f"{setting_name}={value!r}",
-                )
-            )
-        checks.append(
-            self._check(
-                "Production HSTS seconds",
-                int(getattr(settings, "SECURE_HSTS_SECONDS", 0) or 0) > 0,
-                f"SECURE_HSTS_SECONDS={getattr(settings, 'SECURE_HSTS_SECONDS', None)!r}",
-            )
-        )
+            checks.append(self._check(f"Production setting {setting_name}", value == expected, f"{setting_name}={value!r}"))
+        checks.append(self._check("Production HSTS seconds", int(getattr(settings, "SECURE_HSTS_SECONDS", 0) or 0) > 0, f"SECURE_HSTS_SECONDS={getattr(settings, 'SECURE_HSTS_SECONDS', None)!r}"))
         return checks
 
     def _read_text(self, path):
