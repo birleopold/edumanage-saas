@@ -95,11 +95,27 @@ jobs:
         run: python verify_routes.py
 
       - name: Run Django tests
+        id: django-tests
+        continue-on-error: true
         env:
           DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
           DJANGO_DEBUG: "True"
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
-        run: python manage.py test
+        run: python manage.py test > django-tests.log 2>&1
+
+      - name: Upload Django test failure report
+        if: steps.django-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-test-failure-report
+          path: django-tests.log
+          if-no-files-found: error
+
+      - name: Report Django test failure
+        if: steps.django-tests.outcome == 'failure'
+        run: |
+          tail -n 160 django-tests.log
+          exit 1
 
       - name: Audit Python dependencies
         run: pip-audit -r requirements.txt
