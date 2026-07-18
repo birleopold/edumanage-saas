@@ -1,8 +1,9 @@
 import json
-import uuid
+import logging
 import urllib.error
 import urllib.request
-from decimal import Decimal
+import uuid
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -11,52 +12,35 @@ from django.utils import timezone
 from .invoicing import invoice_amounts
 from .models import DuplicatePaymentAlert, MobilePaymentRequest, Payment, PaymentGatewayEvent
 
-
+logger = logging.getLogger("edumanage.finance")
 SUCCESS_STATUSES = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID", "APPROVED"}
 FAILED_STATUSES = {"FAILED", "DECLINED", "CANCELLED", "CANCELED", "EXPIRED", "REJECTED"}
-
 
 def _setting(name, default=""):
     return getattr(settings, name, default)
 
-
 def _provider_config(network):
     if network == Payment.MTN_MOMO:
-        return {
-            "provider": PaymentGatewayEvent.MTN_MOMO,
-            "url": _setting("MTN_MOMO_COLLECTION_URL"),
-            "token": _setting("MTN_MOMO_COLLECTION_TOKEN"),
-            "subscription_key": _setting("MTN_MOMO_SUBSCRIPTION_KEY"),
-        }
+        return {"provider": PaymentGatewayEvent.MTN_MOMO, "url": _setting("MTN_MOMO_COLLECTION_URL"), "token": _setting("MTN_MOMO_COLLECTION_TOKEN"), "subscription_key": _setting("MTN_MOMO_SUBSCRIPTION_KEY")}
     if network == Payment.AIRTEL_MONEY:
-        return {
-            "provider": PaymentGatewayEvent.AIRTEL_MONEY,
-            "url": _setting("AIRTEL_MONEY_COLLECTION_URL"),
-            "token": _setting("AIRTEL_MONEY_COLLECTION_TOKEN"),
-            "subscription_key": _setting("AIRTEL_MONEY_SUBSCRIPTION_KEY"),
-        }
+        return {"provider": PaymentGatewayEvent.AIRTEL_MONEY, "url": _setting("AIRTEL_MONEY_COLLECTION_URL"), "token": _setting("AIRTEL_MONEY_COLLECTION_TOKEN"), "subscription_key": _setting("AIRTEL_MONEY_SUBSCRIPTION_KEY")}
     return {"provider": PaymentGatewayEvent.BANK, "url": "", "token": "", "subscription_key": ""}
 
-
 def _send_provider_request(payment_request):
-    config = _provider_config(payment_request.network)
+    provider_config = _provider_config(payment_request.network)
     reference = payment_request.provider_reference or f"EDU-{payment_request.id}-{uuid.uuid4().hex[:8]}"
-    payload = {
-        "reference": reference,
-        "amount": str(payment_request.amount),
-        "phone_number": payment_request.phone_number,
-        "invoice_id": payment_request.invoice_id,
-        "student": str(payment_request.invoice.student),
-    }
-    if not config["url"]:
-        return {"ok": True, "dry_run": True, "reference": reference, "payload": payload}
+    payload = {"reference": reference, "amount": str(payment_request.amount), "currency": "UGX", "phone_number": payment_request.phone_number, "invoice_id": payment_request.invoice_id, "student": str(payment_request.invoice.student)}
+    if not provider_config["url"]:
+        if getattr(settings, "MOBILE_MONEY_DRY_RUN_ENABLED", False):
+            return {"ok": True, "dry_run": True, "reference": reference, "payload": payload}
+        return {"ok": False, "reference": reference, "error": "provider_not_configured", "payload": payload}
     body = json.dumps(payload).encode("utf-8")
     headers = {"Content-Type": "application/json"}
-    if config["token"]:
-        headers["Authorization"] = f"Bearer {config['token']}"
-    if config["subscription_key"]:
-        headers["Ocp-Apim-Subscription-Key"] = config["subscription_key"]
-    request = urllib.request.Request(config["url"], data=body, headers=headers, method="POST")
+    if provider_config["token"]:
+        headers["Authorization"] = f"Bearer {provider_config['token']}"
+    if provider_config["subscription_key"]:
+        headers["Ocp-Apim-Subscription-Key"] = provider_config["subscription_key"]
+    request = urllib.request.Request(provider_config["url"], data=body, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=_setting("MOBILE_MONEY_TIMEOUT_SECONDS", 20)) as response:
             text = response.read().decode("utf-8")
@@ -68,40 +52,21 @@ def _send_provider_request(payment_request):
     except urllib.error.URLError as exc:
         return {"ok": False, "reference": reference, "error": str(exc)}
 
-
 def detect_duplicate_payment(invoice, amount, reference=""):
-    qs = Payment.objects.filter(invoice=invoice, amount=amount)
+    queryset = Payment.objects.filter(invoice=invoice, amount=amount)
     if reference:
-        exact = qs.filter(reference__iexact=reference).first()
+        exact = queryset.filter(reference__iexact=reference).first()
         if exact:
             return exact
-    return qs.filter(created_at__date=timezone.localdate()).first()
-
+    return queryset.filter(created_at__date=timezone.localdate()).first()
 
 def _matching_mobile_payment(payment_request, reference):
     if not reference:
         return None
-    return Payment.objects.filter(
-        invoice=payment_request.invoice,
-        amount=payment_request.amount,
-        method=Payment.MOBILE,
-        mobile_network=payment_request.network,
-        reference__iexact=reference,
-    ).first()
-
+    return Payment.objects.filter(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference__iexact=reference).first()
 
 def _record_replay_event(provider, reference, provider_status, payload, existing_event):
-    return PaymentGatewayEvent.objects.create(
-        provider=provider,
-        event_type=PaymentGatewayEvent.CALLBACK,
-        payment_request=existing_event.payment_request,
-        provider_reference=reference,
-        provider_status=provider_status,
-        payload=payload,
-        processed=True,
-        error_message="Replay callback ignored.",
-    )
-
+    return PaymentGatewayEvent.objects.create(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, payment_request=existing_event.payment_request, provider_reference=reference, provider_status=provider_status, payload=payload, processed=True, error_message="Replay callback ignored.")
 
 @transaction.atomic
 def initiate_collection(*, invoice, amount, phone_number, network, requested_by=None):
@@ -122,7 +87,6 @@ def initiate_collection(*, invoice, amount, phone_number, network, requested_by=
     PaymentGatewayEvent.objects.create(provider=_provider_config(network)["provider"], event_type=PaymentGatewayEvent.INITIATED, payment_request=obj, provider_reference=obj.provider_reference, provider_status=obj.status, payload=result, processed=True, error_message=result.get("error", ""))
     return obj
 
-
 def _callback_status(payload):
     status = str(payload.get("status") or payload.get("transaction_status") or payload.get("state") or "").upper()
     if status in SUCCESS_STATUSES:
@@ -131,26 +95,30 @@ def _callback_status(payload):
         return MobilePaymentRequest.FAILED
     return MobilePaymentRequest.PROCESSING
 
-
 def _callback_reference(payload):
-    return str(payload.get("reference") or payload.get("provider_reference") or payload.get("transaction_id") or payload.get("external_id") or "")
+    return str(payload.get("reference") or payload.get("provider_reference") or payload.get("transaction_id") or payload.get("external_id") or "").strip()
 
+def _callback_amount(payload):
+    raw = payload.get("amount") or payload.get("transaction_amount")
+    if raw in (None, ""):
+        return None
+    try:
+        return Decimal(str(raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+
+def _network_for_provider(provider):
+    return {PaymentGatewayEvent.MTN_MOMO: Payment.MTN_MOMO, PaymentGatewayEvent.AIRTEL_MONEY: Payment.AIRTEL_MONEY}.get(provider)
 
 @transaction.atomic
 def process_gateway_callback(provider, payload):
     reference = _callback_reference(payload)
-    provider_status = str(payload.get("status") or "")
-    existing_event = PaymentGatewayEvent.objects.filter(
-        provider=provider,
-        event_type=PaymentGatewayEvent.CALLBACK,
-        provider_reference=reference,
-        provider_status=provider_status,
-        payload=payload,
-        processed=True,
-    ).select_related("payment_request").first() if reference else None
+    provider_status = str(payload.get("status") or payload.get("transaction_status") or payload.get("state") or "")
+    if not reference:
+        return PaymentGatewayEvent.objects.create(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, provider_status=provider_status, payload=payload, processed=False, error_message="Missing provider reference.")
+    existing_event = PaymentGatewayEvent.objects.filter(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, provider_reference=reference, provider_status=provider_status, payload=payload, processed=True).select_related("payment_request").first()
     if existing_event:
         return _record_replay_event(provider, reference, provider_status, payload, existing_event)
-
     event = PaymentGatewayEvent.objects.create(provider=provider, event_type=PaymentGatewayEvent.CALLBACK, provider_reference=reference, provider_status=provider_status, payload=payload)
     payment_request = MobilePaymentRequest.objects.select_for_update().filter(provider_reference=reference).select_related("invoice").first()
     if not payment_request:
@@ -158,14 +126,26 @@ def process_gateway_callback(provider, payload):
         event.save(update_fields=["error_message"])
         return event
     event.payment_request = payment_request
+    expected_network = _network_for_provider(provider)
+    if expected_network and payment_request.network != expected_network:
+        event.error_message = "Callback provider does not match the payment request network."
+        event.save(update_fields=["payment_request", "error_message"])
+        return event
+    callback_amount = _callback_amount(payload)
+    if callback_amount is not None and callback_amount != payment_request.amount:
+        event.error_message = "Callback amount does not match the requested amount."
+        event.save(update_fields=["payment_request", "error_message"])
+        return event
+    if str(payload.get("currency") or "UGX").upper() != "UGX":
+        event.error_message = "Unsupported callback currency."
+        event.save(update_fields=["payment_request", "error_message"])
+        return event
     status = _callback_status(payload)
-
     if payment_request.status == MobilePaymentRequest.SUCCESSFUL and payment_request.created_payment_id:
         event.processed = True
         event.error_message = "Payment request already completed."
         event.save(update_fields=["payment_request", "processed", "error_message"])
         return event
-
     payment_request.status = status
     payment_request.provider_response = payload
     if status == MobilePaymentRequest.SUCCESSFUL and not payment_request.created_payment:
@@ -176,7 +156,7 @@ def process_gateway_callback(provider, payload):
         else:
             duplicate = detect_duplicate_payment(payment_request.invoice, payment_request.amount, reference)
             if duplicate:
-                DuplicatePaymentAlert.objects.create(payment=duplicate, duplicate_of=duplicate, reason=f"Gateway callback duplicate: {reference}")
+                DuplicatePaymentAlert.objects.get_or_create(payment=duplicate, duplicate_of=duplicate, reason=f"Gateway callback duplicate: {reference}")
                 event.error_message = "Duplicate payment detected."
             else:
                 payment = Payment.objects.create(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference=reference, received_at=timezone.localdate())
@@ -185,7 +165,7 @@ def process_gateway_callback(provider, payload):
                     from .services import send_payment_receipt_for_payment
                     send_payment_receipt_for_payment(payment)
                 except Exception:
-                    pass
+                    logger.exception("Payment was recorded but receipt delivery failed payment_id=%s", payment.pk)
     payment_request.save(update_fields=["status", "provider_response", "created_payment"])
     event.processed = True
     event.save(update_fields=["payment_request", "processed", "error_message"])
