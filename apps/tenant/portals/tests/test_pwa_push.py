@@ -116,24 +116,26 @@ class PwaPushEndpointTests(TestCase):
 
 
 class PwaOfflineAttendanceShellTests(TestCase):
-    def test_service_worker_precaches_offline_attendance_assets(self):
+    def test_service_worker_precaches_only_offline_application_assets(self):
         response = self.client.get(reverse("pwa_service_worker"))
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Service-Worker-Allowed"], "/")
+        self.assertEqual(response["Cache-Control"], "no-store")
         content = response.content.decode("utf-8")
         self.assertIn("/static/js/offline-attendance.js", content)
         self.assertIn("/static/css/mobile-pwa.css", content)
-        self.assertIn('const CACHE_NAME = "edumanage-static-v2";', content)
+        self.assertIn('const CACHE_NAME = "edumanage-static-v3";', content)
 
-    def test_service_worker_keeps_teacher_attendance_pages_available_after_visit(self):
+    def test_service_worker_never_caches_authenticated_attendance_pages(self):
         response = self.client.get(reverse("pwa_service_worker"))
 
         content = response.content.decode("utf-8")
-        self.assertIn('url.pathname.startsWith("/teacher/attendance/roll-call/")', content)
-        self.assertIn('url.pathname.startsWith("/teacher/attendance/take/")', content)
-        self.assertIn("cache.put(request, copy)", content)
-        self.assertIn("cached || new Response(OFFLINE_HTML", content)
+        self.assertNotIn('url.pathname.startsWith("/teacher/attendance/roll-call/")', content)
+        self.assertNotIn('url.pathname.startsWith("/teacher/attendance/take/")', content)
+        self.assertIn('fetch(request, { cache: "no-store" })', content)
+        self.assertIn('indexedDB.deleteDatabase("edumanage-offline-v1")', content)
+        self.assertIn("CLEAR_EDUMANAGE_PRIVATE_DATA", content)
 
     def test_manifest_is_mobile_install_ready_for_teacher_workflows(self):
         response = self.client.get(reverse("pwa_manifest"))
