@@ -3,6 +3,12 @@ from decouple import config
 from .base import *
 
 
+# The custom user model must exist in the public schema because Django admin and
+# the platform console reference AUTH_USER_MODEL there. It also remains a
+# TENANT_APP so each school receives its own isolated users_user table. The
+# orgsettings app is mirrored for the UserRole.campus dependency; tenant
+# requests still resolve the tenant-schema copies first through PostgreSQL's
+# search_path.
 SHARED_APPS = (
     "django_tenants",
     "apps.public.tenants",
@@ -14,6 +20,8 @@ SHARED_APPS = (
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "apps.tenant.users",
+    "apps.tenant.orgsettings",
 )
 
 TENANT_APPS = (
@@ -76,7 +84,6 @@ DATABASES = {
 }
 
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
-
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
 AUTH_USER_MODEL = "users.User"

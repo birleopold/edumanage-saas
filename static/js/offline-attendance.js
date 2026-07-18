@@ -1,9 +1,29 @@
 (function () {
   "use strict";
 
-  var QUEUE_KEY = "edumanage_offline_attendance_queue_v1";
   var config = window.OfflineAttendanceConfig || {};
+  var databasePromise = null;
+  var queue = [];
   var attendanceData = {};
+
+  var DATABASE_NAME = "edumanage-offline-v1";
+  var STORE_NAME = "attendance_drafts";
+  var tenantKey = String(config.tenantKey || window.location.hostname || "tenant");
+  var userKey = config.userId
+    ? "user-" + String(config.userId)
+    : "session-" + stableHash(String(config.csrfToken || "anonymous"));
+  var namespace = tenantKey + ":" + userKey;
+  var scopeKey = String(config.scopeKey || "default");
+  var maxAgeMilliseconds = Number(config.maxAgeHours || 48) * 60 * 60 * 1000;
+
+  function stableHash(value) {
+    var hash = 2166136261;
+    for (var index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value || {}));
@@ -13,230 +33,481 @@
     return new Date().toISOString();
   }
 
-  function queueId(payload) {
-    return "attendance:" + payload.offering_id + ":" + payload.date;
+  function draftId() {
+    return [
+      "attendance",
+      namespace,
+      config.offeringId,
+      config.date,
+      scopeKey,
+    ].join(":");
+  }
+
+  function openDatabase() {
+    if (databasePromise) {
+      return databasePromise;
+    }
+
+    databasePromise = new Promise(function (resolve, reject) {
+      if (!("indexedDB" in window)) {
+        reject(new Error("Offline storage is not supported by this browser."));
+        return;
+      }
+
+      var request = indexedDB.open(DATABASE_NAME, 1);
+
+      request.onupgradeneeded = function () {
+        if (!request.result.objectStoreNames.contains(STORE_NAME)) {
+          var store = request.result.createObjectStore(STORE_NAME, {
+            keyPath: "id",
+          });
+          store.createIndex("namespace", "namespace", { unique: false });
+        }
+      };
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function () {
+        reject(request.error || new Error("Unable to open offline storage."));
+      };
+    });
+
+    return databasePromise;
+  }
+
+  function runTransaction(mode, operation) {
+    return openDatabase().then(function (database) {
+      return new Promise(function (resolve, reject) {
+        var transaction = database.transaction(STORE_NAME, mode);
+        var store = transaction.objectStore(STORE_NAME);
+
+        operation(store, transaction);
+
+        transaction.oncomplete = function () {
+          resolve();
+        };
+
+        transaction.onerror = function () {
+          reject(transaction.error || new Error("Offline storage operation failed."));
+        };
+
+        transaction.onabort = function () {
+          reject(transaction.error || new Error("Offline storage operation was cancelled."));
+        };
+      });
+    });
   }
 
   function loadQueue() {
-    try {
-      var raw = localStorage.getItem(QUEUE_KEY);
-      var parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      return [];
-    }
+    return openDatabase().then(function (database) {
+      return new Promise(function (resolve, reject) {
+        var transaction = database.transaction(STORE_NAME, "readwrite");
+        var store = transaction.objectStore(STORE_NAME);
+        var request = store.index("namespace").getAll(namespace);
+
+        request.onsuccess = function () {
+          var now = Date.now();
+          var activeDrafts = [];
+
+          (request.result || []).forEach(function (draft) {
+            var updatedAt = Date.parse(draft.updated_at || draft.created_at || "");
+            var age = now - updatedAt;
+
+            if (Number.isFinite(age) && age <= maxAgeMilliseconds) {
+              activeDrafts.push(draft);
+            } else {
+              store.delete(draft.id);
+            }
+          });
+
+          resolve(activeDrafts);
+        };
+
+        request.onerror = function () {
+          reject(request.error || new Error("Unable to load offline attendance drafts."));
+        };
+      });
+    });
   }
 
-  function saveQueue(queue) {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-    renderQueueStatus();
+  function putDraft(draft) {
+    return runTransaction("readwrite", function (store) {
+      store.put(draft);
+    });
   }
 
-  function queuedForCurrentPage() {
-    if (!config.offeringId || !config.date) return null;
-    var id = queueId({ offering_id: config.offeringId, date: config.date });
-    return loadQueue().find(function (item) { return item.id === id; }) || null;
+  function deleteDraft(id) {
+    return runTransaction("readwrite", function (store) {
+      store.delete(id);
+    });
   }
 
-  function buildPayload() {
-    if (config.mode === "form") collectFormState();
-    return {
-      id: queueId({ offering_id: config.offeringId, date: config.date }),
-      offering_id: config.offeringId,
-      date: config.date,
-      attendance: cleanAttendanceData(),
-      notes: clone(noteData()),
-      created_at: nowIso(),
-      updated_at: nowIso()
-    };
+  function deleteNamespaceDrafts() {
+    return openDatabase().then(function (database) {
+      return new Promise(function (resolve, reject) {
+        var transaction = database.transaction(STORE_NAME, "readwrite");
+        var store = transaction.objectStore(STORE_NAME);
+        var request = store.index("namespace").openCursor(IDBKeyRange.only(namespace));
+
+        request.onsuccess = function () {
+          var cursor = request.result;
+          if (!cursor) {
+            return;
+          }
+          cursor.delete();
+          cursor.continue();
+        };
+
+        request.onerror = function () {
+          reject(request.error || new Error("Unable to clear offline attendance data."));
+        };
+
+        transaction.oncomplete = function () {
+          resolve();
+        };
+
+        transaction.onerror = function () {
+          reject(transaction.error || new Error("Unable to clear offline attendance data."));
+        };
+      });
+    });
   }
 
-  function noteData() {
+  function notes() {
     return attendanceData.__notes || {};
-  }
-
-  function setNoteData(notes) {
-    attendanceData.__notes = notes || {};
   }
 
   function cleanAttendanceData() {
     var clean = {};
-    Object.keys(attendanceData || {}).forEach(function (studentId) {
-      if (studentId !== "__notes") clean[studentId] = attendanceData[studentId];
+
+    Object.keys(attendanceData).forEach(function (studentId) {
+      if (studentId !== "__notes") {
+        clean[studentId] = attendanceData[studentId];
+      }
     });
+
     return clean;
   }
 
-  function queuePayload(payload) {
-    var queue = loadQueue();
-    var existingIndex = queue.findIndex(function (item) { return item.id === payload.id; });
-    if (existingIndex >= 0) {
-      payload.created_at = queue[existingIndex].created_at || payload.created_at;
-      queue[existingIndex] = payload;
-    } else {
-      queue.push(payload);
+  function collectFormState() {
+    var form = document.querySelector("[data-offline-attendance-form]");
+    var attendance = {};
+    var noteValues = {};
+
+    if (!form) {
+      return;
     }
-    saveQueue(queue);
+
+    form.querySelectorAll('input[name="student_ids"]').forEach(function (input) {
+      var studentId = input.value;
+      var statusInput = form.querySelector('[name="status_' + studentId + '"]');
+      var noteInput = form.querySelector('[name="note_' + studentId + '"]');
+
+      attendance[studentId] = statusInput ? statusInput.value : "PRESENT";
+      noteValues[studentId] = noteInput ? noteInput.value : "";
+    });
+
+    attendanceData = attendance;
+    attendanceData.__notes = noteValues;
+    updateMarkedCount();
   }
 
-  function removeQueued(id) {
-    saveQueue(loadQueue().filter(function (item) { return item.id !== id; }));
+  function buildPayload() {
+    if (config.mode === "form") {
+      collectFormState();
+    }
+
+    var timestamp = nowIso();
+    var id = draftId();
+
+    return {
+      id: id,
+      idempotency_key: id,
+      namespace: namespace,
+      tenant_key: tenantKey,
+      user_id: config.userId || null,
+      offering_id: config.offeringId,
+      date: config.date,
+      attendance: cleanAttendanceData(),
+      notes: clone(notes()),
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
   }
 
-  function pendingCount() {
-    return loadQueue().length;
+  function enqueue(draft) {
+    var existingIndex = queue.findIndex(function (item) {
+      return item.id === draft.id;
+    });
+
+    if (existingIndex >= 0) {
+      draft.created_at = queue[existingIndex].created_at || draft.created_at;
+      queue[existingIndex] = draft;
+    } else {
+      queue.push(draft);
+    }
+
+    putDraft(draft).catch(function (error) {
+      showToast("Offline save failed", error.message, "error");
+    });
+
+    renderQueueStatus();
+  }
+
+  function removeQueuedDraft(id) {
+    queue = queue.filter(function (item) {
+      return item.id !== id;
+    });
+
+    deleteDraft(id).catch(function () {
+      // The server save already succeeded. A stale draft will expire automatically.
+    });
+
+    renderQueueStatus();
   }
 
   function postPayload(payload) {
     return fetch(config.saveUrl, {
       method: "POST",
       credentials: "same-origin",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRFToken": config.csrfToken || ""
+        "X-CSRFToken": config.csrfToken || "",
+        "X-Idempotency-Key": payload.idempotency_key,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     }).then(function (response) {
-      return response.json().catch(function () { return {}; }).then(function (data) {
-        if (!response.ok || !data.success) throw new Error(data.error || "Failed to save attendance.");
-        return data;
-      });
+      return response
+        .json()
+        .catch(function () {
+          return {};
+        })
+        .then(function (data) {
+          if (!response.ok || !data.success) {
+            throw new Error(data.error || "Failed to save attendance.");
+          }
+          return data;
+        });
     });
   }
 
   function showToast(title, message, type) {
-    if (typeof window.showToast === "function") window.showToast(title, message, type || "info");
-    else alert((title || "Notice") + ": " + (message || ""));
+    if (typeof window.showToast === "function") {
+      window.showToast(title, message, type || "info");
+      return;
+    }
+
+    window.alert(title + ": " + message);
+  }
+
+  function currentDraft() {
+    var id = draftId();
+    return (
+      queue.find(function (item) {
+        return item.id === id;
+      }) || null
+    );
   }
 
   function renderQueueStatus(errorMessage) {
     var panel = document.querySelector("[data-offline-attendance-status]");
-    if (!panel) return;
-    var count = pendingCount();
-    var current = queuedForCurrentPage();
+
+    if (!panel) {
+      return;
+    }
+
     var online = navigator.onLine;
+    var count = queue.length;
     var label = panel.querySelector("[data-offline-attendance-label]");
     var detail = panel.querySelector("[data-offline-attendance-detail]");
     var syncButton = panel.querySelector("[data-offline-attendance-sync]");
 
     panel.classList.toggle("is-offline", !online);
     panel.classList.toggle("has-pending", count > 0);
-    if (syncButton) syncButton.disabled = !online || count === 0;
+
+    if (syncButton) {
+      syncButton.disabled = !online || count === 0;
+    }
 
     if (label) {
-      label.textContent = !online ? "Offline attendance mode" : count ? "Attendance waiting to sync" : "Attendance sync ready";
+      label.textContent = !online
+        ? "Offline attendance mode"
+        : count
+          ? "Attendance waiting to sync"
+          : "Attendance sync ready";
     }
-    if (!detail) return;
-    if (errorMessage) detail.textContent = errorMessage;
-    else if (!online && current) detail.textContent = "This class/date is saved on this device. It will sync automatically when internet returns.";
-    else if (!online) detail.textContent = "Mark attendance as usual. Saving keeps it on this device until internet returns.";
-    else if (count) detail.textContent = count + " saved attendance update" + (count === 1 ? "" : "s") + " pending sync.";
-    else detail.textContent = "Online. Saves go directly to Django.";
+
+    if (!detail) {
+      return;
+    }
+
+    if (errorMessage) {
+      detail.textContent = errorMessage;
+    } else if (!online && currentDraft()) {
+      detail.textContent =
+        "This class is stored securely in browser database storage for this signed-in account and will sync when internet returns.";
+    } else if (!online) {
+      detail.textContent =
+        "Mark attendance normally. The draft expires automatically and is cleared when you sign out.";
+    } else if (count) {
+      detail.textContent =
+        count + " attendance update" + (count === 1 ? "" : "s") + " pending sync.";
+    } else {
+      detail.textContent = "Online. Saves go directly to Django.";
+    }
   }
 
-  function syncQueuedAttendance(options) {
-    options = options || {};
+  function syncQueuedAttendance(showNotifications) {
     if (!navigator.onLine) {
       renderQueueStatus();
-      return Promise.resolve({ synced: 0, pending: pendingCount() });
+      return Promise.resolve({ synced: 0, pending: queue.length });
     }
-    var queue = loadQueue();
+
     var synced = 0;
     var chain = Promise.resolve();
-    queue.forEach(function (payload) {
+
+    queue.slice().forEach(function (draft) {
       chain = chain.then(function () {
-        return postPayload(payload).then(function () {
-          removeQueued(payload.id);
+        return postPayload(draft).then(function () {
+          removeQueuedDraft(draft.id);
           synced += 1;
         });
       });
     });
-    return chain.then(function () {
-      renderQueueStatus();
-      if (synced && options.toast !== false) {
-        showToast("Attendance synced", synced + " offline attendance save" + (synced === 1 ? "" : "s") + " synced.", "success");
-      }
-      return { synced: synced, pending: pendingCount() };
-    }).catch(function (error) {
-      renderQueueStatus(error.message);
-      if (options.toast !== false) showToast("Sync paused", error.message || "Attendance will sync when the connection is stable.", "warning");
-      return { synced: synced, pending: pendingCount(), error: error };
-    });
+
+    return chain
+      .then(function () {
+        renderQueueStatus();
+
+        if (synced && showNotifications) {
+          showToast(
+            "Attendance synced",
+            synced + " offline save" + (synced === 1 ? "" : "s") + " synced.",
+            "success"
+          );
+        }
+
+        return { synced: synced, pending: queue.length };
+      })
+      .catch(function (error) {
+        renderQueueStatus(error.message);
+
+        if (showNotifications) {
+          showToast("Sync paused", error.message, "warning");
+        }
+
+        return { synced: synced, pending: queue.length, error: error };
+      });
   }
 
   function updateMarkedCount() {
     var target = document.getElementById("marked-count");
-    if (target) target.textContent = Object.keys(cleanAttendanceData()).length;
+    if (target) {
+      target.textContent = Object.keys(cleanAttendanceData()).length;
+    }
   }
 
   function setButtonState(button, status) {
     var row = button.closest("[data-student-id]");
-    if (!row) return;
-    row.querySelectorAll(".status-btn").forEach(function (btn) {
-      var btnStatus = btn.getAttribute("data-status");
-      btn.classList.remove("bg-green-600", "bg-red-600", "bg-yellow-600", "bg-blue-600", "text-white", "border-green-600", "border-red-600", "border-yellow-600", "border-blue-600");
-      btn.classList.add("bg-white", "text-slate-700", "border-slate-200");
-      if (btnStatus === status) {
-        btn.classList.remove("bg-white", "text-slate-700", "border-slate-200");
-        if (status === "PRESENT") btn.classList.add("bg-green-600", "text-white", "border-green-600");
-        if (status === "ABSENT") btn.classList.add("bg-red-600", "text-white", "border-red-600");
-        if (status === "LATE") btn.classList.add("bg-yellow-600", "text-white", "border-yellow-600");
-        if (status === "EXCUSED") btn.classList.add("bg-blue-600", "text-white", "border-blue-600");
+
+    if (!row) {
+      return;
+    }
+
+    row.querySelectorAll(".status-btn").forEach(function (candidate) {
+      var candidateStatus = candidate.getAttribute("data-status");
+
+      candidate.classList.remove(
+        "bg-green-600",
+        "bg-red-600",
+        "bg-yellow-600",
+        "bg-blue-600",
+        "text-white",
+        "border-green-600",
+        "border-red-600",
+        "border-yellow-600",
+        "border-blue-600"
+      );
+      candidate.classList.add("bg-white", "text-slate-700", "border-slate-200");
+
+      if (candidateStatus !== status) {
+        return;
+      }
+
+      candidate.classList.remove("bg-white", "text-slate-700", "border-slate-200");
+
+      var color = {
+        PRESENT: "green",
+        ABSENT: "red",
+        LATE: "yellow",
+        EXCUSED: "blue",
+      }[status];
+
+      if (color) {
+        candidate.classList.add(
+          "bg-" + color + "-600",
+          "text-white",
+          "border-" + color + "-600"
+        );
       }
     });
   }
 
-  function hydrateFromQueuedPayload() {
-    var queued = queuedForCurrentPage();
-    if (!queued || !queued.attendance) return;
-    attendanceData = clone(queued.attendance);
-    setNoteData(clone(queued.notes || {}));
-    if (config.mode === "form") {
-      hydrateFormState();
+  function hydrateFromCurrentDraft() {
+    var draft = currentDraft();
+
+    if (!draft) {
       return;
     }
-    Object.keys(attendanceData).forEach(function (studentId) {
+
+    attendanceData = clone(draft.attendance);
+    attendanceData.__notes = clone(draft.notes);
+
+    var form = document.querySelector("[data-offline-attendance-form]");
+
+    if (form) {
+      Object.keys(cleanAttendanceData()).forEach(function (studentId) {
+        var statusInput = form.querySelector('[name="status_' + studentId + '"]');
+        var noteInput = form.querySelector('[name="note_' + studentId + '"]');
+
+        if (statusInput) {
+          statusInput.value = attendanceData[studentId];
+        }
+
+        if (noteInput) {
+          noteInput.value = notes()[studentId] || "";
+        }
+      });
+      return;
+    }
+
+    Object.keys(cleanAttendanceData()).forEach(function (studentId) {
       var row = document.querySelector('[data-student-id="' + studentId + '"]');
-      var button = row ? row.querySelector('[data-status="' + attendanceData[studentId] + '"]') : null;
-      if (button) setButtonState(button, attendanceData[studentId]);
-    });
-  }
+      var button = row
+        ? row.querySelector('[data-status="' + attendanceData[studentId] + '"]')
+        : null;
 
-  function collectFormState() {
-    var form = document.querySelector("[data-offline-attendance-form]");
-    var attendance = {};
-    var notes = {};
-    if (!form) return;
-    form.querySelectorAll('input[name="student_ids"]').forEach(function (input) {
-      var studentId = input.value;
-      var status = form.querySelector('[name="status_' + studentId + '"]');
-      var note = form.querySelector('[name="note_' + studentId + '"]');
-      attendance[studentId] = status ? status.value : "PRESENT";
-      notes[studentId] = note ? note.value : "";
-    });
-    attendanceData = attendance;
-    setNoteData(notes);
-    updateMarkedCount();
-  }
-
-  function hydrateFormState() {
-    var form = document.querySelector("[data-offline-attendance-form]");
-    var notes = noteData();
-    if (!form) return;
-    Object.keys(attendanceData).forEach(function (studentId) {
-      if (studentId === "__notes") return;
-      var status = form.querySelector('[name="status_' + studentId + '"]');
-      var note = form.querySelector('[name="note_' + studentId + '"]');
-      if (status) status.value = attendanceData[studentId];
-      if (note && Object.prototype.hasOwnProperty.call(notes, studentId)) note.value = notes[studentId] || "";
+      if (button) {
+        setButtonState(button, attendanceData[studentId]);
+      }
     });
   }
 
   window.markStudent = function (studentId, status, button) {
     attendanceData[studentId] = status;
-    if (button) setButtonState(button, status);
+
+    if (button) {
+      setButtonState(button, status);
+    }
+
     updateMarkedCount();
-    if (!navigator.onLine) queuePayload(buildPayload());
+
+    if (!navigator.onLine) {
+      enqueue(buildPayload());
+    }
   };
 
   window.markAllPresent = function () {
@@ -249,59 +520,108 @@
 
   window.saveAttendance = function () {
     var payload = buildPayload();
+
     if (!navigator.onLine) {
-      queuePayload(payload);
-      showToast("Saved offline", "Attendance is stored on this device and will sync when internet returns.", "warning");
-      renderQueueStatus();
+      enqueue(payload);
+      showToast(
+        "Saved offline",
+        "Attendance will sync when internet returns.",
+        "warning"
+      );
       return;
     }
-    postPayload(payload).then(function (data) {
-      removeQueued(payload.id);
-      showToast("Success", data.message || "Attendance saved.", "success");
-      renderQueueStatus();
-    }).catch(function () {
-      queuePayload(payload);
-      showToast("Saved offline", "The connection dropped, so attendance was queued for sync.", "warning");
-      renderQueueStatus();
-    });
+
+    postPayload(payload)
+      .then(function (data) {
+        removeQueuedDraft(payload.id);
+        showToast("Success", data.message || "Attendance saved.", "success");
+      })
+      .catch(function () {
+        enqueue(payload);
+        showToast(
+          "Saved offline",
+          "The connection dropped, so attendance was queued.",
+          "warning"
+        );
+      });
   };
 
   window.syncOfflineAttendance = function () {
-    return syncQueuedAttendance({ toast: true });
+    return syncQueuedAttendance(true);
   };
 
-  function init() {
-    attendanceData = clone(config.initialAttendance || {});
-    setNoteData(clone(config.initialNotes || {}));
-    hydrateFromQueuedPayload();
-    if (config.mode === "form") collectFormState();
-    updateMarkedCount();
+  window.clearOfflineAttendanceData = function () {
+    queue = [];
     renderQueueStatus();
+    return deleteNamespaceDrafts().catch(function () {
+      // Best-effort privacy cleanup; expired drafts are purged during the next load.
+    });
+  };
+
+  function initialise() {
+    try {
+      localStorage.removeItem("edumanage_offline_attendance_queue_v1");
+    } catch (error) {
+      // localStorage may be unavailable; IndexedDB remains the only active store.
+    }
+
+    attendanceData = clone(config.initialAttendance);
+    attendanceData.__notes = clone(config.initialNotes);
+
+    if (config.mode === "form") {
+      collectFormState();
+    }
+
     window.addEventListener("online", function () {
       renderQueueStatus();
-      syncQueuedAttendance({ toast: true });
+      syncQueuedAttendance(true);
     });
     window.addEventListener("offline", renderQueueStatus);
+
     document.addEventListener("click", function (event) {
-      if (event.target.closest("[data-offline-attendance-sync]")) syncQueuedAttendance({ toast: true });
+      if (event.target.closest("[data-offline-attendance-sync]")) {
+        syncQueuedAttendance(true);
+      }
     });
+
     var form = document.querySelector("[data-offline-attendance-form]");
     if (form) {
       form.addEventListener("change", collectFormState);
       form.addEventListener("input", collectFormState);
       form.addEventListener("submit", function (event) {
         collectFormState();
+
         if (!navigator.onLine) {
           event.preventDefault();
-          queuePayload(buildPayload());
-          showToast("Saved offline", "Attendance is stored on this device and will sync when internet returns.", "warning");
-          renderQueueStatus();
+          enqueue(buildPayload());
+          showToast(
+            "Saved offline",
+            "Attendance will sync when internet returns.",
+            "warning"
+          );
         }
       });
     }
-    if (navigator.onLine) syncQueuedAttendance({ toast: false });
+
+    loadQueue()
+      .then(function (drafts) {
+        queue = drafts;
+        hydrateFromCurrentDraft();
+        updateMarkedCount();
+        renderQueueStatus();
+
+        if (navigator.onLine) {
+          syncQueuedAttendance(false);
+        }
+      })
+      .catch(function (error) {
+        renderQueueStatus(error.message);
+      });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialise, { once: true });
+  } else {
+    initialise();
+  }
 })();

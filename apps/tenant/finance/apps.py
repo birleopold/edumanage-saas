@@ -7,7 +7,7 @@ class FinanceConfig(AppConfig):
     label = "finance"
 
     def ready(self):
-        try:
-            from . import accounting_models, integration_models, payment_gateway_models  # noqa: F401
-        except Exception:
-            pass
+        from . import accounting_models, integration_models, payment_gateway_models, signals  # noqa: F401
+        from .webhook_security import install_webhook_delivery_guard
+
+        install_webhook_delivery_guard()

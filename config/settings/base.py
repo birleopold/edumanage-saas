@@ -7,7 +7,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="unsafe-dev-key")
 DEBUG = config("DJANGO_DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="*", cast=lambda v: [s.strip() for s in v.split(",") if s.strip()])
+ALLOWED_HOSTS = config(
+    "DJANGO_ALLOWED_HOSTS",
+    default="localhost,127.0.0.1",
+    cast=lambda value: [item.strip() for item in value.split(",") if item.strip()],
+)
+if DEBUG:
+    ALLOWED_HOSTS = list(dict.fromkeys([*ALLOWED_HOSTS, "testserver", "example.com"]))
+
+ENVIRONMENT = config("ENVIRONMENT", default="development")
 
 
 INSTALLED_APPS = [
@@ -22,7 +30,6 @@ INSTALLED_APPS = [
     "apps.tenant.analytics",
 ]
 
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -35,7 +42,6 @@ MIDDLEWARE = [
     "apps.tenant.audit.request_log.RequestLogMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
 
 ROOT_URLCONF = "config.urls"
 PUBLIC_SCHEMA_URLCONF = "config.public_urls"
@@ -61,14 +67,12 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
 
 PUBLIC_STATUS_PAGE_ENABLED = config("PUBLIC_STATUS_PAGE_ENABLED", default=True, cast=bool)
 
@@ -115,18 +119,30 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
 }
 
 AUDIT_LOG_ENABLED = config("AUDIT_LOG_ENABLED", default=True, cast=bool)
 ADMIN_2FA_REQUIRED = config("ADMIN_2FA_REQUIRED", default=False, cast=bool)
 PRIVACY_POLICY_VERSION = config("PRIVACY_POLICY_VERSION", default="1.0")
-PRIVACY_ACCEPTANCE_REQUIRED = config("PRIVACY_ACCEPTANCE_REQUIRED", default=False, cast=bool)
+PRIVACY_ACCEPTANCE_REQUIRED = config(
+    "PRIVACY_ACCEPTANCE_REQUIRED",
+    default=False,
+    cast=bool,
+)
 
 FEE_REMINDER_CHANNEL = config("FEE_REMINDER_CHANNEL", default="SMS")
-FEE_REMINDER_HANDLER = config("FEE_REMINDER_HANDLER", default="apps.tenant.finance.communication_providers.send_fee_message_provider")
+FEE_REMINDER_HANDLER = config(
+    "FEE_REMINDER_HANDLER",
+    default="apps.tenant.finance.communication_providers.send_fee_message_provider",
+)
 FEE_REMINDER_SMS_HANDLER = config("FEE_REMINDER_SMS_HANDLER", default=None)
-FEE_REMINDER_DEFAULT_COUNTRY_CODE = config("FEE_REMINDER_DEFAULT_COUNTRY_CODE", default="256")
+FEE_REMINDER_DEFAULT_COUNTRY_CODE = config(
+    "FEE_REMINDER_DEFAULT_COUNTRY_CODE",
+    default="256",
+)
 FEE_REMINDER_PORTAL_BASE_URL = config("FEE_REMINDER_PORTAL_BASE_URL", default="")
 
 SMS_GATEWAY_URL = config("SMS_GATEWAY_URL", default="")
@@ -137,9 +153,16 @@ SMS_GATEWAY_TIMEOUT_SECONDS = config("SMS_GATEWAY_TIMEOUT_SECONDS", default=15, 
 WHATSAPP_CLOUD_ACCESS_TOKEN = config("WHATSAPP_CLOUD_ACCESS_TOKEN", default="")
 WHATSAPP_CLOUD_PHONE_NUMBER_ID = config("WHATSAPP_CLOUD_PHONE_NUMBER_ID", default="")
 WHATSAPP_CLOUD_API_VERSION = config("WHATSAPP_CLOUD_API_VERSION", default="v20.0")
-WHATSAPP_CLOUD_TIMEOUT_SECONDS = config("WHATSAPP_CLOUD_TIMEOUT_SECONDS", default=15, cast=int)
+WHATSAPP_CLOUD_TIMEOUT_SECONDS = config(
+    "WHATSAPP_CLOUD_TIMEOUT_SECONDS",
+    default=15,
+    cast=int,
+)
 
-EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.smtp.EmailBackend",
+)
 EMAIL_HOST = config("EMAIL_HOST", default="localhost")
 EMAIL_PORT = config("EMAIL_PORT", default=25, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
@@ -147,15 +170,68 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@edumanage.local")
 
-FEE_RECEIPT_AUTO_SEND_ON_PAYMENT = config("FEE_RECEIPT_AUTO_SEND_ON_PAYMENT", default=False, cast=bool)
+FEE_RECEIPT_AUTO_SEND_ON_PAYMENT = config(
+    "FEE_RECEIPT_AUTO_SEND_ON_PAYMENT",
+    default=False,
+    cast=bool,
+)
 
-WEBHOOK_REQUEST_TIMEOUT_SECONDS = config("WEBHOOK_REQUEST_TIMEOUT_SECONDS", default=8, cast=int)
-WEBHOOK_MAX_RETRY_ATTEMPTS = config("WEBHOOK_MAX_RETRY_ATTEMPTS", default=5, cast=int)
-WEBHOOK_RETRY_BASE_SECONDS = config("WEBHOOK_RETRY_BASE_SECONDS", default=30, cast=int)
+PAYMENT_CALLBACKS_ENABLED = config(
+    "PAYMENT_CALLBACKS_ENABLED",
+    default=DEBUG,
+    cast=bool,
+)
+MOBILE_MONEY_DRY_RUN_ENABLED = config(
+    "MOBILE_MONEY_DRY_RUN_ENABLED",
+    default=DEBUG,
+    cast=bool,
+)
+MOBILE_MONEY_TIMEOUT_SECONDS = config(
+    "MOBILE_MONEY_TIMEOUT_SECONDS",
+    default=20,
+    cast=int,
+)
+
+MTN_MOMO_COLLECTION_URL = config("MTN_MOMO_COLLECTION_URL", default="")
+MTN_MOMO_COLLECTION_TOKEN = config("MTN_MOMO_COLLECTION_TOKEN", default="")
+MTN_MOMO_SUBSCRIPTION_KEY = config("MTN_MOMO_SUBSCRIPTION_KEY", default="")
+MTN_MOMO_CALLBACK_SECRET = config("MTN_MOMO_CALLBACK_SECRET", default="")
+
+AIRTEL_MONEY_COLLECTION_URL = config("AIRTEL_MONEY_COLLECTION_URL", default="")
+AIRTEL_MONEY_COLLECTION_TOKEN = config("AIRTEL_MONEY_COLLECTION_TOKEN", default="")
+AIRTEL_MONEY_SUBSCRIPTION_KEY = config("AIRTEL_MONEY_SUBSCRIPTION_KEY", default="")
+AIRTEL_MONEY_CALLBACK_SECRET = config("AIRTEL_MONEY_CALLBACK_SECRET", default="")
+
+WEBHOOK_REQUEST_TIMEOUT_SECONDS = config(
+    "WEBHOOK_REQUEST_TIMEOUT_SECONDS",
+    default=8,
+    cast=int,
+)
+WEBHOOK_MAX_RETRY_ATTEMPTS = config(
+    "WEBHOOK_MAX_RETRY_ATTEMPTS",
+    default=5,
+    cast=int,
+)
+WEBHOOK_RETRY_BASE_SECONDS = config(
+    "WEBHOOK_RETRY_BASE_SECONDS",
+    default=30,
+    cast=int,
+)
+WEBHOOK_ALLOW_PRIVATE_TARGETS = config(
+    "WEBHOOK_ALLOW_PRIVATE_TARGETS",
+    default=DEBUG,
+    cast=bool,
+)
+WEBHOOK_ALLOW_HTTP = config("WEBHOOK_ALLOW_HTTP", default=DEBUG, cast=bool)
+WEBHOOK_ALLOWED_HOSTS = config(
+    "WEBHOOK_ALLOWED_HOSTS",
+    default="",
+    cast=lambda value: tuple(
+        item.strip().lower() for item in value.split(",") if item.strip()
+    ),
+)
 
 WHATSAPP_STATUS_WEBHOOK_SECRET = config("WHATSAPP_STATUS_WEBHOOK_SECRET", default="")
-MTN_MOMO_CALLBACK_SECRET = config("MTN_MOMO_CALLBACK_SECRET", default="")
-AIRTEL_MONEY_CALLBACK_SECRET = config("AIRTEL_MONEY_CALLBACK_SECRET", default="")
 
 SLOW_REQUEST_THRESHOLD_MS = config("SLOW_REQUEST_THRESHOLD_MS", default=1500, cast=int)
 SLOW_QUERY_COUNT_THRESHOLD = config("SLOW_QUERY_COUNT_THRESHOLD", default=75, cast=int)
@@ -183,6 +259,16 @@ LOGGING = {
         "edumanage.observability": {
             "handlers": ["console"],
             "level": config("OBSERVABILITY_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+        "edumanage.security": {
+            "handlers": ["console"],
+            "level": config("SECURITY_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+        "edumanage.finance": {
+            "handlers": ["console"],
+            "level": config("FINANCE_LOG_LEVEL", default="INFO"),
             "propagate": False,
         },
     },

@@ -2,6 +2,7 @@ import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -14,6 +15,19 @@ class User(AbstractUser):
 
     def has_role(self, role_code: str) -> bool:
         return self.roles.filter(code=role_code).exists()
+
+    def save(self, *args, **kwargs):
+        normalized_email = (self.email or "").strip().lower()
+        previous_email = ""
+        if self.pk:
+            previous_email = type(self).objects.filter(pk=self.pk).values_list("email", flat=True).first() or ""
+        email_changed = self._state.adding or normalized_email != previous_email.strip().lower()
+        self.email = normalized_email
+        if self.email and email_changed:
+            duplicate = type(self).objects.filter(email__iexact=self.email).exclude(pk=self.pk).exists()
+            if duplicate:
+                raise ValidationError({"email": "This email address is already linked to another user."})
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.get_username()
@@ -46,11 +60,29 @@ class Role(models.Model):
 class UserRole(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    campus = models.ForeignKey("orgsettings.Campus", on_delete=models.CASCADE, null=True, blank=True, help_text="Campus scope for campus admin role")
+    campus = models.ForeignKey(
+        "orgsettings.Campus",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Campus scope for campus admin role",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ("user", "role", "campus")
+
+    def save(self, *args, **kwargs):
+        scope_changed = self._state.adding
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values("user_id", "role_id", "campus_id").first()
+            scope_changed = not previous or (previous["user_id"], previous["role_id"], previous["campus_id"]) != (self.user_id, self.role_id, self.campus_id)
+        if scope_changed:
+            existing = type(self).objects.filter(user=self.user, role=self.role)
+            existing = existing.filter(campus__isnull=True) if self.campus_id is None else existing.filter(campus_id=self.campus_id)
+            if existing.exclude(pk=self.pk).exists():
+                raise ValidationError("This role assignment already exists for the selected campus scope.")
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         if self.campus:
@@ -64,7 +96,13 @@ class PasswordSetupToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_setup_tokens")
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_setup_tokens",
+    )
 
     class Meta:
         ordering = ["-created_at"]
