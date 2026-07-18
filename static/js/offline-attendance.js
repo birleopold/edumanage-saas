@@ -1,307 +1,42 @@
 (function () {
   "use strict";
-
-  var QUEUE_KEY = "edumanage_offline_attendance_queue_v1";
-  var config = window.OfflineAttendanceConfig || {};
-  var attendanceData = {};
-
-  function clone(value) {
-    return JSON.parse(JSON.stringify(value || {}));
-  }
-
-  function nowIso() {
-    return new Date().toISOString();
-  }
-
-  function queueId(payload) {
-    return "attendance:" + payload.offering_id + ":" + payload.date;
-  }
-
-  function loadQueue() {
-    try {
-      var raw = localStorage.getItem(QUEUE_KEY);
-      var parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function saveQueue(queue) {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-    renderQueueStatus();
-  }
-
-  function queuedForCurrentPage() {
-    if (!config.offeringId || !config.date) return null;
-    var id = queueId({ offering_id: config.offeringId, date: config.date });
-    return loadQueue().find(function (item) { return item.id === id; }) || null;
-  }
-
-  function buildPayload() {
-    if (config.mode === "form") collectFormState();
-    return {
-      id: queueId({ offering_id: config.offeringId, date: config.date }),
-      offering_id: config.offeringId,
-      date: config.date,
-      attendance: cleanAttendanceData(),
-      notes: clone(noteData()),
-      created_at: nowIso(),
-      updated_at: nowIso()
-    };
-  }
-
-  function noteData() {
-    return attendanceData.__notes || {};
-  }
-
-  function setNoteData(notes) {
-    attendanceData.__notes = notes || {};
-  }
-
-  function cleanAttendanceData() {
-    var clean = {};
-    Object.keys(attendanceData || {}).forEach(function (studentId) {
-      if (studentId !== "__notes") clean[studentId] = attendanceData[studentId];
+  var c = window.OfflineAttendanceConfig || {}, ns = [c.tenantKey || location.hostname, c.userId || c.csrfToken || "anonymous"].join(":"), dbp, q = [], data = {}, maxAge = Number(c.maxAgeHours || 48) * 3600000;
+  var DB = "edumanage-offline-v1", STORE = "attendance_drafts";
+  function copy(v) { return JSON.parse(JSON.stringify(v || {})); }
+  function id() { return ["attendance", ns, c.offeringId, c.date].join(":"); }
+  function openDb() {
+    if (dbp) return dbp;
+    dbp = new Promise(function (ok, bad) {
+      if (!("indexedDB" in window)) return bad(new Error("Offline storage is not supported by this browser."));
+      var r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = function () { if (!r.result.objectStoreNames.contains(STORE)) { var s = r.result.createObjectStore(STORE, { keyPath: "id" }); s.createIndex("namespace", "namespace", { unique: false }); } };
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { bad(r.error); };
     });
-    return clean;
+    return dbp;
   }
-
-  function queuePayload(payload) {
-    var queue = loadQueue();
-    var existingIndex = queue.findIndex(function (item) { return item.id === payload.id; });
-    if (existingIndex >= 0) {
-      payload.created_at = queue[existingIndex].created_at || payload.created_at;
-      queue[existingIndex] = payload;
-    } else {
-      queue.push(payload);
-    }
-    saveQueue(queue);
-  }
-
-  function removeQueued(id) {
-    saveQueue(loadQueue().filter(function (item) { return item.id !== id; }));
-  }
-
-  function pendingCount() {
-    return loadQueue().length;
-  }
-
-  function postPayload(payload) {
-    return fetch(config.saveUrl, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": config.csrfToken || ""
-      },
-      body: JSON.stringify(payload)
-    }).then(function (response) {
-      return response.json().catch(function () { return {}; }).then(function (data) {
-        if (!response.ok || !data.success) throw new Error(data.error || "Failed to save attendance.");
-        return data;
-      });
-    });
-  }
-
-  function showToast(title, message, type) {
-    if (typeof window.showToast === "function") window.showToast(title, message, type || "info");
-    else alert((title || "Notice") + ": " + (message || ""));
-  }
-
-  function renderQueueStatus(errorMessage) {
-    var panel = document.querySelector("[data-offline-attendance-status]");
-    if (!panel) return;
-    var count = pendingCount();
-    var current = queuedForCurrentPage();
-    var online = navigator.onLine;
-    var label = panel.querySelector("[data-offline-attendance-label]");
-    var detail = panel.querySelector("[data-offline-attendance-detail]");
-    var syncButton = panel.querySelector("[data-offline-attendance-sync]");
-
-    panel.classList.toggle("is-offline", !online);
-    panel.classList.toggle("has-pending", count > 0);
-    if (syncButton) syncButton.disabled = !online || count === 0;
-
-    if (label) {
-      label.textContent = !online ? "Offline attendance mode" : count ? "Attendance waiting to sync" : "Attendance sync ready";
-    }
-    if (!detail) return;
-    if (errorMessage) detail.textContent = errorMessage;
-    else if (!online && current) detail.textContent = "This class/date is saved on this device. It will sync automatically when internet returns.";
-    else if (!online) detail.textContent = "Mark attendance as usual. Saving keeps it on this device until internet returns.";
-    else if (count) detail.textContent = count + " saved attendance update" + (count === 1 ? "" : "s") + " pending sync.";
-    else detail.textContent = "Online. Saves go directly to Django.";
-  }
-
-  function syncQueuedAttendance(options) {
-    options = options || {};
-    if (!navigator.onLine) {
-      renderQueueStatus();
-      return Promise.resolve({ synced: 0, pending: pendingCount() });
-    }
-    var queue = loadQueue();
-    var synced = 0;
-    var chain = Promise.resolve();
-    queue.forEach(function (payload) {
-      chain = chain.then(function () {
-        return postPayload(payload).then(function () {
-          removeQueued(payload.id);
-          synced += 1;
-        });
-      });
-    });
-    return chain.then(function () {
-      renderQueueStatus();
-      if (synced && options.toast !== false) {
-        showToast("Attendance synced", synced + " offline attendance save" + (synced === 1 ? "" : "s") + " synced.", "success");
-      }
-      return { synced: synced, pending: pendingCount() };
-    }).catch(function (error) {
-      renderQueueStatus(error.message);
-      if (options.toast !== false) showToast("Sync paused", error.message || "Attendance will sync when the connection is stable.", "warning");
-      return { synced: synced, pending: pendingCount(), error: error };
-    });
-  }
-
-  function updateMarkedCount() {
-    var target = document.getElementById("marked-count");
-    if (target) target.textContent = Object.keys(cleanAttendanceData()).length;
-  }
-
-  function setButtonState(button, status) {
-    var row = button.closest("[data-student-id]");
-    if (!row) return;
-    row.querySelectorAll(".status-btn").forEach(function (btn) {
-      var btnStatus = btn.getAttribute("data-status");
-      btn.classList.remove("bg-green-600", "bg-red-600", "bg-yellow-600", "bg-blue-600", "text-white", "border-green-600", "border-red-600", "border-yellow-600", "border-blue-600");
-      btn.classList.add("bg-white", "text-slate-700", "border-slate-200");
-      if (btnStatus === status) {
-        btn.classList.remove("bg-white", "text-slate-700", "border-slate-200");
-        if (status === "PRESENT") btn.classList.add("bg-green-600", "text-white", "border-green-600");
-        if (status === "ABSENT") btn.classList.add("bg-red-600", "text-white", "border-red-600");
-        if (status === "LATE") btn.classList.add("bg-yellow-600", "text-white", "border-yellow-600");
-        if (status === "EXCUSED") btn.classList.add("bg-blue-600", "text-white", "border-blue-600");
-      }
-    });
-  }
-
-  function hydrateFromQueuedPayload() {
-    var queued = queuedForCurrentPage();
-    if (!queued || !queued.attendance) return;
-    attendanceData = clone(queued.attendance);
-    setNoteData(clone(queued.notes || {}));
-    if (config.mode === "form") {
-      hydrateFormState();
-      return;
-    }
-    Object.keys(attendanceData).forEach(function (studentId) {
-      var row = document.querySelector('[data-student-id="' + studentId + '"]');
-      var button = row ? row.querySelector('[data-status="' + attendanceData[studentId] + '"]') : null;
-      if (button) setButtonState(button, attendanceData[studentId]);
-    });
-  }
-
-  function collectFormState() {
-    var form = document.querySelector("[data-offline-attendance-form]");
-    var attendance = {};
-    var notes = {};
-    if (!form) return;
-    form.querySelectorAll('input[name="student_ids"]').forEach(function (input) {
-      var studentId = input.value;
-      var status = form.querySelector('[name="status_' + studentId + '"]');
-      var note = form.querySelector('[name="note_' + studentId + '"]');
-      attendance[studentId] = status ? status.value : "PRESENT";
-      notes[studentId] = note ? note.value : "";
-    });
-    attendanceData = attendance;
-    setNoteData(notes);
-    updateMarkedCount();
-  }
-
-  function hydrateFormState() {
-    var form = document.querySelector("[data-offline-attendance-form]");
-    var notes = noteData();
-    if (!form) return;
-    Object.keys(attendanceData).forEach(function (studentId) {
-      if (studentId === "__notes") return;
-      var status = form.querySelector('[name="status_' + studentId + '"]');
-      var note = form.querySelector('[name="note_' + studentId + '"]');
-      if (status) status.value = attendanceData[studentId];
-      if (note && Object.prototype.hasOwnProperty.call(notes, studentId)) note.value = notes[studentId] || "";
-    });
-  }
-
-  window.markStudent = function (studentId, status, button) {
-    attendanceData[studentId] = status;
-    if (button) setButtonState(button, status);
-    updateMarkedCount();
-    if (!navigator.onLine) queuePayload(buildPayload());
-  };
-
-  window.markAllPresent = function () {
-    document.querySelectorAll("[data-student-id]").forEach(function (row) {
-      var studentId = row.getAttribute("data-student-id");
-      var presentButton = row.querySelector('[data-status="PRESENT"]');
-      window.markStudent(parseInt(studentId, 10), "PRESENT", presentButton);
-    });
-  };
-
-  window.saveAttendance = function () {
-    var payload = buildPayload();
-    if (!navigator.onLine) {
-      queuePayload(payload);
-      showToast("Saved offline", "Attendance is stored on this device and will sync when internet returns.", "warning");
-      renderQueueStatus();
-      return;
-    }
-    postPayload(payload).then(function (data) {
-      removeQueued(payload.id);
-      showToast("Success", data.message || "Attendance saved.", "success");
-      renderQueueStatus();
-    }).catch(function () {
-      queuePayload(payload);
-      showToast("Saved offline", "The connection dropped, so attendance was queued for sync.", "warning");
-      renderQueueStatus();
-    });
-  };
-
-  window.syncOfflineAttendance = function () {
-    return syncQueuedAttendance({ toast: true });
-  };
-
-  function init() {
-    attendanceData = clone(config.initialAttendance || {});
-    setNoteData(clone(config.initialNotes || {}));
-    hydrateFromQueuedPayload();
-    if (config.mode === "form") collectFormState();
-    updateMarkedCount();
-    renderQueueStatus();
-    window.addEventListener("online", function () {
-      renderQueueStatus();
-      syncQueuedAttendance({ toast: true });
-    });
-    window.addEventListener("offline", renderQueueStatus);
-    document.addEventListener("click", function (event) {
-      if (event.target.closest("[data-offline-attendance-sync]")) syncQueuedAttendance({ toast: true });
-    });
-    var form = document.querySelector("[data-offline-attendance-form]");
-    if (form) {
-      form.addEventListener("change", collectFormState);
-      form.addEventListener("input", collectFormState);
-      form.addEventListener("submit", function (event) {
-        collectFormState();
-        if (!navigator.onLine) {
-          event.preventDefault();
-          queuePayload(buildPayload());
-          showToast("Saved offline", "Attendance is stored on this device and will sync when internet returns.", "warning");
-          renderQueueStatus();
-        }
-      });
-    }
-    if (navigator.onLine) syncQueuedAttendance({ toast: false });
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  function tx(mode, fn) { return openDb().then(function (db) { return new Promise(function (ok, bad) { var t = db.transaction(STORE, mode), s = t.objectStore(STORE); fn(s); t.oncomplete = ok; t.onerror = function () { bad(t.error); }; }); }); }
+  function load() { return openDb().then(function (db) { return new Promise(function (ok, bad) { var t = db.transaction(STORE, "readwrite"), s = t.objectStore(STORE), r = s.index("namespace").getAll(ns); r.onsuccess = function () { var now = Date.now(), a = []; (r.result || []).forEach(function (x) { var age = now - Date.parse(x.updated_at || x.created_at || ""); if (Number.isFinite(age) && age <= maxAge) a.push(x); else s.delete(x.id); }); ok(a); }; r.onerror = function () { bad(r.error); }; }); }); }
+  function put(x) { return tx("readwrite", function (s) { s.put(x); }); }
+  function del(k) { return tx("readwrite", function (s) { s.delete(k); }); }
+  function notes() { return data.__notes || {}; }
+  function clean() { var x = {}; Object.keys(data).forEach(function (k) { if (k !== "__notes") x[k] = data[k]; }); return x; }
+  function collect() { var f = document.querySelector("[data-offline-attendance-form]"), a = {}, n = {}; if (!f) return; f.querySelectorAll('input[name="student_ids"]').forEach(function (i) { var k = i.value, st = f.querySelector('[name="status_' + k + '"]'), no = f.querySelector('[name="note_' + k + '"]'); a[k] = st ? st.value : "PRESENT"; n[k] = no ? no.value : ""; }); data = a; data.__notes = n; marked(); }
+  function payload() { if (c.mode === "form") collect(); var now = new Date().toISOString(), k = id(); return { id: k, idempotency_key: k, namespace: ns, tenant_key: c.tenantKey || location.hostname, user_id: c.userId || null, offering_id: c.offeringId, date: c.date, attendance: clean(), notes: copy(notes()), created_at: now, updated_at: now }; }
+  function enqueue(x) { var i = q.findIndex(function (v) { return v.id === x.id; }); if (i >= 0) { x.created_at = q[i].created_at || x.created_at; q[i] = x; } else q.push(x); put(x).catch(function (e) { toast("Offline save failed", e.message, "error"); }); status(); }
+  function remove(k) { q = q.filter(function (x) { return x.id !== k; }); del(k).catch(function () {}); status(); }
+  function post(x) { return fetch(c.saveUrl, { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json", "X-CSRFToken": c.csrfToken || "", "X-Idempotency-Key": x.idempotency_key }, body: JSON.stringify(x) }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.success) throw new Error,j.error || "Failed to save attendance."); return j; }); }); }
+  function toast(a, b, t) { if (typeof window.showToast === "function") window.showToast(a, b, t || "info"); else alert(a + ": " + b); }
+  function current() { var k = id(); return q.find(function (x) { return x.id === k; }); }
+  function status(err) { var p = document.querySelector("[data-offline-attendance-status]"); if (!p) return; var on = navigator.onLine, n = q.length, l = p.querySelector("[data-offline-attendance-label]"), d = p.querySelector("[data-offline-attendance-detail]"), b = p.querySelector("[data-offline-attendance-sync]"); p.classList.toggle("is-offline", !on); p.classList.toggle("has-pending", n > 0); if (b) b.disabled = !on || !n; if (l) l.textContent = !on ? "Offline attendance mode" : n ? "Attendance waiting to sync" : "Attendance sync ready"; if (!d) return; d.textContent = err || (!on && current() ? "This class is stored in browser database storage for this signed-in session and will sync when internet returns." : !on ? "The draft expires automatically and is cleared when you log out." : n ? n + " attendance update" + (n === 1 ? "" : "s") + " pending sync." : "Online. Saves go directly to Django."); }
+  function sync(show) { if (!navigator.onLine) { status(); return Promise.resolve(); } var done = 0, chain = Promise.resolve(); q.slice().forEach(function (x) { chain = chain.then(function () { return post(x).then(function () { remove(x.id); done++; }); }); }); return chain.then(function () { if (done && show) toast("Attendance synced", done + " offline save" + (done === 1 ? "" : "s") + " synced.", "success"); }).catch(function (e) { status(e.message); if (show) toast("Sync paused", e.message, "warning"); }); }
+  function marked() { var e = document.getElementById("marked-count"); if (e) e.textContent = Object.keys(clean()).length; }
+  function button(btn, st) { var row = btn.closest("[data-student-id]"); if (!row) return; row.querySelectorAll(".status-btn").forEach(function (b) { var x = b.getAttribute("data-status"); b.classList.remove("bg-green-600", "bg-red-600", "bg-yellow-600", "bg-blue-600", "text-white", "border-green-600", "border-red-600", "border-yellow-600", "border-blue-600"); b.classList.add("bg-white", "text-slate-700", "border-slate-200"); if (x === st) { b.classList.remove("bg-white", "text-slate-700", "border-slate-200"); var m = { PRESENT: "green", ABSENT: "red", LATE: "yellow", EXCUSED: "blue" }[st]; if (m) b.classList.add("bg-" + m + "-600", "text-white", "border-" + m + "-600"); } }); }
+  function hydrate() { var x = current(); if (!x) return; data = copy(x.attendance); data.__notes = copy(x.notes); var f = document.querySelector("[data-offline-attendance-form]"); if (f) Object.keys(clean()).forEach(function (k) { var st = f.querySelector('[name="status_' + k + '"]'), no = f.querySelector('[name="note_' + k + '"]'); if (st) st.value = data[k]; if (no) no.value = notes()[k] || ""; }); else Object.keys(clean()).forEach(function (k) { var r = document.querySelector('[data-student-id="' + k + '"]'), b = r && r.querySelector('[data-status="' + data[k] + '"]'); if (b) button(b, data[k]); }); }
+  window.markStudent = function (k, st, b) { data[k] = st; if (b) button(b, st); marked(); if (!navigator.onLine) enqueue(payload()); };
+  window.markAllPresent = function () { document.querySelectorAll("[data-student-id]").forEach(function (r) { var k = r.getAttribute("data-student-id"); window.markStudent(parseInt(k, 10), "PRESENT", r.querySelector('[data-status="PRESENT"]')); }); };
+  window.saveAttendance = function () { var x = payload(); if (!navigator.onLine) { enqueue(x); toast("Saved offline", "Attendance will sync when internet returns.", "warning"); return; } post(x).then(function (j) { remove(x.id); toast("Success", j.message || "Attendance saved.", "success"); }).catch(function () { enqueue(x); toast("Saved offline", "The connection dropped, so attendance was queued.", "warning"); }); };
+  window.syncOfflineAttendance = function () { return sync(true); };
+  window.clearOfflineAttendanceData = function () { var ids = q.map(function (x) { return x.id; }); q = []; ids.forEach(del); status(); };
+  function init() { try { localStorage.removeItem("edumanage_offline_attendance_queue_v1"); } catch (e) {} data = copy(c.initialAttendance); data.__notes = copy(c.initialNotes); if (c.mode === "form") collect(); window.addEventListener("online", function () { status(); sync(true); }); window.addEventListener("offline", status); document.addEventListener("click", function (e) { if (e.target.closest("[data-offline-attendance-sync]")) sync(true); }); var f = document.querySelector("[data-offline-attendance-form]"); if (f) { f.addEventListener("change", collect); f.addEventListener("input", collect); f.addEventListener("submit", function (e) { collect(); if (!navigator.onLine) { e.preventDefault(); enqueue(payload()); toast("Saved offline", "Attendance will sync when internet returns.", "warning"); } }); } load().then(function (a) { q = a; hydrate(); marked(); status(); if (navigator.onLine) sync(false); }).catch(function (e) { status(e.message); }); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
 })();

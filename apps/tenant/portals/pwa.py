@@ -1,9 +1,4 @@
-"""Small no-build PWA helpers for EduManage.
-
-Everything here is plain Django + static browser APIs. No Node, no npm and no
-front-end build step are required.
-"""
-
+"""Small Django-only PWA helpers for EduManage."""
 import json
 
 from decouple import config
@@ -17,7 +12,7 @@ from .models import WebPushSubscription
 
 
 SERVICE_WORKER_JS = r"""
-const CACHE_NAME = "edumanage-static-v2";
+const CACHE_NAME = "edumanage-static-v3";
 const STATIC_ASSETS = [
   "/static/css/public-tailwind.css",
   "/static/css/edumanage-system.css",
@@ -38,12 +33,10 @@ const STATIC_ASSETS = [
 ];
 
 const OFFLINE_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Offline | EduManage</title><style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f8fafc;color:#0f172a;display:grid;min-height:100vh;place-items:center;padding:20px}.card{max-width:520px;background:#fff;border:1px solid #e2e8f0;border-radius:28px;padding:32px;box-shadow:0 24px 70px -45px rgba(15,23,42,.8)}.tag{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.18em;color:#2563eb}h1{margin:.5rem 0 0;font-size:28px}p{color:#475569;line-height:1.6}.btn{display:inline-flex;margin-top:16px;border-radius:14px;background:#2563eb;color:#fff;padding:12px 18px;text-decoration:none;font-weight:900}</style></head><body><main class="card"><p class="tag">EduManage offline</p><h1>You are offline</h1><p>The app is still installed, but this school data needs an internet connection. Reconnect and try again.</p><a class="btn" href="/">Try again</a></main></body></html>`;
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline | EduManage</title><style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f8fafc;color:#0f172a;display:grid;min-height:100vh;place-items:center;padding:20px}.card{max-width:520px;background:#fff;border:1px solid #e2e8f0;border-radius:28px;padding:32px;box-shadow:0 24px 70px -45px rgba(15,23,42,.8)}.tag{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.18em;color:#2563eb}h1{margin:.5rem 0 0;font-size:28px}p{color:#475569;line-height:1.6}.btn{display:inline-flex;margin-top:16px;border-radius:14px;background:#2563eb;color:#fff;padding:12px 18px;text-decoration:none;font-weight:900}</style></head><body><main class="card"><p class="tag">EduManage offline</p><h1>You are offline</h1><p>School records are never cached as private pages. Reconnect to load them safely. Attendance drafts saved on this device will sync after you sign in and reconnect.</p><a class="btn" href="/">Try again</a></main></body></html>`;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => null))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => null)));
   self.skipWaiting();
 });
 
@@ -54,21 +47,30 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function clearPrivateData() {
+  const clearCaches = caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+  const clearDrafts = new Promise((resolve) => {
+    const deletion = indexedDB.deleteDatabase("edumanage-offline-v1");
+    deletion.onsuccess = deletion.onerror = deletion.onblocked = () => resolve();
+  });
+  return Promise.all([clearCaches, clearDrafts]).then(() => caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => null)));
+}
+
+self.addEventListener("message", (event) => {
+  if (!event.data || event.data.type !== "CLEAR_EDUMANAGE_PRIVATE_DATA") return;
+  event.waitUntil(clearPrivateData());
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (/(^|\/)logout\/?$/.test(url.pathname)) event.waitUntil(clearPrivateData());
+  if (request.method !== "GET") return;
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).then((response) => {
-        const copy = response.clone();
-        if (url.pathname.startsWith("/teacher/attendance/roll-call/") || url.pathname.startsWith("/teacher/attendance/take/")) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      }).catch(() => caches.match(request).then((cached) => cached || new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } })))
+      fetch(request, { cache: "no-store" }).catch(() => new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }))
     );
     return;
   }
@@ -76,6 +78,7 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (!response || !response.ok) return response;
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
@@ -86,9 +89,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = { title: "EduManage", body: "You have a new school notification." };
-  try {
-    if (event.data) payload = event.data.json();
-  } catch (error) {}
+  try { if (event.data) payload = event.data.json(); } catch (error) {}
   event.waitUntil(
     self.registration.showNotification(payload.title || "EduManage", {
       body: payload.body || "You have a new school notification.",
@@ -111,6 +112,7 @@ self.addEventListener("notificationclick", (event) => {
 def service_worker(request):
     response = HttpResponse(SERVICE_WORKER_JS, content_type="application/javascript; charset=utf-8")
     response["Service-Worker-Allowed"] = "/"
+    response["Cache-Control"] = "no-store"
     return response
 
 
@@ -152,7 +154,8 @@ def push_readiness(request):
             "active_subscriptions": _active_subscription_count(request.user),
             "subscribe_url": "/pwa/push-subscribe/",
             "unsubscribe_url": "/pwa/push-unsubscribe/",
-            "message": "Browser push APIs, service worker, subscription storage and readiness checks are enabled. Add VAPID keys to deliver push notifications from the server.",
+            "private_page_caching": False,
+            "message": "Static PWA assets and push subscriptions are enabled. Authenticated school pages are never cached.",
         }
     )
 
@@ -184,7 +187,13 @@ def push_subscribe(request):
             "last_error": "",
         },
     )
-    return JsonResponse({"ok": True, "subscription_id": subscription.pk, "active_subscriptions": _active_subscription_count(request.user)})
+    return JsonResponse(
+        {
+            "ok": True,
+            "subscription_id": subscription.pk,
+            "active_subscriptions": _active_subscription_count(request.user),
+        }
+    )
 
 
 @login_required
@@ -195,9 +204,9 @@ def push_unsubscribe(request):
     except (json.JSONDecodeError, UnicodeDecodeError):
         payload = {}
     endpoint = payload.get("endpoint")
-    qs = WebPushSubscription.objects.filter(user=request.user, is_active=True)
+    queryset = WebPushSubscription.objects.filter(user=request.user, is_active=True)
     if endpoint:
-        qs = qs.filter(endpoint=endpoint)
+        queryset = queryset.filter(endpoint=endpoint)
     now = timezone.now()
-    updated = qs.update(is_active=False, last_seen_at=now, updated_at=now)
+    updated = queryset.update(is_active=False, last_seen_at=now, updated_at=now)
     return JsonResponse({"ok": True, "disabled": updated, "active_subscriptions": _active_subscription_count(request.user)})
