@@ -58,12 +58,18 @@ def post_invoice_to_ledger(invoice: Invoice, *, created_by=None):
 
 @transaction.atomic
 def refresh_invoice_ledger(invoice: Invoice, *, created_by=None):
+    if getattr(invoice, "_ledger_refreshed_by_signal", False):
+        delattr(invoice, "_ledger_refreshed_by_signal")
+        return None
     JournalEntry.objects.filter(source_invoice=invoice, source=JournalEntry.INVOICE).delete()
     return post_invoice_to_ledger(invoice, created_by=created_by)
 
 
 @transaction.atomic
 def post_payment_to_ledger(payment: Payment, *, created_by=None):
+    if getattr(payment, "_ledger_posted_by_signal", False):
+        delattr(payment, "_ledger_posted_by_signal")
+        return None
     if JournalEntry.objects.filter(source_payment=payment, source=JournalEntry.PAYMENT).exists():
         return None
     cash = default_cash_account(payment)
