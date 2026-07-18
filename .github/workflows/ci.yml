@@ -118,7 +118,23 @@ jobs:
           exit 1
 
       - name: Audit Python dependencies
-        run: pip-audit -r requirements.txt
+        id: python-audit
+        continue-on-error: true
+        run: pip-audit -r requirements.txt --format=json --output=pip-audit.json
+
+      - name: Upload Python dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: pip-audit.json
+          if-no-files-found: error
+
+      - name: Report Python dependency audit failure
+        if: steps.python-audit.outcome == 'failure'
+        run: |
+          cat pip-audit.json
+          exit 1
 
   postgres-tenant-isolation:
     name: PostgreSQL tenant isolation
