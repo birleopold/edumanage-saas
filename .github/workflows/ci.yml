@@ -152,7 +152,23 @@ jobs:
         run: python manage.py check --settings=config.settings.tenants
 
       - name: Migrate PostgreSQL shared schema
-        run: python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants
+        id: migrate-shared
+        continue-on-error: true
+        run: python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants > shared-migration.log 2>&1
+
+      - name: Upload shared migration traceback
+        if: steps.migrate-shared.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-migration-traceback
+          path: shared-migration.log
+          if-no-files-found: error
+
+      - name: Report shared migration failure
+        if: steps.migrate-shared.outcome == 'failure'
+        run: |
+          tail -n 100 shared-migration.log
+          exit 1
 
       - name: Prove PostgreSQL tenant isolation
         run: python manage.py check_tenant_isolation --strict --settings=config.settings.tenants
