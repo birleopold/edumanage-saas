@@ -137,7 +137,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tenant tests against PostgreSQL schemas
+      - name: Create shared schema and prove tenant isolation
         env:
           DJANGO_SETTINGS_MODULE: config.settings.tenants
           DJANGO_SECRET_KEY: ci-tenant-secret-key-not-for-production
@@ -150,4 +150,5 @@ jobs:
           POSTGRES_PORT: "5432"
         run: |
           python manage.py check --settings=config.settings.tenants
-          python manage.py test apps.public.tenants.tests --settings=config.settings.tenants
+          python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants
+          python manage.py check_tenant_isolation --strict --settings=config.settings.tenants
