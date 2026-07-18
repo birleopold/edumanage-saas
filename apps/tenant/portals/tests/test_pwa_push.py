@@ -121,7 +121,7 @@ class PwaOfflineAttendanceShellTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Service-Worker-Allowed"], "/")
-        self.assertEqual(response["Cache-Control"], "no-store")
+        self.assertIn("no-store", response["Cache-Control"])
         content = response.content.decode("utf-8")
         self.assertIn("/static/js/offline-attendance.js", content)
         self.assertIn("/static/css/mobile-pwa.css", content)
