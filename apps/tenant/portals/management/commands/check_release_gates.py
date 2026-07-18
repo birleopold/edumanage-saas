@@ -75,7 +75,8 @@ class Command(BaseCommand):
                 ),
             ]
         )
-        using_production_module = settings.SETTINGS_MODULE.endswith(".prod")
+        settings_module = getattr(settings, "SETTINGS_MODULE", "") or ""
+        using_production_module = settings_module.endswith(".prod")
         for name, expected in PRODUCTION_SETTINGS.items():
             value = getattr(settings, name, None)
             ok = value == expected if using_production_module else True
