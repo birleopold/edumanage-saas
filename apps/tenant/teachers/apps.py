@@ -5,3 +5,6 @@ class TeachersConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.tenant.teachers"
     label = "teachers"
+
+    def ready(self):
+        from . import signals  # noqa: F401
