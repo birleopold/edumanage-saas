@@ -30,11 +30,14 @@ class StudentBulkImportDateTests(TestCase):
 
         rows = parse_csv_file(uploaded, {"MAIN": object()})
 
-        self.assertEqual([row.date_of_birth for row in rows], [
-            "2010-05-15",
-            "2011-08-22",
-            "2009-12-03",
-        ])
+        self.assertEqual(
+            [row.date_of_birth for row in rows],
+            [
+                "2010-05-15",
+                "2011-08-22",
+                "2009-12-03",
+            ],
+        )
         self.assertTrue(all(row.is_valid() for row in rows))
 
     def test_excel_accepts_datetime_and_slash_dates_without_none_strings(self):
@@ -61,15 +64,19 @@ class StudentBulkImportDateTests(TestCase):
 class StudentBulkImportPreviewPersistenceTests(TestCase):
     def setUp(self):
         organization = get_or_create_organization()
-        self.campus, _ = Campus.objects.get_or_create(
-            organization=organization,
-            code="MAIN",
-            defaults={
-                "name": "Main Campus",
-                "is_active": True,
-                "is_default": True,
-            },
-        )
+        self.campus = Campus.objects.filter(organization=organization).first()
+        if self.campus is None:
+            self.campus = Campus.objects.create(
+                organization=organization,
+                name="Bulk Import Campus",
+                code="BULK",
+                is_active=True,
+                is_default=True,
+            )
+        elif not self.campus.code:
+            self.campus.code = "BULK"
+            self.campus.save(update_fields=["code"])
+
         if not self.campus.is_default:
             self.campus.is_default = True
             self.campus.save(update_fields=["is_default"])
@@ -88,7 +95,7 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
             "students.csv",
             (
                 "first_name,last_name,date_of_birth,email,campus_code\n"
-                "John,Doe,5/15/2010,john.doe@example.com,MAIN\n"
+                f"John,Doe,5/15/2010,john.doe@example.com,{self.campus.code}\n"
             ).encode("utf-8"),
             content_type="text/csv",
         )
@@ -97,6 +104,7 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
             reverse("admin_students_bulk_import"),
             {
                 "action": "preview",
+                "create_users": "on",
                 "import_file": uploaded,
             },
         )
