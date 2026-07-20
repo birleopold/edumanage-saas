@@ -4,6 +4,10 @@ from . import deployment_readiness, platform_auth_views, platform_views, subscri
 
 urlpatterns = [
     path("login/", platform_auth_views.platform_login, name="platform_admin_login"),
+    # Public-schema compatibility target for platform guards that reject a
+    # tenant or other non-superuser session. This deliberately lives under
+    # /platform/ instead of the Nginx-managed site root.
+    path("access-denied/", platform_auth_views.platform_access_denied, name="landing_page"),
     path("logout/", platform_views.platform_logout, name="platform_admin_logout"),
     path("", platform_views.dashboard, name="platform_dashboard"),
     path("activity/", platform_views.platform_activity, name="platform_activity"),
