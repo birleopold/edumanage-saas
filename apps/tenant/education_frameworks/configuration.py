@@ -4,7 +4,7 @@ from django.apps import apps
 from django.db.models import F
 
 from .models import CampusEducationStage, FrameworkStage, InstitutionEducationProfile
-from .services import resolve_terminology
+from .services import mapped_stage_ids_for_campus, resolve_terminology
 
 
 def resolve_effective_terminology(
@@ -14,13 +14,7 @@ def resolve_effective_terminology(
 ) -> dict[str, str]:
     """Backward-compatible entry point for the canonical terminology resolver."""
 
-    resolved = resolve_terminology(
-        profile=profile,
-        campus_stage=campus_stage,
-    )
-    if not profile.use_local_terminology and campus_stage is not None:
-        resolved["education_stage"] = campus_stage.stage.name
-    return resolved
+    return resolve_terminology(profile=profile, campus_stage=campus_stage)
 
 
 def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str, int]:
@@ -70,7 +64,7 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
     existing_level_ids = set(Level.objects.values_list("id", flat=True))
     orphaned_mappings = len(mapped_level_ids - existing_level_ids)
     unmapped_levels = level_count - len(mapped_level_ids & existing_level_ids)
-    expected_stage_ids = set(
+    all_mapped_stage_ids = set(
         profile.level_mappings.filter(
             legacy_level_id__in=existing_level_ids
         ).values_list("stage_id", flat=True)
@@ -81,28 +75,41 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
     )
     campus_count = len(active_campuses)
     campus_stages = profile.campus_stages.filter(is_active=True)
-    configured_pairs = set(
-        campus_stages.values_list("campus_id", "stage_id")
-    )
+    configured_pairs = set(campus_stages.values_list("campus_id", "stage_id"))
     missing_campus_stage_count = 0
+    unassigned_campus_count = 0
     configured_campuses = 0
     for campus in active_campuses:
-        campus_stage_ids = {
+        explicit_stage_ids = {
             stage_id
             for campus_id, stage_id in configured_pairs
             if campus_id == campus.id
         }
-        missing = expected_stage_ids - campus_stage_ids
+        inferred_stage_ids = mapped_stage_ids_for_campus(
+            profile,
+            campus,
+            all_mapped_stage_ids=all_mapped_stage_ids,
+        )
+        if inferred_stage_ids:
+            expected_stage_ids = inferred_stage_ids
+        elif explicit_stage_ids:
+            expected_stage_ids = explicit_stage_ids
+        else:
+            expected_stage_ids = set()
+            if all_mapped_stage_ids:
+                unassigned_campus_count += 1
+
+        missing = expected_stage_ids - explicit_stage_ids
         missing_campus_stage_count += len(missing)
-        if not missing:
+        if not missing and (
+            expected_stage_ids or not all_mapped_stage_ids
+        ):
             configured_campuses += 1
 
     grading_configured = campus_stages.exclude(
         grading_scale_id__isnull=True
     ).count()
-    valid_grading_ids = set(
-        GradingScale.objects.values_list("id", flat=True)
-    )
+    valid_grading_ids = set(GradingScale.objects.values_list("id", flat=True))
     invalid_grading_links = sum(
         1
         for grading_scale_id in campus_stages.exclude(
@@ -130,7 +137,10 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
     checks = {
         "profile_active": profile.is_active,
         "framework_selected": bool(profile.primary_framework_id),
-        "campuses_configured": missing_campus_stage_count == 0,
+        "campuses_configured": (
+            missing_campus_stage_count == 0
+            and unassigned_campus_count == 0
+        ),
         "levels_mapped": unmapped_levels == 0,
         "no_orphaned_mappings": orphaned_mappings == 0,
         "grading_links_valid": invalid_grading_links == 0,
@@ -149,6 +159,7 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
         "configured_campuses": configured_campuses,
         "campus_stage_count": campus_stages.count(),
         "missing_campus_stage_count": missing_campus_stage_count,
+        "unassigned_campus_count": unassigned_campus_count,
         "level_count": level_count,
         "mapped_level_count": len(mapped_level_ids & existing_level_ids),
         "unmapped_level_count": max(unmapped_levels, 0),
