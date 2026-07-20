@@ -14,7 +14,13 @@ def resolve_effective_terminology(
 ) -> dict[str, str]:
     """Backward-compatible entry point for the canonical terminology resolver."""
 
-    return resolve_terminology(profile=profile, campus_stage=campus_stage)
+    resolved = resolve_terminology(
+        profile=profile,
+        campus_stage=campus_stage,
+    )
+    if not profile.use_local_terminology and campus_stage is not None:
+        resolved["education_stage"] = campus_stage.stage.name
+    return resolved
 
 
 def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str, int]:
