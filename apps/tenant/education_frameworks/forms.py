@@ -11,6 +11,7 @@ from .models import (
     InstitutionEducationProfile,
     LevelStageMapping,
 )
+from .services import MAPPING_SOURCE_MANUAL
 
 
 TERMINOLOGY_FIELDS = (
@@ -204,3 +205,14 @@ class LevelStageMappingForm(forms.ModelForm):
         self.fields["stage"].queryset = EducationStage.objects.filter(
             is_active=True
         ).order_by("order", "name")
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.settings = {
+            **dict(instance.settings or {}),
+            "source": MAPPING_SOURCE_MANUAL,
+        }
+        if commit:
+            instance.full_clean()
+            instance.save()
+        return instance
