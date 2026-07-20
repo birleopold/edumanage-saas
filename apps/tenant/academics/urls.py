@@ -1,9 +1,10 @@
-from django.urls import path
+from django.urls import include, path
 
 from . import promotion_views, setup_views, views
 
 urlpatterns = [
     path("", setup_views.academics_setup, name="admin_academics_setup"),
+    path("framework/", include("apps.tenant.education_frameworks.urls")),
     path("context/", views.academic_context, name="admin_academic_context"),
 
     path("years/", views.year_list, name="admin_academic_year_list"),
@@ -43,14 +44,14 @@ urlpatterns = [
     ),
     path("enrollments/create/", views.enrollment_create, name="admin_enrollment_create"),
     path("enrollments/<int:pk>/edit/", views.enrollment_edit, name="admin_enrollment_edit"),
-    
+
     path("grading-scales/", views.grading_scale_list, name="admin_grading_scale_list"),
     path("grading-scales/create/", views.grading_scale_create, name="admin_grading_scale_create"),
     path("grading-scales/<int:pk>/", views.grading_scale_detail, name="admin_grading_scale_detail"),
     path("grading-scales/<int:pk>/edit/", views.grading_scale_edit, name="admin_grading_scale_edit"),
     path("grading-scales/<int:scale_id>/ranges/create/", views.grade_range_create, name="admin_grade_range_create"),
     path("grade-ranges/<int:pk>/edit/", views.grade_range_edit, name="admin_grade_range_edit"),
-    
+
     path("streams/", views.stream_list, name="admin_stream_list"),
     path("streams/create/", views.stream_create, name="admin_stream_create"),
     path("streams/<int:pk>/edit/", views.stream_edit, name="admin_stream_edit"),
