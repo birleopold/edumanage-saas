@@ -82,7 +82,9 @@ class Command(BaseCommand):
                     f"{readiness['configured_campuses']}/"
                     f"{readiness['campus_count']}; "
                     f"missing campus-stage records: "
-                    f"{readiness['missing_campus_stage_count']}."
+                    f"{readiness['missing_campus_stage_count']}; "
+                    f"campuses awaiting manual assignment: "
+                    f"{readiness['unassigned_campus_count']}."
                 )
                 self.stdout.write(
                     f"Levels mapped: {readiness['mapped_level_count']}/"
