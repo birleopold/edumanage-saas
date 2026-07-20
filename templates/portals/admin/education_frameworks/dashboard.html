@@ -28,11 +28,12 @@
     </div>
   </section>
 
-  {% if readiness.missing_campus_stage_count or readiness.framework_mismatch_count or readiness.stage_mismatch_count or readiness.unsupported_stage_link_count %}
+  {% if readiness.missing_campus_stage_count or readiness.unassigned_campus_count or readiness.framework_mismatch_count or readiness.stage_mismatch_count or readiness.unsupported_stage_link_count %}
   <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
     <p class="font-black">Framework setup still needs attention</p>
     <p class="mt-1 text-sm">
       Missing campus stages: {{ readiness.missing_campus_stage_count }};
+      campuses awaiting manual assignment: {{ readiness.unassigned_campus_count }};
       wrong-framework links: {{ readiness.framework_mismatch_count }};
       wrong-stage links: {{ readiness.stage_mismatch_count }};
       unsupported stages: {{ readiness.unsupported_stage_link_count }}.
@@ -44,7 +45,7 @@
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p class="text-xs font-black uppercase tracking-wider text-slate-500">Active campuses</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.configured_campuses }}/{{ readiness.campus_count }}</p>
-      <p class="mt-1 text-sm text-slate-500">Campuses covering every mapped education stage</p>
+      <p class="mt-1 text-sm text-slate-500">Campuses covering their inferred or assigned stages</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p class="text-xs font-black uppercase tracking-wider text-slate-500">Campus stages</p>
@@ -85,7 +86,7 @@
       <div class="mt-4 space-y-3 text-sm font-bold">
         <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Profile active</span><span class="{% if readiness.checks.profile_active %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.profile_active %}Ready{% else %}Needs attention{% endif %}</span></div>
         <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Framework selected</span><span class="{% if readiness.checks.framework_selected %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.framework_selected %}Ready{% else %}Needs attention{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">All campus stages</span><span class="{% if readiness.checks.campuses_configured %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.checks.campuses_configured %}Ready{% else %}{{ readiness.missing_campus_stage_count }} missing{% endif %}</span></div>
+        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Campus assignments</span><span class="{% if readiness.checks.campuses_configured %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.checks.campuses_configured %}Ready{% elif readiness.unassigned_campus_count %}{{ readiness.unassigned_campus_count }} unassigned{% else %}{{ readiness.missing_campus_stage_count }} missing{% endif %}</span></div>
         <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Levels mapped</span><span class="{% if readiness.checks.levels_mapped %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.checks.levels_mapped %}Ready{% else %}{{ readiness.unmapped_level_count }} remaining{% endif %}</span></div>
         <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Mapping references</span><span class="{% if readiness.checks.no_orphaned_mappings %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.no_orphaned_mappings %}Valid{% else %}{{ readiness.orphaned_mapping_count }} orphaned{% endif %}</span></div>
         <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Grading references</span><span class="{% if readiness.checks.grading_links_valid %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.grading_links_valid %}Valid{% else %}Needs repair{% endif %}</span></div>
@@ -111,7 +112,7 @@
       <form method="post" class="rounded-2xl border border-slate-200 p-5">
         {% csrf_token %}<input type="hidden" name="action" value="enable_stages">
         <h3 class="font-black text-slate-950">Enable mapped stages</h3>
-        <p class="mt-2 min-h-[48px] text-sm text-slate-500">Create missing campus-stage configuration from existing mappings. Current settings are preserved.</p>
+        <p class="mt-2 min-h-[48px] text-sm text-slate-500">Use each campus's class groups to create only its missing stage records. New campuses without class evidence remain for manual assignment.</p>
         <button class="mt-4 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-black text-white">Enable Campus Stages</button>
       </form>
       <form method="post" class="rounded-2xl border border-slate-200 p-5">
