@@ -44,7 +44,7 @@ def resolve_effective_terminology(
 def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str, int]:
     """Relink campus stages after a framework change without replacing local settings."""
 
-    summary = {"updated": 0, "unchanged": 0, "unsupported": 0}
+    summary = {"updated": 0, "cleared": 0, "unchanged": 0, "unsupported": 0}
     for campus_stage in profile.campus_stages.select_related("stage", "framework_stage"):
         framework_stage = FrameworkStage.objects.filter(
             framework=profile.primary_framework,
@@ -53,6 +53,13 @@ def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str
         ).first()
         if framework_stage is None:
             summary["unsupported"] += 1
+            if campus_stage.framework_stage_id is not None:
+                campus_stage.framework_stage = None
+                campus_stage.full_clean()
+                campus_stage.save(update_fields=["framework_stage", "updated_at"])
+                summary["cleared"] += 1
+            else:
+                summary["unchanged"] += 1
             continue
         if campus_stage.framework_stage_id == framework_stage.pk:
             summary["unchanged"] += 1
