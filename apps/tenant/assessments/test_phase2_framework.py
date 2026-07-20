@@ -220,7 +220,7 @@ class AssessmentFrameworkTests(TestCase):
         AssessmentWeightingComponent.objects.create(
             scheme=scheme,
             assessment_type=self.types["TEST"],
-+            weight=30,
+            weight=30,
         )
 
         self.assertTrue(scheme_validation_errors(scheme))

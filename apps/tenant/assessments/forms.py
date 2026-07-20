@@ -113,7 +113,7 @@ class AssessmentWeightingSchemeForm(forms.ModelForm):
             "stage",
             "academic_term",
             "program",
-+            "total_weight",
+            "total_weight",
             "missing_score_policy",
             "normalize_to_total",
             "priority",

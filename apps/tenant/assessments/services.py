@@ -245,7 +245,7 @@ def scheme_validation_errors(scheme: AssessmentWeightingScheme) -> list[str]:
         is_active=True,
     ).exclude(pk=scheme.pk).exists():
         errors.append("Another active scheme has the same scope and priority.")
-+    components = list(scheme.components.filter(is_active=True).select_related("assessment_type"))
+    components = list(scheme.components.filter(is_active=True).select_related("assessment_type"))
     if not components:
         errors.append("The scheme has no active weighting components.")
         return errors

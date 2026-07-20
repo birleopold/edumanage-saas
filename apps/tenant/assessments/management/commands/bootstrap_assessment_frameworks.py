@@ -26,7 +26,7 @@ class Command(BaseCommand):
         schema = (options.get("schema") or "").strip()
         tenants = Tenant.objects.exclude(schema_name="public").order_by("schema_name")
         if schema:
-+            tenants = tenants.filter(schema_name=schema)
+            tenants = tenants.filter(schema_name=schema)
             if not tenants.exists():
                 raise CommandError(f"Tenant schema '{schema}' was not found.")
         dry_run = bool(options.get("dry_run"))

@@ -1,4 +1,0 @@
-apps/tenant/assessments/test_phase2_framework.py:223:+            weight=30,
-apps/tenant/assessments/services.py:248:+    components = list(scheme.components.filter(is_active=True).select_related("assessment_type"))
-apps/tenant/assessments/forms.py:116:+            "total_weight",
-apps/tenant/assessments/management/commands/bootstrap_assessment_frameworks.py:29:+            tenants = tenants.filter(schema_name=schema)
