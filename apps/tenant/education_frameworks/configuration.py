@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from django.apps import apps
 
-from .models import CampusEducationStage, EducationStage, FrameworkStage, InstitutionEducationProfile
-from .services import NEUTRAL_TERMINOLOGY, resolve_terminology
+from .models import CampusEducationStage, FrameworkStage, InstitutionEducationProfile
+from .services import resolve_terminology
 
 
 def resolve_effective_terminology(
@@ -11,34 +11,9 @@ def resolve_effective_terminology(
     profile: InstitutionEducationProfile,
     campus_stage: CampusEducationStage | None = None,
 ) -> dict[str, str]:
-    """Resolve labels while respecting the institution's local-terminology switch."""
+    """Backward-compatible entry point for the canonical terminology resolver."""
 
-    if profile.use_local_terminology:
-        return resolve_terminology(profile=profile, campus_stage=campus_stage)
-
-    resolved = dict(NEUTRAL_TERMINOLOGY)
-    if campus_stage:
-        higher_education = campus_stage.stage.code in {
-            EducationStage.TERTIARY,
-            EducationStage.UNIVERSITY,
-        }
-        resolved.update(
-            {
-                "education_stage": campus_stage.stage.name,
-                "class": "Year or Cohort" if higher_education else "Class",
-                "subject": "Course Unit" if higher_education else "Subject",
-                "academic_period": (
-                    "Semester"
-                    if campus_stage.academic_period_type == EducationStage.PERIOD_SEMESTER
-                    else "Academic Period"
-                ),
-                "report_card": "Academic Report" if higher_education else "Report Card",
-            }
-        )
-    resolved.update(dict(profile.terminology or {}))
-    if campus_stage:
-        resolved.update(dict(campus_stage.terminology or {}))
-    return {key: str(value) for key, value in resolved.items()}
+    return resolve_terminology(profile=profile, campus_stage=campus_stage)
 
 
 def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str, int]:
@@ -68,7 +43,9 @@ def sync_framework_stage_links(profile: InstitutionEducationProfile) -> dict[str
         if not campus_stage.local_name:
             campus_stage.local_name = framework_stage.local_name
         campus_stage.full_clean()
-        campus_stage.save(update_fields=["framework_stage", "local_name", "updated_at"])
+        campus_stage.save(
+            update_fields=["framework_stage", "local_name", "updated_at"]
+        )
         summary["updated"] += 1
     return summary
 
