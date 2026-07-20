@@ -6,6 +6,7 @@ from apps.tenant.orgsettings.models import Campus, OrganizationProfile
 
 from .models import CampusEducationStage, EducationStage, FrameworkStage, LevelStageMapping
 from .services import (
+    MAPPING_SOURCE_MANUAL,
     enable_mapped_stages,
     ensure_institution_profile,
     ensure_system_templates,
@@ -13,12 +14,15 @@ from .services import (
     map_existing_levels,
     resolve_level_stage,
     resolve_terminology,
+    term,
 )
 
 
 class EducationFrameworkServiceTests(TestCase):
     def setUp(self):
-        self.organization = OrganizationProfile.objects.create(name="Framework Test School")
+        self.organization = OrganizationProfile.objects.create(
+            name="Framework Test School"
+        )
         self.campus = Campus.objects.create(
             organization=self.organization,
             name="Main Campus",
@@ -34,8 +38,14 @@ class EducationFrameworkServiceTests(TestCase):
         ensure_system_templates()
 
         self.assertEqual(EducationStage.objects.filter(is_system=True).count(), 7)
-        self.assertEqual(self.frameworks["UG-NATIONAL"].stage_settings.count(), 7)
-        self.assertEqual(self.frameworks["INTERNATIONAL-CUSTOM"].stage_settings.count(), 7)
+        self.assertEqual(
+            self.frameworks["UG-NATIONAL"].stage_settings.count(),
+            7,
+        )
+        self.assertEqual(
+            self.frameworks["INTERNATIONAL-CUSTOM"].stage_settings.count(),
+            7,
+        )
 
     def test_stage_inference_supports_ugandan_and_international_names(self):
         examples = {
@@ -64,11 +74,66 @@ class EducationFrameworkServiceTests(TestCase):
         self.assertEqual(summary["created"], 3)
         self.assertEqual(Level.objects.get(pk=primary.pk).name, "P5")
         self.assertEqual(Level.objects.get(pk=secondary.pk).name, "Senior 4")
-        self.assertEqual(Level.objects.get(pk=tertiary.pk).name, "Diploma Year 1")
-        self.assertEqual(resolve_level_stage(primary, self.profile).code, EducationStage.PRIMARY)
-        self.assertEqual(resolve_level_stage(secondary, self.profile).code, EducationStage.LOWER_SECONDARY)
-        self.assertEqual(resolve_level_stage(tertiary, self.profile).code, EducationStage.TERTIARY)
-        self.assertEqual(LevelStageMapping.objects.filter(profile=self.profile).count(), 3)
+        self.assertEqual(
+            Level.objects.get(pk=tertiary.pk).name,
+            "Diploma Year 1",
+        )
+        self.assertEqual(
+            resolve_level_stage(primary, self.profile).code,
+            EducationStage.PRIMARY,
+        )
+        self.assertEqual(
+            resolve_level_stage(secondary, self.profile).code,
+            EducationStage.LOWER_SECONDARY,
+        )
+        self.assertEqual(
+            resolve_level_stage(tertiary, self.profile).code,
+            EducationStage.TERTIARY,
+        )
+        self.assertEqual(
+            LevelStageMapping.objects.filter(profile=self.profile).count(),
+            3,
+        )
+
+    def test_manual_level_mapping_survives_future_automatic_syncs(self):
+        level = Level.objects.create(name="Community Programme", order=10)
+        map_existing_levels(self.profile)
+        mapping = LevelStageMapping.objects.get(
+            profile=self.profile,
+            legacy_level_id=level.pk,
+        )
+        mapping.stage = self.stages[EducationStage.TERTIARY]
+        mapping.settings = {"source": MAPPING_SOURCE_MANUAL}
+        mapping.save(update_fields=["stage", "settings", "updated_at"])
+
+        summary = map_existing_levels(self.profile)
+        mapping.refresh_from_db()
+
+        self.assertEqual(mapping.stage.code, EducationStage.TERTIARY)
+        self.assertEqual(summary["manual_preserved"], 1)
+
+    def test_manual_mapping_stage_survives_legacy_level_rename(self):
+        level = Level.objects.create(name="Community Programme", order=10)
+        map_existing_levels(self.profile)
+        mapping = LevelStageMapping.objects.get(
+            profile=self.profile,
+            legacy_level_id=level.pk,
+        )
+        mapping.stage = self.stages[EducationStage.TERTIARY]
+        mapping.settings = {"source": MAPPING_SOURCE_MANUAL}
+        mapping.save(update_fields=["stage", "settings", "updated_at"])
+        level.name = "Professional Studies"
+        level.save(update_fields=["name"])
+
+        map_existing_levels(self.profile)
+        mapping.refresh_from_db()
+
+        self.assertEqual(mapping.stage.code, EducationStage.TERTIARY)
+        self.assertEqual(mapping.legacy_level_name, "Professional Studies")
+        self.assertEqual(
+            mapping.settings["source"],
+            MAPPING_SOURCE_MANUAL,
+        )
 
     def test_mapped_stages_can_be_enabled_per_campus(self):
         Level.objects.create(name="P1", order=10)
@@ -79,8 +144,16 @@ class EducationFrameworkServiceTests(TestCase):
 
         self.assertEqual(created, 2)
         self.assertSetEqual(
-            set(self.campus.education_stages.values_list("stage__code", flat=True)),
-            {EducationStage.PRIMARY, EducationStage.LOWER_SECONDARY},
+            set(
+                self.campus.education_stages.values_list(
+                    "stage__code",
+                    flat=True,
+                )
+            ),
+            {
+                EducationStage.PRIMARY,
+                EducationStage.LOWER_SECONDARY,
+            },
         )
 
     def test_terminology_combines_neutral_uganda_and_local_labels(self):
@@ -100,15 +173,84 @@ class EducationFrameworkServiceTests(TestCase):
         self.profile.terminology = {"learner": "Pupil"}
         self.profile.save(update_fields=["terminology", "updated_at"])
 
-        terminology = resolve_terminology(profile=self.profile, campus_stage=campus_stage)
+        terminology = resolve_terminology(
+            profile=self.profile,
+            campus_stage=campus_stage,
+        )
 
         self.assertEqual(terminology["learner"], "Pupil")
         self.assertEqual(terminology["subject"], "Subject")
         self.assertEqual(terminology["exam"], "Examination")
-        self.assertEqual(terminology["education_stage"], "Lower Primary")
+        self.assertEqual(
+            terminology["education_stage"],
+            "Lower Primary",
+        )
+
+    def test_explicit_school_and_campus_terms_override_framework_labels(self):
+        primary_stage = self.stages[EducationStage.PRIMARY]
+        framework_stage = FrameworkStage.objects.get(
+            framework=self.frameworks["UG-NATIONAL"],
+            stage=primary_stage,
+        )
+        campus_stage = CampusEducationStage.objects.create(
+            profile=self.profile,
+            campus=self.campus,
+            stage=primary_stage,
+            framework_stage=framework_stage,
+            terminology={"subject": "Learning Area"},
+        )
+        self.profile.terminology = {
+            "class": "Grade",
+            "report_card": "Progress Report",
+        }
+        self.profile.save(update_fields=["terminology", "updated_at"])
+
+        terminology = resolve_terminology(
+            profile=self.profile,
+            campus_stage=campus_stage,
+        )
+
+        self.assertEqual(terminology["class"], "Grade")
+        self.assertEqual(terminology["subject"], "Learning Area")
+        self.assertEqual(terminology["report_card"], "Progress Report")
+
+    def test_term_helper_respects_international_neutral_mode(self):
+        lower_secondary = self.stages[EducationStage.LOWER_SECONDARY]
+        campus_stage = CampusEducationStage.objects.create(
+            profile=self.profile,
+            campus=self.campus,
+            stage=lower_secondary,
+            framework_stage=FrameworkStage.objects.get(
+                framework=self.frameworks["UG-NATIONAL"],
+                stage=lower_secondary,
+            ),
+        )
+        self.profile.use_local_terminology = False
+        self.profile.save(
+            update_fields=["use_local_terminology", "updated_at"]
+        )
+
+        self.assertEqual(
+            term(
+                "education_stage",
+                profile=self.profile,
+                campus_stage=campus_stage,
+            ),
+            "Lower Secondary Education",
+        )
+        self.assertEqual(
+            term(
+                "external_exam",
+                profile=self.profile,
+                campus_stage=campus_stage,
+            ),
+            "External Exam",
+        )
 
     def test_campus_stage_rejects_a_campus_from_another_organization(self):
-        other_organization = OrganizationProfile.objects.create(name="Other Institution")
+        other_organization = OrganizationProfile.objects.create(
+            name="Other Institution"
+        )
         other_campus = Campus.objects.create(
             organization=other_organization,
             name="Other Campus",
