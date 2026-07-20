@@ -10,7 +10,7 @@ from django.contrib.auth.views import (
     PasswordResetConfirmView,
 )
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_http_methods
 
 from .forms import (
@@ -34,14 +34,30 @@ def _audit_login(request, username="", user=None, status="SUCCESS", reason=""):
         pass
 
 
+def _role_home_url(user) -> str:
+    """Return the safest portal landing page for an authenticated tenant user."""
+    if hasattr(user, "has_role"):
+        from apps.tenant.users.models import Role
+
+        if user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN) or user.has_role(Role.PRINCIPAL):
+            return reverse("admin_home")
+        if user.has_role(Role.TEACHER):
+            return reverse("teacher_home")
+        if user.has_role(Role.STUDENT):
+            return reverse("student_home")
+        if user.has_role(Role.PARENT):
+            return reverse("parent_home")
+    return reverse("admin_home")
+
+
 class CustomLoginView(LoginView):
     """Enhanced login view with remember me functionality."""
     form_class = CustomLoginForm
-    template_name = 'auth/login.html'
+    template_name = "auth/login.html"
     redirect_authenticated_user = True
-    
+
     def form_valid(self, form):
-        remember_me = form.cleaned_data.get('remember_me')
+        remember_me = form.cleaned_data.get("remember_me")
         if not remember_me:
             self.request.session.set_expiry(0)
         else:
@@ -54,35 +70,25 @@ class CustomLoginView(LoginView):
         username = self.request.POST.get("username") or self.request.POST.get("email") or ""
         _audit_login(self.request, username=username, user=None, status="FAILED", reason="Invalid credentials")
         return super().form_invalid(form)
-    
+
     def get_success_url(self):
-        """Redirect to appropriate portal based on user role."""
+        """Redirect first-login users to password change, then to their role portal."""
         user = self.request.user
         if getattr(user, "must_change_password", False):
-            return reverse_lazy("change_password")
-        if hasattr(user, 'has_role'):
-            from apps.tenant.users.models import Role
-            if user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN):
-                return reverse_lazy('admin_home')
-            elif user.has_role(Role.TEACHER):
-                return reverse_lazy('teacher_home')
-            elif user.has_role(Role.STUDENT):
-                return reverse_lazy('student_home')
-            elif user.has_role(Role.PARENT):
-                return reverse_lazy('parent_home')
-        return reverse_lazy('admin_home')
+            return reverse("change_password")
+        return _role_home_url(user)
 
 
 class CustomPasswordResetView(PasswordResetView):
     """Enhanced password reset view."""
     form_class = CustomPasswordResetForm
-    template_name = 'auth/password_reset.html'
-    email_template_name = 'auth/password_reset_email.html'
-    subject_template_name = 'auth/password_reset_subject.txt'
-    success_url = reverse_lazy('password_reset_done')
-    
+    template_name = "auth/password_reset.html"
+    email_template_name = "auth/password_reset_email.html"
+    subject_template_name = "auth/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
+
     def form_valid(self, form):
-        messages.success(self.request, 'Password reset instructions have been sent to your email address.')
+        messages.success(self.request, "Password reset instructions have been sent to your email address.")
         try:
             from apps.tenant.audit.services import log_audit
             log_audit(self.request, action="PASSWORD", metadata={"event": "password_reset_requested"})
@@ -94,11 +100,11 @@ class CustomPasswordResetView(PasswordResetView):
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     """Enhanced password reset confirmation view."""
     form_class = CustomPasswordResetConfirmForm
-    template_name = 'auth/password_reset_confirm.html'
-    success_url = reverse_lazy('password_reset_complete')
-    
+    template_name = "auth/password_reset_confirm.html"
+    success_url = reverse_lazy("password_reset_complete")
+
     def form_valid(self, form):
-        messages.success(self.request, 'Your password has been reset successfully. You can now log in with your new password.')
+        messages.success(self.request, "Your password has been reset successfully. You can now log in with your new password.")
         try:
             from apps.tenant.audit.services import log_audit
             log_audit(self.request, action="PASSWORD", metadata={"event": "password_reset_completed"})
@@ -108,43 +114,57 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def change_password(request):
-    """Change password view."""
-    if request.method == 'POST':
+    """Change a tenant user's password without depending on a portal dashboard shell."""
+    password_change_required = bool(getattr(request.user, "must_change_password", False))
+
+    if request.method == "POST":
         form = CustomPasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
+
             if getattr(user, "must_change_password", False):
                 user.must_change_password = False
                 user.save(update_fields=["must_change_password"])
+
             try:
                 from apps.tenant.audit.services import log_audit
-                log_audit(request, action="PASSWORD", metadata={"event": "password_changed"})
+                log_audit(request, action="PASSWORD", metadata={"event": "password_changed", "first_login": password_change_required})
             except Exception:
                 pass
-            messages.success(request, 'Your password has been changed successfully.')
-            return redirect('user_profile')
+
+            messages.success(request, "Your password has been changed successfully.")
+            return redirect(_role_home_url(user))
     else:
         form = CustomPasswordChangeForm(request.user)
-    return render(request, 'auth/change_password.html', {'form': form})
+
+    return render(
+        request,
+        "auth/change_password.html",
+        {
+            "form": form,
+            "password_change_required": password_change_required,
+        },
+    )
 
 
 @login_required
 def user_profile(request):
     """User profile view and edit."""
-    if request.method == 'POST':
+    if request.method == "POST":
         form = UserProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Your profile has been updated successfully.')
-            return redirect('user_profile')
+            messages.success(request, "Your profile has been updated successfully.")
+            return redirect("user_profile")
     else:
         form = UserProfileForm(instance=request.user)
     user_roles = []
-    if hasattr(request.user, 'roles'):
+    if hasattr(request.user, "roles"):
         user_roles = request.user.roles.all()
-    return render(request, 'auth/profile.html', {'form': form, 'user_roles': user_roles})
+    return render(request, "auth/profile.html", {"form": form, "user_roles": user_roles})
 
 
 @require_http_methods(["GET", "POST"])
@@ -153,4 +173,4 @@ def logout_view(request):
     username = getattr(user, "username", "")
     _audit_login(request, username=username, user=user, status="LOGOUT")
     logout(request)
-    return redirect('login')
+    return redirect("login")
