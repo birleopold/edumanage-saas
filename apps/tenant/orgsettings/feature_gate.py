@@ -37,6 +37,11 @@ FEATURE_ROUTE_PREFIXES = {
 }
 
 SAFE_PREFIXES = (
+    # Mandatory account-security routes must stay reachable even when the
+    # optional Security & Audit dashboard feature is disabled. Otherwise the
+    # admin-home 2FA/privacy guards and this feature gate redirect into a loop.
+    "/admin/audit/verify/",
+    "/admin/audit/accept/",
     "/admin/settings/feature-flags/",
     "/admin/settings/",
     "/admin/school-setup/",
