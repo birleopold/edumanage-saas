@@ -181,9 +181,7 @@ def bulk_import_students(request):
                             request,
                             f"Setup emails sent to {sent_count} student(s).",
                         )
-                if result.credentials:
-                    return redirect("admin_students_bulk_import_results")
-                return redirect("admin_students_list")
+                return redirect("admin_students_bulk_import_results")
 
             messages.error(request, "Import failed. Please check the errors above.")
             return redirect("admin_students_bulk_import")
