@@ -50,7 +50,6 @@ UGANDA_TERMINOLOGY = {
     **NEUTRAL_TERMINOLOGY,
     "institution": "School or Institution",
     "learner": "Learner",
-    "guardian": "Parent or Guardian",
     "external_exam": "UNEB or External Exam",
     "boarding": "Boarding and Student Welfare",
     "clearance": "Exam and Fees Clearance",
@@ -67,7 +66,9 @@ STAGE_TEMPLATES = (
         "local_name": "ECD / Pre-Primary",
         "order": 10,
         "default_period_type": EducationStage.PERIOD_TERM,
-        "description": "Nursery, kindergarten, pre-primary and early-years programmes.",
+        "description": (
+            "Nursery, kindergarten, pre-primary and early-years programmes."
+        ),
     },
     {
         "code": EducationStage.PRIMARY,
@@ -83,7 +84,9 @@ STAGE_TEMPLATES = (
         "local_name": "O-Level / Lower Secondary",
         "order": 30,
         "default_period_type": EducationStage.PERIOD_TERM,
-        "description": "Lower-secondary programmes, including Uganda O-Level.",
+        "description": (
+            "Lower-secondary programmes, including Uganda O-Level."
+        ),
     },
     {
         "code": EducationStage.UPPER_SECONDARY,
@@ -91,7 +94,9 @@ STAGE_TEMPLATES = (
         "local_name": "A-Level / Upper Secondary",
         "order": 40,
         "default_period_type": EducationStage.PERIOD_TERM,
-        "description": "Upper-secondary programmes, including Uganda A-Level.",
+        "description": (
+            "Upper-secondary programmes, including Uganda A-Level."
+        ),
     },
     {
         "code": EducationStage.TERTIARY,
@@ -99,7 +104,9 @@ STAGE_TEMPLATES = (
         "local_name": "Tertiary / TVET",
         "order": 50,
         "default_period_type": EducationStage.PERIOD_SEMESTER,
-        "description": "Certificate, diploma, vocational and technical programmes.",
+        "description": (
+            "Certificate, diploma, vocational and technical programmes."
+        ),
     },
     {
         "code": EducationStage.UNIVERSITY,
@@ -107,7 +114,9 @@ STAGE_TEMPLATES = (
         "local_name": "University",
         "order": 60,
         "default_period_type": EducationStage.PERIOD_SEMESTER,
-        "description": "Undergraduate, postgraduate and university programmes.",
+        "description": (
+            "Undergraduate, postgraduate and university programmes."
+        ),
     },
     {
         "code": EducationStage.OTHER,
@@ -115,7 +124,9 @@ STAGE_TEMPLATES = (
         "local_name": "Other / Custom",
         "order": 90,
         "default_period_type": EducationStage.PERIOD_CUSTOM,
-        "description": "Flexible stage for programmes outside the standard templates.",
+        "description": (
+            "Flexible stage for programmes outside the standard templates."
+        ),
     },
 )
 
@@ -125,7 +136,10 @@ FRAMEWORK_TEMPLATES = (
         "code": "UG-NATIONAL",
         "name": "Uganda National Curriculum",
         "country_code": "UG",
-        "description": "Configurable Uganda-oriented template with international-neutral core labels.",
+        "description": (
+            "Configurable Uganda-oriented template with "
+            "international-neutral core labels."
+        ),
         "default_terminology": UGANDA_TERMINOLOGY,
         "default_settings": {
             "assessment_aliases": {
@@ -142,7 +156,9 @@ FRAMEWORK_TEMPLATES = (
         "code": "INTERNATIONAL-CUSTOM",
         "name": "International or Custom Curriculum",
         "country_code": "",
-        "description": "Neutral template for international, private and custom curricula.",
+        "description": (
+            "Neutral template for international, private and custom curricula."
+        ),
         "default_terminology": NEUTRAL_TERMINOLOGY,
         "default_settings": {},
     },
@@ -165,7 +181,10 @@ UGANDA_STAGE_SETTINGS = {
         "period_label": "Term",
         "report_label": "Report Card",
         "candidate_class": True,
-        "settings": {"candidate_levels": ["P7"], "external_exam": "PLE"},
+        "settings": {
+            "candidate_levels": ["P7"],
+            "external_exam": "PLE",
+        },
     },
     EducationStage.LOWER_SECONDARY: {
         "local_name": "O-Level / Lower Secondary",
@@ -174,7 +193,10 @@ UGANDA_STAGE_SETTINGS = {
         "period_label": "Term",
         "report_label": "Report Card",
         "candidate_class": True,
-        "settings": {"candidate_levels": ["S4"], "external_exam": "UCE"},
+        "settings": {
+            "candidate_levels": ["S4"],
+            "external_exam": "UCE",
+        },
     },
     EducationStage.UPPER_SECONDARY: {
         "local_name": "A-Level / Upper Secondary",
@@ -183,7 +205,10 @@ UGANDA_STAGE_SETTINGS = {
         "period_label": "Term",
         "report_label": "Report Card",
         "candidate_class": True,
-        "settings": {"candidate_levels": ["S6"], "external_exam": "UACE"},
+        "settings": {
+            "candidate_levels": ["S6"],
+            "external_exam": "UACE",
+        },
     },
     EducationStage.TERTIARY: {
         "local_name": "Tertiary / TVET",
@@ -220,24 +245,43 @@ def _merged(*values: Mapping | None) -> dict:
     return result
 
 
-def ensure_system_templates() -> tuple[dict[str, EducationStage], dict[str, AcademicFramework]]:
+def ensure_system_templates() -> tuple[
+    dict[str, EducationStage],
+    dict[str, AcademicFramework],
+]:
     stages: dict[str, EducationStage] = {}
     for template in STAGE_TEMPLATES:
         code = template["code"]
-        defaults = {key: value for key, value in template.items() if key != "code"}
+        defaults = {
+            key: value
+            for key, value in template.items()
+            if key != "code"
+        }
         stage, _ = EducationStage.objects.update_or_create(
             code=code,
-            defaults={**defaults, "is_system": True, "is_active": True},
+            defaults={
+                **defaults,
+                "is_system": True,
+                "is_active": True,
+            },
         )
         stages[code] = stage
 
     frameworks: dict[str, AcademicFramework] = {}
     for template in FRAMEWORK_TEMPLATES:
         code = template["code"]
-        defaults = {key: value for key, value in template.items() if key != "code"}
+        defaults = {
+            key: value
+            for key, value in template.items()
+            if key != "code"
+        }
         framework, _ = AcademicFramework.objects.update_or_create(
             code=code,
-            defaults={**defaults, "is_system_template": True, "is_active": True},
+            defaults={
+                **defaults,
+                "is_system_template": True,
+                "is_active": True,
+            },
         )
         frameworks[code] = framework
 
@@ -247,7 +291,10 @@ def ensure_system_templates() -> tuple[dict[str, EducationStage], dict[str, Acad
         FrameworkStage.objects.update_or_create(
             framework=uganda,
             stage=stage,
-            defaults={**UGANDA_STAGE_SETTINGS[code], "is_active": True},
+            defaults={
+                **UGANDA_STAGE_SETTINGS[code],
+                "is_active": True,
+            },
         )
         higher_education = code in {
             EducationStage.TERTIARY,
@@ -258,11 +305,16 @@ def ensure_system_templates() -> tuple[dict[str, EducationStage], dict[str, Acad
             stage=stage,
             defaults={
                 "local_name": stage.name,
-                "class_label": "Year or Cohort" if higher_education else "Class",
-                "subject_label": "Course Unit" if higher_education else "Subject",
+                "class_label": (
+                    "Year or Cohort" if higher_education else "Class"
+                ),
+                "subject_label": (
+                    "Course Unit" if higher_education else "Subject"
+                ),
                 "period_label": (
                     "Semester"
-                    if stage.default_period_type == EducationStage.PERIOD_SEMESTER
+                    if stage.default_period_type
+                    == EducationStage.PERIOD_SEMESTER
                     else "Academic Period"
                 ),
                 "report_label": "Academic Report",
@@ -300,16 +352,23 @@ def ensure_institution_profile(
     )
     if not created and not profile.primary_framework_id:
         profile.primary_framework = frameworks[framework_code]
-        profile.save(update_fields=["primary_framework", "updated_at"])
+        profile.save(
+            update_fields=["primary_framework", "updated_at"]
+        )
     return profile
 
 
-def _neutral_stage_labels(campus_stage: CampusEducationStage) -> dict[str, str]:
+def _neutral_stage_labels(
+    campus_stage: CampusEducationStage,
+) -> dict[str, str]:
     higher_education = campus_stage.stage.code in {
         EducationStage.TERTIARY,
         EducationStage.UNIVERSITY,
     }
-    if campus_stage.academic_period_type == EducationStage.PERIOD_SEMESTER:
+    if (
+        campus_stage.academic_period_type
+        == EducationStage.PERIOD_SEMESTER
+    ):
         period_label = "Semester"
     elif campus_stage.academic_period_type == EducationStage.PERIOD_TERM:
         period_label = "Term"
@@ -322,7 +381,9 @@ def _neutral_stage_labels(campus_stage: CampusEducationStage) -> dict[str, str]:
         "class": "Year or Cohort" if higher_education else "Class",
         "subject": "Course Unit" if higher_education else "Subject",
         "academic_period": period_label,
-        "report_card": "Academic Report" if higher_education else "Report Card",
+        "report_card": (
+            "Academic Report" if higher_education else "Report Card"
+        ),
     }
 
 
@@ -331,14 +392,16 @@ def resolve_terminology(
     profile: InstitutionEducationProfile | None = None,
     campus_stage: CampusEducationStage | None = None,
 ) -> dict[str, str]:
-    """Resolve labels from broad defaults to the most specific explicit override.
+    """Resolve terminology from broad defaults to explicit local overrides.
 
-    Precedence is neutral defaults, selected framework, framework-stage defaults,
-    institution overrides, campus-stage display name and campus-stage overrides.
-    When local terminology is disabled, framework-specific labels are skipped.
+    Precedence: neutral defaults, framework defaults, framework-stage labels,
+    institution overrides, optional local stage name, then campus overrides.
+    Framework-specific labels and local stage names are skipped in neutral mode.
     """
 
-    use_local = bool(profile is None or profile.use_local_terminology)
+    use_local = bool(
+        profile is None or profile.use_local_terminology
+    )
     framework = (
         profile.primary_framework
         if use_local and profile and profile.primary_framework_id
@@ -346,7 +409,9 @@ def resolve_terminology(
     )
     framework_stage = (
         campus_stage.framework_stage
-        if use_local and campus_stage and campus_stage.framework_stage_id
+        if use_local
+        and campus_stage
+        and campus_stage.framework_stage_id
         else None
     )
 
@@ -356,7 +421,8 @@ def resolve_terminology(
             stage_labels.update(
                 {
                     "education_stage": (
-                        framework_stage.local_name or campus_stage.stage.name
+                        framework_stage.local_name
+                        or campus_stage.stage.name
                     ),
                     "class": framework_stage.class_label,
                     "subject": framework_stage.subject_label,
@@ -365,7 +431,9 @@ def resolve_terminology(
                 }
             )
         else:
-            stage_labels.update(_neutral_stage_labels(campus_stage))
+            stage_labels.update(
+                _neutral_stage_labels(campus_stage)
+            )
 
     resolved = _merged(
         NEUTRAL_TERMINOLOGY,
@@ -374,11 +442,14 @@ def resolve_terminology(
         stage_labels,
         profile.terminology if profile else None,
     )
-    if campus_stage and campus_stage.local_name:
+    if use_local and campus_stage and campus_stage.local_name:
         resolved["education_stage"] = campus_stage.local_name
     if campus_stage:
         resolved.update(dict(campus_stage.terminology or {}))
-    return {str(key): str(value) for key, value in resolved.items()}
+    return {
+        str(key): str(value)
+        for key, value in resolved.items()
+    }
 
 
 def term(
@@ -388,8 +459,16 @@ def term(
     campus_stage: CampusEducationStage | None = None,
     fallback: str | None = None,
 ) -> str:
-    labels = resolve_terminology(profile=profile, campus_stage=campus_stage)
-    return str(labels.get(key, fallback or key.replace("_", " ").title()))
+    labels = resolve_terminology(
+        profile=profile,
+        campus_stage=campus_stage,
+    )
+    return str(
+        labels.get(
+            key,
+            fallback or key.replace("_", " ").title(),
+        )
+    )
 
 
 def infer_stage_code(level_name: str) -> str:
@@ -420,7 +499,11 @@ def infer_stage_code(level_name: str) -> str:
         return EducationStage.PRIMARY
     if any(
         token in normalized
-        for token in ("o level", "lower secondary", "junior secondary")
+        for token in (
+            "o level",
+            "lower secondary",
+            "junior secondary",
+        )
     ):
         return EducationStage.LOWER_SECONDARY
     if (
@@ -431,7 +514,11 @@ def infer_stage_code(level_name: str) -> str:
         return EducationStage.LOWER_SECONDARY
     if any(
         token in normalized
-        for token in ("a level", "upper secondary", "senior secondary")
+        for token in (
+            "a level",
+            "upper secondary",
+            "senior secondary",
+        )
     ):
         return EducationStage.UPPER_SECONDARY
     if (
@@ -468,7 +555,9 @@ def infer_stage_code(level_name: str) -> str:
     return EducationStage.OTHER
 
 
-def _mapping_settings(mapping: LevelStageMapping | None) -> dict:
+def _mapping_settings(
+    mapping: LevelStageMapping | None,
+) -> dict:
     return dict(mapping.settings or {}) if mapping else {}
 
 
@@ -477,7 +566,7 @@ def map_existing_levels(
     *,
     dry_run: bool = False,
 ) -> dict[str, int]:
-    """Map legacy levels while preserving administrator-confirmed corrections."""
+    """Map legacy levels while preserving administrator corrections."""
 
     ensure_system_templates()
     Level = apps.get_model("academics", "Level")
@@ -498,7 +587,8 @@ def map_existing_levels(
         ).first()
         existing_settings = _mapping_settings(existing)
         is_manual = (
-            existing_settings.get("source") == MAPPING_SOURCE_MANUAL
+            existing_settings.get("source")
+            == MAPPING_SOURCE_MANUAL
         )
 
         if existing and is_manual:
@@ -536,7 +626,9 @@ def map_existing_levels(
             continue
 
         if dry_run:
-            summary["updated" if existing else "created"] += 1
+            summary[
+                "updated" if existing else "created"
+            ] += 1
             continue
 
         auto_settings = {
@@ -558,7 +650,9 @@ def map_existing_levels(
     return summary
 
 
-def enable_mapped_stages(profile: InstitutionEducationProfile) -> int:
+def enable_mapped_stages(
+    profile: InstitutionEducationProfile,
+) -> int:
     framework = profile.primary_framework
     if not framework:
         return 0
@@ -567,7 +661,9 @@ def enable_mapped_stages(profile: InstitutionEducationProfile) -> int:
         flat=True,
     ).distinct()
     created_count = 0
-    for campus in profile.organization.campuses.filter(is_active=True):
+    for campus in profile.organization.campuses.filter(
+        is_active=True
+    ):
         for stage in EducationStage.objects.filter(
             pk__in=stage_ids,
             is_active=True,
@@ -588,7 +684,9 @@ def enable_mapped_stages(profile: InstitutionEducationProfile) -> int:
                         if framework_stage
                         else stage.local_name
                     ),
-                    "academic_period_type": stage.default_period_type,
+                    "academic_period_type": (
+                        stage.default_period_type
+                    ),
                 },
             )
             created_count += int(created)
@@ -605,10 +703,14 @@ def resolve_level_stage(
     ).select_related("stage").first()
     if mapping:
         return mapping.stage
-    return EducationStage.objects.get(code=infer_stage_code(level.name))
+    return EducationStage.objects.get(
+        code=infer_stage_code(level.name)
+    )
 
 
-def resolve_grading_scale(campus_stage: CampusEducationStage):
+def resolve_grading_scale(
+    campus_stage: CampusEducationStage,
+):
     if not campus_stage.grading_scale_id:
         return None
     GradingScale = apps.get_model("academics", "GradingScale")
