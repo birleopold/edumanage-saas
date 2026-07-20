@@ -12,6 +12,11 @@ urlpatterns = [
     path("<int:pk>/edit/", views.student_edit, name="admin_students_edit"),
     path("bulk-import/", bulk_views.bulk_import_students, name="admin_students_bulk_import"),
     path("bulk-import/results/", bulk_views.bulk_import_results, name="admin_students_bulk_import_results"),
+    path(
+        "bulk-import/print-credentials/",
+        bulk_views.print_bulk_credentials,
+        name="admin_students_print_bulk_credentials",
+    ),
     path("bulk-import/download-csv/", bulk_views.download_credentials_csv, name="admin_students_download_credentials_csv"),
     path("bulk-import/template/", bulk_views.download_sample_template, name="admin_students_download_template"),
 ]
