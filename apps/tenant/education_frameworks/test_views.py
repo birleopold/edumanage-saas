@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps.tenant.academics.models import Level
 from apps.tenant.orgsettings.models import Campus, OrganizationProfile
-from apps.tenant.users.models import User
+from apps.tenant.users.models import Role, User, UserRole
 
 from .models import CampusEducationStage, EducationStage, LevelStageMapping
 from .services import ensure_institution_profile, ensure_system_templates
@@ -34,6 +34,30 @@ class EducationFrameworkAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "One academic foundation")
         self.assertContains(response, self.organization.name)
+
+    def test_campus_administrator_cannot_change_institution_framework(self):
+        campus_admin_role, _ = Role.objects.get_or_create(
+            code=Role.CAMPUS_ADMIN,
+            defaults={"name": "Campus Admin"},
+        )
+        campus_admin = User.objects.create_user(
+            username="framework_campus_admin",
+            password="test-pass-123",
+        )
+        UserRole.objects.create(
+            user=campus_admin,
+            role=campus_admin_role,
+            campus=self.campus,
+        )
+        self.client.logout()
+        self.client.login(username="framework_campus_admin", password="test-pass-123")
+
+        dashboard = self.client.get(reverse("admin_education_framework_dashboard"))
+        academics_setup = self.client.get(reverse("admin_academics_setup"))
+
+        self.assertEqual(dashboard.status_code, 403)
+        self.assertEqual(academics_setup.status_code, 200)
+        self.assertNotContains(academics_setup, ">Education Framework<")
 
     def test_sync_levels_action_preserves_existing_levels(self):
         level = Level.objects.create(name="Senior 4", order=20)
@@ -111,3 +135,39 @@ class EducationFrameworkAdminViewTests(TestCase):
         )
         self.assertEqual(campus_stage.framework_stage.framework, self.profile.primary_framework)
         self.assertEqual(campus_stage.local_name, "Primary")
+
+    def test_duplicate_campus_stage_returns_a_form_error(self):
+        primary = self.stages[EducationStage.PRIMARY]
+        CampusEducationStage.objects.create(
+            profile=self.profile,
+            campus=self.campus,
+            stage=primary,
+            framework_stage=self.frameworks["UG-NATIONAL"].stage_settings.get(stage=primary),
+            academic_period_type=EducationStage.PERIOD_TERM,
+        )
+
+        response = self.client.post(
+            reverse("admin_campus_education_stage_create"),
+            {
+                "campus": self.campus.pk,
+                "stage": primary.pk,
+                "local_name": "Another Primary",
+                "academic_period_type": EducationStage.PERIOD_TERM,
+                "report_layout_key": "",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This education stage is already configured for the selected campus.",
+        )
+        self.assertEqual(
+            CampusEducationStage.objects.filter(
+                profile=self.profile,
+                campus=self.campus,
+                stage=primary,
+            ).count(),
+            1,
+        )
