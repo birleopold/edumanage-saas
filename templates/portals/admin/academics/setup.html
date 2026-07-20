@@ -1,8 +1,9 @@
 {% extends 'portals/admin/base.html' %}
 {% block title %}Academics Setup{% endblock %}
 {% block page_title %}Academics Setup{% endblock %}
-{% block breadcrumbs %}Manage years, terms, levels, programs, classes, courses, offerings and enrollments from one place.{% endblock %}
+{% block breadcrumbs %}Manage the education framework, years, terms, levels, programs, classes, courses, offerings and enrollments from one place.{% endblock %}
 {% block header_actions %}
+<a href="{% url 'admin_education_framework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Education Framework</a>
 <a href="{% url 'admin_academic_context' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Current Year/Term</a>
 <a href="{% url 'admin_offering_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Add Offering</a>
 {% endblock %}
@@ -11,7 +12,7 @@
   <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-800 p-6 text-white shadow-xl">
     <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">One-click academic setup</p>
     <h1 class="mt-2 text-3xl font-black">No memorizing links</h1>
-    <p class="mt-3 max-w-3xl text-sm text-blue-100">Use the cards below to add or manage every core academic setup record used by students, teachers, exams, coursework, reports and fees.</p>
+    <p class="mt-3 max-w-3xl text-sm text-blue-100">Use the cards below to configure the institution framework and manage every core academic record used by students, teachers, exams, coursework, reports and fees.</p>
   </section>
 
   <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -27,7 +28,7 @@
         <p class="mt-2 min-h-[44px] text-sm text-slate-500">{{ item.description }}</p>
         <div class="mt-5 flex gap-2">
           <a href="{{ item.list_url }}" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Manage</a>
-          <a href="{{ item.add_url }}" class="flex-1 rounded-xl bg-primary-600 px-3 py-2 text-center text-sm font-bold text-white hover:bg-primary-700">Add</a>
+          {% if item.add_url %}<a href="{{ item.add_url }}" class="flex-1 rounded-xl bg-primary-600 px-3 py-2 text-center text-sm font-bold text-white hover:bg-primary-700">{{ item.add_label|default:'Add' }}</a>{% endif %}
         </div>
       </div>
     {% endfor %}
