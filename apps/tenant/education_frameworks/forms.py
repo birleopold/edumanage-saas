@@ -150,6 +150,17 @@ class CampusEducationStageForm(forms.ModelForm):
         stage = cleaned.get("stage")
         if campus and campus.organization_id != self.profile.organization_id:
             self.add_error("campus", "Select a campus belonging to this institution.")
+        if campus and stage:
+            duplicate = CampusEducationStage.objects.filter(
+                profile=self.profile,
+                campus=campus,
+                stage=stage,
+            ).exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                self.add_error(
+                    "stage",
+                    "This education stage is already configured for the selected campus.",
+                )
         if stage and self.profile.primary_framework_id:
             framework_stage = FrameworkStage.objects.filter(
                 framework=self.profile.primary_framework,
