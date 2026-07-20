@@ -1,0 +1,76 @@
+name: Phase 1 Senior Level Hotfix
+
+on:
+  push:
+    branches:
+      - feature/education-framework-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  apply-hotfix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Phase 1 branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/education-framework-foundation
+          fetch-depth: 0
+
+      - name: Add written Senior level patterns
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("apps/tenant/education_frameworks/services.py")
+          text = path.read_text(encoding="utf-8")
+
+          lower_old = '''        re.search(r"\\bs\\s*[1-4]\\b", normalized)
+                  or re.search(r"\\bform\\s*[1-4]\\b", normalized)
+                  or re.search(r"\\bgrade\\s*(8|9|10)\\b", normalized)'''
+          lower_new = '''        re.search(r"\\bs\\s*[1-4]\\b", normalized)
+                  or re.search(r"\\bsenior\\s*[1-4]\\b", normalized)
+                  or re.search(r"\\bform\\s*[1-4]\\b", normalized)
+                  or re.search(r"\\bgrade\\s*(8|9|10)\\b", normalized)'''
+
+          upper_old = '''        re.search(r"\\bs\\s*[5-6]\\b", normalized)
+                  or re.search(r"\\bform\\s*[5-6]\\b", normalized)
+                  or re.search(r"\\bgrade\\s*(11|12|13)\\b", normalized)'''
+          upper_new = '''        re.search(r"\\bs\\s*[5-6]\\b", normalized)
+                  or re.search(r"\\bsenior\\s*[5-6]\\b", normalized)
+                  or re.search(r"\\bform\\s*[5-6]\\b", normalized)
+                  or re.search(r"\\bgrade\\s*(11|12|13)\\b", normalized)'''
+
+          for old, new, label in (
+              (lower_old, lower_new, "lower secondary"),
+              (upper_old, upper_new, "upper secondary"),
+          ):
+              if old not in text:
+                  raise SystemExit(f"Expected {label} classifier block was not found")
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Verify focused classifier tests
+        env:
+          DJANGO_SECRET_KEY: ci-hotfix-secret-key
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python manage.py test \
+            apps.tenant.education_frameworks.tests \
+            apps.tenant.education_frameworks.test_views \
+            apps.tenant.education_frameworks.test_configuration
+
+      - name: Commit focused hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/tenant/education_frameworks/services.py
+          git commit -m "Fix written Senior level classification"
+          git push origin HEAD:feature/education-framework-foundation
