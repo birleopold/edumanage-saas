@@ -28,6 +28,9 @@ class FeatureGateSecurityRouteTests(SimpleTestCase):
         ):
             return self.middleware._blocked_feature(request)
 
+    def test_two_factor_settings_remain_available_when_audit_is_disabled(self):
+        self.assertIsNone(self._blocked_feature("/admin/audit/two-factor/"))
+
     def test_two_factor_verification_remains_available_when_audit_is_disabled(self):
         self.assertIsNone(self._blocked_feature("/admin/audit/verify/"))
 
