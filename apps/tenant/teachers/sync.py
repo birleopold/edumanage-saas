@@ -1,3 +1,6 @@
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 from django.db import transaction
 from django.db.models import Q
 
@@ -16,6 +19,21 @@ IDENTITY_FIELDS = (
     "email",
     "is_active",
 )
+
+_sync_in_progress = ContextVar("teacher_hr_sync_in_progress", default=False)
+
+
+def synchronization_in_progress() -> bool:
+    return bool(_sync_in_progress.get())
+
+
+@contextmanager
+def synchronization_guard():
+    token = _sync_in_progress.set(True)
+    try:
+        yield
+    finally:
+        _sync_in_progress.reset(token)
 
 
 def _copy_identity(source, target) -> None:
@@ -79,47 +97,49 @@ def ensure_teacher_for_staff(staff: StaffProfile, *, selected_role_code: str = "
     Both profiles share one user account whenever an account exists.
     """
 
-    has_teacher_role = bool(staff.user_id and staff.user.has_role(Role.TEACHER))
-    should_be_teacher = (
-        selected_role_code == Role.TEACHER
-        or staff.staff_category == StaffProfile.TEACHING
-        or has_teacher_role
-    )
+    with synchronization_guard():
+        has_teacher_role = bool(staff.user_id and staff.user.has_role(Role.TEACHER))
+        should_be_teacher = (
+            selected_role_code == Role.TEACHER
+            or staff.staff_category == StaffProfile.TEACHING
+            or has_teacher_role
+        )
 
-    teacher = _teacher_for_staff(staff)
-    if not should_be_teacher:
-        if teacher is not None and teacher.is_active:
-            teacher.is_active = False
-            teacher.save(update_fields=["is_active"])
-        return None
+        teacher = _teacher_for_staff(staff)
+        if not should_be_teacher:
+            if teacher is not None and teacher.is_active:
+                teacher.is_active = False
+                teacher.save(update_fields=["is_active"])
+            return None
 
-    if staff.user_id:
-        staff.user.roles.add(_teacher_role())
+        if staff.user_id:
+            staff.user.roles.add(_teacher_role())
 
-    if teacher is None:
-        teacher = TeacherProfile()
+        if teacher is None:
+            teacher = TeacherProfile()
 
-    _copy_identity(staff, teacher)
-    if staff.user_id and (teacher.user_id is None or teacher.user_id == staff.user_id):
-        teacher.user = staff.user
-    teacher.save()
-    return teacher
+        _copy_identity(staff, teacher)
+        if staff.user_id and (teacher.user_id is None or teacher.user_id == staff.user_id):
+            teacher.user = staff.user
+        teacher.save()
+        return teacher
 
 
 @transaction.atomic
 def ensure_staff_for_teacher(teacher: TeacherProfile):
     """Create or update the HR employment record for a teacher profile."""
 
-    if teacher.user_id:
-        teacher.user.roles.add(_teacher_role())
+    with synchronization_guard():
+        if teacher.user_id:
+            teacher.user.roles.add(_teacher_role())
 
-    staff = _staff_for_teacher(teacher)
-    if staff is None:
-        staff = StaffProfile(staff_category=StaffProfile.TEACHING)
+        staff = _staff_for_teacher(teacher)
+        if staff is None:
+            staff = StaffProfile(staff_category=StaffProfile.TEACHING)
 
-    _copy_identity(teacher, staff)
-    staff.staff_category = StaffProfile.TEACHING
-    if teacher.user_id and (staff.user_id is None or staff.user_id == teacher.user_id):
-        staff.user = teacher.user
-    staff.save()
-    return staff
+        _copy_identity(teacher, staff)
+        staff.staff_category = StaffProfile.TEACHING
+        if teacher.user_id and (staff.user_id is None or staff.user_id == teacher.user_id):
+            staff.user = teacher.user
+        staff.save()
+        return staff
