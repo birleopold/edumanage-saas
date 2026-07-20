@@ -9,6 +9,7 @@ from apps.tenant.orgsettings.models import Campus
 
 
 _SEQ_RE = re.compile(r"\{SEQ(?::(?P<padding>\d+))?\}")
+_LEGACY_TRAILING_ZERO_RE = re.compile(r"(?P<zeros>0+)$")
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,31 @@ class StudentIdTokens:
 
 def _default_format() -> str:
     return "{CAMPUS_CODE}-{YYYY}-{SEQ:5}"
+
+
+def _prepare_student_number_format(format_str: str) -> tuple[str, int]:
+    """Return a sequence-aware format and any display offset.
+
+    Schools commonly enter formats such as ``10/u/00`` expecting the trailing
+    zeroes to count upwards. Treat that trailing zero run as a legacy sequence
+    placeholder, where the first generated number remains ``00`` and later
+    numbers become ``01``, ``02``, and so on.
+
+    A literal custom format with no sequence marker receives a safe sequence
+    suffix so it can never generate the same identifier repeatedly.
+    """
+
+    fmt = (format_str or "").strip() or _default_format()
+    if _SEQ_RE.search(fmt):
+        return fmt, 0
+
+    legacy_match = _LEGACY_TRAILING_ZERO_RE.search(fmt)
+    if legacy_match:
+        padding = len(legacy_match.group("zeros"))
+        prepared = f"{fmt[:legacy_match.start()]}{{SEQ:{padding}}}"
+        return prepared, -1
+
+    return f"{fmt}-{{SEQ:5}}", 0
 
 
 def _render_student_id(format_str: str, tokens: StudentIdTokens) -> str:
@@ -37,6 +63,19 @@ def _render_student_id(format_str: str, tokens: StudentIdTokens) -> str:
     return fmt
 
 
+def _student_number_exists(student_number: str) -> bool:
+    """Check both profile identifiers and login usernames for a collision."""
+
+    from apps.tenant.users.models import User
+
+    from .models import StudentProfile
+
+    return (
+        StudentProfile.objects.filter(student_id__iexact=student_number).exists()
+        or User.objects.filter(username__iexact=student_number).exists()
+    )
+
+
 def generate_next_student_id(campus: Optional[Campus], today: Optional[date] = None) -> str:
     if campus is None:
         raise ValueError("Campus is required to generate a student number")
@@ -45,16 +84,31 @@ def generate_next_student_id(campus: Optional[Campus], today: Optional[date] = N
 
     with transaction.atomic():
         locked = Campus.objects.select_for_update().get(pk=campus.pk)
-        locked.last_student_sequence = (locked.last_student_sequence or 0) + 1
-        seq = locked.last_student_sequence
-        locked.save(update_fields=["last_student_sequence"])
+        campus_code = (locked.code or str(locked.pk)).strip() or str(locked.pk)
+        format_str, display_offset = _prepare_student_number_format(
+            locked.student_number_format
+        )
 
-    campus_code = (locked.code or str(locked.pk)).strip() or str(locked.pk)
+        while True:
+            locked.last_student_sequence = (locked.last_student_sequence or 0) + 1
+            sequence = locked.last_student_sequence
+            display_sequence = max(sequence + display_offset, 0)
+            candidate = _render_student_id(
+                format_str,
+                StudentIdTokens(
+                    year=str(today.year),
+                    campus_code=campus_code,
+                    seq=display_sequence,
+                    padding=5,
+                ),
+            )
 
-    tokens = StudentIdTokens(
-        year=str(today.year),
-        campus_code=campus_code,
-        seq=seq,
-        padding=5,
-    )
-    return _render_student_id(locked.student_number_format, tokens)
+            if len(candidate) > 64:
+                raise ValueError(
+                    "Generated student number exceeds 64 characters. "
+                    "Please shorten the campus student-number format."
+                )
+
+            if not _student_number_exists(candidate):
+                locked.save(update_fields=["last_student_sequence"])
+                return candidate
