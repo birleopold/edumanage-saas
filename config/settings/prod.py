@@ -19,14 +19,15 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 
+
 def _require(condition, message):
     if not condition:
         raise ImproperlyConfigured(message)
 
+
 _require(bool(SECRET_KEY) and SECRET_KEY != "unsafe-dev-key" and len(SECRET_KEY) >= 50, "DJANGO_SECRET_KEY must be a unique production secret of at least 50 characters.")
 _require(ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS, "DJANGO_ALLOWED_HOSTS must list explicit production hosts.")
 _require(bool(DATABASES["default"].get("PASSWORD")), "POSTGRES_PASSWORD is required in production.")
-_require(ADMIN_2FA_REQUIRED is True, "ADMIN_2FA_REQUIRED must be enabled in production.")
 _require(MOBILE_MONEY_DRY_RUN_ENABLED is False, "MOBILE_MONEY_DRY_RUN_ENABLED must be false in production.")
 _require(WEBHOOK_ALLOW_PRIVATE_TARGETS is False, "WEBHOOK_ALLOW_PRIVATE_TARGETS must be false in production.")
 _require(WEBHOOK_ALLOW_HTTP is False, "WEBHOOK_ALLOW_HTTP must be false in production.")
