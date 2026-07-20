@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.urls import reverse
 
+from apps.tenant.education_frameworks.models import CampusEducationStage
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .models import AcademicTerm, AcademicYear, ClassGroup, Course, CourseOffering, Enrollment, Level, Program
@@ -9,6 +10,15 @@ from .models import AcademicTerm, AcademicYear, ClassGroup, Course, CourseOfferi
 @admin_portal_required
 def academics_setup(request):
     items = [
+        {
+            "label": "Education Framework",
+            "description": "Set institution levels, curriculum defaults and familiar local terminology without changing existing records.",
+            "count": CampusEducationStage.objects.filter(is_active=True).count(),
+            "list_url": reverse("admin_education_framework_dashboard"),
+            "add_url": reverse("admin_education_framework_dashboard"),
+            "add_label": "Configure",
+            "icon": "ph-globe-hemisphere-west",
+        },
         {
             "label": "Academic Years",
             "description": "Create school years and mark the current academic year.",
