@@ -46,7 +46,7 @@ class AssessmentWeightingSchemeAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active", "is_default", "missing_score_policy", "campus", "stage")
     search_fields = ("code", "name", "description")
-    autocomplete_fields = ("campus", "stage", "academic_term", "program")
+    raw_id_fields = ("campus", "stage", "academic_term", "program")
     inlines = (AssessmentWeightingComponentInline,)
 
 
@@ -63,11 +63,11 @@ class AssessmentAdmin(admin.ModelAdmin):
     list_display = ("name", "offering", "assessment_type", "weighting_component", "max_score", "weight", "is_published")
     list_filter = ("is_published", "assessment_type")
     search_fields = ("name", "offering__course__name")
-    autocomplete_fields = ("offering", "assessment_type", "weighting_component")
+    raw_id_fields = ("offering", "assessment_type", "weighting_component")
 
 
 @admin.register(AssessmentScore)
 class AssessmentScoreAdmin(admin.ModelAdmin):
     list_display = ("student", "assessment", "score", "graded_by", "graded_at")
     search_fields = ("student__first_name", "student__last_name", "assessment__name")
-    autocomplete_fields = ("assessment", "student", "graded_by")
+    raw_id_fields = ("assessment", "student", "graded_by")
