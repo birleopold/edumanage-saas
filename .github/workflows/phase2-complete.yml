@@ -21,15 +21,16 @@ jobs:
           ref: feature/configurable-assessment-framework
           fetch-depth: 0
 
-      - name: Apply final Phase 2 payload
+      - name: Apply verified Phase 2 patch
         shell: bash
         run: |
           set -euo pipefail
-          test -f .phase2-payload/phase2-completion.zip
-          unzip -q .phase2-payload/phase2-completion.zip -d /tmp/phase2-completion
-          test -f /tmp/phase2-completion/phase2-complete.patch
-          git apply --check /tmp/phase2-completion/phase2-complete.patch
-          git apply /tmp/phase2-completion/phase2-complete.patch
+          shopt -s nullglob
+          parts=(.phase2-payload/part-*.patch)
+          test "${#parts[@]}" -ge 16
+          cat "${parts[@]}" > /tmp/phase2-complete.patch
+          git apply --check /tmp/phase2-complete.patch
+          git apply /tmp/phase2-complete.patch
           rm -rf .phase2-payload
           git rm .github/workflows/phase2-complete.yml
           git config user.name "github-actions[bot]"
