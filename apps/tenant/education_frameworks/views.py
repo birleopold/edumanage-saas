@@ -19,20 +19,30 @@ from .forms import (
     LevelStageMappingForm,
     TerminologyOverridesForm,
 )
-from .models import CampusEducationStage, LevelStageMapping
+from .models import (
+    CampusEducationStage,
+    InstitutionEducationProfile,
+    LevelStageMapping,
+)
 from .services import (
     enable_mapped_stages,
     ensure_institution_profile,
-    ensure_system_templates,
     map_existing_levels,
 )
 
 
 def _profile():
     if (getattr(connection, "schema_name", None) or "") == "public":
-        raise Http404("Education framework setup is available only inside a school tenant.")
+        raise Http404(
+            "Education framework setup is available only inside a school tenant."
+        )
     organization = get_or_create_organization()
-    ensure_system_templates()
+    existing = InstitutionEducationProfile.objects.select_related(
+        "organization",
+        "primary_framework",
+    ).filter(organization=organization).first()
+    if existing is not None:
+        return existing
     return ensure_institution_profile(organization)
 
 
@@ -49,7 +59,9 @@ def framework_dashboard(request):
                     request,
                     "Level mapping completed: "
                     f"{summary['created']} created, {summary['updated']} updated and "
-                    f"{summary['unchanged']} unchanged. Existing level records were not modified.",
+                    f"{summary['unchanged']} unchanged. "
+                    f"{summary['manual_preserved']} administrator correction(s) were preserved. "
+                    "Existing level records were not modified.",
                 )
             elif action == "enable_stages":
                 created = enable_mapped_stages(profile)
@@ -66,10 +78,16 @@ def framework_dashboard(request):
                     f"{summary['unchanged']} unchanged and {summary['unsupported']} unsupported stage(s).",
                 )
             else:
-                messages.warning(request, "No framework setup action was selected.")
+                messages.warning(
+                    request,
+                    "No framework setup action was selected.",
+                )
         return redirect("admin_education_framework_dashboard")
 
-    mapped_ids = profile.level_mappings.values_list("legacy_level_id", flat=True)
+    mapped_ids = profile.level_mappings.values_list(
+        "legacy_level_id",
+        flat=True,
+    )
     context = {
         "profile": profile,
         "readiness": framework_readiness(profile),
@@ -79,10 +97,12 @@ def framework_dashboard(request):
             "stage",
             "framework_stage",
         ).order_by("campus__name", "stage__order"),
-        "level_mappings": profile.level_mappings.select_related("stage").order_by(
-            "legacy_level_name"
-        ),
-        "unmapped_levels": Level.objects.exclude(pk__in=mapped_ids).order_by("order", "name"),
+        "level_mappings": profile.level_mappings.select_related(
+            "stage"
+        ).order_by("legacy_level_name"),
+        "unmapped_levels": Level.objects.exclude(
+            pk__in=mapped_ids
+        ).order_by("order", "name"),
     }
     return render(
         request,
@@ -95,7 +115,10 @@ def framework_dashboard(request):
 def profile_edit(request):
     profile = _profile()
     previous_framework_id = profile.primary_framework_id
-    form = InstitutionEducationProfileForm(request.POST or None, instance=profile)
+    form = InstitutionEducationProfileForm(
+        request.POST or None,
+        instance=profile,
+    )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             profile = form.save()
@@ -107,7 +130,10 @@ def profile_edit(request):
                     f"{summary['updated']} updated, {summary['cleared']} stale link(s) cleared "
                     f"and {summary['unsupported']} unsupported.",
                 )
-        messages.success(request, "Institution education profile updated.")
+        messages.success(
+            request,
+            "Institution education profile updated.",
+        )
         return redirect("admin_education_framework_dashboard")
     return render(
         request,
@@ -124,10 +150,16 @@ def profile_edit(request):
 @role_required(Role.ADMIN)
 def terminology_edit(request):
     profile = _profile()
-    form = TerminologyOverridesForm(request.POST or None, profile=profile)
+    form = TerminologyOverridesForm(
+        request.POST or None,
+        profile=profile,
+    )
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, "Terminology overrides updated. Blank fields continue using framework defaults.")
+        messages.success(
+            request,
+            "Terminology overrides updated. Blank fields continue using framework defaults.",
+        )
         return redirect("admin_education_framework_dashboard")
     return render(
         request,
@@ -144,7 +176,10 @@ def terminology_edit(request):
 @role_required(Role.ADMIN)
 def campus_stage_create(request):
     profile = _profile()
-    form = CampusEducationStageForm(request.POST or None, profile=profile)
+    form = CampusEducationStageForm(
+        request.POST or None,
+        profile=profile,
+    )
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Campus education stage added.")
@@ -164,7 +199,11 @@ def campus_stage_create(request):
 @role_required(Role.ADMIN)
 def campus_stage_edit(request, pk: int):
     profile = _profile()
-    campus_stage = get_object_or_404(CampusEducationStage, pk=pk, profile=profile)
+    campus_stage = get_object_or_404(
+        CampusEducationStage,
+        pk=pk,
+        profile=profile,
+    )
     form = CampusEducationStageForm(
         request.POST or None,
         instance=campus_stage,
@@ -172,7 +211,10 @@ def campus_stage_edit(request, pk: int):
     )
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, "Campus education stage updated.")
+        messages.success(
+            request,
+            "Campus education stage updated.",
+        )
         return redirect("admin_education_framework_dashboard")
     return render(
         request,
@@ -189,8 +231,15 @@ def campus_stage_edit(request, pk: int):
 @role_required(Role.ADMIN)
 def mapping_edit(request, pk: int):
     profile = _profile()
-    mapping = get_object_or_404(LevelStageMapping, pk=pk, profile=profile)
-    form = LevelStageMappingForm(request.POST or None, instance=mapping)
+    mapping = get_object_or_404(
+        LevelStageMapping,
+        pk=pk,
+        profile=profile,
+    )
+    form = LevelStageMappingForm(
+        request.POST or None,
+        instance=mapping,
+    )
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(
