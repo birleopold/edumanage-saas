@@ -24,7 +24,6 @@ PRODUCTION_SETTINGS = {
     "SECURE_CONTENT_TYPE_NOSNIFF": True,
     "SECURE_REFERRER_POLICY": "same-origin",
     "X_FRAME_OPTIONS": "DENY",
-    "ADMIN_2FA_REQUIRED": True,
     "MOBILE_MONEY_DRY_RUN_ENABLED": False,
     "WEBHOOK_ALLOW_PRIVATE_TARGETS": False,
 }
@@ -67,6 +66,11 @@ class Command(BaseCommand):
                     ".env production settings module",
                     "DJANGO_SETTINGS_MODULE=config.settings.prod" in env_template,
                     "DJANGO_SETTINGS_MODULE=config.settings.prod",
+                ),
+                self._check(
+                    "Optional administrator OTP default",
+                    "ADMIN_2FA_REQUIRED=False" in env_template,
+                    "ADMIN_2FA_REQUIRED=False; schools may enable OTP per administrator account",
                 ),
                 self._check(
                     "Production HSTS preload deploy override",
