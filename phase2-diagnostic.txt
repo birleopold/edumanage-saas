@@ -1,8 +1,0 @@
-SystemCheckError: System check identified some issues:
-
-ERRORS:
-<class 'apps.tenant.assessments.admin.AssessmentAdmin'>: (admin.E040) ModelAdmin must define "search_fields", because it's referenced by AssessmentAdmin.autocomplete_fields.
-<class 'apps.tenant.assessments.admin.AssessmentScoreAdmin'>: (admin.E039) An admin for model "StudentProfile" has to be registered to be referenced by AssessmentScoreAdmin.autocomplete_fields.
-<class 'apps.tenant.assessments.admin.AssessmentScoreAdmin'>: (admin.E039) An admin for model "TeacherProfile" has to be registered to be referenced by AssessmentScoreAdmin.autocomplete_fields.
-<class 'apps.tenant.assessments.admin.AssessmentWeightingSchemeAdmin'>: (admin.E040) ModelAdmin must define "search_fields", because it's referenced by AssessmentWeightingSchemeAdmin.autocomplete_fields.
-<class 'apps.tenant.assessments.admin.AssessmentWeightingSchemeAdmin'>: (admin.E040) ModelAdmin must define "search_fields", because it's referenced by AssessmentWeightingSchemeAdmin.autocomplete_fields.
