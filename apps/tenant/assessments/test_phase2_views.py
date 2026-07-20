@@ -50,7 +50,10 @@ class AssessmentFrameworkViewTests(TestCase):
         self.assertTrue(AssessmentWeightingScheme.objects.filter(code="PRIMARY-DEFAULT").exists())
 
     def test_campus_administrator_cannot_change_institution_wide_framework(self):
-        role = Role.objects.create(code=Role.CAMPUS_ADMIN, name="Campus Admin")
+        role, _ = Role.objects.get_or_create(
+            code=Role.CAMPUS_ADMIN,
+            defaults={"name": "Campus Admin"},
+        )
         campus_admin = get_user_model().objects.create_user(
             username="campusadmin",
             password="test-password",
