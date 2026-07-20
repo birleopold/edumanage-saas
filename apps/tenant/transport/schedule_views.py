@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.campus_permissions import get_user_campus_scope
+from apps.tenant.portals.campus_permissions import enforce_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
 from .forms import ParentNotificationForm, RouteScheduleForm
@@ -39,10 +39,7 @@ def _assignment_queryset_for(user):
         "route__vehicle",
         "route__driver",
     )
-    campus_scope = get_user_campus_scope(user)
-    if campus_scope:
-        queryset = queryset.filter(student__campus=campus_scope)
-    return queryset
+    return enforce_campus_scope(queryset, user, campus_field="student__campus")
 
 
 @admin_portal_required
