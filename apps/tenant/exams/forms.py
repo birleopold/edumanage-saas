@@ -19,7 +19,8 @@ class ExamPaperForm(forms.ModelForm):
     class Meta:
         model = ExamPaper
         fields = [
-            "exam", "offering", "max_score", "passing_score", "weight", "duration_minutes",
+            "exam", "offering", "assessment_type", "weighting_component", "linked_assessment",
+            "max_score", "passing_score", "weight", "duration_minutes",
             "date", "start_time", "end_time", "instructions", "allow_calculator", "randomize_questions",
             "show_results_immediately", "results_published", "report_cards_enabled", "is_published",
         ]
@@ -29,6 +30,32 @@ class ExamPaperForm(forms.ModelForm):
             "end_time": forms.TimeInput(attrs={"type": "time"}),
             "instructions": forms.Textarea(attrs={"rows": 4}),
         }
+        help_texts = {
+            "assessment_type": "Optional category used by the configurable assessment framework.",
+            "weighting_component": "Optional explicit component; leave blank to resolve by type.",
+            "linked_assessment": "Optional compatibility link. Exam scores remain in the exams module.",
+            "weight": "Legacy exam-paper weight remains supported when no scheme applies.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.tenant.assessments.models import Assessment, AssessmentType, AssessmentWeightingComponent
+
+        self.fields["assessment_type"].queryset = AssessmentType.objects.filter(is_active=True).order_by("kind", "name")
+        components = AssessmentWeightingComponent.objects.filter(
+            is_active=True,
+            scheme__is_active=True,
+            assessment_type__is_active=True,
+        ).select_related("scheme", "assessment_type")
+        selected_type = self.data.get("assessment_type") if self.is_bound else getattr(self.instance, "assessment_type_id", None)
+        if selected_type:
+            components = components.filter(assessment_type_id=selected_type)
+        self.fields["weighting_component"].queryset = components.order_by("scheme__name", "order")
+        assessments = Assessment.objects.select_related("offering", "assessment_type").order_by("offering", "name")
+        selected_offering = self.data.get("offering") if self.is_bound else getattr(self.instance, "offering_id", None)
+        if selected_offering:
+            assessments = assessments.filter(offering_id=selected_offering)
+        self.fields["linked_assessment"].queryset = assessments
 
     def clean(self):
         cleaned = super().clean()
@@ -44,6 +71,13 @@ class ExamPaperForm(forms.ModelForm):
         end_time = cleaned.get("end_time")
         if start_time and end_time and end_time <= start_time:
             self.add_error("end_time", "End time must be after start time.")
+        assessment_type = cleaned.get("assessment_type")
+        component = cleaned.get("weighting_component")
+        linked_assessment = cleaned.get("linked_assessment")
+        if component and assessment_type and component.assessment_type_id != assessment_type.pk:
+            self.add_error("weighting_component", "The component must use the selected assessment type.")
+        if linked_assessment and offering and linked_assessment.offering_id != offering.pk:
+            self.add_error("linked_assessment", "The linked assessment must belong to the same course offering.")
         return cleaned
 
 

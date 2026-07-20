@@ -25,10 +25,10 @@ class ExamAdmin(admin.ModelAdmin):
 
 @admin.register(ExamPaper)
 class ExamPaperAdmin(admin.ModelAdmin):
-    list_display = ("exam", "offering", "max_score", "passing_score", "date", "is_published", "results_published", "report_cards_enabled")
-    list_filter = ("is_published", "results_published", "report_cards_enabled", "exam__exam_mode", "randomize_questions")
+    list_display = ("exam", "offering", "assessment_type", "weighting_component", "max_score", "passing_score", "date", "is_published", "results_published", "report_cards_enabled")
+    list_filter = ("is_published", "results_published", "report_cards_enabled", "assessment_type", "exam__exam_mode", "randomize_questions")
     search_fields = ("exam__name", "offering__course__name")
-    raw_id_fields = ("exam", "offering")
+    raw_id_fields = ("exam", "offering", "assessment_type", "weighting_component", "linked_assessment")
     date_hierarchy = "date"
 
 

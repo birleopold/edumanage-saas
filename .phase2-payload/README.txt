@@ -1,1 +1,0 @@
-Temporary Phase 2 deployment payload. This directory is removed automatically by the Phase 2 completion workflow.

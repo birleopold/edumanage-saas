@@ -143,6 +143,10 @@ def paper_list(request):
         "offering__term__year",
         "offering__class_group",
         "offering__teacher",
+        "assessment_type",
+        "weighting_component",
+        "weighting_component__scheme",
+        "linked_assessment",
     ).all()
 
     if campus_id:

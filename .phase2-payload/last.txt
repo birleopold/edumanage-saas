@@ -1,1 +1,0 @@
-Last staging marker before payload attachment.

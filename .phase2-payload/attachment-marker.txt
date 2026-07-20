@@ -1,1 +1,0 @@
-Attach the prepared binary payload blob in the next Git data commit.
