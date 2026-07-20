@@ -45,7 +45,16 @@ class CampusForm(forms.ModelForm):
             "is_active",
             "is_default",
         ]
+        help_texts = {
+            "student_number_format": (
+                "Examples: 10/u/00 produces 10/u/00, 10/u/01, 10/u/02; "
+                "or use {CAMPUS_CODE}-{YYYY}-{SEQ:5}. Leave blank for the default."
+            ),
+        }
         widgets = {
+            "student_number_format": forms.TextInput(attrs={
+                "placeholder": "Example: 10/u/00",
+            }),
             "primary_color_override": forms.TextInput(attrs={
                 "type": "color",
                 "class": "h-10 w-20 rounded border border-gray-300 cursor-pointer",
