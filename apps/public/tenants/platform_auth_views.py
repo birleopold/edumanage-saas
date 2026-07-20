@@ -1,5 +1,7 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -20,6 +22,19 @@ def _safe_platform_next_url(request):
     return next_url
 
 
+def _platform_login_redirect():
+    query = urlencode({"next": reverse("platform_dashboard")})
+    return f"{reverse('platform_admin_login')}?{query}"
+
+
+def platform_access_denied(request):
+    """Safely clear a tenant/wrong-role session on the public platform host."""
+    if getattr(request, "user", None) and request.user.is_authenticated:
+        logout(request)
+    messages.error(request, "Only platform superusers can access the SaaS management console.")
+    return redirect(_platform_login_redirect())
+
+
 def platform_login(request):
     """Public platform login view.
 
@@ -29,8 +44,9 @@ def platform_login(request):
     if request.user.is_authenticated:
         if request.user.is_superuser:
             return redirect(_safe_platform_next_url(request))
+        logout(request)
         messages.error(request, "This account is not allowed to access the Platform Console.")
-        return redirect("landing_page")
+        return redirect(_platform_login_redirect())
 
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
