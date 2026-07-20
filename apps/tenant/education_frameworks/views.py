@@ -1,10 +1,12 @@
 from django.contrib import messages
-from django.db import transaction
+from django.db import connection, transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.academics.models import Level
 from apps.tenant.orgsettings.services import get_or_create_organization
-from apps.tenant.portals.permissions import admin_portal_required
+from apps.tenant.portals.permissions import role_required
+from apps.tenant.users.models import Role
 
 from .configuration import (
     framework_readiness,
@@ -15,7 +17,6 @@ from .forms import (
     CampusEducationStageForm,
     InstitutionEducationProfileForm,
     LevelStageMappingForm,
-    TERMINOLOGY_FIELDS,
     TerminologyOverridesForm,
 )
 from .models import CampusEducationStage, LevelStageMapping
@@ -28,12 +29,14 @@ from .services import (
 
 
 def _profile():
+    if (getattr(connection, "schema_name", None) or "") == "public":
+        raise Http404("Education framework setup is available only inside a school tenant.")
     organization = get_or_create_organization()
     ensure_system_templates()
     return ensure_institution_profile(organization)
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def framework_dashboard(request):
     profile = _profile()
 
@@ -59,8 +62,8 @@ def framework_dashboard(request):
                 messages.success(
                     request,
                     "Framework links synchronized: "
-                    f"{summary['updated']} updated, {summary['unchanged']} unchanged and "
-                    f"{summary['unsupported']} unsupported stage(s).",
+                    f"{summary['updated']} updated, {summary['cleared']} stale link(s) cleared, "
+                    f"{summary['unchanged']} unchanged and {summary['unsupported']} unsupported stage(s).",
                 )
             else:
                 messages.warning(request, "No framework setup action was selected.")
@@ -71,7 +74,6 @@ def framework_dashboard(request):
         "profile": profile,
         "readiness": framework_readiness(profile),
         "terminology": resolve_effective_terminology(profile=profile),
-        "terminology_fields": TERMINOLOGY_FIELDS,
         "campus_stages": profile.campus_stages.select_related(
             "campus",
             "stage",
@@ -89,7 +91,7 @@ def framework_dashboard(request):
     )
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def profile_edit(request):
     profile = _profile()
     previous_framework_id = profile.primary_framework_id
@@ -102,7 +104,8 @@ def profile_edit(request):
                 messages.info(
                     request,
                     "The curriculum framework changed. Existing campus stages were safely relinked: "
-                    f"{summary['updated']} updated and {summary['unsupported']} unsupported.",
+                    f"{summary['updated']} updated, {summary['cleared']} stale link(s) cleared "
+                    f"and {summary['unsupported']} unsupported.",
                 )
         messages.success(request, "Institution education profile updated.")
         return redirect("admin_education_framework_dashboard")
@@ -118,7 +121,7 @@ def profile_edit(request):
     )
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def terminology_edit(request):
     profile = _profile()
     form = TerminologyOverridesForm(request.POST or None, profile=profile)
@@ -138,7 +141,7 @@ def terminology_edit(request):
     )
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def campus_stage_create(request):
     profile = _profile()
     form = CampusEducationStageForm(request.POST or None, profile=profile)
@@ -158,7 +161,7 @@ def campus_stage_create(request):
     )
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def campus_stage_edit(request, pk: int):
     profile = _profile()
     campus_stage = get_object_or_404(CampusEducationStage, pk=pk, profile=profile)
@@ -183,7 +186,7 @@ def campus_stage_edit(request, pk: int):
     )
 
 
-@admin_portal_required
+@role_required(Role.ADMIN)
 def mapping_edit(request, pk: int):
     profile = _profile()
     mapping = get_object_or_404(LevelStageMapping, pk=pk, profile=profile)
