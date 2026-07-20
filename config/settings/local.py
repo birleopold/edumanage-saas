@@ -15,6 +15,7 @@ INSTALLED_APPS += [
     "apps.tenant.teachers",
     "apps.tenant.parents",
     "apps.tenant.academics",
+    "apps.tenant.education_frameworks",
     "apps.tenant.attendance",
     "apps.tenant.assessments",
     "apps.tenant.finance",
