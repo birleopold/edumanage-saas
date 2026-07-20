@@ -17,9 +17,10 @@ class OptionalAdministratorTwoFactorTests(SimpleTestCase):
     @patch("apps.tenant.audit.twofactor.UserTwoFactorSetting.objects.filter")
     def test_otp_is_off_when_account_has_not_enabled_it(self, filter_mock):
         filter_mock.return_value.exists.return_value = False
+        admin = self._admin()
 
-        self.assertFalse(user_needs_2fa(self._admin()))
-        filter_mock.assert_called_once_with(user=self._admin(), is_enabled=True)
+        self.assertFalse(user_needs_2fa(admin))
+        filter_mock.assert_called_once_with(user=admin, is_enabled=True)
 
     @override_settings(ADMIN_2FA_REQUIRED=False)
     @patch("apps.tenant.audit.twofactor.UserTwoFactorSetting.objects.filter")
