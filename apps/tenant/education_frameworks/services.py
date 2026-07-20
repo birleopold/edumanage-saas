@@ -406,6 +406,7 @@ def infer_stage_code(level_name: str) -> str:
         return EducationStage.LOWER_SECONDARY
     if (
         re.search(r"\bs\s*[1-4]\b", normalized)
+        or re.search(r"\bsenior\s*[1-4]\b", normalized)
         or re.search(r"\bform\s*[1-4]\b", normalized)
         or re.search(r"\bgrade\s*(8|9|10)\b", normalized)
     ):
@@ -417,6 +418,7 @@ def infer_stage_code(level_name: str) -> str:
         return EducationStage.UPPER_SECONDARY
     if (
         re.search(r"\bs\s*[5-6]\b", normalized)
+        or re.search(r"\bsenior\s*[5-6]\b", normalized)
         or re.search(r"\bform\s*[5-6]\b", normalized)
         or re.search(r"\bgrade\s*(11|12|13)\b", normalized)
     ):
