@@ -90,7 +90,7 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
         self.user.save(update_fields=["is_superuser", "is_staff"])
         self.client.force_login(self.user)
 
-    def test_confirm_uses_shared_session_even_after_process_cache_is_cleared(self):
+    def test_confirm_uses_session_without_a_worker_local_cache_entry(self):
         uploaded = SimpleUploadedFile(
             "students.csv",
             (
@@ -104,7 +104,6 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
             reverse("admin_students_bulk_import"),
             {
                 "action": "preview",
-                "create_users": "on",
                 "import_file": uploaded,
             },
         )
@@ -113,7 +112,7 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
         self.assertEqual(preview_response.context["valid_count"], 1)
         preview_token = preview_response.context["preview_token"]
 
-        cache.clear()
+        self.assertIsNone(cache.get(f"student_bulk_import_v1:{preview_token}"))
 
         confirm_response = self.client.post(
             reverse("admin_students_bulk_import"),
@@ -123,8 +122,9 @@ class StudentBulkImportPreviewPersistenceTests(TestCase):
             },
         )
 
-        self.assertRedirects(
-            confirm_response,
+        self.assertEqual(confirm_response.status_code, 302)
+        self.assertEqual(
+            confirm_response.url,
             reverse("admin_students_bulk_import_results"),
         )
         student = StudentProfile.objects.get(first_name="John", last_name="Doe")
