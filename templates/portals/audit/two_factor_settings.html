@@ -1,0 +1,63 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Verification Code Settings{% endblock %}
+{% block page_title %}Verification Code Settings{% endblock %}
+{% block breadcrumbs %}Choose whether this administrator account uses an emailed six-digit code after login{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'user_profile' %}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">
+  <i class="ph ph-arrow-left mr-2"></i> Back to profile
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  {% include "components/ui_toast.html" %}
+
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white">
+      <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Optional account protection</p>
+      <h2 class="mt-2 text-2xl font-black">Email verification codes</h2>
+      <p class="mt-2 max-w-2xl text-sm text-blue-100">This protection is off by default. Enable it only when the school administrator is comfortable receiving and entering a six-digit code after login.</p>
+    </div>
+
+    <div class="space-y-6 p-6">
+      <div class="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between {% if setting.is_enabled or globally_required %}border-green-200 bg-green-50{% else %}border-slate-200 bg-slate-50{% endif %}">
+        <div>
+          <p class="text-xs font-black uppercase tracking-wider {% if setting.is_enabled or globally_required %}text-green-700{% else %}text-slate-500{% endif %}">Current status</p>
+          <h3 class="mt-1 text-xl font-black {% if setting.is_enabled or globally_required %}text-green-950{% else %}text-slate-950{% endif %}">{% if setting.is_enabled or globally_required %}Enabled{% else %}Disabled{% endif %}</h3>
+          {% if globally_required %}
+            <p class="mt-1 text-sm font-semibold text-green-800">The platform administrator currently requires verification codes for all school administrators.</p>
+          {% elif setting.is_enabled %}
+            <p class="mt-1 text-sm font-semibold text-green-800">A verification code will be sent to {{ request.user.email|default:'the account email address' }} when required.</p>
+          {% else %}
+            <p class="mt-1 text-sm font-semibold text-slate-600">The administrator signs in using the username and password only.</p>
+          {% endif %}
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          {% if setting.is_enabled or globally_required %}
+            <input type="hidden" name="enabled" value="0">
+            <button type="submit" {% if globally_required %}disabled{% endif %} class="rounded-xl px-5 py-2.5 text-sm font-black {% if globally_required %}cursor-not-allowed bg-slate-200 text-slate-500{% else %}border border-red-200 bg-white text-red-700 hover:bg-red-50{% endif %}">Disable verification codes</button>
+          {% else %}
+            <input type="hidden" name="enabled" value="1">
+            <button type="submit" class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white hover:bg-primary-700">Enable verification codes</button>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200 p-5">
+          <h3 class="font-black text-slate-950"><i class="ph ph-user-check mr-2 text-primary-600"></i>Best for</h3>
+          <p class="mt-2 text-sm font-semibold text-slate-600">Administrators who regularly use email and want extra protection beyond a password.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 p-5">
+          <h3 class="font-black text-slate-950"><i class="ph ph-info mr-2 text-primary-600"></i>Keep it simple</h3>
+          <p class="mt-2 text-sm font-semibold text-slate-600">Schools may leave this off. Strong unique passwords and secure devices remain essential.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
