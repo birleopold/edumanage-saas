@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from apps.tenant.academics.models import Level
+from apps.tenant.academics.models import ClassGroup, Level
 from apps.tenant.orgsettings.models import Campus, OrganizationProfile
 
 from .configuration import (
@@ -157,7 +157,7 @@ class EducationFrameworkConfigurationTests(TestCase):
         self.assertEqual(after["unmapped_level_count"], 0)
         self.assertEqual(Level.objects.get(pk=level.pk).name, "P4")
 
-    def test_readiness_requires_every_mapped_stage_on_each_active_campus(self):
+    def test_single_campus_requires_every_mapped_stage(self):
         Level.objects.create(name="P4", order=10)
         Level.objects.create(name="Senior 2", order=20)
         map_existing_levels(self.profile)
@@ -181,6 +181,67 @@ class EducationFrameworkConfigurationTests(TestCase):
         self.assertEqual(before["missing_campus_stage_count"], 1)
         self.assertTrue(after["checks"]["campuses_configured"])
         self.assertEqual(after["missing_campus_stage_count"], 0)
+
+    def test_multi_campus_stage_enablement_follows_each_campus_classes(self):
+        secondary_campus = Campus.objects.create(
+            organization=self.organization,
+            name="Secondary Campus",
+            is_active=True,
+        )
+        primary_level = Level.objects.create(name="P4", order=10)
+        secondary_level = Level.objects.create(name="Senior 2", order=20)
+        ClassGroup.objects.create(
+            campus=self.campus,
+            name="P4 Blue",
+            level=primary_level,
+            is_active=True,
+        )
+        ClassGroup.objects.create(
+            campus=secondary_campus,
+            name="S2 East",
+            level=secondary_level,
+            is_active=True,
+        )
+        map_existing_levels(self.profile)
+
+        created = enable_mapped_stages(self.profile)
+        readiness = framework_readiness(self.profile)
+
+        self.assertEqual(created, 2)
+        self.assertSetEqual(
+            set(
+                self.profile.campus_stages.filter(
+                    campus=self.campus
+                ).values_list("stage__code", flat=True)
+            ),
+            {EducationStage.PRIMARY},
+        )
+        self.assertSetEqual(
+            set(
+                self.profile.campus_stages.filter(
+                    campus=secondary_campus
+                ).values_list("stage__code", flat=True)
+            ),
+            {EducationStage.LOWER_SECONDARY},
+        )
+        self.assertTrue(readiness["checks"]["campuses_configured"])
+        self.assertEqual(readiness["unassigned_campus_count"], 0)
+
+    def test_multi_campus_without_class_evidence_requires_manual_assignment(self):
+        Campus.objects.create(
+            organization=self.organization,
+            name="New Campus",
+            is_active=True,
+        )
+        Level.objects.create(name="P4", order=10)
+        map_existing_levels(self.profile)
+        enable_mapped_stages(self.profile)
+
+        readiness = framework_readiness(self.profile)
+
+        self.assertFalse(readiness["checks"]["campuses_configured"])
+        self.assertEqual(readiness["unassigned_campus_count"], 2)
+        self.assertEqual(self.profile.campus_stages.count(), 0)
 
     def test_readiness_detects_wrong_framework_and_stage_links(self):
         primary = self.stages[EducationStage.PRIMARY]
