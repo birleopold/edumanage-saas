@@ -63,8 +63,13 @@ def _teacher_for_staff(staff: StaffProfile):
         if teacher is not None:
             return teacher
     if staff.email:
-        return candidates.filter(email__iexact=staff.email).first()
-    return None
+        teacher = candidates.filter(email__iexact=staff.email).first()
+        if teacher is not None:
+            return teacher
+    return candidates.filter(
+        first_name__iexact=staff.first_name,
+        last_name__iexact=staff.last_name,
+    ).first()
 
 
 def _staff_for_teacher(teacher: TeacherProfile):
@@ -84,8 +89,13 @@ def _staff_for_teacher(teacher: TeacherProfile):
         if staff is not None:
             return staff
     if teacher.email:
-        return candidates.filter(email__iexact=teacher.email).first()
-    return None
+        staff = candidates.filter(email__iexact=teacher.email).first()
+        if staff is not None:
+            return staff
+    return candidates.filter(
+        first_name__iexact=teacher.first_name,
+        last_name__iexact=teacher.last_name,
+    ).first()
 
 
 @transaction.atomic
