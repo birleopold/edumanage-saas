@@ -148,6 +148,24 @@ class TransportNoticeAndPortalAccessTests(TestCase):
         self.assertContains(response, "Visible campus notice")
         self.assertNotContains(response, "Hidden campus notice")
 
+    def test_campus_admin_without_scope_sees_no_notices(self):
+        ParentNotification.objects.create(
+            assignment=self.assignment,
+            notification_type=ParentNotification.DELAY,
+            message="Must remain hidden",
+        )
+        unscoped_admin = User.objects.create_user(
+            username="unscoped_transport_admin",
+            password="test-pass-123",
+        )
+        unscoped_admin.roles.add(self.campus_admin_role)
+        self.client.login(username="unscoped_transport_admin", password="test-pass-123")
+
+        response = self.client.get(reverse("admin_transport_notices_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Must remain hidden")
+
     def test_campus_admin_cannot_create_notice_for_another_campus(self):
         self.client.login(username="transport_notice_admin", password="test-pass-123")
 
