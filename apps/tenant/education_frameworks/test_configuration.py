@@ -8,7 +8,7 @@ from .configuration import (
     resolve_effective_terminology,
     sync_framework_stage_links,
 )
-from .models import CampusEducationStage, EducationStage, FrameworkStage
+from .models import AcademicFramework, CampusEducationStage, EducationStage, FrameworkStage
 from .services import ensure_institution_profile, ensure_system_templates, map_existing_levels
 
 
@@ -78,6 +78,37 @@ class EducationFrameworkConfigurationTests(TestCase):
         )
         self.assertEqual(campus_stage.local_name, "Lower Primary")
         self.assertEqual(campus_stage.report_layout_key, "custom-primary-report")
+
+    def test_unsupported_stage_clears_only_the_old_framework_link(self):
+        primary = self.stages[EducationStage.PRIMARY]
+        campus_stage = CampusEducationStage.objects.create(
+            profile=self.profile,
+            campus=self.campus,
+            stage=primary,
+            framework_stage=FrameworkStage.objects.get(
+                framework=self.frameworks["UG-NATIONAL"],
+                stage=primary,
+            ),
+            local_name="Primary Section",
+            report_layout_key="school-primary",
+            academic_period_type=EducationStage.PERIOD_TERM,
+        )
+        custom_framework = AcademicFramework.objects.create(
+            code="CUSTOM-WITHOUT-PRIMARY",
+            name="Custom Limited Framework",
+            is_active=True,
+        )
+        self.profile.primary_framework = custom_framework
+        self.profile.save(update_fields=["primary_framework", "updated_at"])
+
+        summary = sync_framework_stage_links(self.profile)
+        campus_stage.refresh_from_db()
+
+        self.assertEqual(summary["unsupported"], 1)
+        self.assertEqual(summary["cleared"], 1)
+        self.assertIsNone(campus_stage.framework_stage)
+        self.assertEqual(campus_stage.local_name, "Primary Section")
+        self.assertEqual(campus_stage.report_layout_key, "school-primary")
 
     def test_readiness_reports_unmapped_levels_without_mutating_them(self):
         level = Level.objects.create(name="P4", order=10)
