@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
@@ -10,6 +11,7 @@ from django.utils import timezone
 class PlatformDashboardTemplateTests(TestCase):
     def test_system_activity_without_actor_or_tenant_renders_safely(self):
         request = RequestFactory().get("/platform/")
+        SessionMiddleware(lambda req: None).process_request(request)
         request.user = AnonymousUser()
         request.resolver_match = SimpleNamespace(url_name="platform_dashboard")
 
