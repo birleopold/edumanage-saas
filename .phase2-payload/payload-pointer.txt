@@ -1,0 +1,2 @@
+Binary payload blob SHA: 3139741207670fa5e5a2c3def5a86a625d2ff5af
+Expected filename: .phase2-payload/phase2-completion.zip
