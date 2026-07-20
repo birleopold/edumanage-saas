@@ -342,7 +342,7 @@ def assessment_type_create(request):
     )
 
 
-+@role_required(Role.ADMIN)
+@role_required(Role.ADMIN)
 def assessment_type_edit(request, pk: int):
     obj = get_object_or_404(AssessmentType, pk=pk)
     if request.method == "POST":
