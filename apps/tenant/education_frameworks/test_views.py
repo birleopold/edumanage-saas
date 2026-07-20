@@ -6,12 +6,19 @@ from apps.tenant.orgsettings.models import Campus, OrganizationProfile
 from apps.tenant.users.models import Role, User, UserRole
 
 from .models import CampusEducationStage, EducationStage, LevelStageMapping
-from .services import ensure_institution_profile, ensure_system_templates
+from .services import (
+    MAPPING_SOURCE_MANUAL,
+    ensure_institution_profile,
+    ensure_system_templates,
+    map_existing_levels,
+)
 
 
 class EducationFrameworkAdminViewTests(TestCase):
     def setUp(self):
-        self.organization = OrganizationProfile.objects.create(name="Framework Portal School")
+        self.organization = OrganizationProfile.objects.create(
+            name="Framework Portal School"
+        )
         self.campus = Campus.objects.create(
             organization=self.organization,
             name="Main Campus",
@@ -26,10 +33,15 @@ class EducationFrameworkAdminViewTests(TestCase):
             email="framework-admin@example.com",
             password="test-pass-123",
         )
-        self.client.login(username="framework_admin", password="test-pass-123")
+        self.client.login(
+            username="framework_admin",
+            password="test-pass-123",
+        )
 
     def test_dashboard_is_available_from_academics(self):
-        response = self.client.get(reverse("admin_education_framework_dashboard"))
+        response = self.client.get(
+            reverse("admin_education_framework_dashboard")
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "One academic foundation")
@@ -50,9 +62,14 @@ class EducationFrameworkAdminViewTests(TestCase):
             campus=self.campus,
         )
         self.client.logout()
-        self.client.login(username="framework_campus_admin", password="test-pass-123")
+        self.client.login(
+            username="framework_campus_admin",
+            password="test-pass-123",
+        )
 
-        dashboard = self.client.get(reverse("admin_education_framework_dashboard"))
+        dashboard = self.client.get(
+            reverse("admin_education_framework_dashboard")
+        )
         academics_setup = self.client.get(reverse("admin_academics_setup"))
 
         self.assertEqual(dashboard.status_code, 403)
@@ -73,7 +90,37 @@ class EducationFrameworkAdminViewTests(TestCase):
             profile=self.profile,
             legacy_level_id=level.pk,
         )
-        self.assertEqual(mapping.stage.code, EducationStage.LOWER_SECONDARY)
+        self.assertEqual(
+            mapping.stage.code,
+            EducationStage.LOWER_SECONDARY,
+        )
+
+    def test_mapping_edit_marks_the_correction_as_manual(self):
+        level = Level.objects.create(name="Community Programme", order=20)
+        map_existing_levels(self.profile)
+        mapping = LevelStageMapping.objects.get(
+            profile=self.profile,
+            legacy_level_id=level.pk,
+        )
+
+        response = self.client.post(
+            reverse(
+                "admin_level_stage_mapping_edit",
+                kwargs={"pk": mapping.pk},
+            ),
+            {
+                "stage": self.stages[EducationStage.TERTIARY].pk,
+                "local_name": "Professional Programme",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        mapping.refresh_from_db()
+        self.assertEqual(mapping.stage.code, EducationStage.TERTIARY)
+        self.assertEqual(
+            mapping.settings["source"],
+            MAPPING_SOURCE_MANUAL,
+        )
 
     def test_terminology_overrides_can_be_saved(self):
         response = self.client.post(
@@ -133,7 +180,10 @@ class EducationFrameworkAdminViewTests(TestCase):
             campus=self.campus,
             stage=self.stages[EducationStage.PRIMARY],
         )
-        self.assertEqual(campus_stage.framework_stage.framework, self.profile.primary_framework)
+        self.assertEqual(
+            campus_stage.framework_stage.framework,
+            self.profile.primary_framework,
+        )
         self.assertEqual(campus_stage.local_name, "Primary")
 
     def test_duplicate_campus_stage_returns_a_form_error(self):
@@ -142,7 +192,9 @@ class EducationFrameworkAdminViewTests(TestCase):
             profile=self.profile,
             campus=self.campus,
             stage=primary,
-            framework_stage=self.frameworks["UG-NATIONAL"].stage_settings.get(stage=primary),
+            framework_stage=self.frameworks[
+                "UG-NATIONAL"
+            ].stage_settings.get(stage=primary),
             academic_period_type=EducationStage.PERIOD_TERM,
         )
 
