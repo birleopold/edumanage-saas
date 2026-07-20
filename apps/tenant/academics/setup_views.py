@@ -96,4 +96,8 @@ def academics_setup(request):
             },
         ]
     )
-    return render(request, "portals/admin/academics/setup.html", {"items": items})
+    return render(
+        request,
+        "portals/admin/academics/setup.html",
+        {"items": items, "can_manage_framework": is_full_admin},
+    )
