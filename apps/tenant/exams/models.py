@@ -2,6 +2,7 @@ import json
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -45,6 +46,28 @@ class Exam(models.Model):
 class ExamPaper(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="papers")
     offering = models.ForeignKey("academics.CourseOffering", on_delete=models.CASCADE)
+    assessment_type = models.ForeignKey(
+        "assessments.AssessmentType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="exam_papers",
+    )
+    weighting_component = models.ForeignKey(
+        "assessments.AssessmentWeightingComponent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="exam_papers",
+    )
+    linked_assessment = models.OneToOneField(
+        "assessments.Assessment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="exam_paper",
+        help_text="Optional compatibility link; existing exam scores remain in the exams module.",
+    )
     max_score = models.DecimalField(max_digits=6, decimal_places=2, default=100)
     passing_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     weight = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
@@ -68,6 +91,29 @@ class ExamPaper(models.Model):
 
     def __str__(self) -> str:
         return f"{self.exam} - {self.offering}"
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.exam_id and self.offering_id and self.exam.term_id != self.offering.term_id:
+            errors["offering"] = "Offering term must match the exam term."
+        if self.max_score is not None and self.max_score <= 0:
+            errors["max_score"] = "Maximum score must be greater than zero."
+        if self.passing_score is not None and self.max_score is not None and self.passing_score > self.max_score:
+            errors["passing_score"] = "Passing score cannot exceed maximum score."
+        if self.weight is not None and self.weight < 0:
+            errors["weight"] = "Weight cannot be negative."
+        if self.assessment_type_id and not self.assessment_type.is_active:
+            errors["assessment_type"] = "Choose an active assessment type."
+        if self.weighting_component_id:
+            if self.assessment_type_id and self.assessment_type_id != self.weighting_component.assessment_type_id:
+                errors["weighting_component"] = "The component must use the selected assessment type."
+            if not self.weighting_component.is_active or not self.weighting_component.scheme.is_active:
+                errors["weighting_component"] = "Choose a component from an active weighting scheme."
+        if self.linked_assessment_id and self.linked_assessment.offering_id != self.offering_id:
+            errors["linked_assessment"] = "The linked assessment must belong to the same course offering."
+        if errors:
+            raise ValidationError(errors)
 
     def total_questions(self):
         return self.questions.count()

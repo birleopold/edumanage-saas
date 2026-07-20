@@ -7,13 +7,31 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.tenant.academics.models import CourseOffering, Enrollment
 from apps.tenant.orgsettings.services import get_current_campus
 from apps.tenant.portals.campus_permissions import get_user_campus_scope
-from apps.tenant.portals.permissions import admin_portal_required
+from apps.tenant.portals.permissions import admin_portal_required, role_required
+from apps.tenant.users.models import Role
 from apps.tenant.students.models import StudentProfile
 
 from .comment_suggestions import build_report_comment_suggestion
-from .forms import AssessmentForm
-from .models import Assessment, AssessmentScore
-from .services import score_result, validate_score
+from .forms import (
+    AssessmentForm,
+    AssessmentTypeForm,
+    AssessmentWeightingComponentForm,
+    AssessmentWeightingSchemeForm,
+)
+from .models import (
+    Assessment,
+    AssessmentScore,
+    AssessmentType,
+    AssessmentWeightingComponent,
+    AssessmentWeightingScheme,
+)
+from .services import (
+    assessment_framework_readiness,
+    classify_existing_records,
+    scheme_validation_errors,
+    score_result,
+    validate_score,
+)
 
 
 def _offering_queryset_for(user, current_campus=None):
@@ -37,6 +55,9 @@ def _assessment_queryset_for(user):
         "offering__class_group",
         "offering__class_group__campus",
         "offering__campus",
+        "assessment_type",
+        "weighting_component",
+        "weighting_component__scheme",
     )
     scoped = get_user_campus_scope(user)
     if scoped:
@@ -258,3 +279,173 @@ def assessment_tabulation(request):
     }
     tpl = "portals/admin/assessments/tabulation_print.html" if print_mode else "portals/admin/assessments/tabulation_matrix.html"
     return render(request, tpl, ctx)
+
+
+@role_required(Role.ADMIN)
+def assessment_framework_dashboard(request):
+    if request.method == "POST" and request.POST.get("action") == "classify":
+        summary = classify_existing_records(dry_run=False, include_exam_papers=True)
+        messages.success(
+            request,
+            "Classification completed: "
+            f"{summary['assessments_classified']} assessment(s), "
+            f"{summary['exam_papers_classified']} exam paper(s), and "
+            f"{summary['assessments_linked'] + summary['exam_papers_linked']} component link(s) added.",
+        )
+        return redirect("admin_assessment_framework_dashboard")
+
+    readiness = assessment_framework_readiness()
+    country_code = ""
+    try:
+        from apps.tenant.education_frameworks.models import InstitutionEducationProfile
+
+        profile = InstitutionEducationProfile.objects.filter(is_active=True).first()
+        country_code = profile.country_code if profile else ""
+    except Exception:
+        pass
+    types = list(AssessmentType.objects.order_by("kind", "name"))
+    for item in types:
+        item.local_display_name = item.display_name(country_code)
+    schemes = AssessmentWeightingScheme.objects.select_related(
+        "campus", "stage", "academic_term", "program"
+    ).prefetch_related("components__assessment_type")
+    scheme_rows = [
+        {"scheme": scheme, "errors": scheme_validation_errors(scheme)}
+        for scheme in schemes
+    ]
+    return render(
+        request,
+        "portals/admin/assessments/framework/dashboard.html",
+        {
+            "types": types,
+            "scheme_rows": scheme_rows,
+            "readiness": readiness,
+            "country_code": country_code,
+        },
+    )
+
+
+@role_required(Role.ADMIN)
+def assessment_type_create(request):
+    if request.method == "POST":
+        form = AssessmentTypeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Assessment type created.")
+            return redirect("admin_assessment_framework_dashboard")
+    else:
+        form = AssessmentTypeForm()
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": "Add assessment type", "back_url_name": "admin_assessment_framework_dashboard"},
+    )
+
+
+@role_required(Role.ADMIN)
+def assessment_type_edit(request, pk: int):
+    obj = get_object_or_404(AssessmentType, pk=pk)
+    if request.method == "POST":
+        form = AssessmentTypeForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Assessment type updated.")
+            return redirect("admin_assessment_framework_dashboard")
+    else:
+        form = AssessmentTypeForm(instance=obj)
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": "Edit assessment type", "back_url_name": "admin_assessment_framework_dashboard"},
+    )
+
+
+@role_required(Role.ADMIN)
+def weighting_scheme_create(request):
+    if request.method == "POST":
+        form = AssessmentWeightingSchemeForm(request.POST)
+        if form.is_valid():
+            obj = form.save()
+            messages.success(request, "Weighting scheme created. Add its components next.")
+            return redirect("admin_weighting_scheme_detail", pk=obj.pk)
+    else:
+        form = AssessmentWeightingSchemeForm()
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": "Add weighting scheme", "back_url_name": "admin_assessment_framework_dashboard"},
+    )
+
+
+@role_required(Role.ADMIN)
+def weighting_scheme_edit(request, pk: int):
+    obj = get_object_or_404(AssessmentWeightingScheme, pk=pk)
+    if request.method == "POST":
+        form = AssessmentWeightingSchemeForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Weighting scheme updated.")
+            return redirect("admin_weighting_scheme_detail", pk=obj.pk)
+    else:
+        form = AssessmentWeightingSchemeForm(instance=obj)
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": "Edit weighting scheme", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": obj.pk},
+    )
+
+
+@role_required(Role.ADMIN)
+def weighting_scheme_detail(request, pk: int):
+    scheme = get_object_or_404(
+        AssessmentWeightingScheme.objects.select_related(
+            "campus", "stage", "academic_term", "program"
+        ).prefetch_related("components__assessment_type"),
+        pk=pk,
+    )
+    components = scheme.components.select_related("assessment_type").order_by("order", "pk")
+    return render(
+        request,
+        "portals/admin/assessments/framework/scheme_detail.html",
+        {
+            "scheme": scheme,
+            "components": components,
+            "errors": scheme_validation_errors(scheme),
+        },
+    )
+
+
+@role_required(Role.ADMIN)
+def weighting_component_create(request, scheme_pk: int):
+    scheme = get_object_or_404(AssessmentWeightingScheme, pk=scheme_pk)
+    if request.method == "POST":
+        form = AssessmentWeightingComponentForm(request.POST, scheme=scheme)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Weighting component added.")
+            return redirect("admin_weighting_scheme_detail", pk=scheme.pk)
+    else:
+        form = AssessmentWeightingComponentForm(scheme=scheme)
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": f"Add component to {scheme.name}", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": scheme.pk},
+    )
+
+
+@role_required(Role.ADMIN)
+def weighting_component_edit(request, pk: int):
+    obj = get_object_or_404(AssessmentWeightingComponent.objects.select_related("scheme"), pk=pk)
+    if request.method == "POST":
+        form = AssessmentWeightingComponentForm(request.POST, instance=obj, scheme=obj.scheme)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Weighting component updated.")
+            return redirect("admin_weighting_scheme_detail", pk=obj.scheme_id)
+    else:
+        form = AssessmentWeightingComponentForm(instance=obj, scheme=obj.scheme)
+    return render(
+        request,
+        "portals/admin/assessments/framework/form.html",
+        {"form": form, "title": "Edit weighting component", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": obj.scheme_id},
+    )

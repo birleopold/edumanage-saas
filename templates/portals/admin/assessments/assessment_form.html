@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">Assessment setup</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit assessment{% else %}Add assessment{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-purple-100">Configure course assessment name, date, maximum score, weight and publishing details.</p></section>
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">Assessment setup</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit assessment{% else %}Add assessment{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-purple-100">Configure the course assessment, its reusable type and optional weighting component. Legacy weights remain available when no scheme applies.</p></section>
   {% include 'components/ui_form.html' %}
 </div>
 {% endblock %}
