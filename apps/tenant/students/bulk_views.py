@@ -21,6 +21,8 @@ from .bulk_import import (
 
 BULK_IMPORT_SESSION_KEY = "student_bulk_import_preview_v2"
 BULK_IMPORT_PREVIEW_TTL = 3600
+BULK_IMPORT_CREDENTIALS_KEY = "bulk_import_credentials"
+BULK_IMPORT_RESULT_KEY = "bulk_import_result_summary"
 
 
 # Multipart uploads: browsers always send the file in the same form payload as
@@ -48,6 +50,12 @@ def _clear_preview(request) -> None:
     if BULK_IMPORT_SESSION_KEY in request.session:
         del request.session[BULK_IMPORT_SESSION_KEY]
         request.session.modified = True
+
+
+def _clear_previous_results(request) -> None:
+    request.session.pop(BULK_IMPORT_CREDENTIALS_KEY, None)
+    request.session.pop(BULK_IMPORT_RESULT_KEY, None)
+    request.session.modified = True
 
 
 def _load_preview(request, token: str):
@@ -117,6 +125,7 @@ def bulk_import_students(request):
             create_users = bool(blob.get("create_users"))
             send_emails = bool(blob.get("send_emails"))
 
+            _clear_previous_results(request)
             result = process_bulk_import(
                 rows=rows,
                 default_campus=default_campus,
@@ -126,9 +135,13 @@ def bulk_import_students(request):
             )
 
             _clear_preview(request)
+            request.session[BULK_IMPORT_RESULT_KEY] = {
+                "successful": result.successful,
+                "failed": result.failed,
+            }
 
             if result.credentials:
-                request.session["bulk_import_credentials"] = [
+                request.session[BULK_IMPORT_CREDENTIALS_KEY] = [
                     {
                         "student_id": credential["student"].pk,
                         "student_number": credential["username"],
@@ -140,6 +153,7 @@ def bulk_import_students(request):
                     }
                     for credential in result.credentials
                 ]
+            request.session.modified = True
 
             if result.errors:
                 for error in result.errors[:10]:
@@ -167,7 +181,9 @@ def bulk_import_students(request):
                             request,
                             f"Setup emails sent to {sent_count} student(s).",
                         )
-                return redirect("admin_students_bulk_import_results")
+                if result.credentials:
+                    return redirect("admin_students_bulk_import_results")
+                return redirect("admin_students_list")
 
             messages.error(request, "Import failed. Please check the errors above.")
             return redirect("admin_students_bulk_import")
@@ -254,19 +270,48 @@ def bulk_import_students(request):
 
 @admin_portal_required
 def bulk_import_results(request):
-    """Display bulk import results with download options."""
+    """Display bulk import results with download and print options."""
 
-    credentials = request.session.get("bulk_import_credentials", [])
+    credentials = request.session.get(BULK_IMPORT_CREDENTIALS_KEY, [])
 
     if not credentials:
         messages.info(request, "No import results available.")
         return redirect("admin_students_bulk_import")
 
+    summary = request.session.get(
+        BULK_IMPORT_RESULT_KEY,
+        {"successful": len(credentials), "failed": 0},
+    )
     return render(
         request,
         "portals/admin/students/bulk_import_results.html",
         {
             "credentials": credentials,
+            "summary": summary,
+        },
+    )
+
+
+@admin_portal_required
+def print_bulk_credentials(request):
+    """Render a standalone, credentials-only print sheet."""
+
+    credentials = request.session.get(BULK_IMPORT_CREDENTIALS_KEY, [])
+    if not credentials:
+        messages.error(request, "No credentials are available to print.")
+        return redirect("admin_students_bulk_import")
+
+    organization = get_or_create_organization()
+    campus = get_current_campus(request)
+    return render(
+        request,
+        "portals/admin/students/bulk_credentials_print.html",
+        {
+            "credentials": credentials,
+            "organization": organization,
+            "campus": campus,
+            "login_url": request.build_absolute_uri("/login/"),
+            "printed_at": timezone.localtime(),
         },
     )
 
@@ -275,7 +320,7 @@ def bulk_import_results(request):
 def download_credentials_csv(request):
     """Download credentials as a CSV file."""
 
-    credentials = request.session.get("bulk_import_credentials", [])
+    credentials = request.session.get(BULK_IMPORT_CREDENTIALS_KEY, [])
 
     if not credentials:
         messages.error(request, "No credentials available for download.")
