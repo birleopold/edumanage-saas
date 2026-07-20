@@ -1,0 +1,216 @@
+diff --git a/apps/tenant/assessments/admin.py b/apps/tenant/assessments/admin.py
+new file mode 100644
+index 0000000..424b6cd
+--- /dev/null
++++ b/apps/tenant/assessments/admin.py
+@@ -0,0 +1,73 @@
++from django.contrib import admin
++
++from .models import (
++    Assessment,
++    AssessmentScore,
++    AssessmentType,
++    AssessmentWeightingComponent,
++    AssessmentWeightingScheme,
++)
++
++
++@admin.register(AssessmentType)
++class AssessmentTypeAdmin(admin.ModelAdmin):
++    list_display = ("code", "name", "kind", "is_system", "is_active")
++    list_filter = ("kind", "is_system", "is_active")
++    search_fields = ("code", "name", "description")
++    ordering = ("kind", "name")
++    actions = None
++
++    def get_readonly_fields(self, request, obj=None):
++        return ("code", "is_system") if obj and obj.is_system else ()
++
++    def has_delete_permission(self, request, obj=None):
++        if obj and obj.is_system:
++            return False
++        return super().has_delete_permission(request, obj)
++
++
++class AssessmentWeightingComponentInline(admin.TabularInline):
++    model = AssessmentWeightingComponent
++    extra = 0
++    autocomplete_fields = ("assessment_type",)
++
++
++@admin.register(AssessmentWeightingScheme)
++class AssessmentWeightingSchemeAdmin(admin.ModelAdmin):
++    list_display = (
++        "code",
++        "name",
++        "campus",
++        "stage",
++        "academic_term",
++        "program",
++        "priority",
++        "is_active",
++    )
++    list_filter = ("is_active", "is_default", "missing_score_policy", "campus", "stage")
++    search_fields = ("code", "name", "description")
++    autocomplete_fields = ("campus", "stage", "academic_term", "program")
++    inlines = (AssessmentWeightingComponentInline,)
++
++
++@admin.register(AssessmentWeightingComponent)
++class AssessmentWeightingComponentAdmin(admin.ModelAdmin):
++    list_display = ("scheme", "assessment_type", "weight", "aggregation_method", "is_required", "is_active")
++    list_filter = ("aggregation_method", "is_required", "is_active")
++    search_fields = ("scheme__code", "scheme__name", "assessment_type__code", "assessment_type__name")
++    autocomplete_fields = ("scheme", "assessment_type")
++
++
++@admin.register(Assessment)
++class AssessmentAdmin(admin.ModelAdmin):
++    list_display = ("name", "offering", "assessment_type", "weighting_component", "max_score", "weight", "is_published")
++    list_filter = ("is_published", "assessment_type")
++    search_fields = ("name", "offering__course__name")
++    autocomplete_fields = ("offering", "assessment_type", "weighting_component")
++
++
++@admin.register(AssessmentScore)
++class AssessmentScoreAdmin(admin.ModelAdmin):
++    list_display = ("student", "assessment", "score", "graded_by", "graded_at")
++    search_fields = ("student__first_name", "student__last_name", "assessment__name")
++    autocomplete_fields = ("assessment", "student", "graded_by")
+diff --git a/apps/tenant/assessments/admin_urls.py b/apps/tenant/assessments/admin_urls.py
+index 21ec073..7bede96 100644
+--- a/apps/tenant/assessments/admin_urls.py
++++ b/apps/tenant/assessments/admin_urls.py
+@@ -6,6 +6,14 @@ urlpatterns = [
+     path("", admin_views.assessment_list, name="admin_assessments_list"),
+     path("create/", admin_views.assessment_create, name="admin_assessments_create"),
+     path("tabulation/", admin_views.assessment_tabulation, name="admin_assessments_tabulation"),
++    path("framework/", admin_views.assessment_framework_dashboard, name="admin_assessment_framework_dashboard"),
++    path("framework/types/create/", admin_views.assessment_type_create, name="admin_assessment_type_create"),
++    path("framework/types/<int:pk>/edit/", admin_views.assessment_type_edit, name="admin_assessment_type_edit"),
++    path("framework/schemes/create/", admin_views.weighting_scheme_create, name="admin_weighting_scheme_create"),
++    path("framework/schemes/<int:pk>/", admin_views.weighting_scheme_detail, name="admin_weighting_scheme_detail"),
++    path("framework/schemes/<int:pk>/edit/", admin_views.weighting_scheme_edit, name="admin_weighting_scheme_edit"),
++    path("framework/schemes/<int:scheme_pk>/components/create/", admin_views.weighting_component_create, name="admin_weighting_component_create"),
++    path("framework/components/<int:pk>/edit/", admin_views.weighting_component_edit, name="admin_weighting_component_edit"),
+     path("<int:pk>/edit/", admin_views.assessment_edit, name="admin_assessments_edit"),
+     path("<int:pk>/scores/", admin_views.assessment_scores, name="admin_assessments_scores"),
+ ]
+diff --git a/apps/tenant/assessments/admin_views.py b/apps/tenant/assessments/admin_views.py
+index 04e1c9e..90ea336 100644
+--- a/apps/tenant/assessments/admin_views.py
++++ b/apps/tenant/assessments/admin_views.py
+@@ -7,13 +7,31 @@ from django.shortcuts import get_object_or_404, redirect, render
+ from apps.tenant.academics.models import CourseOffering, Enrollment
+ from apps.tenant.orgsettings.services import get_current_campus
+ from apps.tenant.portals.campus_permissions import get_user_campus_scope
+-from apps.tenant.portals.permissions import admin_portal_required
++from apps.tenant.portals.permissions import admin_portal_required, role_required
++from apps.tenant.users.models import Role
+ from apps.tenant.students.models import StudentProfile
+ 
+ from .comment_suggestions import build_report_comment_suggestion
+-from .forms import AssessmentForm
+-from .models import Assessment, AssessmentScore
+-from .services import score_result, validate_score
++from .forms import (
++    AssessmentForm,
++    AssessmentTypeForm,
++    AssessmentWeightingComponentForm,
++    AssessmentWeightingSchemeForm,
++)
++from .models import (
++    Assessment,
++    AssessmentScore,
++    AssessmentType,
++    AssessmentWeightingComponent,
++    AssessmentWeightingScheme,
++)
++from .services import (
++    assessment_framework_readiness,
++    classify_existing_records,
++    scheme_validation_errors,
++    score_result,
++    validate_score,
++)
+ 
+ 
+ def _offering_queryset_for(user, current_campus=None):
+@@ -37,6 +55,9 @@ def _assessment_queryset_for(user):
+         "offering__class_group",
+         "offering__class_group__campus",
+         "offering__campus",
++        "assessment_type",
++        "weighting_component",
++        "weighting_component__scheme",
+     )
+     scoped = get_user_campus_scope(user)
+     if scoped:
+@@ -258,3 +279,173 @@ def assessment_tabulation(request):
+     }
+     tpl = "portals/admin/assessments/tabulation_print.html" if print_mode else "portals/admin/assessments/tabulation_matrix.html"
+     return render(request, tpl, ctx)
++
++
++@role_required(Role.ADMIN)
++def assessment_framework_dashboard(request):
++    if request.method == "POST" and request.POST.get("action") == "classify":
++        summary = classify_existing_records(dry_run=False, include_exam_papers=True)
++        messages.success(
++            request,
++            "Classification completed: "
++            f"{summary['assessments_classified']} assessment(s), "
++            f"{summary['exam_papers_classified']} exam paper(s), and "
++            f"{summary['assessments_linked'] + summary['exam_papers_linked']} component link(s) added.",
++        )
++        return redirect("admin_assessment_framework_dashboard")
++
++    readiness = assessment_framework_readiness()
++    country_code = ""
++    try:
++        from apps.tenant.education_frameworks.models import InstitutionEducationProfile
++
++        profile = InstitutionEducationProfile.objects.filter(is_active=True).first()
++        country_code = profile.country_code if profile else ""
++    except Exception:
++        pass
++    types = list(AssessmentType.objects.order_by("kind", "name"))
++    for item in types:
++        item.local_display_name = item.display_name(country_code)
++    schemes = AssessmentWeightingScheme.objects.select_related(
++        "campus", "stage", "academic_term", "program"
++    ).prefetch_related("components__assessment_type")
++    scheme_rows = [
++        {"scheme": scheme, "errors": scheme_validation_errors(scheme)}
++        for scheme in schemes
++    ]
++    return render(
++        request,
++        "portals/admin/assessments/framework/dashboard.html",
++        {
++            "types": types,
++            "scheme_rows": scheme_rows,
++            "readiness": readiness,
++            "country_code": country_code,
++        },
++    )
++
++
++@role_required(Role.ADMIN)
++def assessment_type_create(request):
++    if request.method == "POST":
++        form = AssessmentTypeForm(request.POST)
++        if form.is_valid():
++            form.save()
++            messages.success(request, "Assessment type created.")
++            return redirect("admin_assessment_framework_dashboard")
++    else:
++        form = AssessmentTypeForm()
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": "Add assessment type", "back_url_name": "admin_assessment_framework_dashboard"},
++    )
++
++
++

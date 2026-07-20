@@ -1,0 +1,208 @@
++            weight=30,
++        )
++
++        self.assertTrue(scheme_validation_errors(scheme))
++        self.assertIsNone(resolve_weighting_scheme(self.offering))
++
++    def test_component_and_type_mismatch_is_rejected(self):
++        scheme, test_component, _ = self.create_scheme()
++        assessment = Assessment(
++            offering=self.offering,
++            name="Wrong Type",
++            assessment_type=self.types["EXAM"],
++            weighting_component=test_component,
++            max_score=100,
++        )
++        with self.assertRaises(ValidationError):
++            assessment.full_clean()
++
++    def test_classification_is_additive_and_preserves_scores_and_legacy_weight(self):
++        assessment = Assessment.objects.create(
++            offering=self.offering,
++            name="Mid-Term Test",
++            max_score=50,
++            weight=25,
++            is_published=True,
++        )
++        score = AssessmentScore.objects.create(
++            assessment=assessment,
++            student=self.student,
++            score=40,
++        )
++
++        summary = classify_existing_records(include_exam_papers=False)
++        assessment.refresh_from_db()
++        score.refresh_from_db()
++
++        self.assertEqual(summary["assessments_classified"], 1)
++        self.assertEqual(assessment.assessment_type.code, "MOT")
++        self.assertEqual(assessment.weight, Decimal("25"))
++        self.assertEqual(score.score, Decimal("40"))
++
++
++    def test_exam_paper_compatibility_link_does_not_copy_scores(self):
++        scheme, _, exam_component = self.create_scheme()
++        paper, exam_score = self.create_exam_score(exam_component, 67)
++
++        linked = ensure_exam_paper_assessment_link(paper, create=True)
++        paper.refresh_from_db()
++        exam_score.refresh_from_db()
++
++        self.assertEqual(paper.linked_assessment, linked)
++        self.assertEqual(linked.offering, self.offering)
++        self.assertEqual(linked.assessment_type, self.types["EXAM"])
++        self.assertFalse(AssessmentScore.objects.filter(assessment=linked).exists())
++        self.assertEqual(exam_score.score, Decimal("67"))
++
++    def test_legacy_assessment_without_scheme_remains_supported(self):
++        assessment = Assessment.objects.create(
++            offering=self.offering,
++            name="Legacy Test",
++            max_score=100,
++            weight=40,
++            is_published=True,
++        )
++        AssessmentScore.objects.create(assessment=assessment, student=self.student, score=75)
++
++        result = build_course_result_for_student(self.offering, self.student)
++
++        self.assertIsNone(result.scheme)
++        self.assertEqual(result.weighted_percentage, Decimal("75.00"))
++        self.assertEqual(result.grade, "B")
++
++    def test_uganda_and_neutral_name_inference(self):
++        self.assertEqual(infer_assessment_type_code("Activity of Integration"), "AOI")
++        self.assertEqual(infer_assessment_type_code("End of Term Examination"), "EOT")
++        self.assertEqual(infer_assessment_type_code("Laboratory Practical"), "PRACTICAL")
++        self.assertEqual(infer_assessment_type_code("Research Project"), "PROJECT")
+diff --git a/apps/tenant/assessments/test_phase2_views.py b/apps/tenant/assessments/test_phase2_views.py
+new file mode 100644
+index 0000000..556e937
+--- /dev/null
++++ b/apps/tenant/assessments/test_phase2_views.py
+@@ -0,0 +1,78 @@
++from django.contrib.auth import get_user_model
++from django.test import TestCase
++from django.urls import reverse
++
++from apps.tenant.orgsettings.models import Campus, OrganizationProfile
++from apps.tenant.users.models import Role, UserRole
++
++from .models import AssessmentType, AssessmentWeightingScheme
++from .services import ensure_assessment_type_templates
++
++
++class AssessmentFrameworkViewTests(TestCase):
++    def setUp(self):
++        self.organization = OrganizationProfile.objects.create(name="View Test School")
++        self.campus = Campus.objects.create(
++            organization=self.organization,
++            name="Main Campus",
++            is_default=True,
++            is_active=True,
++        )
++        self.superuser = get_user_model().objects.create_superuser(
++            username="phase2admin",
++            email="phase2@example.com",
++            password="test-password",
++        )
++        self.client.force_login(self.superuser)
++        ensure_assessment_type_templates()
++
++    def test_dashboard_is_available_to_full_administrator(self):
++        response = self.client.get(reverse("admin_assessment_framework_dashboard"))
++        self.assertEqual(response.status_code, 200)
++        self.assertContains(response, "Assessment types and weighting")
++        self.assertContains(response, "EOT")
++
++    def test_create_scheme_from_setup_ui(self):
++        response = self.client.post(
++            reverse("admin_weighting_scheme_create"),
++            {
++                "code": "PRIMARY-DEFAULT",
++                "name": "Primary Default",
++                "total_weight": "100.00",
++                "missing_score_policy": AssessmentWeightingScheme.REQUIRE_COMPLETE,
++                "normalize_to_total": "on",
++                "priority": "10",
++                "is_default": "on",
++                "is_active": "on",
++            },
++        )
++        self.assertEqual(response.status_code, 302)
++        self.assertTrue(AssessmentWeightingScheme.objects.filter(code="PRIMARY-DEFAULT").exists())
++
++    def test_campus_administrator_cannot_change_institution_wide_framework(self):
++        role = Role.objects.create(code=Role.CAMPUS_ADMIN, name="Campus Admin")
++        campus_admin = get_user_model().objects.create_user(
++            username="campusadmin",
++            password="test-password",
++        )
++        UserRole.objects.create(user=campus_admin, role=role, campus=self.campus)
++        self.client.force_login(campus_admin)
++
++        response = self.client.get(reverse("admin_assessment_framework_dashboard"))
++
++        self.assertEqual(response.status_code, 403)
++
++    def test_system_assessment_type_code_is_normalized(self):
++        response = self.client.post(
++            reverse("admin_assessment_type_create"),
++            {
++                "code": " custom oral ",
++                "name": "Custom Oral",
++                "kind": AssessmentType.ORAL,
++                "description": "",
++                "local_aliases": "{}",
++                "is_active": "on",
++            },
++        )
++        self.assertEqual(response.status_code, 302)
++        self.assertTrue(AssessmentType.objects.filter(code="CUSTOM-ORAL").exists())
+diff --git a/apps/tenant/exams/admin.py b/apps/tenant/exams/admin.py
+index be3fe9e..75c34b6 100644
+--- a/apps/tenant/exams/admin.py
++++ b/apps/tenant/exams/admin.py
+@@ -25,10 +25,10 @@ class ExamAdmin(admin.ModelAdmin):
+ 
+ @admin.register(ExamPaper)
+ class ExamPaperAdmin(admin.ModelAdmin):
+-    list_display = ("exam", "offering", "max_score", "passing_score", "date", "is_published", "results_published", "report_cards_enabled")
+-    list_filter = ("is_published", "results_published", "report_cards_enabled", "exam__exam_mode", "randomize_questions")
++    list_display = ("exam", "offering", "assessment_type", "weighting_component", "max_score", "passing_score", "date", "is_published", "results_published", "report_cards_enabled")
++    list_filter = ("is_published", "results_published", "report_cards_enabled", "assessment_type", "exam__exam_mode", "randomize_questions")
+     search_fields = ("exam__name", "offering__course__name")
+-    raw_id_fields = ("exam", "offering")
++    raw_id_fields = ("exam", "offering", "assessment_type", "weighting_component", "linked_assessment")
+     date_hierarchy = "date"
+ 
+ 
+ diff --git a/apps/tenant/exams/admin_views.py b/apps/tenant/exams/admin_views.py
+index 2a449da..9ce50d7 100644
+--- a/apps/tenant/exams/admin_views.py
++++ b/apps/tenant/exams/admin_views.py
+@@ -143,6 +143,10 @@ def paper_list(request):
+         "offering__term__year",
+         "offering__class_group",
+         "offering__teacher",
++        "assessment_type",
++        "weighting_component",
++        "weighting_component__scheme",
++        "linked_assessment",
+     ).all()
+ 
+     if campus_id:
+diff --git a/apps/tenant/exams/forms.py b/apps/tenant/exams/forms.py
+index 03a48d1..58ae7cf 100644
+--- a/apps/tenant/exams/forms.py
++++ b/apps/tenant/exams/forms.py
+@@ -19,7 +19,8 @@ class ExamPaperForm(forms.ModelForm):
+     class Meta:
+         model = ExamPaper
+         fields = [
+-            "exam", "offering", "max_score", "passing_score", "weight", "duration_minutes",
++            "exam", "offering", "assessment_type", "weighting_component", "linked_assessment",
++            "max_score", "passing_score", "weight", "duration_minutes",
+             "date", "start_time", "end_time", "instructions", "allow_calculator", "randomize_questions",
+             "show_results_immediately", "results_published", "report_cards_enabled", "is_published",
+         ]

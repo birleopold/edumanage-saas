@@ -1,0 +1,203 @@
++        denominator_weight = scheme.total_weight
++    result_percentage = None
++    if denominator_weight > 0:
++        result_percentage = quantize_percent(contribution_total / denominator_weight)
++    return SchemeResult(
++        scheme=scheme,
++        percentage=result_percentage,
++        contribution_total=contribution_total,
++        denominator_weight=denominator_weight,
++        is_complete=not missing_required,
++        missing_components=missing_required,
++        components=component_results,
++    )
++
++
++def build_course_result(
++    offering: CourseOffering,
++    assessments: list[Assessment],
++    score_map: dict[int, AssessmentScore],
++    *,
++    student: StudentProfile | None = None,
++) -> CourseResult:
+     assessment_rows = []
+     weighted_total = Decimal("0")
+     total_weight = Decimal("0")
+@@ -176,84 +698,148 @@ def build_course_result(offering: CourseOffering, assessments: list[Assessment],
+             weight = _to_decimal(assessment.weight)
+             if weight is not None and weight > 0:
+                 total_weight += weight
+-                weighted_total += (result.percentage * weight)
+-
+-        assessment_rows.append(
+-            {
+-                "assessment": assessment,
+-                "score": score_obj,
+-                "result": result,
+-            }
+-        )
++                weighted_total += result.percentage * weight
++        assessment_rows.append({"assessment": assessment, "score": score_obj, "result": result})
+ 
+     assessment_count = len(assessments)
+-    weighted_percentage = None
+-    if total_weight > 0:
+-        weighted_percentage = quantize_percent(weighted_total / total_weight)
++    legacy_weighted = quantize_percent(weighted_total / total_weight) if total_weight > 0 else None
++    simple_percentage = (
++        quantize_percent(simple_total / Decimal(completed_count)) if completed_count > 0 else None
++    )
+ 
+-    simple_percentage = None
+-    if completed_count > 0:
+-        simple_percentage = quantize_percent(simple_total / Decimal(completed_count))
++    scheme = resolve_weighting_scheme(offering)
++    scheme_result = None
++    if scheme:
++        resolved_student = student or next((score.student for score in score_map.values()), None)
++        if resolved_student is not None:
++            scheme_result = calculate_scheme_result(scheme, offering, resolved_student)
+ 
+-    final_percentage = weighted_percentage if weighted_percentage is not None else simple_percentage
++    weighted_percentage = scheme_result.percentage if scheme_result else (None if scheme else legacy_weighted)
++    final_percentage = weighted_percentage if weighted_percentage is not None else (
++        None if scheme else simple_percentage
++    )
++    if scheme_result:
++        completed_count = sum(item.completed_count for item in scheme_result.components)
++        assessment_count = sum(item.occurrence_count for item in scheme_result.components)
+     grade, remark = grade_for_percentage(final_percentage)
+-
+     return CourseResult(
+         offering=offering,
+         assessments=assessment_rows,
+-        total_weight=total_weight,
++        total_weight=scheme.total_weight if scheme else total_weight,
+         weighted_percentage=weighted_percentage,
+         simple_percentage=simple_percentage,
+         grade=grade,
+         remark=remark,
+         completed_count=completed_count,
+         assessment_count=assessment_count,
++        scheme=scheme,
++        is_complete=scheme_result.is_complete if scheme_result else not bool(scheme),
++        component_results=scheme_result.components if scheme_result else [],
++    )
++
++
++def build_course_result_for_student(offering: CourseOffering, student: StudentProfile) -> CourseResult:
++    assessments = list(
++        Assessment.objects.filter(offering=offering, is_published=True)
++        .select_related("assessment_type", "weighting_component")
++        .order_by("date", "pk")
++    )
++    return build_course_result(
++        offering, assessments, score_map_for_student(student, assessments), student=student
+     )
+ 
+ 
+ def build_report_card(student: StudentProfile) -> ReportCard:
+     assessments = list(published_assessments_for_student(student))
+     score_map = score_map_for_student(student, assessments)
+-
++    offerings = {assessment.offering_id: assessment.offering for assessment in assessments}
+     by_offering: dict[int, list[Assessment]] = {}
+-    offerings: dict[int, CourseOffering] = {}
+     for assessment in assessments:
+         by_offering.setdefault(assessment.offering_id, []).append(assessment)
+-        offerings[assessment.offering_id] = assessment.offering
++    try:
++        from apps.tenant.exams.models import ExamPaper
++
++        exam_offering_ids = ExamPaper.objects.filter(
++            offering__in=active_offerings_for_student(student),
++        ).filter(Q(results_published=True) | Q(show_results_immediately=True)).values_list("offering_id", flat=True)
++        for offering in active_offerings_for_student(student).filter(pk__in=exam_offering_ids):
++            offerings[offering.pk] = offering
++            by_offering.setdefault(offering.pk, [])
++    except Exception:
++        pass
+ 
+     course_results = [
+-        build_course_result(offerings[offering_id], items, score_map)
++        build_course_result(offerings[offering_id], items, score_map, student=student)
+         for offering_id, items in by_offering.items()
+     ]
+-
+-    completed_course_percentages = [
+-        result.weighted_percentage if result.weighted_percentage is not None else result.simple_percentage
+-        for result in course_results
+-        if (result.weighted_percentage if result.weighted_percentage is not None else result.simple_percentage) is not None
+-    ]
++    completed_course_percentages = []
++    for result in course_results:
++        if result.scheme:
++            value = result.weighted_percentage
++        else:
++            value = result.weighted_percentage if result.weighted_percentage is not None else result.simple_percentage
++        if value is not None:
++            completed_course_percentages.append(value)
+     overall_percentage = None
+     if completed_course_percentages:
+         overall_percentage = quantize_percent(
+             sum(completed_course_percentages, Decimal("0")) / Decimal(len(completed_course_percentages))
+         )
+-
+     overall_grade, overall_remark = grade_for_percentage(overall_percentage)
+-    completed_assessment_count = sum(result.completed_count for result in course_results)
+-
+     return ReportCard(
+         student=student,
+         course_results=course_results,
+         overall_percentage=overall_percentage,
+         overall_grade=overall_grade,
+         overall_remark=overall_remark,
+-        published_assessment_count=len(assessments),
+-        completed_assessment_count=completed_assessment_count,
++        published_assessment_count=sum(result.assessment_count for result in course_results),
++        completed_assessment_count=sum(result.completed_count for result in course_results),
+     )
+ 
+ 
++def assessment_framework_readiness() -> dict:
++    schemes = list(AssessmentWeightingScheme.objects.prefetch_related("components__assessment_type"))
++    invalid = []
++    for scheme in schemes:
++        errors = scheme_validation_errors(scheme)
++        if errors:
++            invalid.append({"scheme": scheme, "errors": errors})
++    inactive_assessment_links = Assessment.objects.filter(
++        Q(assessment_type__is_active=False)
++        | Q(weighting_component__is_active=False)
++        | Q(weighting_component__scheme__is_active=False)
++    ).distinct().count()
++    mismatched_assessment_links = Assessment.objects.filter(
++        assessment_type__isnull=False,
++        weighting_component__isnull=False,
++    ).exclude(assessment_type_id=F("weighting_component__assessment_type_id")).count()
++    classified = Assessment.objects.filter(assessment_type__isnull=False).count()
++    total_assessments = Assessment.objects.count()
++    checks = {
++        "types_available": AssessmentType.objects.filter(is_active=True).exists(),
++        "schemes_valid": not invalid,
++        "links_active": inactive_assessment_links == 0,
++        "links_consistent": mismatched_assessment_links == 0,
++    }
++    return {
++        "checks": checks,
++        "ready": all(checks.values()),
++        "scheme_count": len(schemes),
++        "invalid_schemes": invalid,
++        "invalid_scheme_count": len(invalid),
++        "inactive_link_count": inactive_assessment_links,
++        "mismatched_link_count": mismatched_assessment_links,
++        "assessment_count": total_assessments,
++        "classified_assessment_count": classified,
++        "unclassified_assessment_count": max(total_assessments - classified, 0),
++    }
++
++
+ def parent_can_access_student(parent: ParentProfile, student: StudentProfile) -> bool:
+     return ParentStudentLink.objects.filter(parent=parent, student=student).exists()
+ 
+ 

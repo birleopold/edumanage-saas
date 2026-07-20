@@ -1,0 +1,200 @@
++    components = list(scheme.components.filter(is_active=True).select_related("assessment_type"))
++    if not components:
++        errors.append("The scheme has no active weighting components.")
++        return errors
++    component_total = sum((_to_decimal(component.weight, Decimal("0")) or Decimal("0")) for component in components)
++    expected = _to_decimal(scheme.total_weight, Decimal("0")) or Decimal("0")
++    if abs(component_total - expected) > Decimal("0.01"):
++        errors.append(f"Active component weights total {component_total}, but the scheme total is {expected}.")
++    for component in components:
++        try:
++            component.full_clean()
++        except ValidationError as exc:
++            errors.extend(f"{component.assessment_type}: {message}" for message in exc.messages)
++        if not component.assessment_type.is_active:
++            errors.append(f"{component.assessment_type} is inactive.")
++    return errors
++
++
++def scheme_is_ready(scheme: AssessmentWeightingScheme) -> bool:
++    return bool(scheme.is_active and not scheme_validation_errors(scheme))
++
++
++def offering_program(offering: CourseOffering):
++    if offering.class_group_id and offering.class_group.program_id:
++        return offering.class_group.program
++    return offering.course.program if offering.course_id and offering.course.program_id else None
++
++
++def offering_stage(offering: CourseOffering):
++    level = None
++    if offering.class_group_id and offering.class_group.level_id:
++        level = offering.class_group.level
++    elif offering.course_id and offering.course.level_id:
++        level = offering.course.level
++    if not level:
++        return None
++    try:
++        from apps.tenant.education_frameworks.models import InstitutionEducationProfile
++        from apps.tenant.education_frameworks.services import resolve_level_stage
++
++        profile = InstitutionEducationProfile.objects.filter(is_active=True).first()
++        if profile:
++            return resolve_level_stage(level, profile)
++    except Exception:
++        return None
++    return None
++
++
++def _scope_matches(scheme: AssessmentWeightingScheme, offering: CourseOffering, stage, program) -> bool:
++    return bool(
++        (scheme.campus_id is None or scheme.campus_id == offering.campus_id)
++        and (scheme.academic_term_id is None or scheme.academic_term_id == offering.term_id)
++        and (scheme.program_id is None or (program and scheme.program_id == program.pk))
++        and (scheme.stage_id is None or (stage and scheme.stage_id == stage.pk))
++    )
++
++
++def _scheme_specificity(scheme: AssessmentWeightingScheme, offering: CourseOffering, stage, program) -> tuple:
++    exact = sum(
++        (
++            bool(scheme.campus_id and scheme.campus_id == offering.campus_id),
++            bool(scheme.academic_term_id and scheme.academic_term_id == offering.term_id),
++            bool(scheme.program_id and program and scheme.program_id == program.pk),
++            bool(scheme.stage_id and stage and scheme.stage_id == stage.pk),
++        )
++    )
++    return (scheme.priority, exact, int(scheme.is_default), scheme.pk or 0)
++
++
++def resolve_weighting_scheme(offering: CourseOffering) -> AssessmentWeightingScheme | None:
++    stage = offering_stage(offering)
++    program = offering_program(offering)
++    candidates = AssessmentWeightingScheme.objects.filter(is_active=True).select_related(
++        "campus", "stage", "academic_term", "program"
++    ).prefetch_related("components__assessment_type")
++    matched = [
++        scheme
++        for scheme in candidates
++        if _scope_matches(scheme, offering, stage, program) and scheme_is_ready(scheme)
++    ]
++    if not matched:
++        return None
++    return max(matched, key=lambda scheme: _scheme_specificity(scheme, offering, stage, program))
++
++
++def matching_component(scheme: AssessmentWeightingScheme | None, assessment_type: AssessmentType | None):
++    if not scheme or not assessment_type:
++        return None
++    return scheme.components.filter(
++        assessment_type=assessment_type,
++        is_active=True,
++    ).select_related("assessment_type", "scheme").first()
++
++
++def classify_existing_records(*, dry_run: bool = False, include_exam_papers: bool = True) -> dict[str, int]:
++    if dry_run:
++        types = {item.code: item for item in AssessmentType.objects.filter(is_active=True)}
++        missing = {template[0] for template in ASSESSMENT_TYPE_TEMPLATES} - set(types)
++        if missing:
++            raise ValidationError(
++                "Assessment type templates must be seeded before classification preview: "
++                + ", ".join(sorted(missing))
++            )
++    else:
++        types = ensure_assessment_type_templates()
++    summary = {
++        "assessments_classified": 0,
++        "assessments_linked": 0,
++        "exam_papers_classified": 0,
++        "exam_papers_linked": 0,
++        "unchanged": 0,
++    }
++    for assessment in Assessment.objects.select_related("offering", "assessment_type", "weighting_component"):
++        changed_fields = []
++        inferred = assessment.assessment_type or types[infer_assessment_type_code(assessment.name)]
++        if not assessment.assessment_type_id:
++            assessment.assessment_type = inferred
++            changed_fields.append("assessment_type")
++            summary["assessments_classified"] += 1
++        if not assessment.weighting_component_id:
++            component = matching_component(resolve_weighting_scheme(assessment.offering), inferred)
++            if component:
++                assessment.weighting_component = component
++                changed_fields.append("weighting_component")
++                summary["assessments_linked"] += 1
++        if changed_fields and not dry_run:
++            assessment.save(update_fields=changed_fields)
++        if not changed_fields:
++            summary["unchanged"] += 1
++
++    if include_exam_papers:
++        try:
++            from apps.tenant.exams.models import ExamPaper
++        except Exception:
++            ExamPaper = None
++        if ExamPaper is not None:
++            papers = ExamPaper.objects.select_related("exam", "offering", "assessment_type", "weighting_component")
++            for paper in papers:
++                changed_fields = []
++                inferred_name = f"{paper.exam.name} {paper.offering.course.name}"
++                inferred = paper.assessment_type or types[infer_assessment_type_code(inferred_name)]
++                if not paper.assessment_type_id:
++                    paper.assessment_type = inferred
++                    changed_fields.append("assessment_type")
++                    summary["exam_papers_classified"] += 1
++                if not paper.weighting_component_id:
++                    component = matching_component(resolve_weighting_scheme(paper.offering), inferred)
++                    if component:
++                        paper.weighting_component = component
++                        changed_fields.append("weighting_component")
++                        summary["exam_papers_linked"] += 1
++                if changed_fields and not dry_run:
++                    paper.save(update_fields=changed_fields)
++                if not changed_fields:
++                    summary["unchanged"] += 1
++    return summary
++
++
++def ensure_exam_paper_assessment_link(paper, *, create: bool = False):
++    """Return or explicitly create an Assessment compatibility record for an exam paper.
++
++    The function never copies ExamScore rows. Configurable aggregation reads ExamScore
++    directly, so the link is metadata-only and safe to enable gradually.
++    """
++
++    if paper.linked_assessment_id:
++        return paper.linked_assessment
++    if not create:
++        return None
++    base_name = f"{paper.exam.name} - {paper.offering.course.name}"
++    name = base_name[:128]
++    assessment, _ = Assessment.objects.get_or_create(
++        offering=paper.offering,
++        name=name,
++        defaults={
++            "assessment_type": paper.assessment_type,
++            "weighting_component": paper.weighting_component,
++            "max_score": paper.max_score,
++            "weight": paper.weight,
++            "date": paper.date,
++            "is_published": paper.results_are_visible(),
++        },
++    )
++    changed = []
++    for field_name in ("assessment_type", "weighting_component", "max_score", "weight", "date"):
++        value = getattr(paper, field_name)
++        if getattr(assessment, field_name) != value:
++            setattr(assessment, field_name, value)
++            changed.append(field_name)
++    visible = paper.results_are_visible()
++    if assessment.is_published != visible:
++        assessment.is_published = visible
++        changed.append("is_published")
++    if changed:
++        assessment.save(update_fields=changed)
++    paper.linked_assessment = assessment
++    paper.save(update_fields=["linked_assessment"])
++    return assessment
++
++

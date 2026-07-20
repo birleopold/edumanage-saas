@@ -1,0 +1,221 @@
++@role_required(Role.ADMIN)
++def assessment_type_edit(request, pk: int):
++    obj = get_object_or_404(AssessmentType, pk=pk)
++    if request.method == "POST":
++        form = AssessmentTypeForm(request.POST, instance=obj)
++        if form.is_valid():
++            form.save()
++            messages.success(request, "Assessment type updated.")
++            return redirect("admin_assessment_framework_dashboard")
++    else:
++        form = AssessmentTypeForm(instance=obj)
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": "Edit assessment type", "back_url_name": "admin_assessment_framework_dashboard"},
++    )
++
++
++@role_required(Role.ADMIN)
++def weighting_scheme_create(request):
++    if request.method == "POST":
++        form = AssessmentWeightingSchemeForm(request.POST)
++        if form.is_valid():
++            obj = form.save()
++            messages.success(request, "Weighting scheme created. Add its components next.")
++            return redirect("admin_weighting_scheme_detail", pk=obj.pk)
++    else:
++        form = AssessmentWeightingSchemeForm()
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": "Add weighting scheme", "back_url_name": "admin_assessment_framework_dashboard"},
++    )
++
++
++@role_required(Role.ADMIN)
++def weighting_scheme_edit(request, pk: int):
++    obj = get_object_or_404(AssessmentWeightingScheme, pk=pk)
++    if request.method == "POST":
++        form = AssessmentWeightingSchemeForm(request.POST, instance=obj)
++        if form.is_valid():
++            form.save()
++            messages.success(request, "Weighting scheme updated.")
++            return redirect("admin_weighting_scheme_detail", pk=obj.pk)
++    else:
++        form = AssessmentWeightingSchemeForm(instance=obj)
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": "Edit weighting scheme", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": obj.pk},
++    )
++
++
++@role_required(Role.ADMIN)
++def weighting_scheme_detail(request, pk: int):
++    scheme = get_object_or_404(
++        AssessmentWeightingScheme.objects.select_related(
++            "campus", "stage", "academic_term", "program"
++        ).prefetch_related("components__assessment_type"),
++        pk=pk,
++    )
++    components = scheme.components.select_related("assessment_type").order_by("order", "pk")
++    return render(
++        request,
++        "portals/admin/assessments/framework/scheme_detail.html",
++        {
++            "scheme": scheme,
++            "components": components,
++            "errors": scheme_validation_errors(scheme),
++        },
++    )
++
++
++@role_required(Role.ADMIN)
++def weighting_component_create(request, scheme_pk: int):
++    scheme = get_object_or_404(AssessmentWeightingScheme, pk=scheme_pk)
++    if request.method == "POST":
++        form = AssessmentWeightingComponentForm(request.POST, scheme=scheme)
++        if form.is_valid():
++            form.save()
++            messages.success(request, "Weighting component added.")
++            return redirect("admin_weighting_scheme_detail", pk=scheme.pk)
++    else:
++        form = AssessmentWeightingComponentForm(scheme=scheme)
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": f"Add component to {scheme.name}", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": scheme.pk},
++    )
++
++
++@role_required(Role.ADMIN)
++def weighting_component_edit(request, pk: int):
++    obj = get_object_or_404(AssessmentWeightingComponent.objects.select_related("scheme"), pk=pk)
++    if request.method == "POST":
++        form = AssessmentWeightingComponentForm(request.POST, instance=obj, scheme=obj.scheme)
++        if form.is_valid():
++            form.save()
++            messages.success(request, "Weighting component updated.")
++            return redirect("admin_weighting_scheme_detail", pk=obj.scheme_id)
++    else:
++        form = AssessmentWeightingComponentForm(instance=obj, scheme=obj.scheme)
++    return render(
++        request,
++        "portals/admin/assessments/framework/form.html",
++        {"form": form, "title": "Edit weighting component", "back_url_name": "admin_weighting_scheme_detail", "back_url_pk": obj.scheme_id},
++    )
+diff --git a/apps/tenant/assessments/forms.py b/apps/tenant/assessments/forms.py
+index 4b87e5c..40250a4 100644
+--- a/apps/tenant/assessments/forms.py
++++ b/apps/tenant/assessments/forms.py
+@@ -2,7 +2,14 @@ from django import forms
+ 
+ from apps.tenant.academics.models import CourseOffering
+ 
+-from .models import Assessment
++from .models import (
++    Assessment,
++    AssessmentType,
++    AssessmentWeightingComponent,
++    AssessmentWeightingScheme,
++    normalize_assessment_code,
++)
++from .services import scheme_validation_errors
+ 
+ 
+ class AssessmentForm(forms.ModelForm):
+@@ -11,6 +18,8 @@ class AssessmentForm(forms.ModelForm):
+         fields = [
+             "offering",
+             "name",
++            "assessment_type",
++            "weighting_component",
+             "max_score",
+             "weight",
+             "date",
+@@ -20,7 +29,9 @@ class AssessmentForm(forms.ModelForm):
+             "date": forms.DateInput(attrs={"type": "date", "placeholder": "YYYY-MM-DD"}),
+         }
+         help_texts = {
+-            "weight": "Optional. Use when combining multiple assessments into a weighted final result. Example: 30 for coursework or 70 for exam.",
++            "assessment_type": "Optional classification used by the configurable weighting framework.",
++            "weighting_component": "Optional explicit scheme component. Leave blank to resolve by assessment type.",
++            "weight": "Legacy weight remains supported when no weighting scheme applies.",
+             "is_published": "Only published assessments are visible to students and parents.",
+         }
+ 
+@@ -28,6 +39,20 @@ class AssessmentForm(forms.ModelForm):
+         offerings = kwargs.pop("offerings", None)
+         super().__init__(*args, **kwargs)
+         self.fields["offering"].queryset = offerings if offerings is not None else CourseOffering.objects.all()
++        self.fields["assessment_type"].queryset = AssessmentType.objects.filter(is_active=True).order_by("kind", "name")
++        components = AssessmentWeightingComponent.objects.filter(
++            is_active=True,
++            scheme__is_active=True,
++            assessment_type__is_active=True,
++        ).select_related("scheme", "assessment_type")
++        selected_type = None
++        if self.is_bound:
++            selected_type = self.data.get("assessment_type")
++        elif self.instance and self.instance.assessment_type_id:
++            selected_type = self.instance.assessment_type_id
++        if selected_type:
++            components = components.filter(assessment_type_id=selected_type)
++        self.fields["weighting_component"].queryset = components.order_by("scheme__name", "order")
+ 
+     def clean_max_score(self):
+         value = self.cleaned_data.get("max_score")
+@@ -40,3 +65,139 @@ class AssessmentForm(forms.ModelForm):
+         if value is not None and value < 0:
+             raise forms.ValidationError("Weight cannot be negative.")
+         return value
++
++    def clean(self):
++        cleaned = super().clean()
++        assessment_type = cleaned.get("assessment_type")
++        component = cleaned.get("weighting_component")
++        if component and assessment_type and component.assessment_type_id != assessment_type.pk:
++            self.add_error("weighting_component", "The component must use the selected assessment type.")
++        if component and (not component.is_active or not component.scheme.is_active):
++            self.add_error("weighting_component", "Choose a component from an active scheme.")
++        return cleaned
++
++
++class AssessmentTypeForm(forms.ModelForm):
++    class Meta:
++        model = AssessmentType
++        fields = [
++            "code",
++            "name",
++            "kind",
++            "description",
++            "default_max_score",
++            "default_weight",
++            "local_aliases",
++            "is_active",
++        ]
++        widgets = {
++            "description": forms.Textarea(attrs={"rows": 3}),
++            "local_aliases": forms.Textarea(attrs={"rows": 3}),
++        }
++        help_texts = {
++            "local_aliases": 'Optional JSON aliases, for example {"UG": "EOT"}.',
++        }
++
++    def clean_code(self):
++        return normalize_assessment_code(self.cleaned_data.get("code"))
++
++
++class AssessmentWeightingSchemeForm(forms.ModelForm):
++    class Meta:
++        model = AssessmentWeightingScheme
++        fields = [
++            "code",
++            "name",
++            "description",
++            "campus",
++            "stage",
++            "academic_term",
++            "program",
++

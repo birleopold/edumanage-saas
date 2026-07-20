@@ -1,0 +1,9 @@
+lass="px-6 py-4 whitespace-nowrap text-sm">{% if p.is_published %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i> Published</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-eye-slash"></i> Draft</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2 flex-wrap"><a href="{% url 'admin_exam_paper_detail' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">View</a><a href="{% url 'admin_paper_scores' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Scores</a><a href="{% url 'admin_exam_papers_edit' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50">Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_exam_papers_create' as add_url %}{% include "components/ui_empty_state.html" with icon="clipboard-text" title="No exam papers" description="Schedule a paper or adjust filters." action_url=add_url action_text="Add paper" %}{% endif %}
+ </div>
+ {% endblock %}
+diff --git a/templates/portals/results/_report_card_body.html b/templates/portals/results/_report_card_body.html
+index 2b59840..a5cc253 100644
+--- a/templates/portals/results/_report_card_body.html
++++ b/templates/portals/results/_report_card_body.html
+@@ -24,17 +24,31 @@
+       

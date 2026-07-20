@@ -1,0 +1,196 @@
++            "total_weight",
++            "missing_score_policy",
++            "normalize_to_total",
++            "priority",
++            "is_default",
++            "is_active",
++        ]
++        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
++        help_texts = {
++            "priority": "Higher priority wins when more than one valid scheme matches an offering.",
++            "is_default": "Used as a tie-breaker after scope specificity and priority.",
++        }
++
++    def clean_code(self):
++        return normalize_assessment_code(self.cleaned_data.get("code"))
++
++    def clean(self):
++        cleaned = super().clean()
++        scope_fields = ("campus", "stage", "academic_term", "program")
++        if all(field in cleaned for field in scope_fields) and "priority" in cleaned:
++            duplicate = AssessmentWeightingScheme.objects.filter(
++                campus=cleaned.get("campus"),
++                stage=cleaned.get("stage"),
++                academic_term=cleaned.get("academic_term"),
++                program=cleaned.get("program"),
++                priority=cleaned.get("priority"),
++                is_active=True,
++            )
++            if self.instance.pk:
++                duplicate = duplicate.exclude(pk=self.instance.pk)
++            if cleaned.get("is_active") and duplicate.exists():
++                raise forms.ValidationError(
++                    "Another active scheme has the same scope and priority. Change the priority or narrow the scope."
++                )
++        return cleaned
++
++
++class AssessmentWeightingComponentForm(forms.ModelForm):
++    class Meta:
++        model = AssessmentWeightingComponent
++        fields = [
++            "assessment_type",
++            "weight",
++            "aggregation_method",
++            "minimum_occurrences",
++            "maximum_occurrences",
++            "drop_lowest_count",
++            "is_required",
++            "is_active",
++            "order",
++        ]
++
++    def __init__(self, *args, **kwargs):
++        self.scheme = kwargs.pop("scheme", None)
++        super().__init__(*args, **kwargs)
++        types = AssessmentType.objects.filter(is_active=True)
++        if self.scheme:
++            used_ids = self.scheme.components.exclude(pk=self.instance.pk).values_list("assessment_type_id", flat=True)
++            types = types.exclude(pk__in=used_ids)
++        self.fields["assessment_type"].queryset = types.order_by("kind", "name")
++
++    def save(self, commit=True):
++        obj = super().save(commit=False)
++        if self.scheme:
++            obj.scheme = self.scheme
++        if commit:
++            obj.full_clean()
++            obj.save()
++        return obj
++
++
++class SchemeActivationForm(forms.Form):
++    confirm = forms.BooleanField(
++        required=True,
++        label="I confirm this scheme is ready for use",
++    )
++
++    def __init__(self, *args, scheme=None, **kwargs):
++        self.scheme = scheme
++        super().__init__(*args, **kwargs)
++
++    def clean(self):
++        cleaned = super().clean()
++        if self.scheme:
++            errors = scheme_validation_errors(self.scheme)
++            if errors:
++                raise forms.ValidationError(errors)
++        return cleaned
+diff --git a/apps/tenant/assessments/management/__init__.py b/apps/tenant/assessments/management/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/apps/tenant/assessments/management/commands/__init__.py b/apps/tenant/assessments/management/commands/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/apps/tenant/assessments/management/commands/audit_assessment_frameworks.py b/apps/tenant/assessments/management/commands/audit_assessment_frameworks.py
+new file mode 100644
+index 0000000..25dcd5a
+--- /dev/null
++++ b/apps/tenant/assessments/management/commands/audit_assessment_frameworks.py
+@@ -0,0 +1,61 @@
++from django.core.management.base import BaseCommand, CommandError
++from django.db.models import F, Q
++from django_tenants.utils import tenant_context
++
++from apps.public.tenants.models import Tenant
++
++from ...models import Assessment, AssessmentType
++from ...services import assessment_framework_readiness
++
++
++class Command(BaseCommand):
++    help = "Run a read-only Phase 2 assessment framework audit for one or all school tenants."
++
++    def add_arguments(self, parser):
++        parser.add_argument("--schema", help="Audit one tenant schema only.")
++        parser.add_argument("--fail-on-incomplete", action="store_true", help="Return a non-zero exit code if Phase 2 configuration is incomplete.")
++
++    def handle(self, *args, **options):
++        schema = (options.get("schema") or "").strip()
++        tenants = Tenant.objects.exclude(schema_name="public").order_by("schema_name")
++        if schema:
++            tenants = tenants.filter(schema_name=schema)
++            if not tenants.exists():
++                raise CommandError(f"Tenant schema '{schema}' was not found.")
++        incomplete = 0
++        audited = 0
++        for tenant in tenants:
++            audited += 1
++            with tenant_context(tenant):
++                readiness = assessment_framework_readiness()
++                self.stdout.write(self.style.MIGRATE_HEADING(f"Tenant: {tenant.schema_name}"))
++                self.stdout.write(
++                    f"Types: {AssessmentType.objects.filter(is_active=True).count()}; "
++                    f"schemes: {readiness['scheme_count']}; invalid schemes: {readiness['invalid_scheme_count']}."
++                )
++                self.stdout.write(
++                    f"Assessments classified: {readiness['classified_assessment_count']}/{readiness['assessment_count']}; "
++                    f"inactive links: {readiness['inactive_link_count']}; mismatched links: {readiness['mismatched_link_count']}."
++                )
++                try:
++                    from apps.tenant.exams.models import ExamPaper
++
++                    exam_link_issues = ExamPaper.objects.filter(
++                        Q(assessment_type__is_active=False)
++                        | Q(weighting_component__is_active=False)
++                        | Q(weighting_component__scheme__is_active=False)
++                    ).distinct().count()
++                    exam_link_issues += ExamPaper.objects.filter(
++                        assessment_type__isnull=False,
++                        weighting_component__isnull=False,
++                    ).exclude(assessment_type_id=F("weighting_component__assessment_type_id")).count()
++                except Exception:
++                    exam_link_issues = 0
++                if readiness["ready"] and exam_link_issues == 0:
++                    self.stdout.write(self.style.SUCCESS("Phase 2 assessment framework is structurally ready."))
++                else:
++                    incomplete += 1
++                    self.stdout.write(self.style.WARNING(f"Phase 2 needs attention. Exam-paper link issues: {exam_link_issues}. No data was changed."))
++        self.stdout.write(f"Audit complete: {audited} tenant(s), {incomplete} incomplete. No data was changed.")
++        if options.get("fail_on_incomplete") and incomplete:
++            raise CommandError(f"Assessment framework audit found {incomplete} incomplete tenant(s).")
+diff --git a/apps/tenant/assessments/management/commands/bootstrap_assessment_frameworks.py b/apps/tenant/assessments/management/commands/bootstrap_assessment_frameworks.py
+new file mode 100644
+index 0000000..aa4acad
+--- /dev/null
++++ b/apps/tenant/assessments/management/commands/bootstrap_assessment_frameworks.py
+@@ -0,0 +1,67 @@
++from django.core.management.base import BaseCommand, CommandError
++from django_tenants.utils import tenant_context
++
++from apps.public.tenants.models import Tenant
++
++from ...models import Assessment, AssessmentType
++from ...services import (
++    ASSESSMENT_TYPE_TEMPLATES,
++    classify_existing_records,
++    ensure_assessment_type_templates,
++    create_missing_exam_paper_links,
++)
++
++
++class Command(BaseCommand):
++    help = "Seed assessment type templates and safely classify existing assessments and exam papers."
++
++    def add_arguments(self, parser):
++        parser.add_argument("--schema", help="Run for one tenant schema only.")
++        parser.add_argument("--classify-existing", action="store_true", help="Attach types and matching components to existing records.")
++        parser.add_argument("--skip-exam-papers", action="store_true", help="Do not classify exam papers.")
++        parser.add_argument("--create-exam-links", action="store_true", help="Create metadata-only Assessment links for exam papers; exam scores are not copied.")
++        parser.add_argument("--dry-run", action="store_true", help="Report intended changes without writing data.")
++
++    def handle(self, *args, **options):
++        schema = (options.get("schema") or "").strip()
++        tenants = Tenant.objects.exclude(schema_name="public").order_by("schema_name")
++        if schema:
++
