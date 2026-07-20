@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/configurable-assessment-framework
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
