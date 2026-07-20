@@ -22,6 +22,9 @@ from .forms import (
 )
 
 
+_AUDIT_DISABLED_NOTICE = "Audit is turned off for this school."
+
+
 def _audit_login(request, username="", user=None, status="SUCCESS", reason=""):
     try:
         from apps.tenant.audit.models import LoginHistory
@@ -32,6 +35,29 @@ def _audit_login(request, username="", user=None, status="SUCCESS", reason=""):
             log_audit(request, action="LOGIN" if status == "SUCCESS" else "LOGOUT", metadata={"username": username or getattr(user, "username", "")})
     except Exception:
         pass
+
+
+def _account_page_messages(request):
+    """Consume stale session messages and return a safe, deduplicated list.
+
+    A redirect loop can queue the same operational feature notice many times.
+    Account-security pages must stay focused on authentication and must not
+    expose package-level operational notices to the user.
+    """
+    unique_messages = []
+    seen = set()
+
+    for message in messages.get_messages(request):
+        text = str(message).strip()
+        if not text or text == _AUDIT_DISABLED_NOTICE:
+            continue
+        key = (getattr(message, "level", None), text)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_messages.append(message)
+
+    return unique_messages
 
 
 def _role_home_url(user) -> str:
@@ -118,6 +144,7 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 def change_password(request):
     """Change a tenant user's password without depending on a portal dashboard shell."""
     password_change_required = bool(getattr(request.user, "must_change_password", False))
+    account_messages = _account_page_messages(request)
 
     if request.method == "POST":
         form = CustomPasswordChangeForm(request.user, request.POST)
@@ -146,6 +173,7 @@ def change_password(request):
         {
             "form": form,
             "password_change_required": password_change_required,
+            "account_messages": account_messages,
         },
     )
 
