@@ -1,4 +1,4 @@
-name: Phase 2 lifecycle diagnostic
+name: Phase 2 source cleanup diagnostic
 
 on:
   push:
@@ -18,24 +18,14 @@ jobs:
         with:
           ref: feature/configurable-assessment-framework
           fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-      - name: Install dependencies
+      - name: Remove patch marker and scan Python sources
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Capture lifecycle startup and checks
-        env:
-          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
-          DJANGO_DEBUG: "True"
-          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
-        run: python manage.py check_dependency_lifecycle --json > phase2-diagnostic.txt 2>&1 || true
-      - name: Commit diagnostic output
+          sed -i 's/^+@role_required/@role_required/' apps/tenant/assessments/admin_views.py
+          grep -R -n '^[+]' apps/tenant/assessments apps/tenant/exams --include='*.py' > phase2-diagnostic.txt || true
+      - name: Commit cleanup and scan output
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add phase2-diagnostic.txt
-          git commit -m "Record Phase 2 lifecycle diagnostic" || exit 0
+          git add apps/tenant/assessments/admin_views.py phase2-diagnostic.txt
+          git commit -m "Remove Phase 2 patch marker and scan sources" || exit 0
           git push origin HEAD:feature/configurable-assessment-framework
