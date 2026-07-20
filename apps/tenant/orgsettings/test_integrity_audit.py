@@ -52,8 +52,8 @@ class TenantIntegrityAuditTests(TestCase):
             is_primary=True,
         )
 
-        year = AcademicYear.objects.create(name="2026")
-        term = AcademicTerm.objects.create(year=year, name="Term 1", order=1)
+        year, _ = AcademicYear.objects.get_or_create(name="2026")
+        term, _ = AcademicTerm.objects.get_or_create(year=year, name="Term 1", defaults={"order": 1})
         class_group = ClassGroup.objects.create(campus=self.campus, name="Primary One")
         course = Course.objects.create(name="Mathematics")
         CourseOffering.objects.create(
