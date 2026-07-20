@@ -1,0 +1,74 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Transport Notices{% endblock %}
+{% block page_title %}Transport Notices{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_transport_schedules_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Schedules</a>
+<a href="{% url 'admin_transport_notice_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Create Notice</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-6">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Parent communication</p>
+    <h2 class="mt-2 text-2xl font-black">Transport notices</h2>
+    <p class="mt-2 max-w-2xl text-sm text-blue-100">Record route departures, arrivals, delays, emergencies and general transport updates.</p>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid gap-4 lg:grid-cols-5 lg:items-end">
+      <div class="lg:col-span-2">
+        <label class="mb-2 block text-sm font-black text-slate-700">Search</label>
+        <input type="text" name="q" value="{{ q }}" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900" placeholder="Student, route or message">
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-black text-slate-700">Type</label>
+        <select name="type" class="block w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 font-bold text-slate-900">
+          <option value="">All types</option>
+          {% for value,label in notification_types %}<option value="{{ value }}" {% if notification_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-black text-slate-700">Per page</label>
+        <input type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="rounded-xl border-2 border-slate-200 bg-slate-100 px-4 py-2.5 font-black text-slate-700">Apply</button>
+        <a href="{% url 'admin_transport_notices_list' %}" class="rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 font-black text-slate-700">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  {% if notices %}
+  <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Student</th>
+          <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Route</th>
+          <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Type</th>
+          <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Message</th>
+          <th class="px-6 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Sent</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        {% for notice in notices %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-6 py-4 text-sm"><p class="font-black text-slate-900">{{ notice.assignment.student }}</p><p class="text-xs font-bold text-slate-500">{{ notice.assignment.student.student_id }}</p></td>
+          <td class="px-6 py-4 text-sm"><p class="font-black text-slate-900">{{ notice.assignment.route.name }}</p><p class="text-xs font-bold text-blue-700">{{ notice.assignment.route.code }}</p></td>
+          <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ notice.get_notification_type_display }}</td>
+          <td class="max-w-xl px-6 py-4 text-sm text-slate-700">{{ notice.message }}</td>
+          <td class="px-6 py-4 text-sm font-bold text-slate-600">{{ notice.sent_at|date:'M d, Y H:i' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+  {% else %}
+    {% url 'admin_transport_notice_create' as create_notice_url %}
+    {% include "components/ui_empty_state.html" with icon="bell" title="No transport notices found" description="Create a transport update for a parent or guardian." action_url=create_notice_url action_text="Create Notice" %}
+  {% endif %}
+</div>
+{% endblock %}

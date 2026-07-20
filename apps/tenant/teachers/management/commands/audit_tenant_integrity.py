@@ -3,6 +3,7 @@ from django_tenants.utils import tenant_context
 
 from apps.public.tenants.models import Tenant
 from apps.tenant.orgsettings.integrity import audit_current_tenant, summarize_issues
+from apps.tenant.transport.integrity import audit_transport_integrity
 
 
 class Command(BaseCommand):
@@ -39,7 +40,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.MIGRATE_HEADING(f"Tenant: {tenant.schema_name}"))
 
             with tenant_context(tenant):
-                issues = audit_current_tenant()
+                issues = [*audit_current_tenant(), *audit_transport_integrity()]
+                issues.sort(key=lambda item: (0 if item.severity == "ERROR" else 1, item.code))
 
             if not issues:
                 self.stdout.write(self.style.SUCCESS("No integrity conflicts found."))

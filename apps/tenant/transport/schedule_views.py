@@ -3,10 +3,22 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.tenant.portals.campus_permissions import enforce_campus_scope
 from apps.tenant.portals.permissions import admin_portal_required
 
-from .forms import RouteScheduleForm
-from .models import RouteSchedule, TransportRoute
+from .forms import ParentNotificationForm, RouteScheduleForm
+from .models import ParentNotification, RouteSchedule, StudentTransportAssignment, TransportRoute
+
+
+NOTICE_TEMPLATES = {
+    "departed": (ParentNotification.PICKUP, "The school vehicle has departed for the scheduled route."),
+    "arrived": (ParentNotification.DROPOFF, "The school vehicle has arrived at the scheduled stop."),
+    "delay": (ParentNotification.DELAY, "Transport is delayed. We will provide another update shortly."),
+    "route_change": (
+        ParentNotification.GENERAL,
+        "The transport route has changed. Please review the latest route details.",
+    ),
+}
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -16,6 +28,18 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     except (TypeError, ValueError):
         per_page = default
     return max(1, min(per_page, max_value))
+
+
+def _assignment_queryset_for(user):
+    queryset = StudentTransportAssignment.objects.select_related(
+        "student",
+        "student__campus",
+        "route",
+        "stop",
+        "route__vehicle",
+        "route__driver",
+    )
+    return enforce_campus_scope(queryset, user, campus_field="student__campus")
 
 
 @admin_portal_required
@@ -92,3 +116,79 @@ def schedule_edit(request, pk: int):
     else:
         form = RouteScheduleForm(instance=schedule)
     return render(request, "portals/admin/transport/schedule_form.html", {"form": form, "mode": "edit", "schedule": schedule})
+
+
+@admin_portal_required
+def notice_list(request):
+    q = (request.GET.get("q") or "").strip()
+    notification_type = (request.GET.get("type") or "").strip()
+    per_page = _parse_per_page(request)
+    page_number = request.GET.get("page") or 1
+
+    assignments = _assignment_queryset_for(request.user)
+    notices = ParentNotification.objects.select_related(
+        "assignment",
+        "assignment__student",
+        "assignment__student__campus",
+        "assignment__route",
+    ).filter(assignment__in=assignments)
+    if q:
+        notices = notices.filter(
+            Q(message__icontains=q)
+            | Q(assignment__student__first_name__icontains=q)
+            | Q(assignment__student__last_name__icontains=q)
+            | Q(assignment__student__student_id__icontains=q)
+            | Q(assignment__route__name__icontains=q)
+            | Q(assignment__route__code__icontains=q)
+        )
+    if notification_type:
+        notices = notices.filter(notification_type=notification_type)
+
+    paginator = Paginator(notices.order_by("-sent_at"), per_page)
+    page_obj = paginator.get_page(page_number)
+    return render(
+        request,
+        "portals/admin/transport/notices_list.html",
+        {
+            "notices": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "notification_type": notification_type,
+            "notification_types": ParentNotification.TYPE_CHOICES,
+            "per_page": per_page,
+        },
+    )
+
+
+@admin_portal_required
+def notice_create(request):
+    template_key = (request.GET.get("template") or "").strip()
+    assignment_id = (request.GET.get("assignment") or "").strip()
+    initial = {}
+    if template_key in NOTICE_TEMPLATES:
+        notice_type, message = NOTICE_TEMPLATES[template_key]
+        initial.update({"notification_type": notice_type, "message": message})
+    if assignment_id:
+        initial["assignment"] = assignment_id
+
+    form = ParentNotificationForm(request.POST or None, initial=initial)
+    allowed_assignments = _assignment_queryset_for(request.user).filter(is_active=True).order_by(
+        "student__last_name",
+        "student__first_name",
+        "route__code",
+    )
+    form.fields["assignment"].queryset = allowed_assignments
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Transport notice saved successfully.")
+        return redirect("admin_transport_notices_list")
+
+    return render(
+        request,
+        "portals/admin/transport/notice_form.html",
+        {
+            "form": form,
+            "templates": NOTICE_TEMPLATES,
+        },
+    )

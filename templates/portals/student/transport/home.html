@@ -20,6 +20,7 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Vehicle</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Period</th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
@@ -51,6 +52,9 @@
                   <i class="ph ph-x-circle"></i> Inactive
                 </span>
               {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+              <a href="{% url 'student_transport_assignment_detail' a.pk %}" class="rounded-lg bg-primary-600 px-3 py-2 font-semibold text-white hover:bg-primary-700">Details</a>
             </td>
           </tr>
         {% endfor %}
