@@ -1,0 +1,36 @@
+name: Phase 2 Source Snapshot
+
+on:
+  push:
+    branches:
+      - feature/configurable-assessment-framework
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Phase 2 branch
+        uses: actions/checkout@v4
+
+      - name: Package assessment integration sources
+        run: |
+          zip -r phase2-source-snapshot.zip \
+            apps/tenant/assessments \
+            apps/tenant/exams \
+            apps/tenant/academics \
+            apps/tenant/portals \
+            apps/tenant/orgsettings \
+            config \
+            templates \
+            verify_routes.py \
+            requirements.txt
+
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-source-snapshot
+          path: phase2-source-snapshot.zip
+          if-no-files-found: error
