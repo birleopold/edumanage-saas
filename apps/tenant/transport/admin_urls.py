@@ -7,7 +7,7 @@ urlpatterns = [
     path("drivers/", admin_views.driver_list, name="admin_transport_drivers_list"),
     path("drivers/create/", admin_views.driver_create, name="admin_transport_driver_create"),
     path("drivers/<int:pk>/edit/", admin_views.driver_edit, name="admin_transport_driver_edit"),
-    
+
     # Vehicles
     path("vehicles/", admin_views.vehicle_list, name="admin_transport_vehicles_list"),
     path("vehicles/create/", admin_views.vehicle_create, name="admin_transport_vehicle_create"),
@@ -29,6 +29,10 @@ urlpatterns = [
     path("schedules/", schedule_views.schedule_list, name="admin_transport_schedules_list"),
     path("schedules/create/", schedule_views.schedule_create, name="admin_transport_schedule_create"),
     path("schedules/<int:pk>/edit/", schedule_views.schedule_edit, name="admin_transport_schedule_edit"),
+
+    # Parent Notices
+    path("notices/", schedule_views.notice_list, name="admin_transport_notices_list"),
+    path("notices/create/", schedule_views.notice_create, name="admin_transport_notice_create"),
 
     # Student Assignments
     path("assignments/", admin_views.assignment_list, name="admin_transport_assignments_list"),
