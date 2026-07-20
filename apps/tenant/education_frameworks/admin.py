@@ -16,6 +16,7 @@ class EducationStageAdmin(admin.ModelAdmin):
     list_filter = ("default_period_type", "is_system", "is_active")
     search_fields = ("code", "name", "local_name")
     ordering = ("order", "name")
+    actions = None
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_system:
@@ -32,6 +33,7 @@ class FrameworkStageInline(admin.TabularInline):
     model = FrameworkStage
     extra = 0
     autocomplete_fields = ("stage",)
+    can_delete = False
 
 
 @admin.register(AcademicFramework)
@@ -40,6 +42,7 @@ class AcademicFrameworkAdmin(admin.ModelAdmin):
     list_filter = ("country_code", "is_system_template", "is_active")
     search_fields = ("code", "name", "description")
     inlines = (FrameworkStageInline,)
+    actions = None
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_system_template:
@@ -58,6 +61,7 @@ class FrameworkStageAdmin(admin.ModelAdmin):
     list_filter = ("framework", "candidate_class", "is_active")
     search_fields = ("framework__name", "stage__name", "local_name")
     autocomplete_fields = ("framework", "stage")
+    actions = None
 
     def has_delete_permission(self, request, obj=None):
         if obj and obj.framework.is_system_template:
