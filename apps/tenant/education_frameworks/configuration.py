@@ -17,9 +17,7 @@ def resolve_effective_terminology(
         return resolve_terminology(profile=profile, campus_stage=campus_stage)
 
     resolved = dict(NEUTRAL_TERMINOLOGY)
-    resolved.update(dict(profile.terminology or {}))
     if campus_stage:
-        resolved.update(dict(campus_stage.terminology or {}))
         higher_education = campus_stage.stage.code in {
             EducationStage.TERTIARY,
             EducationStage.UNIVERSITY,
@@ -37,6 +35,9 @@ def resolve_effective_terminology(
                 "report_card": "Academic Report" if higher_education else "Report Card",
             }
         )
+    resolved.update(dict(profile.terminology or {}))
+    if campus_stage:
+        resolved.update(dict(campus_stage.terminology or {}))
     return {key: str(value) for key, value in resolved.items()}
 
 
