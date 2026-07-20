@@ -17,6 +17,16 @@ class EducationStageAdmin(admin.ModelAdmin):
     search_fields = ("code", "name", "local_name")
     ordering = ("order", "name")
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.is_system:
+            return ("code", "is_system")
+        return ()
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.is_system:
+            return False
+        return super().has_delete_permission(request, obj)
+
 
 class FrameworkStageInline(admin.TabularInline):
     model = FrameworkStage
@@ -31,6 +41,16 @@ class AcademicFrameworkAdmin(admin.ModelAdmin):
     search_fields = ("code", "name", "description")
     inlines = (FrameworkStageInline,)
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.is_system_template:
+            return ("code", "is_system_template")
+        return ()
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.is_system_template:
+            return False
+        return super().has_delete_permission(request, obj)
+
 
 @admin.register(FrameworkStage)
 class FrameworkStageAdmin(admin.ModelAdmin):
@@ -38,6 +58,11 @@ class FrameworkStageAdmin(admin.ModelAdmin):
     list_filter = ("framework", "candidate_class", "is_active")
     search_fields = ("framework__name", "stage__name", "local_name")
     autocomplete_fields = ("framework", "stage")
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.framework.is_system_template:
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 class CampusEducationStageInline(admin.TabularInline):
