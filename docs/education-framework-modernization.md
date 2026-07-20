@@ -7,9 +7,10 @@ This programme modernizes EduManage for Ugandan institutions while keeping the p
 1. Existing models, records and URLs are not renamed or removed during the foundation phase.
 2. New framework records are additive and tenant-scoped.
 3. Existing `academics.Level` records are linked through `LevelStageMapping`; their names and IDs are not changed.
-4. Existing grading scales are referenced by stored compatibility IDs until a later controlled migration can add direct framework relationships.
-5. The setup interface is protected by the existing Academics feature flag and administrator permissions.
-6. Every phase must pass migration drift checks, Django tests, production checks and PostgreSQL tenant-isolation tests before merging.
+4. Administrator-confirmed level mappings are never overwritten by later automatic synchronization.
+5. Existing grading scales are referenced by stored compatibility IDs until a later controlled migration can add direct framework relationships.
+6. The setup interface is protected by the existing Academics feature flag and full-administrator permissions.
+7. Every phase must pass migration drift checks, Django tests, production checks and PostgreSQL tenant-isolation tests before merging.
 
 ## Phase 1 foundation
 
@@ -19,7 +20,7 @@ The `education_frameworks` tenant app provides:
 - `AcademicFramework` — reusable curriculum and terminology templates;
 - `FrameworkStage` — stage-specific class, subject, period and report labels;
 - `InstitutionEducationProfile` — organization-level country, locale, institution type and framework settings;
-- `CampusEducationStage` — campus-level stage, terminology, period, grading and report settings;
+- `CampusEducationStage` — campus-level stage, terminology, period, grading and report settings; and
 - `LevelStageMapping` — a compatibility link to existing `academics.Level` records.
 
 The migration seeds two templates:
@@ -35,7 +36,7 @@ Open **Academics Setup → Education Framework** to:
 - choose local-and-international or international-neutral terminology;
 - preview the labels users will see;
 - map existing academic levels without renaming them;
-- enable mapped stages for active campuses;
+- enable the stages used by each active campus;
 - add or edit campus education stages;
 - link stages to existing grading scales and report-layout keys;
 - correct an automatic level classification manually; and
@@ -47,21 +48,38 @@ The framework setup route is:
 /admin/academics/framework/
 ```
 
+Only full administrators and Django superusers can change institution-wide framework settings. Campus administrators continue using normal academic workflows but cannot change the institution framework.
+
+## Campus-aware stage assignment
+
+Stage synchronization does not assume that every campus teaches every education stage.
+
+- In a multi-campus institution, active `ClassGroup` records and their mapped levels determine the stages used by each campus.
+- A primary-only campus therefore receives only Primary configuration, while a secondary campus receives only its secondary configuration.
+- A new campus with no class-group evidence is left for explicit administrator assignment rather than receiving guessed stages.
+- In a single-campus institution, all mapped stages are a safe fallback.
+- Existing manually configured campus stages are preserved.
+
 ## Bootstrap command
 
 Run inside a tenant schema using the normal tenant command workflow:
 
 ```bash
-python manage.py bootstrap_education_frameworks --map-levels --enable-mapped-stages
+python manage.py bootstrap_education_frameworks \
+  --map-levels \
+  --enable-mapped-stages
 ```
 
 Preview without changing data:
 
 ```bash
-python manage.py bootstrap_education_frameworks --map-levels --enable-mapped-stages --dry-run
+python manage.py bootstrap_education_frameworks \
+  --map-levels \
+  --enable-mapped-stages \
+  --dry-run
 ```
 
-For a non-Ugandan institution:
+For a new non-Ugandan profile:
 
 ```bash
 python manage.py bootstrap_education_frameworks \
@@ -71,7 +89,7 @@ python manage.py bootstrap_education_frameworks \
   --map-levels
 ```
 
-The command is idempotent. It creates or refreshes system templates, creates the institution profile when missing, maps existing levels and optionally enables mapped stages for active campuses. It never renames or deletes existing academic records.
+The command validates country and locale inputs. It is idempotent: it creates or refreshes system templates, creates the institution profile when missing, maps existing levels and optionally enables mapped stages. It never renames or deletes existing academic records. Existing profile choices should be changed through the administrator screen, not silently overwritten by the command.
 
 ## Read-only audit
 
@@ -84,17 +102,31 @@ python manage.py audit_education_frameworks
 Audit one tenant and fail the command when setup is incomplete:
 
 ```bash
-python manage.py audit_education_frameworks --schema demo --fail-on-incomplete
+python manage.py audit_education_frameworks \
+  --schema demo \
+  --fail-on-incomplete
 ```
 
-The audit checks profile readiness, campus coverage, level mappings, grading references and framework-stage consistency.
+The audit checks:
+
+1. the institution profile is active;
+2. a primary framework is selected;
+3. each campus has its inferred or explicitly assigned stages;
+4. all existing levels are mapped;
+5. no mapping references a deleted level;
+6. grading-scale references are valid;
+7. framework-stage links point to the selected framework;
+8. framework-stage links match their campus stage; and
+9. all configured stages are supported by the selected framework.
 
 ## Terminology resolution
 
-New Python code should use `resolve_effective_terminology()` or the request integration helpers. These respect the institution's local-terminology switch.
+New Python code should use `resolve_effective_terminology()` or `services.term()`. Both follow the same precedence and respect the local-terminology switch.
 
 ```python
-from apps.tenant.education_frameworks.configuration import resolve_effective_terminology
+from apps.tenant.education_frameworks.configuration import (
+    resolve_effective_terminology,
+)
 
 labels = resolve_effective_terminology(
     profile=profile,
@@ -110,17 +142,19 @@ Existing templates can adopt terminology gradually instead of being rewritten at
 
 <h1>{% education_term "learner" "Student" %} Results</h1>
 <p>{% education_alias "EOT" "Final Examination" %}</p>
+<p>{% education_alias "MDD" "Performing Arts" %}</p>
 ```
 
-Resolution follows this concept:
+Resolution precedence is:
 
 1. international-neutral defaults;
 2. selected framework defaults when local terminology is enabled;
-3. stage defaults;
-4. institution overrides; and
-5. campus-stage overrides.
+3. framework-stage defaults;
+4. institution overrides;
+5. an optional local campus-stage name; and
+6. campus-stage overrides.
 
-Explicit institution and campus overrides always take priority. When local terminology is disabled, Uganda-specific aliases are not returned unless the institution explicitly adds them as overrides.
+Explicit institution and campus overrides always take priority. When local terminology is disabled, framework-specific aliases and local stage names are not returned unless explicitly supplied as overrides.
 
 Examples of configurable labels include:
 
@@ -135,7 +169,37 @@ Examples of configurable labels include:
 
 ## Framework switching
 
-Changing the primary framework relinks compatible campus stages while preserving local names, grading references, report-layout keys and other campus settings. If the new framework does not support a stage, only the old framework link is cleared. The campus stage and its local configuration remain intact for review.
+Changing the primary framework relinks compatible campus stages while preserving local names, grading references, report-layout keys and other campus settings. If the new framework does not support a stage, only the old framework link is cleared. The campus stage and its local configuration remain intact for administrator review, and readiness remains incomplete until the unsupported stage is resolved.
+
+## Phase 1 release gate
+
+Before merging or deploying Phase 1:
+
+```bash
+python manage.py makemigrations --check --dry-run
+python manage.py check
+python manage.py check --deploy --settings=config.settings.prod
+python verify_routes.py
+python manage.py test
+python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants
+python manage.py check_tenant_isolation --strict --settings=config.settings.tenants
+python manage.py audit_education_frameworks --fail-on-incomplete
+```
+
+Also run the repository dependency lifecycle, release-gate, access-control and `pip-audit` checks configured in `.github/workflows/ci.yml`.
+
+## Rollout sequence
+
+1. Back up the production database.
+2. Deploy the code with the new additive tenant app.
+3. Apply shared and tenant migrations using the established `django-tenants` deployment process.
+4. Run the bootstrap command in dry-run mode for a representative tenant.
+5. Run the bootstrap command for that tenant.
+6. Review **Academics Setup → Education Framework** and correct any ambiguous mappings.
+7. Run the strict audit for the tenant.
+8. Repeat tenant by tenant after the pilot succeeds.
+
+The Phase 1 migration only adds new framework tables and configuration. It does not rewrite existing academic, assessment, examination, coursework, finance or report data.
 
 ## Fusion plan for phases 2–10
 
