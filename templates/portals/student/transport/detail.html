@@ -1,0 +1,48 @@
+{% extends 'portals/student/base.html' %}
+
+{% block title %}Transport Details{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900">Transport Details</h1>
+    <p class="mt-1 text-gray-600">{{ assignment.route }}</p>
+  </div>
+  <a href="{% url 'student_transport_home' %}" class="rounded-lg border border-gray-300 bg-white px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50">Back</a>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+    <h2 class="text-lg font-bold text-gray-900">My assignment</h2>
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Route</dt><dd class="mt-1 font-semibold text-gray-900">{{ assignment.route }}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Stop</dt><dd class="mt-1 font-semibold text-gray-900">{{ assignment.stop|default:'Not assigned' }}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Vehicle</dt><dd class="mt-1 font-semibold text-gray-900">{{ assignment.route.vehicle|default:'Not assigned' }}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Driver</dt><dd class="mt-1 font-semibold text-gray-900">{{ assignment.route.driver|default:'Not assigned' }}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Service</dt><dd class="mt-1 font-semibold text-gray-900">{{ assignment.get_service_type_display }}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Status</dt><dd class="mt-1 font-semibold text-gray-900">{% if assignment.is_active %}Active{% else %}Inactive{% endif %}</dd></div>
+    </dl>
+  </section>
+
+  <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <h2 class="text-lg font-bold text-gray-900">Latest tracking</h2>
+    {% if latest_tracking %}
+      <p class="mt-4 text-sm text-gray-600">Updated {{ latest_tracking.timestamp|date:'M d, Y H:i' }}</p>
+      <p class="mt-3 font-semibold text-gray-900">{{ latest_tracking.latitude }}, {{ latest_tracking.longitude }}</p>
+      <p class="mt-2 text-sm text-gray-600">Speed: {{ latest_tracking.speed|default:'—' }} km/h</p>
+      <p class="mt-1 text-sm text-gray-600">{% if latest_tracking.is_moving %}Vehicle is moving{% else %}Vehicle is stationary{% endif %}</p>
+    {% else %}
+      <p class="mt-4 text-sm text-gray-600">No tracking update is available.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+  <h2 class="text-lg font-bold text-gray-900">Active schedule</h2>
+  {% if schedules %}
+    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {% for schedule in schedules %}<div class="rounded-lg bg-gray-50 p-4"><p class="font-bold text-gray-900">{{ schedule.get_day_of_week_display }}</p><p class="mt-1 text-sm text-gray-600">{{ schedule.start_time|time:'H:i' }}</p></div>{% endfor %}
+    </div>
+  {% else %}<p class="mt-4 text-sm text-gray-600">No active route schedule has been configured.</p>{% endif %}
+</section>
+{% endblock %}
