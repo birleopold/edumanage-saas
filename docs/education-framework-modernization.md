@@ -8,7 +8,7 @@ This programme modernizes EduManage for Ugandan institutions while keeping the p
 2. New framework records are additive and tenant-scoped.
 3. Existing `academics.Level` records are linked through `LevelStageMapping`; their names and IDs are not changed.
 4. Existing grading scales are referenced by stored compatibility IDs until a later controlled migration can add direct framework relationships.
-5. New user-interface behaviour will be introduced behind feature flags.
+5. The setup interface is protected by the existing Academics feature flag and administrator permissions.
 6. Every phase must pass migration drift checks, Django tests, production checks and PostgreSQL tenant-isolation tests before merging.
 
 ## Phase 1 foundation
@@ -26,6 +26,26 @@ The migration seeds two templates:
 
 - **Uganda National Curriculum** — neutral core labels plus Uganda aliases such as BOT, MOT, EOT, AOI, PLE, UCE, UACE, UNEB and MDD;
 - **International or Custom Curriculum** — neutral terminology suitable for international and private curricula.
+
+## Administrator setup screen
+
+Open **Academics Setup → Education Framework** to:
+
+- configure the institution type, country, locale and primary curriculum framework;
+- choose local-and-international or international-neutral terminology;
+- preview the labels users will see;
+- map existing academic levels without renaming them;
+- enable mapped stages for active campuses;
+- add or edit campus education stages;
+- link stages to existing grading scales and report-layout keys;
+- correct an automatic level classification manually; and
+- view Phase 1 readiness and compatibility warnings.
+
+The framework setup route is:
+
+```text
+/admin/academics/framework/
+```
 
 ## Bootstrap command
 
@@ -53,23 +73,54 @@ python manage.py bootstrap_education_frameworks \
 
 The command is idempotent. It creates or refreshes system templates, creates the institution profile when missing, maps existing levels and optionally enables mapped stages for active campuses. It never renames or deletes existing academic records.
 
+## Read-only audit
+
+Audit all tenant schemas without changing data:
+
+```bash
+python manage.py audit_education_frameworks
+```
+
+Audit one tenant and fail the command when setup is incomplete:
+
+```bash
+python manage.py audit_education_frameworks --schema demo --fail-on-incomplete
+```
+
+The audit checks profile readiness, campus coverage, level mappings, grading references and framework-stage consistency.
+
 ## Terminology resolution
 
-Application code should use `education_frameworks.services.term()` instead of hard-coding market-specific labels in new screens.
+New Python code should use `resolve_effective_terminology()` or the request integration helpers. These respect the institution's local-terminology switch.
 
 ```python
-from apps.tenant.education_frameworks.services import term
+from apps.tenant.education_frameworks.configuration import resolve_effective_terminology
 
-label = term("learner", profile=profile, campus_stage=campus_stage)
+labels = resolve_effective_terminology(
+    profile=profile,
+    campus_stage=campus_stage,
+)
+learner_label = labels["learner"]
+```
+
+Existing templates can adopt terminology gradually instead of being rewritten at once:
+
+```django
+{% load education_terms %}
+
+<h1>{% education_term "learner" "Student" %} Results</h1>
+<p>{% education_alias "EOT" "Final Examination" %}</p>
 ```
 
 Resolution follows this concept:
 
 1. international-neutral defaults;
-2. selected framework defaults;
-3. institution terminology;
-4. stage terminology;
+2. selected framework defaults when local terminology is enabled;
+3. stage defaults;
+4. institution overrides; and
 5. campus-stage overrides.
+
+Explicit institution and campus overrides always take priority. When local terminology is disabled, Uganda-specific aliases are not returned unless the institution explicitly adds them as overrides.
 
 Examples of configurable labels include:
 
@@ -81,6 +132,10 @@ Examples of configurable labels include:
 - UNEB Exam / External Exam
 - Boarding / Hostel / Residence
 - Exam Clearance / Assessment Clearance
+
+## Framework switching
+
+Changing the primary framework relinks compatible campus stages while preserving local names, grading references, report-layout keys and other campus settings. If the new framework does not support a stage, only the old framework link is cleared. The campus stage and its local configuration remain intact for review.
 
 ## Fusion plan for phases 2–10
 
