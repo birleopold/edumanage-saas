@@ -2,7 +2,7 @@ import re
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -259,6 +259,184 @@ class AssessmentWeightingComponent(models.Model):
             errors["scheme"] = "An active component cannot belong to an inactive scheme."
         if errors:
             raise ValidationError(errors)
+
+
+class GradingProfile(models.Model):
+    MEAN = "MEAN"
+    CREDIT_WEIGHTED = "CREDIT_WEIGHTED"
+
+    OVERALL_AGGREGATION_CHOICES = (
+        (MEAN, "Mean of completed course results"),
+        (CREDIT_WEIGHTED, "Credit-weighted mean"),
+    )
+
+    EXCLUDE_INCOMPLETE = "EXCLUDE"
+    ZERO_INCOMPLETE = "ZERO"
+    REQUIRE_COMPLETE = "INCOMPLETE"
+
+    INCOMPLETE_RESULT_POLICY_CHOICES = (
+        (EXCLUDE_INCOMPLETE, "Exclude incomplete courses from the overall result"),
+        (ZERO_INCOMPLETE, "Treat incomplete courses as zero"),
+        (REQUIRE_COMPLETE, "Keep the report incomplete until every course is complete"),
+    )
+
+    code = models.CharField(max_length=48, unique=True)
+    name = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    grading_scale = models.ForeignKey(
+        "academics.GradingScale",
+        on_delete=models.PROTECT,
+        related_name="grading_profiles",
+    )
+    campus = models.ForeignKey(
+        "orgsettings.Campus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+    )
+    stage = models.ForeignKey(
+        "education_frameworks.EducationStage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+    )
+    level = models.ForeignKey(
+        "academics.Level",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+    )
+    program = models.ForeignKey(
+        "academics.Program",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+    )
+    academic_term = models.ForeignKey(
+        "academics.AcademicTerm",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+    )
+    overall_aggregation = models.CharField(
+        max_length=24,
+        choices=OVERALL_AGGREGATION_CHOICES,
+        default=MEAN,
+    )
+    incomplete_result_policy = models.CharField(
+        max_length=16,
+        choices=INCOMPLETE_RESULT_POLICY_CHOICES,
+        default=EXCLUDE_INCOMPLETE,
+    )
+    pass_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=50,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+    )
+    promotion_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+    )
+    minimum_passed_courses = models.PositiveSmallIntegerField(null=True, blank=True)
+    decimal_places = models.PositiveSmallIntegerField(
+        default=2,
+        validators=[MaxValueValidator(4)],
+    )
+    priority = models.IntegerField(default=0)
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    settings = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-priority", "-is_default", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def clean(self):
+        super().clean()
+        self.code = normalize_assessment_code(self.code)
+        errors = {}
+        if self.grading_scale_id and not self.grading_scale.is_active:
+            errors["grading_scale"] = "Choose an active grading scale."
+        if self.pass_percentage is not None and not Decimal("0") <= self.pass_percentage <= Decimal("100"):
+            errors["pass_percentage"] = "Pass percentage must be between 0 and 100."
+        if (
+            self.promotion_percentage is not None
+            and not Decimal("0") <= self.promotion_percentage <= Decimal("100")
+        ):
+            errors["promotion_percentage"] = "Promotion percentage must be between 0 and 100."
+        if self.is_active:
+            duplicate = type(self).objects.filter(
+                campus_id=self.campus_id,
+                stage_id=self.stage_id,
+                level_id=self.level_id,
+                program_id=self.program_id,
+                academic_term_id=self.academic_term_id,
+                priority=self.priority,
+                is_active=True,
+            )
+            if self.pk:
+                duplicate = duplicate.exclude(pk=self.pk)
+            if duplicate.exists():
+                errors["__all__"] = "Another active grading profile has the same scope and priority."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.code = normalize_assessment_code(self.code)
+        super().save(*args, **kwargs)
+
+    @property
+    def scope_label(self) -> str:
+        parts = []
+        if self.campus_id:
+            parts.append(str(self.campus))
+        if self.stage_id:
+            parts.append(str(self.stage))
+        if self.level_id:
+            parts.append(str(self.level))
+        if self.program_id:
+            parts.append(str(self.program))
+        if self.academic_term_id:
+            parts.append(str(self.academic_term))
+        return " · ".join(parts) if parts else "Institution default"
+
+
+class ReportRule(models.Model):
+    grading_profile = models.OneToOneField(
+        GradingProfile,
+        on_delete=models.CASCADE,
+        related_name="report_rule",
+    )
+    report_title = models.CharField(max_length=128, blank=True)
+    result_label = models.CharField(max_length=48, default="Result")
+    promotion_label = models.CharField(max_length=48, default="Progression")
+    show_percentage = models.BooleanField(default=True)
+    show_grade = models.BooleanField(default=True)
+    show_remark = models.BooleanField(default=True)
+    show_published_scores = models.BooleanField(default=True)
+    show_assessment_details = models.BooleanField(default=True)
+    show_component_breakdown = models.BooleanField(default=True)
+    show_promotion_status = models.BooleanField(default=False)
+    show_teacher_comments = models.BooleanField(default=True)
+    show_head_comments = models.BooleanField(default=True)
+    settings = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Report rules — {self.grading_profile}"
 
 
 class Assessment(models.Model):
