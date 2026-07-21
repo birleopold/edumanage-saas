@@ -7,6 +7,7 @@ from .models import (
     AssignmentSubmissionAttachment,
     CourseworkComment,
     CourseworkProgress,
+    LearningActivity,
     LearningMaterial,
     LearningMaterialAttachment,
 )
@@ -38,6 +39,27 @@ class AssignmentAdmin(admin.ModelAdmin):
     inlines = (AssignmentAttachmentInline,)
 
 
+@admin.register(LearningActivity)
+class LearningActivityAdmin(admin.ModelAdmin):
+    list_display = (
+        "title_snapshot",
+        "kind",
+        "source_type",
+        "position",
+        "completion_policy",
+        "submission_policy",
+        "assessment_type",
+        "is_active",
+    )
+    list_filter = ("kind", "completion_policy", "submission_policy", "is_active")
+    search_fields = ("title_snapshot", "material__title", "assignment__title")
+    raw_id_fields = ("material", "assignment", "assessment_type", "weighting_component")
+    readonly_fields = ("uuid", "title_snapshot", "created_at", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+
+
 class AssignmentSubmissionAttachmentInline(admin.TabularInline):
     model = AssignmentSubmissionAttachment
     extra = 0
@@ -45,21 +67,24 @@ class AssignmentSubmissionAttachmentInline(admin.TabularInline):
 
 @admin.register(AssignmentSubmission)
 class AssignmentSubmissionAdmin(admin.ModelAdmin):
-    list_display = ("assignment", "student", "submitted_at", "score", "marked_at", "marked_by")
+    list_display = ("assignment", "student", "activity", "submitted_at", "score", "marked_at", "marked_by")
     list_filter = ("submitted_at", "marked_at")
     search_fields = ("assignment__title", "student__first_name", "student__last_name", "student__student_id")
+    raw_id_fields = ("activity",)
     inlines = (AssignmentSubmissionAttachmentInline,)
 
 
 @admin.register(CourseworkComment)
 class CourseworkCommentAdmin(admin.ModelAdmin):
-    list_display = ("material", "assignment", "user", "is_teacher_reply", "created_at")
+    list_display = ("material", "assignment", "activity", "user", "is_teacher_reply", "created_at")
     list_filter = ("is_teacher_reply", "created_at")
     search_fields = ("body", "material__title", "assignment__title")
+    raw_id_fields = ("activity",)
 
 
 @admin.register(CourseworkProgress)
 class CourseworkProgressAdmin(admin.ModelAdmin):
-    list_display = ("student", "material", "assignment", "percent_complete", "viewed_at", "completed_at", "updated_at")
+    list_display = ("student", "material", "assignment", "activity", "percent_complete", "viewed_at", "completed_at", "updated_at")
     list_filter = ("completed_at", "updated_at")
     search_fields = ("student__first_name", "student__last_name", "student__student_id", "material__title", "assignment__title")
+    raw_id_fields = ("activity",)
