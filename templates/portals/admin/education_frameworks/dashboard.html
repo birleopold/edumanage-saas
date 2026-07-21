@@ -1,13 +1,13 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Education Framework{% endblock %}
-{% block page_title %}Education Framework{% endblock %}
-{% block breadcrumbs %}Configure institution levels, curriculum defaults and terminology without changing existing academic records.{% endblock %}
+{% block title %}School Structure{% endblock %}
+{% block page_title %}School Structure{% endblock %}
+{% block breadcrumbs %}Set the school type, curriculum, levels and local wording.{% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'admin_education_framework_terminology' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Terminology</a>
-<a href="{% url 'admin_education_framework_profile' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">Institution Profile</a>
-<a href="{% url 'admin_campus_education_stage_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Add Campus Stage</a>
+<a href="{% url 'admin_education_framework_terminology' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">School Wording</a>
+<a href="{% url 'admin_education_framework_profile' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 hover:text-primary-700">School Profile</a>
+<a href="{% url 'admin_campus_education_stage_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Add School Stage</a>
 {% endblock %}
 
 {% block content %}
@@ -16,26 +16,26 @@
   <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-800 p-6 text-white shadow-xl">
     <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
       <div>
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Compatibility-first modernization</p>
-        <h1 class="mt-2 text-3xl font-black">One academic foundation, familiar local language</h1>
-        <p class="mt-3 max-w-3xl text-sm leading-6 text-blue-100">Use Ugandan labels such as ECD, O-Level, A-Level, UNEB and MDD while retaining neutral structures that support international institutions.</p>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">School setup</p>
+        <h1 class="mt-2 text-3xl font-black">Curriculum, levels and school wording</h1>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-blue-100">Choose the terms your school uses, including ECD, O-Level, A-Level, UNEB and MDD.</p>
       </div>
       <div class="rounded-3xl border border-white/20 bg-white/10 px-7 py-5 text-center backdrop-blur">
         <p class="text-4xl font-black">{{ readiness.completion_percent }}%</p>
-        <p class="mt-1 text-xs font-black uppercase tracking-wider text-blue-100">Foundation readiness</p>
-        <p class="mt-2 text-xs text-blue-100">{{ readiness.completed_checks }}/{{ readiness.total_checks }} checks ready</p>
+        <p class="mt-1 text-xs font-black uppercase tracking-wider text-blue-100">Setup progress</p>
+        <p class="mt-2 text-xs text-blue-100">{{ readiness.completed_checks }}/{{ readiness.total_checks }} checks complete</p>
       </div>
     </div>
   </section>
 
   {% if readiness.missing_campus_stage_count or readiness.unassigned_campus_count or readiness.framework_mismatch_count or readiness.stage_mismatch_count or readiness.unsupported_stage_link_count %}
   <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
-    <p class="font-black">Framework setup still needs attention</p>
+    <p class="font-black">School setup needs attention</p>
     <p class="mt-1 text-sm">
-      Missing campus stages: {{ readiness.missing_campus_stage_count }};
-      campuses awaiting manual assignment: {{ readiness.unassigned_campus_count }};
-      wrong-framework links: {{ readiness.framework_mismatch_count }};
-      wrong-stage links: {{ readiness.stage_mismatch_count }};
+      Missing school stages: {{ readiness.missing_campus_stage_count }};
+      campuses awaiting assignment: {{ readiness.unassigned_campus_count }};
+      curriculum-link issues: {{ readiness.framework_mismatch_count }};
+      level-link issues: {{ readiness.stage_mismatch_count }};
       unsupported stages: {{ readiness.unsupported_stage_link_count }}.
     </p>
   </section>
@@ -43,24 +43,24 @@
 
   <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Active campuses</p>
+      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Campuses set up</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.configured_campuses }}/{{ readiness.campus_count }}</p>
-      <p class="mt-1 text-sm text-slate-500">Campuses covering their inferred or assigned stages</p>
+      <p class="mt-1 text-sm text-slate-500">Campuses with the right school stages</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Campus stages</p>
+      <p class="text-xs font-black uppercase tracking-wider text-slate-500">School stages</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.campus_stage_count }}</p>
-      <p class="mt-1 text-sm text-slate-500">Configured education-stage records</p>
+      <p class="mt-1 text-sm text-slate-500">Stages currently available</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Existing levels mapped</p>
+      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Levels linked</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.mapped_level_count }}/{{ readiness.level_count }}</p>
-      <p class="mt-1 text-sm text-slate-500">Original academic levels remain unchanged</p>
+      <p class="mt-1 text-sm text-slate-500">Academic levels connected to a stage</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p class="text-xs font-black uppercase tracking-wider text-slate-500">Grading links</p>
       <p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.grading_configured_count }}</p>
-      <p class="mt-1 text-sm text-slate-500">Stages linked to existing grading scales</p>
+      <p class="mt-1 text-sm text-slate-500">Stages with grading scales</p>
     </div>
   </section>
 
@@ -68,128 +68,17 @@
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="text-xs font-black uppercase tracking-wider text-primary-700">Institution profile</p>
+          <p class="text-xs font-black uppercase tracking-wider text-primary-700">School profile</p>
           <h2 class="mt-1 text-xl font-black text-slate-950">{{ profile.organization.name }}</h2>
         </div>
         <a href="{% url 'admin_education_framework_profile' %}" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:border-primary-300">Edit</a>
       </div>
       <dl class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Institution type</dt><dd class="mt-1 font-black text-slate-900">{{ profile.get_institution_type_display }}</dd></div>
-        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Country and locale</dt><dd class="mt-1 font-black text-slate-900">{{ profile.country_code }} · {{ profile.locale }}</dd></div>
-        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Curriculum framework</dt><dd class="mt-1 font-black text-slate-900">{{ profile.primary_framework|default:'Not selected' }}</dd></div>
-        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Terminology mode</dt><dd class="mt-1 font-black text-slate-900">{% if profile.use_local_terminology %}Local and international{% else %}International-neutral{% endif %}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">School type</dt><dd class="mt-1 font-black text-slate-900">{{ profile.get_institution_type_display }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Country and language</dt><dd class="mt-1 font-black text-slate-900">{{ profile.country_code }} · {{ profile.locale }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Curriculum</dt><dd class="mt-1 font-black text-slate-900">{{ profile.primary_framework|default:'Not selected' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">School wording</dt><dd class="mt-1 font-black text-slate-900">{% if profile.use_local_terminology %}Local wording enabled{% else %}Standard wording{% endif %}</dd></div>
       </dl>
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider text-primary-700">Readiness checks</p>
-      <div class="mt-4 space-y-3 text-sm font-bold">
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Profile active</span><span class="{% if readiness.checks.profile_active %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.profile_active %}Ready{% else %}Needs attention{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Framework selected</span><span class="{% if readiness.checks.framework_selected %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.framework_selected %}Ready{% else %}Needs attention{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Campus assignments</span><span class="{% if readiness.checks.campuses_configured %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.checks.campuses_configured %}Ready{% elif readiness.unassigned_campus_count %}{{ readiness.unassigned_campus_count }} unassigned{% else %}{{ readiness.missing_campus_stage_count }} missing{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Levels mapped</span><span class="{% if readiness.checks.levels_mapped %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.checks.levels_mapped %}Ready{% else %}{{ readiness.unmapped_level_count }} remaining{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Mapping references</span><span class="{% if readiness.checks.no_orphaned_mappings %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.no_orphaned_mappings %}Valid{% else %}{{ readiness.orphaned_mapping_count }} orphaned{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Grading references</span><span class="{% if readiness.checks.grading_links_valid %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.grading_links_valid %}Valid{% else %}Needs repair{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Framework links</span><span class="{% if readiness.checks.framework_links_valid %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.framework_links_valid %}Valid{% else %}{{ readiness.framework_mismatch_count }} wrong{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Stage links</span><span class="{% if readiness.checks.stage_links_valid %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.stage_links_valid %}Valid{% else %}{{ readiness.stage_mismatch_count }} wrong{% endif %}</span></div>
-        <div class="flex items-center justify-between gap-3"><span class="text-slate-700">Framework support</span><span class="{% if readiness.checks.stages_supported %}text-green-700{% else %}text-red-700{% endif %}">{% if readiness.checks.stages_supported %}Supported{% else %}{{ readiness.unsupported_stage_link_count }} unsupported{% endif %}</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div>
-      <p class="text-xs font-black uppercase tracking-wider text-primary-700">Safe setup actions</p>
-      <h2 class="mt-1 text-xl font-black text-slate-950">Synchronize without rewriting existing records</h2>
-    </div>
-    <div class="mt-5 grid gap-4 md:grid-cols-3">
-      <form method="post" class="rounded-2xl border border-slate-200 p-5">
-        {% csrf_token %}<input type="hidden" name="action" value="sync_levels">
-        <h3 class="font-black text-slate-950">Map existing levels</h3>
-        <p class="mt-2 min-h-[48px] text-sm text-slate-500">Classify existing Level records while preserving their names, IDs and administrator-confirmed corrections.</p>
-        <button class="mt-4 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-black text-white">Synchronize Levels</button>
-      </form>
-      <form method="post" class="rounded-2xl border border-slate-200 p-5">
-        {% csrf_token %}<input type="hidden" name="action" value="enable_stages">
-        <h3 class="font-black text-slate-950">Enable mapped stages</h3>
-        <p class="mt-2 min-h-[48px] text-sm text-slate-500">Use each campus's class groups to create only its missing stage records. New campuses without class evidence remain for manual assignment.</p>
-        <button class="mt-4 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-black text-white">Enable Campus Stages</button>
-      </form>
-      <form method="post" class="rounded-2xl border border-slate-200 p-5">
-        {% csrf_token %}<input type="hidden" name="action" value="sync_framework">
-        <h3 class="font-black text-slate-950">Refresh curriculum links</h3>
-        <p class="mt-2 min-h-[48px] text-sm text-slate-500">Relink stages after a curriculum change while preserving local labels, grading and report settings.</p>
-        <button class="mt-4 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-black text-white">Refresh Links</button>
-      </form>
-    </div>
-  </section>
-
-  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
-      <div><p class="text-xs font-black uppercase tracking-wider text-primary-700">Campus education stages</p><h2 class="mt-1 text-xl font-black text-slate-950">What each campus teaches</h2></div>
-      <a href="{% url 'admin_campus_education_stage_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white">Add Stage</a>
-    </div>
-    {% if campus_stages %}
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-          <thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Campus</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Education stage</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Academic period</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Grading</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Status</th><th class="px-6 py-3 text-right text-xs font-black uppercase text-slate-500">Action</th></tr></thead>
-          <tbody class="divide-y divide-slate-100">
-            {% for item in campus_stages %}
-            <tr>
-              <td class="px-6 py-4 text-sm font-black text-slate-900">{{ item.campus.name }}</td>
-              <td class="px-6 py-4 text-sm"><p class="font-black text-slate-900">{{ item.local_name|default:item.stage.name }}</p><p class="text-xs font-bold text-slate-500">{{ item.stage.name }}</p></td>
-              <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ item.get_academic_period_type_display }}</td>
-              <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ item.grading_scale_name|default:'Uses general grading' }}</td>
-              <td class="px-6 py-4 text-sm">{% if item.is_active %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Active</span>{% else %}<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">Inactive</span>{% endif %}</td>
-              <td class="px-6 py-4 text-right"><a href="{% url 'admin_campus_education_stage_edit' item.pk %}" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700">Edit</a></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="p-8 text-center"><p class="font-black text-slate-900">No campus education stages configured</p><p class="mt-2 text-sm text-slate-500">Map existing levels and enable their stages, or add a stage manually.</p></div>
-    {% endif %}
-  </section>
-
-  <section class="grid gap-6 xl:grid-cols-2">
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="border-b border-slate-100 p-6"><p class="text-xs font-black uppercase tracking-wider text-primary-700">Existing level compatibility</p><h2 class="mt-1 text-xl font-black text-slate-950">Level-to-stage mappings</h2></div>
-      {% if level_mappings %}
-        <div class="max-h-[520px] divide-y divide-slate-100 overflow-auto">
-          {% for mapping in level_mappings %}
-          <div class="flex items-center justify-between gap-4 p-5">
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="font-black text-slate-900">{{ mapping.legacy_level_name }}</p>
-                {% if mapping.settings.source == 'MANUAL' %}<span class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-black uppercase text-indigo-700">Administrator confirmed</span>{% endif %}
-              </div>
-              <p class="mt-1 text-xs font-bold text-slate-500">Mapped to {{ mapping.stage }}</p>
-            </div>
-            <a href="{% url 'admin_level_stage_mapping_edit' mapping.pk %}" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700">Correct</a>
-          </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="p-8 text-center text-sm text-slate-500">No existing academic levels have been mapped yet.</div>
-      {% endif %}
-      {% if unmapped_levels %}
-        <div class="border-t border-amber-200 bg-amber-50 p-5"><p class="font-black text-amber-900">Unmapped levels</p><p class="mt-1 text-sm text-amber-800">{% for level in unmapped_levels %}{{ level.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p></div>
-      {% endif %}
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-wider text-primary-700">Terminology preview</p><h2 class="mt-1 text-xl font-black text-slate-950">What users will understand</h2></div><a href="{% url 'admin_education_framework_terminology' %}" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700">Edit</a></div>
-      <div class="mt-5 grid gap-3 sm:grid-cols-2">
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Learner</p><p class="mt-1 font-black text-slate-900">{{ terminology.learner }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Parent</p><p class="mt-1 font-black text-slate-900">{{ terminology.guardian }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Class</p><p class="mt-1 font-black text-slate-900">{{ terminology.class }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Subject</p><p class="mt-1 font-black text-slate-900">{{ terminology.subject }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Assessment</p><p class="mt-1 font-black text-slate-900">{{ terminology.assessment }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">External exam</p><p class="mt-1 font-black text-slate-900">{{ terminology.external_exam }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Boarding</p><p class="mt-1 font-black text-slate-900">{{ terminology.boarding }}</p></div>
-        <div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-black uppercase text-slate-500">Clearance</p><p class="mt-1 font-black text-slate-900">{{ terminology.clearance }}</p></div>
-      </div>
     </div>
   </section>
 </div>
