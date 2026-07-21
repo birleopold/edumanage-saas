@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from . import promotion_views, setup_views, views
+from . import pathway_views, promotion_views, setup_views, views
 
 urlpatterns = [
     path("", setup_views.academics_setup, name="admin_academics_setup"),
@@ -22,6 +22,21 @@ urlpatterns = [
     path("programs/", views.program_list, name="admin_program_list"),
     path("programs/create/", views.program_create, name="admin_program_create"),
     path("programs/<int:pk>/edit/", views.program_edit, name="admin_program_edit"),
+
+    path("pathways/", pathway_views.pathway_dashboard, name="admin_pathway_dashboard"),
+    path("pathways/create/", pathway_views.pathway_create, name="admin_pathway_create"),
+    path("pathways/offerings/", pathway_views.pathway_offerings, name="admin_pathway_offerings"),
+    path("pathways/assignments/create/", pathway_views.pathway_assignment_create, name="admin_pathway_assignment_create"),
+    path("pathways/assignments/<int:pk>/edit/", pathway_views.pathway_assignment_edit, name="admin_pathway_assignment_edit"),
+    path("pathways/<int:pk>/", pathway_views.pathway_detail, name="admin_pathway_detail"),
+    path("pathways/<int:pk>/edit/", pathway_views.pathway_edit, name="admin_pathway_edit"),
+    path("pathways/<int:pathway_pk>/levels/create/", pathway_views.pathway_level_create, name="admin_pathway_level_create"),
+    path("pathway-levels/<int:pk>/edit/", pathway_views.pathway_level_edit, name="admin_pathway_level_edit"),
+    path("pathways/<int:pathway_pk>/combinations/create/", pathway_views.combination_create, name="admin_combination_create"),
+    path("combinations/<int:pk>/", pathway_views.combination_detail, name="admin_combination_detail"),
+    path("combinations/<int:pk>/edit/", pathway_views.combination_edit, name="admin_combination_edit"),
+    path("combinations/<int:combination_pk>/courses/create/", pathway_views.combination_course_create, name="admin_combination_course_create"),
+    path("combination-courses/<int:pk>/edit/", pathway_views.combination_course_edit, name="admin_combination_course_edit"),
 
     path("class-groups/", views.classgroup_list, name="admin_classgroup_list"),
     path("class-groups/create/", views.classgroup_create, name="admin_classgroup_create"),
