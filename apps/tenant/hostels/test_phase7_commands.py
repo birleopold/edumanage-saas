@@ -11,3 +11,7 @@ class Phase7BoardingWelfareCommandTests(TestCase):
     def test_audit_rejects_unknown_tenant_schema(self):
         with self.assertRaises(CommandError):
             call_command("audit_boarding_welfare", schema="missing-phase7-schema", verbosity=0)
+
+    def test_reconciliation_rejects_unknown_tenant_schema(self):
+        with self.assertRaises(CommandError):
+            call_command("reconcile_boarding_roll_calls", schema="missing-phase7-schema", verbosity=0)

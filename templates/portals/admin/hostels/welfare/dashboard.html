@@ -3,6 +3,7 @@
 {% block page_title %}Boarding & Student Welfare{% endblock %}
 {% block breadcrumbs %}Consolidated boarding readiness, leave control, roll calls and welfare follow-up without replacing existing hostel, sickbay or discipline records.{% endblock %}
 {% block header_actions %}
+<a href="{% url 'admin_boarding_welfare_hardening' %}" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700">Operational Safety</a>
 <a href="{% url 'admin_boarding_profiles' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Profiles</a>
 <a href="{% url 'admin_hostel_roll_calls' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Roll Calls</a>
 <a href="{% url 'admin_welfare_case_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Open Welfare Case</a>
@@ -20,10 +21,11 @@
     <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Critical welfare cases</p><p class="mt-2 text-3xl font-black {% if readiness.unresolved_critical_case_count %}text-red-600{% else %}text-emerald-700{% endif %}">{{ readiness.unresolved_critical_case_count }}</p></div>
   </section>
   <section class="rounded-2xl border border-slate-200 bg-white p-5"><div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><h3 class="text-lg font-black text-slate-950">Safe profile setup</h3><p class="mt-1 text-sm text-slate-500">Create missing profiles from active learners. Current bed allocations determine the initial day/boarder status; no placement is created or changed.</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="bootstrap_profiles"><button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Create missing profiles</button></form></div></section>
-  <section class="grid gap-5 lg:grid-cols-3">
+  <section class="grid gap-5 lg:grid-cols-4">
     <a href="{% url 'admin_boarding_leaves' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Leave control</p><h3 class="mt-2 text-xl font-black text-slate-950">Departures and returns</h3><p class="mt-2 text-sm text-slate-500">Approve leave, record guardian handover and confirm learner return.</p></a>
     <a href="{% url 'admin_hostel_roll_calls' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Hostel presence</p><h3 class="mt-2 text-xl font-black text-slate-950">Roll calls</h3><p class="mt-2 text-sm text-slate-500">Build rosters from active allocations and mark every learner deliberately.</p></a>
     <a href="{% url 'admin_welfare_cases' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Student support</p><h3 class="mt-2 text-xl font-black text-slate-950">Welfare cases</h3><p class="mt-2 text-sm text-slate-500">Coordinate follow-up while linked health and discipline records remain authoritative.</p></a>
+    <a href="{% url 'admin_boarding_welfare_hardening' %}" class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm"><p class="text-xs font-black uppercase text-rose-700">Operational safety</p><h3 class="mt-2 text-xl font-black text-rose-950">Evidence and escalation</h3><p class="mt-2 text-sm text-rose-700">Track guardian contact, response deadlines and draft roll-call reconciliation.</p></a>
   </section>
 </div>
 {% endblock %}
