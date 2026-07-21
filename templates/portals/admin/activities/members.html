@@ -3,102 +3,10 @@
 {% block title %}Activity Members{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Members</h1>
-      <p class="text-gray-600">{{ activity.name }} ({{ activity.get_type_display }})</p>
-    </div>
-    <a href="{% url 'admin_activities_list' %}" class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700">
-      <i class="ph ph-arrow-left"></i>Back
-    </a>
-  </div>
-</div>
-
+<div class="mb-6"><div class="flex items-center justify-between"><div><h1 class="text-3xl font-bold text-gray-900 mb-2">Members</h1><p class="text-gray-600">{{ activity.name }} ({{ activity.get_type_display }})</p></div><div class="flex gap-3"><a href="{% url 'admin_activity_programme_edit' activity.pk %}" class="flex items-center gap-2 px-4 py-2 bg-fuchsia-50 border-2 border-fuchsia-200 rounded-lg font-semibold text-fuchsia-700">Programme</a><a href="{% url 'admin_activities_list' %}" class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700"><i class="ph ph-arrow-left"></i>Back</a></div></div></div>
 {% include "components/ui_toast.html" %}
-
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="flex flex-col md:flex-row gap-3 md:items-end">
-    <div class="flex-1">
-      <label class="block text-sm font-bold text-gray-700 mb-2">Search members</label>
-      <input type="text" name="q" value="{{ q }}" placeholder="Search by name or student ID" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-    </div>
-    <div>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-magnifying-glass"></i>Search
-      </button>
-    </div>
-  </form>
-</div>
-
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <h2 class="text-lg font-bold text-gray-900 mb-3">Add student</h2>
-
-  <form method="get" class="flex flex-col md:flex-row gap-3 md:items-end mb-4">
-    <div class="flex-1">
-      <label class="block text-sm font-bold text-gray-700 mb-2">Find student</label>
-      <input type="text" name="student_q" value="{{ student_q }}" placeholder="Search by name or student ID" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-    </div>
-    <div>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-magnifying-glass"></i>Find
-      </button>
-    </div>
-  </form>
-
-  {% if student_results %}
-    <form method="post" action="{% url 'admin_activities_member_add' activity.pk %}" class="flex flex-col md:flex-row gap-3 md:items-end">
-      {% csrf_token %}
-      <div class="flex-1">
-        <label class="block text-sm font-bold text-gray-700 mb-2">Select student</label>
-        <select name="student_id" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900">
-          <option value="">-- Select --</option>
-          {% for s in student_results %}
-            <option value="{{ s.id }}">{{ s }}{% if s.student_id %} ({{ s.student_id }}){% endif %}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-          <i class="ph ph-plus"></i>Add
-        </button>
-      </div>
-    </form>
-  {% else %}
-    <p class="text-sm text-gray-500">Search for a student above to add them.</p>
-  {% endif %}
-</div>
-
-<div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-  <table class="min-w-full divide-y divide-gray-200">
-    <thead class="bg-gray-50">
-      <tr>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
-        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Stream</th>
-        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="bg-white divide-y divide-gray-200">
-      {% for m in members %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ m.student }}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{% if m.student.student_id %}{{ m.student.student_id }}{% else %}-{% endif %}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">{% if m.student.stream %}{{ m.student.stream }}{% else %}-{% endif %}</td>
-        <td class="px-6 py-4 text-right">
-          <a href="{% url 'admin_activities_member_remove' activity.pk m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-red-300 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50">
-            <i class="ph ph-x mr-1"></i>Remove
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="px-6 py-10 text-center text-gray-500">No members yet.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6"><form method="get" class="flex flex-col md:flex-row gap-3 md:items-end"><div class="flex-1"><label class="block text-sm font-bold text-gray-700 mb-2">Search members</label><input type="text" name="q" value="{{ q }}" placeholder="Search by name or student ID" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" /></div><div><button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300"><i class="ph ph-magnifying-glass"></i>Search</button></div></form></div>
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6"><h2 class="text-lg font-bold text-gray-900 mb-3">Add student</h2><form method="get" class="flex flex-col md:flex-row gap-3 md:items-end mb-4"><div class="flex-1"><label class="block text-sm font-bold text-gray-700 mb-2">Find student</label><input type="text" name="student_q" value="{{ student_q }}" placeholder="Search by name or student ID" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" /></div><div><button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300"><i class="ph ph-magnifying-glass"></i>Find</button></div></form>{% if student_results %}<form method="post" action="{% url 'admin_activities_member_add' activity.pk %}" class="flex flex-col md:flex-row gap-3 md:items-end">{% csrf_token %}<div class="flex-1"><label class="block text-sm font-bold text-gray-700 mb-2">Select student</label><select name="student_id" class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900"><option value="">-- Select --</option>{% for s in student_results %}<option value="{{ s.id }}">{{ s }}{% if s.student_id %} ({{ s.student_id }}){% endif %}</option>{% endfor %}</select></div><div><button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md"><i class="ph ph-plus"></i>Add</button></div></form>{% else %}<p class="text-sm text-gray-500">Search for a student above to add them.</p>{% endif %}</div>
+<div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th><th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Stream</th><th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">{% for m in members %}<tr class="hover:bg-gray-50"><td class="px-6 py-4 text-sm font-semibold text-gray-900">{{ m.student }}</td><td class="px-6 py-4 text-sm text-gray-600">{% if m.student.student_id %}{{ m.student.student_id }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-sm text-gray-600">{% if m.student.stream %}{{ m.student.stream }}{% else %}-{% endif %}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><a href="{% url 'admin_activity_participation_edit' m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-fuchsia-50 border-2 border-fuchsia-200 rounded-lg text-sm font-semibold text-fuchsia-700">Profile</a><a href="{% url 'admin_activity_learner_summary' m.student_id %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-primary-200 rounded-lg text-sm font-semibold text-primary-700">Summary</a><a href="{% url 'admin_activities_member_remove' activity.pk m.pk %}" class="inline-flex items-center px-3 py-1.5 bg-white border-2 border-red-300 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50"><i class="ph ph-x mr-1"></i>Remove</a></div></td></tr>{% empty %}<tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No members yet.</td></tr>{% endfor %}</tbody></table></div>
 {% include "components/ui_pagination.html" with page_obj=page_obj %}
 {% endblock %}
