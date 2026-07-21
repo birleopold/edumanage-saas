@@ -5,7 +5,17 @@ from apps.tenant.education_frameworks.models import CampusEducationStage
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
-from .models import AcademicTerm, AcademicYear, ClassGroup, Course, CourseOffering, Enrollment, Level, Program
+from .models import (
+    AcademicTerm,
+    AcademicYear,
+    ClassGroup,
+    Course,
+    CourseOffering,
+    Enrollment,
+    Level,
+    Program,
+    ProgrammePathway,
+)
 
 
 @admin_portal_required
@@ -16,16 +26,26 @@ def academics_setup(request):
         or (hasattr(request.user, "has_role") and request.user.has_role(Role.ADMIN))
     )
     if is_full_admin:
-        items.append(
-            {
-                "label": "Education Framework",
-                "description": "Set institution levels, curriculum defaults and familiar local terminology without changing existing records.",
-                "count": CampusEducationStage.objects.filter(is_active=True).count(),
-                "list_url": reverse("admin_education_framework_dashboard"),
-                "add_url": reverse("admin_education_framework_dashboard"),
-                "add_label": "Configure",
-                "icon": "ph-globe-hemisphere-west",
-            }
+        items.extend(
+            [
+                {
+                    "label": "Education Framework",
+                    "description": "Set institution levels, curriculum defaults and familiar local terminology without changing existing records.",
+                    "count": CampusEducationStage.objects.filter(is_active=True).count(),
+                    "list_url": reverse("admin_education_framework_dashboard"),
+                    "add_url": reverse("admin_education_framework_dashboard"),
+                    "add_label": "Configure",
+                    "icon": "ph-globe-hemisphere-west",
+                },
+                {
+                    "label": "Programme Pathways",
+                    "description": "Configure ordered programme levels, subject combinations and safe class-group assignments.",
+                    "count": ProgrammePathway.objects.count(),
+                    "list_url": reverse("admin_pathway_dashboard"),
+                    "add_url": reverse("admin_pathway_create"),
+                    "icon": "ph-path",
+                },
+            ]
         )
 
     items.extend(
