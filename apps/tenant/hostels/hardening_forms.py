@@ -40,6 +40,9 @@ class GuardianContactLogForm(forms.ModelForm):
         queryset = ParentProfile.objects.none()
         primary_parent = None
         if student is not None:
+            # ModelForm runs model.clean() during is_valid(). Attach the learner
+            # before that validation so the parent-link rule can be checked.
+            self.instance.student = student
             queryset = ParentProfile.objects.filter(
                 parentstudentlink__student=student,
                 is_active=True,
