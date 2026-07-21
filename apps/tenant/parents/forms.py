@@ -8,6 +8,17 @@ from apps.tenant.students.models import StudentProfile
 from .models import ParentProfile, ParentStudentLink
 
 
+GUARDIAN_RELATIONSHIP_CHOICES = (
+    ("Mother", "Mother"),
+    ("Father", "Father"),
+    ("Guardian", "Guardian"),
+    ("Grandparent", "Grandparent"),
+    ("Sibling", "Sibling"),
+    ("Sponsor", "Sponsor"),
+    ("Other caregiver", "Other caregiver"),
+)
+
+
 class ParentCommunicationPreferencesForm(forms.ModelForm):
     """Parent-facing SMS/WhatsApp consent toggles."""
 
@@ -62,6 +73,23 @@ class ParentCommunicationPreferencesForm(forms.ModelForm):
 class ParentProfileForm(forms.ModelForm):
     create_user = forms.BooleanField(required=False, initial=True)
     send_email = forms.BooleanField(required=False, initial=True)
+    student = forms.ModelChoiceField(
+        label="Student cared for",
+        queryset=StudentProfile.objects.none(),
+        required=False,
+        help_text="Select the student this parent or guardian is responsible for.",
+    )
+    relationship = forms.ChoiceField(
+        label="Relationship to student",
+        choices=GUARDIAN_RELATIONSHIP_CHOICES,
+        required=False,
+    )
+    is_primary_guardian = forms.BooleanField(
+        label="Primary guardian",
+        required=False,
+        initial=True,
+        help_text="Mark this person as the main contact for the selected student.",
+    )
     results_pin = forms.CharField(
         label="Results portal PIN (optional)",
         required=False,
@@ -90,6 +118,27 @@ class ParentProfileForm(forms.ModelForm):
             "digest_pwa_enabled",
             "is_active",
         ]
+
+    def __init__(self, *args, **kwargs):
+        require_student_link = kwargs.pop("require_student_link", False)
+        campus_scope = kwargs.pop("campus_scope", None)
+        super().__init__(*args, **kwargs)
+
+        if require_student_link:
+            students = StudentProfile.objects.filter(is_active=True).select_related(
+                "campus", "stream"
+            )
+            if campus_scope is not None:
+                students = students.filter(campus=campus_scope)
+            self.fields["student"].queryset = students.order_by(
+                "last_name", "first_name", "student_id"
+            )
+            self.fields["student"].required = True
+            self.fields["relationship"].required = True
+        else:
+            self.fields.pop("student", None)
+            self.fields.pop("relationship", None)
+            self.fields.pop("is_primary_guardian", None)
 
     def clean_results_pin(self):
         pin = (self.cleaned_data.get("results_pin") or "").strip()
