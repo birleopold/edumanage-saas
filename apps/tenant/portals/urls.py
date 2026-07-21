@@ -4,7 +4,16 @@ from django.contrib.auth import views as auth_views
 from apps.tenant.users import auth_views as custom_auth_views
 from apps.tenant.users import device_portal
 from apps.tenant.parents import views as parent_admin_views
-from . import experience_views, public_views, pwa, search_views, student_parent_search_views, teacher_search_views, views
+from . import (
+    capability_views,
+    experience_views,
+    public_views,
+    pwa,
+    search_views,
+    student_parent_search_views,
+    teacher_search_views,
+    views,
+)
 
 urlpatterns = [
     path("status/", public_views.public_status, name="public_status"),
@@ -29,6 +38,7 @@ urlpatterns = [
     path("devices/", device_portal.my_devices, name="my_devices"),
     path("devices/<int:pk>/deactivate/", device_portal.deactivate_my_device, name="my_device_deactivate"),
     path("admin/", views.admin_home, name="admin_home"),
+    path("admin/capabilities/", capability_views.admin_capabilities, name="admin_capabilities_home"),
     path("admin/enterprise/", include("apps.tenant.portals.enterprise_urls")),
     path("admin/audit/", include("apps.tenant.audit.routes")),
     path("admin/communication/", experience_views.admin_communication_center, name="admin_communication_center"),
@@ -67,6 +77,7 @@ urlpatterns = [
     path("admin/admissions/", include("apps.tenant.admissions.admin_urls")),
     path("admin/hr/", include("apps.tenant.hr.admin_urls")),
     path("teacher/", views.teacher_home, name="teacher_home"),
+    path("teacher/capabilities/", capability_views.teacher_capabilities, name="teacher_capabilities_home"),
     path("teacher/search/", teacher_search_views.teacher_search, name="teacher_global_search"),
     path("teacher/attendance/", include("apps.tenant.attendance.teacher_urls")),
     path("teacher/assessments/", include("apps.tenant.assessments.teacher_urls")),
@@ -81,6 +92,7 @@ urlpatterns = [
     path("teacher/payroll/", include("apps.tenant.hr.staff_urls")),
     path("student/id-card/", include("apps.tenant.students.self_urls")),
     path("student/", views.student_home, name="student_home"),
+    path("student/capabilities/", capability_views.student_capabilities, name="student_capabilities_home"),
     path("student/search/", student_parent_search_views.student_search, name="student_global_search"),
     path("student/attendance/", include("apps.tenant.attendance.student_urls")),
     path("student/results/", include("apps.tenant.assessments.student_urls")),
@@ -97,6 +109,7 @@ urlpatterns = [
     path("student/hostels/", include("apps.tenant.hostels.student_urls")),
     path("student/exams/", include("apps.tenant.exams.student_urls")),
     path("parent/", views.parent_home, name="parent_home"),
+    path("parent/capabilities/", capability_views.parent_capabilities, name="parent_capabilities_home"),
     path("parent/search/", student_parent_search_views.parent_search, name="parent_global_search"),
     path("parent/digests/", parent_admin_views.parent_digest_history, name="parent_digest_history"),
     path("parent/account/results-pin/", views.parent_results_pin_security, name="parent_results_pin_security"),
