@@ -4,6 +4,7 @@
 {% block breadcrumbs %}Configure assessment categories, weighting policies and safe links to existing marks and examination records.{% endblock %}
 {% block header_actions %}
 <a href="{% url 'admin_assessments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Assessments</a>
+<a href="{% url 'admin_grading_framework_dashboard' %}" class="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-800">Grading Profiles</a>
 <a href="{% url 'admin_weighting_scheme_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add Scheme</a>
 {% endblock %}
 {% block content %}
