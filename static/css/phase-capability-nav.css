@@ -1,0 +1,85 @@
+.edu-phase-capability-link-wrap {
+  margin-bottom: 1rem;
+}
+
+.edu-phase-capability-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--org-primary, #6366f1) 20%, #e2e8f0);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--org-primary, #6366f1) 9%, white), white);
+  color: #334155;
+  box-shadow: 0 8px 18px -16px rgba(15, 23, 42, 0.55);
+  text-decoration: none;
+}
+
+.edu-phase-capability-link:hover,
+.edu-phase-capability-link:focus-visible {
+  border-color: color-mix(in srgb, var(--org-primary, #6366f1) 48%, #cbd5e1);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.75);
+  outline: none;
+}
+
+.edu-phase-capability-link--active {
+  color: white;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--org-primary, #6366f1), var(--org-secondary, #8b5cf6));
+}
+
+.edu-phase-capability-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--org-primary, #6366f1) 14%, white);
+  color: var(--org-primary, #6366f1);
+  font-size: 1.25rem;
+}
+
+.edu-phase-capability-link--active .edu-phase-capability-link__icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+.edu-phase-capability-link__copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  text-align: left;
+}
+
+.edu-phase-capability-link__copy strong {
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edu-phase-capability-link__copy small {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.edu-phase-capability-link--active .edu-phase-capability-link__copy small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.edu-phase-capability-link__arrow {
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.edu-phase-capability-link--active .edu-phase-capability-link__arrow {
+  color: rgba(255, 255, 255, 0.82);
+}
