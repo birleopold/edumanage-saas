@@ -25,7 +25,7 @@ class User(AbstractUser):
         for relation_name in ("student_profile", "teacher_profile", "parent_profile"):
             try:
                 profile = getattr(self, relation_name)
-            except ObjectDoesNotExist:
+            except (ObjectDoesNotExist, AttributeError):
                 continue
 
             profile_name = ""
