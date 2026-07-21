@@ -1,40 +1,40 @@
 {% extends 'portals/admin/base.html' %}
-{% block title %}Grading Profiles{% endblock %}
-{% block page_title %}Grading Profiles{% endblock %}
-{% block breadcrumbs %}Configure level-specific grading scales, overall result rules and report-card presentation without changing existing marks.{% endblock %}
+{% block title %}Grading & Report Cards{% endblock %}
+{% block page_title %}Grading & Report Cards{% endblock %}
+{% block breadcrumbs %}Set grading scales, pass rules and report-card display.{% endblock %}
 {% block header_actions %}
-<a href="{% url 'admin_assessment_framework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Assessment Framework</a>
-<a href="{% url 'admin_grading_profile_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add Profile</a>
+<a href="{% url 'admin_assessment_framework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Assessment Setup</a>
+<a href="{% url 'admin_grading_profile_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add Grading Rule</a>
 {% endblock %}
 {% block content %}
 {% include "components/ui_toast.html" %}
 <div class="space-y-7">
   <section class="rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-primary-800 p-6 text-white shadow-xl">
     <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-      <div><p class="text-xs font-black uppercase tracking-[0.2em] text-violet-100">Phase 4 configuration</p><h2 class="mt-2 text-3xl font-black">Level-specific grading and report rules</h2><p class="mt-3 max-w-3xl text-sm text-violet-100">Select existing grading scales by campus, education stage, level, programme and term. The current A–F rules remain the fallback whenever no valid profile matches.</p></div>
-      <div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15"><p class="text-xs font-bold uppercase text-violet-100">Readiness</p><p class="mt-1 text-3xl font-black">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div>
+      <div><p class="text-xs font-black uppercase tracking-[0.2em] text-violet-100">Results setup</p><h2 class="mt-2 text-3xl font-black">Grading and report-card rules</h2><p class="mt-3 max-w-3xl text-sm text-violet-100">Choose the grading scale, pass mark and report-card layout for each class or programme.</p></div>
+      <div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15"><p class="text-xs font-bold uppercase text-violet-100">Status</p><p class="mt-1 text-3xl font-black">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div>
     </div>
   </section>
 
   <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Profiles</p><p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.profile_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Grading rules</p><p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.profile_count }}</p></div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Active</p><p class="mt-2 text-3xl font-black text-emerald-700">{{ readiness.active_profile_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Invalid</p><p class="mt-2 text-3xl font-black {% if readiness.invalid_profile_count %}text-red-600{% else %}text-emerald-600{% endif %}">{{ readiness.invalid_profile_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Missing report rules</p><p class="mt-2 text-3xl font-black {% if readiness.missing_report_rule_count %}text-amber-600{% else %}text-emerald-600{% endif %}">{{ readiness.missing_report_rule_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Need attention</p><p class="mt-2 text-3xl font-black {% if readiness.invalid_profile_count %}text-red-600{% else %}text-emerald-600{% endif %}">{{ readiness.invalid_profile_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Missing report settings</p><p class="mt-2 text-3xl font-black {% if readiness.missing_report_rule_count %}text-amber-600{% else %}text-emerald-600{% endif %}">{{ readiness.missing_report_rule_count }}</p></div>
   </section>
 
   <section class="rounded-2xl border border-slate-200 bg-white p-5">
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div><h3 class="text-lg font-black text-slate-950">Safe default setup</h3><p class="mt-1 text-sm text-slate-500">Create one institution-default profile from the existing active default grading scale. Grade ranges, marks and stored grades are not changed.</p></div>
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="bootstrap"><button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Create default profile</button></form>
+      <div><h3 class="text-lg font-black text-slate-950">Default grading</h3><p class="mt-1 text-sm text-slate-500">Use the current default grading scale as the school-wide starting rule.</p></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="bootstrap"><button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Create Default Rule</button></form>
     </div>
   </section>
 
   <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-slate-200 p-5"><div><h3 class="text-lg font-black text-slate-950">Grading profiles</h3><p class="text-sm text-slate-500">The highest-priority, most-specific valid profile wins.</p></div><a href="{% url 'admin_grading_profile_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white">Add Profile</a></div>
+    <div class="flex items-center justify-between border-b border-slate-200 p-5"><div><h3 class="text-lg font-black text-slate-950">Grading rules</h3><p class="text-sm text-slate-500">More specific rules are used before general ones.</p></div><a href="{% url 'admin_grading_profile_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white">Add Rule</a></div>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200">
-        <thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Profile</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Scope</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Scale</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Rules</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Validation</th><th class="px-5 py-3"></th></tr></thead>
+        <thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Rule</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Applies to</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Scale</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Result rule</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Status</th><th class="px-5 py-3"></th></tr></thead>
         <tbody class="divide-y divide-slate-100">
           {% for row in profile_rows %}
           <tr>
@@ -42,10 +42,10 @@
             <td class="px-5 py-4 text-sm text-slate-600">{{ row.profile.scope_label }}</td>
             <td class="px-5 py-4"><div class="font-bold text-slate-900">{{ row.profile.grading_scale }}</div><div class="text-xs text-slate-500">Pass {{ row.profile.pass_percentage }}%</div></td>
             <td class="px-5 py-4 text-sm text-slate-600">{{ row.profile.get_overall_aggregation_display }}<br>{{ row.profile.get_incomplete_result_policy_display }}</td>
-            <td class="px-5 py-4 text-sm">{% if row.errors %}<span class="font-bold text-red-600">{{ row.errors|length }} issue{{ row.errors|length|pluralize }}</span>{% else %}<span class="font-bold text-emerald-700">Valid</span>{% endif %}</td>
-            <td class="px-5 py-4 text-right whitespace-nowrap"><a class="mr-3 text-sm font-black text-primary-700" href="{% url 'admin_grading_profile_edit' row.profile.pk %}">Edit</a><a class="text-sm font-black text-violet-700" href="{% url 'admin_report_rule_edit' row.profile.pk %}">Report rules</a></td>
+            <td class="px-5 py-4 text-sm">{% if row.errors %}<span class="font-bold text-red-600">{{ row.errors|length }} issue{{ row.errors|length|pluralize }}</span>{% else %}<span class="font-bold text-emerald-700">Ready</span>{% endif %}</td>
+            <td class="px-5 py-4 text-right whitespace-nowrap"><a class="mr-3 text-sm font-black text-primary-700" href="{% url 'admin_grading_profile_edit' row.profile.pk %}">Edit</a><a class="text-sm font-black text-violet-700" href="{% url 'admin_report_rule_edit' row.profile.pk %}">Report Card</a></td>
           </tr>
-          {% empty %}<tr><td colspan="6" class="p-8 text-center text-slate-500">No grading profiles configured yet.</td></tr>{% endfor %}
+          {% empty %}<tr><td colspan="6" class="p-8 text-center text-slate-500">No grading rules added yet.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
