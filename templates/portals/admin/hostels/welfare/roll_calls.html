@@ -1,0 +1,15 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Hostel Roll Calls{% endblock %}
+{% block page_title %}Hostel Roll Calls{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_boarding_welfare_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Welfare Dashboard</a><a href="{% url 'admin_hostel_roll_call_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Create Roll Call</a>{% endblock %}
+{% block content %}
+<div class="space-y-5">
+<section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<table class="min-w-full divide-y divide-slate-200">
+<thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Hostel</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Date and shift</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Entries</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Status</th><th class="px-5 py-3"></th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for roll_call in roll_calls %}<tr><td class="px-5 py-4 font-black text-slate-950">{{ roll_call.hostel }}</td><td class="px-5 py-4 text-sm text-slate-600">{{ roll_call.roll_call_date }}<br>{{ roll_call.get_shift_display }}</td><td class="px-5 py-4 text-sm font-bold text-slate-700">{{ roll_call.entries.count }}</td><td class="px-5 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{{ roll_call.get_status_display }}</span></td><td class="px-5 py-4 text-right"><a href="{% url 'admin_hostel_roll_call_detail' roll_call.pk %}" class="text-sm font-black text-primary-700">View</a></td></tr>{% empty %}<tr><td colspan="5" class="p-8 text-center text-slate-500">No hostel roll calls yet.</td></tr>{% endfor %}
+</tbody></table></section>
+{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+</div>
+{% endblock %}
