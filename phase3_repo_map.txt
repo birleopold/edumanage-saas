@@ -10,6 +10,7 @@ apps/tenant/coursework/forms.py
 apps/tenant/coursework/migrations/0001_initial.py
 apps/tenant/coursework/migrations/0002_lms_links_discussions_progress.py
 apps/tenant/coursework/migrations/0003_rename_coursework_student_material_idx_coursework__student_40582d_idx_and_more.py
+apps/tenant/coursework/migrations/0004_unified_learning_activities.py
 apps/tenant/coursework/migrations/__init__.py
 apps/tenant/coursework/models.py
 apps/tenant/coursework/parent_urls.py
