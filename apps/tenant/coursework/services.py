@@ -6,7 +6,6 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from apps.tenant.academics.models import Enrollment
-
 from .models import Assignment, AssignmentSubmission, CourseworkProgress, LearningMaterial
 
 
@@ -143,11 +142,25 @@ def ensure_assignment_submission_rows(assignment: Assignment) -> int:
     enrollment_student_ids = list(Enrollment.objects.filter(offering_id=assignment.offering_id, status=Enrollment.ACTIVE).values_list("student_id", flat=True))
     if not enrollment_student_ids:
         return 0
+
+    from .activity_services import learning_activity_for_source
+
+    activity = learning_activity_for_source(assignment)
+    if activity:
+        AssignmentSubmission.objects.filter(
+            assignment=assignment,
+            student_id__in=enrollment_student_ids,
+            activity__isnull=True,
+        ).update(activity=activity)
+
     existing_student_ids = set(AssignmentSubmission.objects.filter(assignment=assignment, student_id__in=enrollment_student_ids).values_list("student_id", flat=True))
     missing_ids = [sid for sid in enrollment_student_ids if sid not in existing_student_ids]
     if not missing_ids:
         return 0
-    AssignmentSubmission.objects.bulk_create([AssignmentSubmission(assignment=assignment, student_id=sid) for sid in missing_ids], ignore_conflicts=True)
+    AssignmentSubmission.objects.bulk_create(
+        [AssignmentSubmission(assignment=assignment, student_id=sid, activity=activity) for sid in missing_ids],
+        ignore_conflicts=True,
+    )
     return len(missing_ids)
 
 
