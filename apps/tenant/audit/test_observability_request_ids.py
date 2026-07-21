@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -49,6 +50,19 @@ class RequestIdTests(SimpleTestCase):
         self.assertEqual(result, "result")
         self.assertEqual(counter.count, 1)
         self.assertEqual(calls[0][0], "SELECT 1")
+
+    def test_expected_permission_denial_is_not_logged_as_server_fault(self):
+        def denied_view(request):
+            raise PermissionDenied("Role does not allow this action.")
+
+        middleware = ObservabilityMiddleware(denied_view)
+        request = self.factory.get("/admin/restricted/")
+
+        with patch("apps.tenant.audit.observability.logger.exception") as exception_log:
+            with self.assertRaises(PermissionDenied):
+                middleware(request)
+
+        exception_log.assert_not_called()
 
 
 class ProductionQueryCountTests(TestCase):
