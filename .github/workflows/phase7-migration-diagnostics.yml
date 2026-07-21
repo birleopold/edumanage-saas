@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/boarding-welfare-consolidation
+  pull_request:
+    branches:
+      - main
 
 jobs:
   migration-drift:
