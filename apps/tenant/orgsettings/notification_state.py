@@ -82,7 +82,6 @@ def mark_notification_read(notification: Notification, user) -> bool:
         action=READ_ACTION,
         performed_by=user,
         defaults={
-            "content_object": notification,
             "description": "Audience notification marked as read.",
             "metadata": {"notification_id": notification.pk},
         },
