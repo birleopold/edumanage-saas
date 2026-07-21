@@ -2,7 +2,7 @@ from django.urls import include, path
 from django.contrib.auth import views as auth_views
 
 from apps.tenant.users import auth_views as custom_auth_views
-from apps.tenant.users import device_portal
+from apps.tenant.users import device_portal, profile_views
 from apps.tenant.parents import views as parent_admin_views
 from . import (
     capability_views,
@@ -34,7 +34,7 @@ urlpatterns = [
     path("password-reset/<uidb64>/<token>/", custom_auth_views.CustomPasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(template_name="auth/password_reset_complete.html"), name="password_reset_complete"),
     path("change-password/", custom_auth_views.change_password, name="change_password"),
-    path("profile/", custom_auth_views.user_profile, name="user_profile"),
+    path("profile/", profile_views.user_profile, name="user_profile"),
     path("devices/", device_portal.my_devices, name="my_devices"),
     path("devices/<int:pk>/deactivate/", device_portal.deactivate_my_device, name="my_device_deactivate"),
     path("admin/", views.admin_home, name="admin_home"),
