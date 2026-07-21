@@ -1,7 +1,8 @@
 """Professional, traceable error handlers for production pages."""
 
 from django.conf import settings
-from django.shortcuts import render
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse
 
 from apps.tenant.audit.request_ids import apply_request_id, ensure_request_id
@@ -70,7 +71,22 @@ def _error_context(
 
 
 def render_error_page(request, template_name, status, context):
-    response = render(request, template_name, context=context, status=status)
+    """Render a failure page without running database-backed context processors.
+
+    Error handling must remain operational when tenant resolution, schema access,
+    or a downstream database query is itself the reason the request failed. The
+    request object is supplied explicitly for the small amount of template logic
+    that needs authentication state, while normal portal context processors are
+    deliberately bypassed.
+    """
+
+    isolated_context = {**context, "request": request}
+    content = render_to_string(template_name, isolated_context)
+    response = HttpResponse(
+        content,
+        status=status,
+        content_type="text/html; charset=utf-8",
+    )
     return apply_request_id(response, request)
 
 
