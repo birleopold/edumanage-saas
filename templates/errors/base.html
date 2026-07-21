@@ -55,7 +55,7 @@
             <a href="{{ secondary_action_url }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200">
               <i class="ph ph-house mr-2" aria-hidden="true"></i>{{ secondary_action_label|default:'Back to dashboard' }}
             </a>
-          {% elif not request.user.is_authenticated and action_url != '/login/' %}
+          {% elif not viewer_is_authenticated and action_url != '/login/' %}
             <a href="/login/" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200">
               <i class="ph ph-sign-in mr-2" aria-hidden="true"></i>Sign in
             </a>
