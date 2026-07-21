@@ -15,6 +15,7 @@ apps/tenant/coursework/models.py
 apps/tenant/coursework/parent_urls.py
 apps/tenant/coursework/parent_views.py
 apps/tenant/coursework/services.py
+apps/tenant/coursework/signals.py
 apps/tenant/coursework/student_urls.py
 apps/tenant/coursework/student_views.py
 apps/tenant/coursework/teacher_urls.py
