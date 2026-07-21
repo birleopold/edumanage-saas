@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views, welfare_views
+from . import admin_views, hardening_views, welfare_views
 
 urlpatterns = [
     path("hostels/", admin_views.hostel_list, name="admin_hostels_list"),
@@ -20,6 +20,7 @@ urlpatterns = [
     path("allocations/<int:pk>/edit/", admin_views.allocation_edit, name="admin_bed_allocations_edit"),
 
     path("welfare/", welfare_views.welfare_dashboard, name="admin_boarding_welfare_dashboard"),
+    path("welfare/operations/", hardening_views.operational_hardening_dashboard, name="admin_boarding_welfare_hardening"),
     path("welfare/profiles/", welfare_views.boarding_profile_list, name="admin_boarding_profiles"),
     path("welfare/profiles/create/", welfare_views.boarding_profile_create, name="admin_boarding_profile_create"),
     path("welfare/profiles/<int:pk>/edit/", welfare_views.boarding_profile_edit, name="admin_boarding_profile_edit"),
@@ -28,15 +29,19 @@ urlpatterns = [
     path("welfare/leaves/", welfare_views.boarding_leave_list, name="admin_boarding_leaves"),
     path("welfare/leaves/create/", welfare_views.boarding_leave_create, name="admin_boarding_leave_create"),
     path("welfare/leaves/<int:pk>/", welfare_views.boarding_leave_detail, name="admin_boarding_leave_detail"),
+    path("welfare/leaves/<int:pk>/contact/", hardening_views.boarding_leave_contact_create, name="admin_boarding_leave_contact"),
     path("welfare/leaves/<int:pk>/<str:action>/", welfare_views.boarding_leave_transition, name="admin_boarding_leave_transition"),
 
     path("welfare/roll-calls/", welfare_views.hostel_roll_call_list, name="admin_hostel_roll_calls"),
     path("welfare/roll-calls/create/", welfare_views.hostel_roll_call_create, name="admin_hostel_roll_call_create"),
     path("welfare/roll-calls/<int:pk>/", welfare_views.hostel_roll_call_detail, name="admin_hostel_roll_call_detail"),
     path("welfare/roll-calls/<int:pk>/populate/", welfare_views.hostel_roll_call_populate, name="admin_hostel_roll_call_populate"),
+    path("welfare/roll-calls/<int:pk>/reconcile/", hardening_views.hostel_roll_call_reconcile, name="admin_hostel_roll_call_reconcile"),
 
     path("welfare/cases/", welfare_views.welfare_case_list, name="admin_welfare_cases"),
     path("welfare/cases/create/", welfare_views.welfare_case_create, name="admin_welfare_case_create"),
     path("welfare/cases/<int:pk>/", welfare_views.welfare_case_detail, name="admin_welfare_case_detail"),
     path("welfare/cases/<int:pk>/edit/", welfare_views.welfare_case_edit, name="admin_welfare_case_edit"),
+    path("welfare/cases/<int:pk>/contact/", hardening_views.welfare_case_contact_create, name="admin_welfare_case_contact"),
+    path("welfare/cases/<int:pk>/escalate/", hardening_views.welfare_case_escalate, name="admin_welfare_case_escalate"),
 ]
