@@ -3,7 +3,7 @@
 {% block title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
 {% block breadcrumbs %}Student profile, stream, campus and portal account setup{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_students_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Students</a>{% if mode == 'edit' %}<a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">ID Card PDF</a>{% endif %}{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_students_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Students</a>{% if mode == 'edit' %}<a href="{% url 'admin_student_guardians' student.id %}" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700">Parents & Guardians</a><a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">ID Card PDF</a>{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-7">
