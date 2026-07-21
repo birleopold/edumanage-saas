@@ -4,6 +4,8 @@ from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.academics.models import Enrollment
+from apps.tenant.finance.clearance_gates import clearance_gate
+from apps.tenant.finance.clearance_models import ClearancePolicy
 from apps.tenant.orgsettings.services import get_or_create_organization
 from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
@@ -66,10 +68,13 @@ def exam_dashboard(request):
 @role_required(Role.STUDENT)
 def results(request):
     student = _get_student_profile(request)
+    clearance_decision, gate_response = clearance_gate(request, student, ClearancePolicy.EXAM_RESULTS)
+    if gate_response is not None:
+        return gate_response
     papers = _student_papers(student).filter(results_published=True).order_by("exam__term__year__name", "exam__term__order", "exam__name", "offering__course__name")
     scores = ExamScore.objects.filter(paper__in=papers, student=student).select_related("paper", "paper__exam", "paper__offering__course")
     score_map = {s.paper_id: s for s in scores}
-    return render(request, "portals/student/exams/results.html", {"student": student, "papers": papers, "score_map": score_map, "scores": scores})
+    return render(request, "portals/student/exams/results.html", {"student": student, "papers": papers, "score_map": score_map, "scores": scores, "clearance_decision": clearance_decision})
 
 
 @role_required(Role.STUDENT)
@@ -82,9 +87,17 @@ def my_schedules(request):
 @role_required(Role.STUDENT)
 def start_exam(request, pk: int):
     student = _get_student_profile(request)
-    paper = get_object_or_404(ExamPaper.objects.select_related("exam", "offering", "offering__course").prefetch_related("questions__question"), pk=pk, is_published=True)
+    paper = get_object_or_404(ExamPaper.objects.select_related("exam", "exam__term", "offering", "offering__course").prefetch_related("questions__question"), pk=pk, is_published=True)
     if not student_is_allowed_for_paper(student, paper):
         return HttpResponseForbidden("You are not enrolled in this exam paper.")
+    clearance_decision, gate_response = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.ONLINE_EXAM,
+        academic_term=paper.exam.term,
+    )
+    if gate_response is not None:
+        return gate_response
     if not paper_is_online_available(paper):
         messages.error(request, "This paper is not available online.")
         return redirect("student_exams_dashboard")
@@ -95,16 +108,24 @@ def start_exam(request, pk: int):
     if request.method == "POST":
         start_or_get_attempt(student=student, paper=paper, request=request)
         return redirect("student_take_exam", pk=paper.pk)
-    return render(request, "portals/student/exams/start_exam.html", {"student": student, "paper": paper, "attempt": attempt, "question_count": paper.questions.count()})
+    return render(request, "portals/student/exams/start_exam.html", {"student": student, "paper": paper, "attempt": attempt, "question_count": paper.questions.count(), "clearance_decision": clearance_decision})
 
 
 @role_required(Role.STUDENT)
 def take_exam(request, pk: int):
     student = _get_student_profile(request)
-    paper = get_object_or_404(ExamPaper.objects.select_related("exam", "offering__course").prefetch_related("questions__question"), pk=pk, is_published=True)
+    paper = get_object_or_404(ExamPaper.objects.select_related("exam", "exam__term", "offering__course").prefetch_related("questions__question"), pk=pk, is_published=True)
     if not student_is_allowed_for_paper(student, paper):
         messages.error(request, "You are not enrolled in this course.")
         return redirect("student_exams_dashboard")
+    clearance_decision, gate_response = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.ONLINE_EXAM,
+        academic_term=paper.exam.term,
+    )
+    if gate_response is not None:
+        return gate_response
     if not paper_is_online_available(paper):
         messages.error(request, "This exam is not available online.")
         return redirect("student_exams_dashboard")
@@ -130,7 +151,7 @@ def take_exam(request, pk: int):
         submit_attempt(attempt, request=request, auto=True)
         messages.warning(request, "Time expired. Your exam has been submitted.")
         return redirect("student_exam_result", pk=attempt.pk)
-    return render(request, "portals/student/exams/take_exam.html", {"student": student, "paper": paper, "attempt": attempt, "question_rows": responses_with_questions(attempt), "time_remaining": attempt.time_remaining()})
+    return render(request, "portals/student/exams/take_exam.html", {"student": student, "paper": paper, "attempt": attempt, "question_rows": responses_with_questions(attempt), "time_remaining": attempt.time_remaining(), "clearance_decision": clearance_decision})
 
 
 @role_required(Role.STUDENT)
@@ -145,18 +166,34 @@ def exam_security_event(request, pk: int):
 @role_required(Role.STUDENT)
 def exam_result(request, pk: int):
     student = _get_student_profile(request)
-    attempt = get_object_or_404(OnlineExamAttempt.objects.select_related("paper__exam", "paper__offering__course"), pk=pk, student=student)
+    attempt = get_object_or_404(OnlineExamAttempt.objects.select_related("paper__exam", "paper__exam__term", "paper__offering__course"), pk=pk, student=student)
+    clearance_decision, gate_response = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.EXAM_RESULTS,
+        academic_term=attempt.paper.exam.term,
+    )
+    if gate_response is not None:
+        return gate_response
     if not results_visible_for_paper(attempt.paper) and attempt.status != OnlineExamAttempt.GRADED:
         messages.info(request, "Results will be available after grading and publishing.")
         return redirect("student_exams_dashboard")
     score = ExamScore.objects.filter(paper=attempt.paper, student=student).first()
-    return render(request, "portals/student/exams/exam_result.html", {"student": student, "attempt": attempt, "rows": responses_with_questions(attempt), "score": score})
+    return render(request, "portals/student/exams/exam_result.html", {"student": student, "attempt": attempt, "rows": responses_with_questions(attempt), "score": score, "clearance_decision": clearance_decision})
 
 
 @role_required(Role.STUDENT)
 def exam_report_card_pdf(request, exam_id: int):
     student = _get_student_profile(request)
-    exam = get_object_or_404(Exam, pk=exam_id)
+    exam = get_object_or_404(Exam.objects.select_related("term"), pk=exam_id)
+    clearance_decision, gate_response = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.EXAM_REPORT,
+        academic_term=exam.term,
+    )
+    if gate_response is not None:
+        return gate_response
     scores = list(ExamScore.objects.filter(student=student, paper__exam=exam, paper__results_published=True, paper__report_cards_enabled=True).select_related("paper", "paper__offering__course", "paper__exam"))
     if not scores:
         messages.error(request, "No published report card results are available for this exam.")
