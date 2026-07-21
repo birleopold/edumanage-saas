@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, bulk_views
+from . import bulk_views, guardian_views, views
 
 urlpatterns = [
     path("", views.student_list, name="admin_students_list"),
@@ -8,6 +8,12 @@ urlpatterns = [
     path("export/csv/", views.student_export_csv, name="admin_students_export_csv"),
     path("<int:pk>/id-card/", views.student_id_card_pdf, name="admin_students_id_card_pdf"),
     path("<int:pk>/credentials/", views.student_credentials, name="admin_students_credentials"),
+    path("<int:pk>/guardians/", guardian_views.student_guardians, name="admin_student_guardians"),
+    path(
+        "<int:pk>/guardians/<int:link_id>/remove/",
+        guardian_views.student_guardian_remove,
+        name="admin_student_guardian_remove",
+    ),
     path("<int:pk>/", views.student_edit, name="admin_students_detail"),
     path("<int:pk>/edit/", views.student_edit, name="admin_students_edit"),
     path("bulk-import/", bulk_views.bulk_import_students, name="admin_students_bulk_import"),
