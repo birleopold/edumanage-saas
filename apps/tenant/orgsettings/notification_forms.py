@@ -54,11 +54,14 @@ class NotificationComposerForm(forms.Form):
     def __init__(self, *args, campus_queryset=None, user_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["campus"].queryset = (
-            campus_queryset or Campus.objects.filter(is_active=True).order_by("name")
+            campus_queryset
+            if campus_queryset is not None
+            else Campus.objects.filter(is_active=True).order_by("name")
         )
         self.fields["recipient"].queryset = (
             user_queryset
-            or get_user_model()
+            if user_queryset is not None
+            else get_user_model()
             .objects.filter(is_active=True)
             .order_by("first_name", "last_name", "username")
         )
