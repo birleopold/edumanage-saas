@@ -1,4 +1,4 @@
-{% extends profile_base_template %}
+{% extends profile_base_template|default:"portals/admin/base.html" %}
 {% load widget_tweaks %}
 
 {% block title %}My Profile{% endblock %}
