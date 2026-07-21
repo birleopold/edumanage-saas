@@ -6,6 +6,8 @@ from .models import (
     AssessmentType,
     AssessmentWeightingComponent,
     AssessmentWeightingScheme,
+    GradingProfile,
+    ReportRule,
 )
 
 
@@ -71,3 +73,36 @@ class AssessmentScoreAdmin(admin.ModelAdmin):
     list_display = ("student", "assessment", "score", "graded_by", "graded_at")
     search_fields = ("student__first_name", "student__last_name", "assessment__name")
     raw_id_fields = ("assessment", "student", "graded_by")
+
+
+@admin.register(GradingProfile)
+class GradingProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "name",
+        "grading_scale",
+        "campus",
+        "stage",
+        "level",
+        "program",
+        "academic_term",
+        "priority",
+        "is_active",
+    )
+    list_filter = ("is_active", "is_default", "overall_aggregation", "incomplete_result_policy", "campus", "stage")
+    search_fields = ("code", "name", "description", "grading_scale__name")
+    raw_id_fields = ("grading_scale", "campus", "stage", "level", "program", "academic_term")
+
+
+@admin.register(ReportRule)
+class ReportRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        "grading_profile",
+        "report_title",
+        "show_percentage",
+        "show_grade",
+        "show_remark",
+        "show_promotion_status",
+    )
+    list_filter = ("show_percentage", "show_grade", "show_remark", "show_promotion_status")
+    search_fields = ("grading_profile__code", "grading_profile__name", "report_title")
