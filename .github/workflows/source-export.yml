@@ -1,6 +1,9 @@
 name: Source export
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - agent/institutional-ux-observability
