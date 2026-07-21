@@ -9,10 +9,10 @@
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
       <div>
         <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-600">Student workspace</p>
-        <h2 class="mt-2 text-2xl font-black text-slate-950">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <h2 class="mt-2 text-2xl font-black text-slate-950">Welcome back, {% if student %}{{ student.get_full_name }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}</h2>
         <p class="mt-2 text-sm text-slate-600">Study materials, exams, results, timetable, messages and progress trends are now easy to reach.</p>
       </div>
-      {% if student %}<div class="flex flex-wrap gap-3"><div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Student ID</p><p class="font-black text-slate-900">{{ student.registration_number|default:'N/A' }}</p></div>{% if student.campus %}<div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Campus</p><p class="font-black text-slate-900">{{ student.campus.name }}</p></div>{% endif %}</div>{% endif %}
+      {% if student %}<div class="flex flex-wrap gap-3"><div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Student ID</p><p class="font-black text-slate-900">{{ student.student_id|default:'N/A' }}</p></div>{% if student.campus %}<div class="rounded-2xl border border-primary-100 bg-white px-4 py-3"><p class="text-xs text-slate-500 font-bold uppercase">Campus</p><p class="font-black text-slate-900">{{ student.campus.name }}</p></div>{% endif %}</div>{% endif %}
     </div>
   </section>
 
