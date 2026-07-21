@@ -1,94 +1,246 @@
 from __future__ import annotations
 
-from django.apps import apps
-from django.core.exceptions import FieldError
 from django.urls import NoReverseMatch, reverse
 
 from apps.tenant.users.models import Role
 
 
-PHASES = (
-    {
-        "number": 1,
-        "title": "Institution, curriculum and terminology",
-        "summary": "Education profiles, curriculum frameworks, education stages and locally configurable terminology.",
-        "icon": "ph-buildings",
-        "tone": "blue",
-        "metric_model": "education_frameworks.InstitutionEducationProfile",
+ROLE_META = {
+    "admin": {
+        "label": "Administrator",
+        "title": "All tools",
+        "intro": "Find every school task in one place.",
     },
-    {
-        "number": 2,
-        "title": "Assessment framework",
-        "summary": "Configurable assessment types, weighting schemes and compatibility links to existing marks and exam papers.",
-        "icon": "ph-check-square-offset",
-        "tone": "indigo",
-        "metric_model": "assessments.AssessmentType",
+    "campus_admin": {
+        "label": "Campus administrator",
+        "title": "Campus tools",
+        "intro": "Open the tools available for your campus.",
     },
-    {
-        "number": 3,
-        "title": "Learning activities",
-        "summary": "Unified materials, assignments, projects, practical work, discussions, completion and submission policies.",
-        "icon": "ph-notebook",
-        "tone": "violet",
-        "metric_model": "coursework.LearningActivity",
+    "teacher": {
+        "label": "Teacher",
+        "title": "Teaching tools",
+        "intro": "Everything you need for lessons, marking and learner support.",
     },
-    {
-        "number": 4,
-        "title": "Grading and report rules",
-        "summary": "Level-specific grading profiles, report-card rules and consistent result interpretation.",
-        "icon": "ph-chart-line-up",
-        "tone": "emerald",
-        "metric_model": "assessments.GradingProfile",
+    "student": {
+        "label": "Student",
+        "title": "My school",
+        "intro": "Coursework, results, school services and account information.",
     },
-    {
-        "number": 5,
-        "title": "Programme pathways",
-        "summary": "Programme pathways, level progression, subject combinations and class-group offering planning.",
-        "icon": "ph-path",
-        "tone": "cyan",
-        "metric_model": "academics.ProgrammePathway",
+    "parent": {
+        "label": "Parent or guardian",
+        "title": "My children",
+        "intro": "Learning, wellbeing, fees and school services in one place.",
     },
-    {
-        "number": 6,
-        "title": "External examinations",
-        "summary": "Examination boards, centres, sessions, candidate registration, exports and official result imports.",
-        "icon": "ph-certificate",
-        "tone": "amber",
-        "metric_model": "exams.ExternalExamSession",
-    },
-    {
-        "number": 7,
-        "title": "Boarding and welfare",
-        "summary": "Boarding profiles, leave workflows, guardian handover, hostel roll calls and welfare case follow-up.",
-        "icon": "ph-house-line",
-        "tone": "rose",
-        "metric_model": "hostels.BoardingProfile",
-    },
-    {
-        "number": 8,
-        "title": "Clubs, sports and co-curricular life",
-        "summary": "Programme profiles, participation safeguards, groups, sessions, attendance and learner achievements.",
-        "icon": "ph-trophy",
-        "tone": "orange",
-        "metric_model": "activities.ActivityProgramme",
-    },
-    {
-        "number": 9,
-        "title": "Fees and assessment clearance",
-        "summary": "Advisory or blocking clearance rules around live invoices and payments, with approved exceptions.",
-        "icon": "ph-shield-check",
-        "tone": "green",
-        "metric_model": "finance.ClearancePolicy",
-    },
-)
+}
 
 
-ROLE_LABELS = {
-    "admin": "Full administrator",
-    "campus_admin": "Campus administrator",
-    "teacher": "Teacher",
-    "student": "Student",
-    "parent": "Parent or guardian",
+def _action(label: str, route: str, *, primary: bool = False):
+    return {"label": label, "route": route, "primary": primary}
+
+
+def _tool(key: str, title: str, summary: str, icon: str, *actions):
+    return {
+        "key": key,
+        "title": title,
+        "summary": summary,
+        "icon": icon,
+        "actions": actions,
+    }
+
+
+ROLE_TOOL_GROUPS = {
+    "admin": (
+        {
+            "name": "People",
+            "tools": (
+                _tool("students", "Students", "Profiles, admissions and bulk imports.", "ph-student", _action("View students", "admin_students_list", primary=True), _action("Add student", "admin_students_create")),
+                _tool("admissions", "Admissions", "Applications and enrolment decisions.", "ph-clipboard-text", _action("Open admissions", "admin_admissions_applicants", primary=True)),
+                _tool("teachers", "Teachers", "Teacher profiles and staff records.", "ph-chalkboard-teacher", _action("View teachers", "admin_teachers_list", primary=True), _action("Add teacher", "admin_teachers_create")),
+                _tool("parents", "Parents", "Parent profiles, links and communication.", "ph-users", _action("View parents", "admin_parents_list", primary=True), _action("Add parent", "admin_parents_create")),
+                _tool("users", "User accounts", "Roles, access and account management.", "ph-user-gear", _action("Manage users", "admin_users_list", primary=True)),
+            ),
+        },
+        {
+            "name": "Teaching & learning",
+            "tools": (
+                _tool("school-setup", "School setup", "Terms, levels, programmes and school wording.", "ph-buildings", _action("Academic setup", "admin_academics_setup", primary=True), _action("Education settings", "admin_education_framework_dashboard")),
+                _tool("classes", "Classes & subjects", "Classes, streams, subjects, offerings and enrolments.", "ph-books", _action("Classes & offerings", "admin_offering_list", primary=True), _action("Enrolments", "admin_enrollment_list")),
+                _tool("coursework", "Coursework", "Materials, assignments, submissions and learning activities.", "ph-notebook", _action("Open coursework", "admin_coursework_dashboard", primary=True), _action("Activity settings", "admin_coursework_activity_framework")),
+                _tool("attendance", "Attendance & timetable", "Class attendance, lesson schedules and teacher duty.", "ph-calendar-check", _action("Attendance", "admin_attendance_sessions_list", primary=True), _action("Timetable", "admin_timetable_entries_list")),
+                _tool("assessments", "Assessments & marks", "Assessments, weighting, marks and tabulation.", "ph-exam", _action("Assessments", "admin_assessments_list", primary=True), _action("Mark sheets", "admin_assessments_tabulation")),
+                _tool("grading", "Results & report cards", "Grading rules, report cards and result presentation.", "ph-chart-line-up", _action("Grading settings", "admin_grading_framework_dashboard", primary=True), _action("Report cards", "admin_term_report_cards")),
+                _tool("exams", "Exams", "Exam papers, schedules, candidates and results.", "ph-file-text", _action("Internal exams", "admin_exams_list", primary=True), _action("External exams", "admin_external_exam_dashboard")),
+                _tool("activities", "Clubs & activities", "Clubs, sports, sessions, attendance and achievements.", "ph-trophy", _action("Activities", "admin_activities_list", primary=True), _action("Sessions", "admin_activity_sessions")),
+            ),
+        },
+        {
+            "name": "Student services",
+            "tools": (
+                _tool("boarding", "Boarding & welfare", "Hostels, rooms, leave, roll calls and learner support.", "ph-house-line", _action("Boarding & welfare", "admin_boarding_welfare_dashboard", primary=True), _action("Hostels", "admin_hostels_list")),
+                _tool("health", "Health", "Sickbay visits, treatment and follow-up.", "ph-first-aid-kit", _action("Open sickbay", "admin_sickbay_dashboard", primary=True)),
+                _tool("discipline", "Discipline", "Incidents, actions and learner conduct records.", "ph-gavel", _action("Discipline records", "admin_incidents_list", primary=True)),
+                _tool("concerns", "Concerns", "Questions, complaints and follow-up.", "ph-chats-circle", _action("View concerns", "admin_grievances_list", primary=True)),
+                _tool("library", "Library", "Books, copies, loans, returns and fines.", "ph-book-bookmark", _action("Open library", "admin_library_books_list", primary=True)),
+                _tool("transport", "Transport", "Vehicles, routes, stops and student assignments.", "ph-bus", _action("Transport routes", "admin_transport_routes_list", primary=True)),
+                _tool("documents", "Documents", "School files shared with staff, learners and parents.", "ph-files", _action("Open documents", "admin_documents_list", primary=True)),
+            ),
+        },
+        {
+            "name": "School management",
+            "tools": (
+                _tool("finance", "Fees & payments", "Invoices, payments, receipts and accounting.", "ph-wallet", _action("Finance dashboard", "admin_finance_dashboard", primary=True), _action("Invoices", "admin_invoices_list")),
+                _tool("clearance", "Fees clearance", "Rules and exceptions for exams, results and report cards.", "ph-shield-check", _action("Clearance rules", "admin_finance_clearance_dashboard", primary=True), _action("Check learner", "admin_finance_clearance_learner_check")),
+                _tool("announcements", "Announcements", "School notices and communication tools.", "ph-megaphone", _action("Announcements", "admin_announcements_list", primary=True), _action("Communication", "admin_communication_center")),
+                _tool("reports", "Reports & analytics", "Academic, attendance, finance and performance reports.", "ph-chart-bar", _action("Reports", "admin_reports_overview", primary=True), _action("Analytics", "admin_analytics_dashboard")),
+                _tool("staff", "Staff & payroll", "Staff, departments, payslips and salary settings.", "ph-briefcase", _action("Staff", "admin_hr_staff_list", primary=True), _action("Payslips", "admin_hr_payroll_payslips_list")),
+                _tool("inventory", "Inventory", "School items, stock and issue records.", "ph-package", _action("Open inventory", "admin_inventory_items_list", primary=True)),
+                _tool("security", "Security & audit", "Activity history, backups and system status.", "ph-lock-key", _action("Audit centre", "audit_dashboard", primary=True), _action("System status", "admin_system_status")),
+                _tool("settings", "School settings", "Organisation details, campuses and feature settings.", "ph-gear", _action("School settings", "admin_orgsettings_org", primary=True), _action("Campuses", "admin_orgsettings_campuses")),
+            ),
+        },
+    ),
+    "campus_admin": (
+        {
+            "name": "People",
+            "tools": (
+                _tool("students", "Students", "Profiles, admissions and bulk imports.", "ph-student", _action("View students", "admin_students_list", primary=True), _action("Add student", "admin_students_create")),
+                _tool("admissions", "Admissions", "Applications and enrolment decisions.", "ph-clipboard-text", _action("Open admissions", "admin_admissions_applicants", primary=True)),
+                _tool("teachers", "Teachers", "Teacher profiles for your campus.", "ph-chalkboard-teacher", _action("View teachers", "admin_teachers_list", primary=True)),
+                _tool("parents", "Parents", "Parent profiles and learner links.", "ph-users", _action("View parents", "admin_parents_list", primary=True)),
+            ),
+        },
+        {
+            "name": "Teaching & learning",
+            "tools": (
+                _tool("classes", "Classes & subjects", "Classes, streams, subjects, offerings and enrolments.", "ph-books", _action("Classes & offerings", "admin_offering_list", primary=True), _action("Enrolments", "admin_enrollment_list")),
+                _tool("coursework", "Coursework", "Materials, assignments and submissions.", "ph-notebook", _action("Open coursework", "admin_coursework_dashboard", primary=True)),
+                _tool("attendance", "Attendance & timetable", "Class attendance and lesson schedules.", "ph-calendar-check", _action("Attendance", "admin_attendance_sessions_list", primary=True), _action("Timetable", "admin_timetable_entries_list")),
+                _tool("assessments", "Assessments & marks", "Assessments, marks and tabulation.", "ph-exam", _action("Assessments", "admin_assessments_list", primary=True), _action("Mark sheets", "admin_assessments_tabulation")),
+                _tool("exams", "Exams", "Exam papers, schedules and results.", "ph-file-text", _action("Open exams", "admin_exams_list", primary=True)),
+                _tool("activities", "Clubs & activities", "Clubs, sports, sessions and attendance.", "ph-trophy", _action("Activities", "admin_activities_list", primary=True), _action("Sessions", "admin_activity_sessions")),
+            ),
+        },
+        {
+            "name": "Student services",
+            "tools": (
+                _tool("hostels", "Hostels", "Rooms, beds and student allocations.", "ph-house-line", _action("Hostel allocations", "admin_bed_allocations_list", primary=True)),
+                _tool("health", "Health", "Sickbay visits and follow-up.", "ph-first-aid-kit", _action("Open sickbay", "admin_sickbay_dashboard", primary=True)),
+                _tool("discipline", "Discipline", "Incidents and learner conduct records.", "ph-gavel", _action("Discipline records", "admin_incidents_list", primary=True)),
+                _tool("concerns", "Concerns", "Questions, complaints and follow-up.", "ph-chats-circle", _action("View concerns", "admin_grievances_list", primary=True)),
+                _tool("library", "Library", "Books, loans and returns.", "ph-book-bookmark", _action("Open library", "admin_library_books_list", primary=True)),
+                _tool("transport", "Transport", "Routes, stops and assignments.", "ph-bus", _action("Transport routes", "admin_transport_routes_list", primary=True)),
+                _tool("documents", "Documents", "Files shared with the school community.", "ph-files", _action("Open documents", "admin_documents_list", primary=True)),
+            ),
+        },
+        {
+            "name": "Campus management",
+            "tools": (
+                _tool("finance", "Fees & payments", "Invoices, payments and receipts.", "ph-wallet", _action("Finance dashboard", "admin_finance_dashboard", primary=True), _action("Invoices", "admin_invoices_list")),
+                _tool("announcements", "Announcements", "School notices and communication.", "ph-megaphone", _action("Announcements", "admin_announcements_list", primary=True), _action("Communication", "admin_communication_center")),
+                _tool("reports", "Reports & analytics", "Campus performance and operational reports.", "ph-chart-bar", _action("Reports", "admin_reports_overview", primary=True), _action("Analytics", "admin_analytics_dashboard")),
+                _tool("inventory", "Inventory", "School items and stock records.", "ph-package", _action("Open inventory", "admin_inventory_items_list", primary=True)),
+            ),
+        },
+    ),
+    "teacher": (
+        {
+            "name": "Teaching",
+            "tools": (
+                _tool("timetable", "Timetable", "Today's lessons and teaching schedule.", "ph-calendar", _action("Open timetable", "teacher_timetable", primary=True)),
+                _tool("attendance", "Attendance", "Take roll call and review attendance.", "ph-calendar-check", _action("Open attendance", "teacher_attendance_home", primary=True)),
+                _tool("coursework", "Coursework", "Materials, assignments, submissions and marking.", "ph-notebook", _action("Open coursework", "teacher_coursework_home", primary=True)),
+                _tool("assessments", "Assessments", "Create assessments and enter marks.", "ph-exam", _action("Open assessments", "teacher_assessments_home", primary=True)),
+                _tool("exams", "Exams", "Exam papers, attempts and marking.", "ph-file-text", _action("Open exams", "teacher_exams_home", primary=True)),
+            ),
+        },
+        {
+            "name": "Learner support",
+            "tools": (
+                _tool("discipline", "Discipline", "Report and review learner incidents.", "ph-warning-circle", _action("Learner incidents", "teacher_incidents_list", primary=True)),
+                _tool("concerns", "Concerns", "Raise a concern or follow up your submissions.", "ph-chats-circle", _action("My concerns", "teacher_grievances_list", primary=True), _action("Raise concern", "teacher_grievances_submit")),
+                _tool("announcements", "Announcements", "Read school notices and updates.", "ph-megaphone", _action("View announcements", "teacher_announcements_list", primary=True)),
+                _tool("documents", "Documents", "Open files shared with teachers.", "ph-file-doc", _action("View documents", "teacher_documents_list", primary=True)),
+            ),
+        },
+        {
+            "name": "Account",
+            "tools": (
+                _tool("payslips", "Payslips", "View your payroll documents.", "ph-wallet", _action("My payslips", "staff_payslips_list", primary=True)),
+                _tool("profile", "Profile & devices", "Update your profile and manage signed-in devices.", "ph-user-circle", _action("My profile", "user_profile", primary=True), _action("My devices", "my_devices")),
+            ),
+        },
+    ),
+    "student": (
+        {
+            "name": "Learning",
+            "tools": (
+                _tool("timetable", "Timetable", "Your lessons and class schedule.", "ph-calendar", _action("Open timetable", "student_timetable", primary=True)),
+                _tool("coursework", "Coursework", "Learning materials, assignments and submissions.", "ph-notebook", _action("Open coursework", "student_coursework_home", primary=True)),
+                _tool("results", "Results", "Assessment results and report cards.", "ph-chart-bar", _action("View results", "student_results_home", primary=True), _action("Report card", "student_report_card")),
+                _tool("exams", "Exams", "Exam schedules, online papers and results.", "ph-file-text", _action("Exam dashboard", "student_exams_dashboard", primary=True), _action("Exam results", "student_exam_results")),
+                _tool("attendance", "Attendance", "Review your attendance record.", "ph-calendar-check", _action("My attendance", "student_attendance_home", primary=True)),
+            ),
+        },
+        {
+            "name": "School life",
+            "tools": (
+                _tool("announcements", "Announcements", "School notices and updates.", "ph-megaphone", _action("View announcements", "student_announcements_list", primary=True)),
+                _tool("library", "Library", "Search books and review your loans.", "ph-books", _action("Open library", "student_library_catalog", primary=True)),
+                _tool("transport", "Transport", "Your route and transport details.", "ph-bus", _action("My transport", "student_transport_home", primary=True)),
+                _tool("boarding", "Boarding", "Your hostel, room and bed information.", "ph-house-line", _action("My boarding", "student_hostel_home", primary=True)),
+                _tool("discipline", "Discipline", "Your conduct and incident records.", "ph-warning-circle", _action("My records", "student_incidents_list", primary=True)),
+                _tool("health", "Health", "Your sickbay visits and treatment records.", "ph-first-aid-kit", _action("Sickbay visits", "student_sickbay_visits", primary=True)),
+            ),
+        },
+        {
+            "name": "Records & account",
+            "tools": (
+                _tool("fees", "Fees & receipts", "Invoices, balances and payment receipts.", "ph-wallet", _action("View fees", "student_invoices_list", primary=True)),
+                _tool("documents", "Documents", "Files shared with students.", "ph-file-doc", _action("View documents", "student_documents_list", primary=True)),
+                _tool("id-card", "Student ID", "Open or print your student ID card.", "ph-identification-card", _action("Open ID card", "student_id_card_self", primary=True)),
+                _tool("profile", "Profile & devices", "Update your profile and manage signed-in devices.", "ph-user-circle", _action("My profile", "user_profile", primary=True), _action("My devices", "my_devices")),
+            ),
+        },
+    ),
+    "parent": (
+        {
+            "name": "Learning",
+            "tools": (
+                _tool("coursework", "Coursework", "Learning materials and assignments for your children.", "ph-notebook", _action("View coursework", "parent_coursework_home", primary=True)),
+                _tool("results", "Results", "Assessment results and report cards.", "ph-chart-bar", _action("View results", "parent_results_home", primary=True)),
+                _tool("exams", "Exams", "Exam results and attempt information.", "ph-file-text", _action("View exams", "parent_exam_results", primary=True)),
+                _tool("attendance", "Attendance", "Review attendance for your children.", "ph-calendar-check", _action("View attendance", "parent_attendance_home", primary=True)),
+            ),
+        },
+        {
+            "name": "School life",
+            "tools": (
+                _tool("announcements", "Announcements", "School notices and updates.", "ph-megaphone", _action("View announcements", "parent_announcements_list", primary=True)),
+                _tool("discipline", "Discipline", "Conduct and incident records.", "ph-warning-circle", _action("View discipline", "parent_incidents_list", primary=True)),
+                _tool("health", "Health", "Sickbay visits and treatment records.", "ph-first-aid-kit", _action("Sickbay visits", "parent_sickbay_visits", primary=True)),
+                _tool("transport", "Transport", "Routes and transport details.", "ph-bus", _action("View transport", "parent_transport_home", primary=True)),
+                _tool("library", "Library", "Books currently borrowed by your children.", "ph-books", _action("Library loans", "parent_library_loans", primary=True)),
+                _tool("boarding", "Boarding", "Hostel, room and bed information.", "ph-house-line", _action("View boarding", "parent_hostel_home", primary=True)),
+            ),
+        },
+        {
+            "name": "Support & records",
+            "tools": (
+                _tool("concerns", "Concerns", "Raise a concern and follow its progress.", "ph-chats-circle", _action("My concerns", "parent_grievances_list", primary=True), _action("Raise concern", "parent_grievances_submit")),
+                _tool("documents", "Documents", "Files shared with parents and guardians.", "ph-file-doc", _action("View documents", "parent_documents_list", primary=True)),
+                _tool("fees", "Fees & payments", "Invoices, balances, payments and receipts.", "ph-wallet", _action("View fees", "parent_invoices_list", primary=True)),
+            ),
+        },
+        {
+            "name": "Account",
+            "tools": (
+                _tool("results-pin", "Results PIN", "Protect access to published results.", "ph-key", _action("Manage PIN", "parent_results_pin_security", primary=True)),
+                _tool("messages", "Message preferences", "Choose how the school contacts you.", "ph-bell", _action("Message preferences", "parent_communication_preferences", primary=True)),
+                _tool("digests", "Weekly summaries", "Review school summaries sent to you.", "ph-newspaper", _action("View summaries", "parent_digest_history", primary=True)),
+                _tool("profile", "Profile & devices", "Update your profile and manage signed-in devices.", "ph-user-circle", _action("My profile", "user_profile", primary=True), _action("My devices", "my_devices")),
+            ),
+        },
+    ),
 }
 
 
@@ -113,195 +265,60 @@ def _safe_reverse(route_name: str) -> str:
         return ""
 
 
-def _safe_count(model_label: str, filters: dict | None = None) -> int:
-    try:
-        model = apps.get_model(model_label)
-        queryset = model.objects.all()
-        if filters:
-            queryset = queryset.filter(**filters)
-        return queryset.count()
-    except (LookupError, FieldError, AttributeError):
-        return 0
-
-
-def _action(label: str, route_name: str, *, description: str = "", primary: bool = False):
-    url = _safe_reverse(route_name)
-    if not url:
-        return None
-    return {
-        "label": label,
-        "url": url,
-        "description": description,
-        "primary": primary,
-    }
-
-
-def _actions(*items):
-    return [item for item in items if item]
-
-
-def _role_actions(role: str):
-    if role == "admin":
-        return {
-            1: _actions(
-                _action("Education framework", "admin_education_framework_dashboard", primary=True),
-                _action("Academic setup", "admin_academics_setup"),
-            ),
-            2: _actions(
-                _action("Assessment framework", "admin_assessment_framework_dashboard", primary=True),
-                _action("Assessment records", "admin_assessments_list"),
-            ),
-            3: _actions(
-                _action("Learning activity framework", "admin_coursework_activity_framework", primary=True),
-                _action("Coursework dashboard", "admin_coursework_dashboard"),
-            ),
-            4: _actions(
-                _action("Grading framework", "admin_grading_framework_dashboard", primary=True),
-                _action("Report cards", "admin_term_report_cards"),
-            ),
-            5: _actions(
-                _action("Pathways and combinations", "admin_pathway_dashboard", primary=True),
-                _action("Offering planner", "admin_pathway_offerings"),
-            ),
-            6: _actions(
-                _action("External examinations", "admin_external_exam_dashboard", primary=True),
-                _action("Internal examinations", "admin_exams_list"),
-            ),
-            7: _actions(
-                _action("Boarding and welfare", "admin_boarding_welfare_dashboard", primary=True),
-                _action("Operational readiness", "admin_boarding_welfare_hardening"),
-            ),
-            8: _actions(
-                _action("Co-curricular programmes", "admin_activity_programme_dashboard", primary=True),
-                _action("Sessions and attendance", "admin_activity_sessions"),
-            ),
-            9: _actions(
-                _action("Clearance policies", "admin_finance_clearance_dashboard", primary=True),
-                _action("Check a learner", "admin_finance_clearance_learner_check"),
-            ),
-        }
-    if role == "campus_admin":
-        return {
-            1: [],
-            2: _actions(_action("Assessment operations", "admin_assessments_list", primary=True)),
-            3: _actions(_action("Coursework operations", "admin_coursework_dashboard", primary=True)),
-            4: _actions(_action("Mark tabulation", "admin_assessments_tabulation", primary=True)),
-            5: _actions(
-                _action("Classes and offerings", "admin_offering_list", primary=True),
-                _action("Class streams", "admin_stream_list"),
-            ),
-            6: _actions(_action("Internal examination operations", "admin_exams_list", primary=True)),
-            7: _actions(
-                _action("Boarding and welfare", "admin_boarding_welfare_dashboard", primary=True),
-                _action("Operational readiness", "admin_boarding_welfare_hardening"),
-            ),
-            8: _actions(
-                _action("Sessions and attendance", "admin_activity_sessions", primary=True),
-                _action("Activities and clubs", "admin_activities_list"),
-            ),
-            9: _actions(
-                _action("Finance dashboard", "admin_finance_dashboard", primary=True),
-                _action("Invoices", "admin_invoices_list"),
-            ),
-        }
-    if role == "teacher":
-        return {
-            1: [],
-            2: _actions(_action("My assessments", "teacher_assessments_home", primary=True)),
-            3: _actions(_action("My coursework", "teacher_coursework_home", primary=True)),
-            4: _actions(_action("Assessment marking", "teacher_assessments_home", primary=True)),
-            5: _actions(
-                _action("My timetable", "teacher_timetable", primary=True),
-                _action("My coursework", "teacher_coursework_home"),
-            ),
-            6: _actions(_action("Final examinations", "teacher_exams_home", primary=True)),
-            7: _actions(
-                _action("Learner incidents", "teacher_incidents_list", primary=True),
-                _action("Raise a concern", "teacher_grievances_submit"),
-            ),
-            8: [],
-            9: _actions(_action("Examination workspace", "teacher_exams_home", primary=True)),
-        }
-    if role == "student":
-        return {
-            1: [],
-            2: _actions(_action("My assessment results", "student_results_home", primary=True)),
-            3: _actions(_action("My coursework", "student_coursework_home", primary=True)),
-            4: _actions(
-                _action("My report card", "student_report_card", primary=True),
-                _action("Assessment results", "student_results_home"),
-            ),
-            5: _actions(
-                _action("My timetable", "student_timetable", primary=True),
-                _action("My coursework", "student_coursework_home"),
-            ),
-            6: _actions(
-                _action("Examination dashboard", "student_exams_dashboard", primary=True),
-                _action("Exam results", "student_exam_results"),
-                _action("Exam schedules", "student_exam_schedules"),
-            ),
-            7: _actions(_action("My boarding information", "student_hostel_home", primary=True)),
-            8: [],
-            9: _actions(
-                _action("My invoices and receipts", "student_invoices_list", primary=True),
-                _action("Assessment results", "student_results_home"),
-            ),
-        }
-    return {
-        1: [],
-        2: _actions(_action("Children's assessment results", "parent_results_home", primary=True)),
-        3: _actions(_action("Children's coursework", "parent_coursework_home", primary=True)),
-        4: _actions(_action("Children's report cards", "parent_results_home", primary=True)),
-        5: _actions(_action("Learning progress", "parent_coursework_home", primary=True)),
-        6: _actions(_action("External and internal exam results", "parent_exam_results", primary=True)),
-        7: _actions(_action("Children's boarding information", "parent_hostel_home", primary=True)),
-        8: [],
-        9: _actions(
-            _action("Invoices, payments and receipts", "parent_invoices_list", primary=True),
-            _action("Published results", "parent_results_home"),
-        ),
-    }
-
-
-def _managed_message(role: str, phase_number: int) -> str:
-    if role == "campus_admin":
-        if phase_number in {1, 2, 4, 5, 6, 9}:
-            return "Core configuration is controlled by a full administrator; campus-scoped operations remain available where permitted."
-    if role == "teacher":
-        if phase_number in {1, 8}:
-            return "This capability is configured by school administrators and automatically applies to your teaching workspace."
-        if phase_number == 9:
-            return "Finance officers manage clearance. Existing marks and examination records are never changed by a clearance decision."
-    if role in {"student", "parent"}:
-        if phase_number in {1, 2, 5}:
-            return "The school configures this capability. Its terminology, subject structure and rules are applied automatically in your portal."
-        if phase_number == 8:
-            return "Participation, session attendance and achievements are recorded by authorised school staff and reflected in learner records."
-        if phase_number == 9:
-            return "The portal uses live invoices and payments when checking access. Contact the finance office when a clearance message appears."
-    return "This capability is managed by authorised school administrators."
-
-
 def build_capability_context(user, *, role: str | None = None):
     role = role or portal_role(user)
-    action_map = _role_actions(role)
-    phases = []
-    for phase in PHASES:
-        row = dict(phase)
-        row["actions"] = action_map.get(phase["number"], [])
-        row["configured_count"] = _safe_count(phase["metric_model"])
-        row["available"] = bool(row["actions"])
-        row["status_label"] = "Available in your portal" if row["available"] else "Managed by the school"
-        row["managed_message"] = _managed_message(role, phase["number"])
-        phases.append(row)
+    meta = ROLE_META.get(role, ROLE_META["student"])
+    groups = []
+    all_tools = []
+
+    for group_spec in ROLE_TOOL_GROUPS.get(role, ()):
+        tools = []
+        for tool_spec in group_spec["tools"]:
+            actions = []
+            for action_spec in tool_spec["actions"]:
+                url = _safe_reverse(action_spec["route"])
+                if not url:
+                    continue
+                actions.append(
+                    {
+                        "label": action_spec["label"],
+                        "url": url,
+                        "primary": action_spec["primary"],
+                    }
+                )
+            if not actions:
+                continue
+
+            tool = {
+                "key": tool_spec["key"],
+                "title": tool_spec["title"],
+                "summary": tool_spec["summary"],
+                "icon": tool_spec["icon"],
+                "actions": actions,
+                "search_text": " ".join(
+                    [
+                        group_spec["name"],
+                        tool_spec["title"],
+                        tool_spec["summary"],
+                        *[action["label"] for action in actions],
+                    ]
+                ).lower(),
+            }
+            tools.append(tool)
+            all_tools.append(tool)
+
+        if tools:
+            groups.append({"name": group_spec["name"], "tools": tools})
 
     return {
         "capability_role": role,
-        "capability_role_label": ROLE_LABELS.get(role, "Portal user"),
-        "capability_phases": phases,
-        "capability_available_count": sum(1 for phase in phases if phase["available"]),
-        "capability_managed_count": sum(1 for phase in phases if not phase["available"]),
-        "capability_action_count": sum(len(phase["actions"]) for phase in phases),
+        "capability_role_label": meta["label"],
+        "capability_page_title": meta["title"],
+        "capability_intro": meta["intro"],
+        "capability_groups": groups,
+        "capability_tools": all_tools,
+        "capability_tool_count": len(all_tools),
+        "capability_action_count": sum(len(tool["actions"]) for tool in all_tools),
         "capability_is_full_admin": role == "admin",
         "capability_is_campus_admin": role == "campus_admin",
     }
