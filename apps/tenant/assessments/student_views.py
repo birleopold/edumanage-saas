@@ -5,7 +5,8 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
-from .services import build_report_card, published_assessments_for_student, score_map_for_student, score_result
+from .grading_results import build_report_card, score_result
+from .services import published_assessments_for_student, score_map_for_student
 
 
 def _student_profile(request):
