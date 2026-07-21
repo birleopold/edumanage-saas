@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from .clearance_models import ClearanceDecisionLog, ClearanceOverride, ClearancePolicy
 from .models import (
     CommunicationTemplate,
     FeeItem,
@@ -13,6 +14,44 @@ from .models import (
     WebhookEndpoint,
     WebhookRetryQueueItem,
 )
+
+
+@admin.register(ClearancePolicy)
+class ClearancePolicyAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "access_type", "enforcement_mode", "rule_type", "priority", "is_active")
+    list_filter = ("access_type", "enforcement_mode", "rule_type", "calculation_basis", "is_active")
+    search_fields = ("code", "name", "description", "user_message")
+
+
+@admin.register(ClearanceOverride)
+class ClearanceOverrideAdmin(admin.ModelAdmin):
+    list_display = ("student", "access_type", "policy", "academic_term", "valid_from", "valid_until", "is_active")
+    list_filter = ("access_type", "is_active", "academic_term")
+    search_fields = ("student__first_name", "student__last_name", "student__student_id", "reason", "reference")
+    readonly_fields = ("approved_by", "created_at", "updated_at")
+
+
+@admin.register(ClearanceDecisionLog)
+class ClearanceDecisionLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "student", "access_type", "decision", "outstanding_balance", "paid_percentage", "source")
+    list_filter = ("access_type", "decision", "source", "created_at")
+    search_fields = ("student__first_name", "student__last_name", "student__student_id", "reason")
+    readonly_fields = (
+        "student",
+        "policy",
+        "override",
+        "academic_term",
+        "access_type",
+        "decision",
+        "source",
+        "invoiced_amount",
+        "paid_amount",
+        "outstanding_balance",
+        "paid_percentage",
+        "reason",
+        "checked_by",
+        "created_at",
+    )
 
 
 @admin.register(CommunicationTemplate)

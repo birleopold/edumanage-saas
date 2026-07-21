@@ -1,10 +1,16 @@
 from django.urls import include, path
 
-from . import admin_views, bulk_views, communication_views, dashboard_views, payment_history_views
+from . import admin_views, bulk_views, clearance_views, communication_views, dashboard_views, payment_history_views
 
 urlpatterns = [
     path("", dashboard_views.finance_dashboard, name="admin_finance_dashboard"),
     path("books/", include("apps.tenant.finance.books")),
+    path("clearance/", clearance_views.clearance_dashboard, name="admin_finance_clearance_dashboard"),
+    path("clearance/policies/create/", clearance_views.clearance_policy_create, name="admin_finance_clearance_policy_create"),
+    path("clearance/policies/<int:pk>/edit/", clearance_views.clearance_policy_edit, name="admin_finance_clearance_policy_edit"),
+    path("clearance/overrides/create/", clearance_views.clearance_override_create, name="admin_finance_clearance_override_create"),
+    path("clearance/overrides/<int:pk>/revoke/", clearance_views.clearance_override_revoke, name="admin_finance_clearance_override_revoke"),
+    path("clearance/check/", clearance_views.clearance_learner_check, name="admin_finance_clearance_learner_check"),
     path("payments/<int:pk>/", payment_history_views.payment_detail, name="admin_payments_detail"),
     path(
         "payments/<int:pk>/receipt/",
