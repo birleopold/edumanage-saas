@@ -97,7 +97,7 @@ class Phase5PathwayViewTests(TestCase):
     def test_dashboard_is_available_to_full_administrator(self):
         response = self.client.get(reverse("admin_pathway_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Subject combinations and programme pathways")
+        self.assertContains(response, "Programme pathways and subject combinations")
 
     def test_create_pathway_normalizes_code(self):
         response = self.client.post(
