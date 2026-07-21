@@ -44,7 +44,7 @@ class EducationFrameworkAdminViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "One academic foundation")
+        self.assertContains(response, "Curriculum, levels and school wording")
         self.assertContains(response, self.organization.name)
 
     def test_campus_administrator_cannot_change_institution_framework(self):
@@ -74,7 +74,7 @@ class EducationFrameworkAdminViewTests(TestCase):
 
         self.assertEqual(dashboard.status_code, 403)
         self.assertEqual(academics_setup.status_code, 200)
-        self.assertNotContains(academics_setup, ">Education Framework<")
+        self.assertNotContains(academics_setup, ">School Structure<")
 
     def test_sync_levels_action_preserves_existing_levels(self):
         level = Level.objects.create(name="Senior 4", order=20)

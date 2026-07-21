@@ -239,7 +239,7 @@ class UnifiedLearningActivityTests(TestCase):
         self.client.login(username="phase3_admin", password="test-pass-123")
         response = self.client.get(reverse("admin_coursework_activity_framework"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Unified Learning Activities")
+        self.assertContains(response, "Learning Activities")
 
     def test_student_cannot_open_activity_framework(self):
         self.client.login(username="phase3_student", password="test-pass-123")

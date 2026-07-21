@@ -49,7 +49,7 @@ class Phase7WelfareViewTests(TestCase):
     def test_full_administrator_can_open_dashboard_and_bootstrap_profiles(self):
         response = self.client.get(reverse("admin_boarding_welfare_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Boarding and welfare coordination")
+        self.assertContains(response, "Student boarding and support")
 
         response = self.client.post(
             reverse("admin_boarding_welfare_dashboard"),

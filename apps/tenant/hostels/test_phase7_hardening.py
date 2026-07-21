@@ -275,7 +275,7 @@ class Phase7OperationalHardeningViewTests(TestCase):
     def test_full_administrator_can_open_hardening_dashboard(self):
         response = self.client.get(reverse("admin_boarding_welfare_hardening"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Operational safety and evidence")
+        self.assertContains(response, "Follow-up and safety checks")
 
     def test_leave_contact_view_records_evidence(self):
         response = self.client.post(

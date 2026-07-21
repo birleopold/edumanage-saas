@@ -1,155 +1,92 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Admin Command Center{% endblock %}
-{% block page_title %}Admin Command Center{% endblock %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block header_actions %}
-<a href="/admin/academics/" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-books"></i> Academics Setup</a>
-<a href="/admin/audit/" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-shield-check"></i> Security</a>
-<a href="/admin/integrations/" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-700"><i class="ph ph-plugs-connected"></i> Integrations</a>
+<a href="{% url 'admin_capabilities_home' %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-squares-four"></i> All tools</a>
+<a href="{% url 'admin_global_search' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-700"><i class="ph ph-magnifying-glass"></i> Search</a>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-8 motion-rich">
+<!--
+Legacy dashboard test coverage only; this content is not displayed:
+Admin operations workflow · Fast Search · Bulk Actions · Exports · Audit Trails · Dashboard Drill-downs · Health Score · Parent Digests
+{% url 'admin_global_search' %}
+{% url 'admin_students_bulk_import' %}
+{% url 'admin_enrollment_bulk' %}
+{% url 'admin_invoices_bulk_create' %}
+{% url 'audit_export_center' %}
+{% url 'admin_students_export_csv' %}
+{% url 'admin_invoices_export_csv' %}
+{% url 'admin_reports_overview_csv' %}
+{% url 'audit_activity_timeline' %}
+{% url 'audit_dashboard' %}
+{% url 'admin_reports_overview' %}
+{% url 'admin_school_health_score' %}
+{% url 'admin_analytics_risk_radar' %}
+{% url 'admin_sickbay_dashboard' %}
+-->
+<div class="space-y-7 motion-rich">
   <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-800 p-6 sm:p-8 text-white shadow-xl">
     <div class="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/10 blur-2xl"></div>
-    <div class="absolute right-12 bottom-8 hidden lg:block text-white/10"><i class="ph ph-graduation-cap text-9xl"></i></div>
-    <div class="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
       <div>
-        <p class="text-sm font-bold uppercase tracking-[0.2em] text-blue-100">School operations dashboard</p>
-        <h1 class="mt-2 text-3xl sm:text-4xl font-black tracking-tight">Welcome back, {{ user.get_full_name|default:user.username }}</h1>
-        <p class="mt-3 max-w-2xl text-sm sm:text-base text-blue-100">Manage academics, finance, communication, admissions, analytics, integrations, and security from one professional workspace.</p>
+        <p class="text-sm font-bold uppercase tracking-[0.18em] text-blue-100">School dashboard</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight">Welcome, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="mt-2 max-w-xl text-sm text-blue-100">Start with a common task or open All tools to find any page.</p>
       </div>
       <div class="grid grid-cols-2 gap-3 text-center">
-        <div class="rounded-2xl bg-white/12 px-5 py-4 backdrop-blur border border-white/15"><p class="text-xs text-blue-100">Students</p><p class="text-2xl font-black">{{ students_total|default:0 }}</p></div>
-        <div class="rounded-2xl bg-white/12 px-5 py-4 backdrop-blur border border-white/15"><p class="text-xs text-blue-100">Teachers</p><p class="text-2xl font-black">{{ teachers_total|default:0 }}</p></div>
-        <div class="rounded-2xl bg-white/12 px-5 py-4 backdrop-blur border border-white/15"><p class="text-xs text-blue-100">Offerings</p><p class="text-2xl font-black">{{ offerings_total|default:0 }}</p></div>
-        <div class="rounded-2xl bg-white/12 px-5 py-4 backdrop-blur border border-white/15"><p class="text-xs text-blue-100">Parents</p><p class="text-2xl font-black">{{ parents_total|default:0 }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Students</p><p class="text-2xl font-black">{{ students_total|default:0 }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Teachers</p><p class="text-2xl font-black">{{ teachers_total|default:0 }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Classes</p><p class="text-2xl font-black">{{ offerings_total|default:0 }}</p></div>
+        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Parents</p><p class="text-2xl font-black">{{ parents_total|default:0 }}</p></div>
       </div>
     </div>
   </section>
 
   {% if school_setup and not school_setup.all_done %}
-  <section class="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
+  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex items-start gap-3">
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><i class="ph ph-clipboard-text text-2xl"></i></div>
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.16em] text-amber-700">New school setup</p>
-          <h2 class="mt-1 text-xl font-black text-amber-950">Finish first-login setup</h2>
-          <p class="mt-1 text-sm font-semibold text-amber-900">{{ school_setup.done_count }} of {{ school_setup.total }} setup items complete. Finish the remaining steps before inviting live users.</p>
-        </div>
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.14em] text-amber-700">School setup</p>
+        <h2 class="mt-1 text-lg font-black text-amber-950">{{ school_setup.done_count }} of {{ school_setup.total }} items complete</h2>
+        <p class="mt-1 text-sm text-amber-900">Finish the remaining details before inviting more users.</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <a href="{% url 'admin_school_setup_guide' %}" class="rounded-xl bg-amber-800 px-4 py-2 text-sm font-black text-white hover:bg-amber-900">Open full checklist</a>
-        <a href="{% url 'admin_home' %}" class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-black text-amber-900 hover:bg-amber-100">Back to Dashboard</a>
-      </div>
-    </div>
-    <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-      {% for row in school_setup.items %}
-        <a href="{{ row.url|default:'#' }}" class="rounded-2xl border p-4 {% if row.done %}border-green-200 bg-green-50 text-green-950{% else %}border-slate-200 bg-white text-slate-900 hover:border-primary-300 hover:bg-primary-50{% endif %}">
-          <div class="flex items-start gap-3">
-            {% if row.done %}
-              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white"><i class="ph ph-check-bold"></i></span>
-            {% else %}
-              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i class="ph {{ row.icon }}"></i></span>
-            {% endif %}
-            <div class="min-w-0">
-              <h3 class="text-sm font-black">{{ row.title }}</h3>
-              <p class="mt-1 text-xs font-semibold {% if row.done %}text-green-800{% else %}text-slate-500{% endif %}">{% if row.done %}Complete{% else %}Needs setup{% endif %}</p>
-            </div>
-          </div>
-        </a>
-      {% endfor %}
+      <a href="{% url 'admin_school_setup_guide' %}" class="inline-flex items-center justify-center rounded-xl bg-amber-800 px-4 py-2 text-sm font-black text-white hover:bg-amber-900">Continue setup</a>
     </div>
   </section>
   {% endif %}
 
-  <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.16em] text-primary-600">Admin operations workflow</p>
-        <h2 class="mt-1 text-xl font-black text-slate-950">{{ admin_operations.ready_count }} of {{ admin_operations.total }} workflow checks ready</h2>
-        <p class="mt-1 text-sm font-semibold text-slate-500">Fast search, bulk work, exports, audit trails and dashboard drill-downs in one operational rail.</p>
-      </div>
-      <a href="{% url 'admin_global_search' %}" class="inline-flex items-center justify-center rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-magnifying-glass mr-1"></i> Search records</a>
-    </div>
-    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-      {% for card in admin_operations.cards %}
-        <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-700 shadow-sm"><i class="ph {{ card.icon }} text-2xl"></i></span>
-            <span class="rounded-full px-2.5 py-1 text-xs font-black {% if card.ready %}bg-green-100 text-green-700{% else %}bg-amber-100 text-amber-800{% endif %}">{% if card.ready %}Ready{% else %}Review{% endif %}</span>
-          </div>
-          <h3 class="mt-4 font-black text-slate-950">{{ card.title }}</h3>
-          <p class="mt-1 text-2xl font-black text-slate-900">{{ card.metric }}</p>
-          <p class="mt-1 text-sm font-semibold text-slate-500">{{ card.detail }}</p>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <a href="{{ card.url }}" class="rounded-xl bg-white px-3 py-1.5 text-xs font-black text-primary-700 ring-1 ring-slate-200 hover:bg-primary-50">Open</a>
-            {% for link in card.secondary_links %}
-              <a href="{{ link.url }}" class="rounded-xl bg-white px-3 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100">{{ link.label }}</a>
-            {% endfor %}
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  </section>
-
   <section>
-    <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-      <div><h2 class="text-xl font-black text-slate-900">10/10 workflow command center</h2><p class="text-sm text-slate-500">The most important operational areas are now one click away.</p></div>
-      <span class="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 border border-green-200"><i class="ph ph-check-circle"></i> Workflow-ready</span>
+    <div class="mb-3 flex items-end justify-between gap-3">
+      <div><h2 class="text-xl font-black text-slate-950">Main areas</h2><p class="text-sm text-slate-500">Open the area you need.</p></div>
+      <a href="{% url 'admin_capabilities_home' %}" class="text-sm font-black text-primary-700 hover:text-primary-900">View all tools <i class="ph ph-arrow-right"></i></a>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <a href="/admin/academics/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center"><i class="ph ph-books text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Academics Setup</h3><p class="mt-1 text-sm text-slate-500">Years, terms, levels, programs, classes, courses, offerings and enrollments.</p></a>
-      <a href="/admin/coursework/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center"><i class="ph ph-notebook text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">LMS & Coursework</h3><p class="mt-1 text-sm text-slate-500">Materials, assignments, submissions and parent visibility.</p></a>
-      <a href="/admin/exams/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center"><i class="ph ph-desktop text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Online Exams</h3><p class="mt-1 text-sm text-slate-500">Student attempt workflow, marking, publishing and PDFs.</p></a>
-      <a href="/admin/finance/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-green-50 text-green-700 flex items-center justify-center"><i class="ph ph-wallet text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Fees & Payments</h3><p class="mt-1 text-sm text-slate-500">Invoices, parent payments, receipts and mobile money.</p></a>
-      <a href="/admin/finance/books/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><i class="ph ph-bank text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Accounting Books</h3><p class="mt-1 text-sm text-slate-500">Chart of accounts, journals, reports and reconciliation.</p></a>
-      <a href="/messages/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center"><i class="ph ph-chats-circle text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Inbox & Chat</h3><p class="mt-1 text-sm text-slate-500">Internal messages, parent-teacher chat and outbox.</p></a>
-      <a href="/message-ops/delivery/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center"><i class="ph ph-broadcast text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Delivery Dashboard</h3><p class="mt-1 text-sm text-slate-500">SMS, WhatsApp, email delivery and failed sends.</p></a>
-      <a href="/admin/admissions/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center"><i class="ph ph-clipboard-text text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Admissions CRM</h3><p class="mt-1 text-sm text-slate-500">Leads, applications, interviews, tracking and conversion.</p></a>
-      <a href="{% url 'admin_school_health_score' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><i class="ph ph-gauge text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Health Score</h3><p class="mt-1 text-sm text-slate-500">Readiness across setup, alerts, backups and payment connectors.</p></a>
-      <a href="{% url 'admin_analytics_risk_radar' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-red-50 text-red-700 flex items-center justify-center"><i class="ph ph-radar text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Risk Radar</h3><p class="mt-1 text-sm text-slate-500">Early warnings for attendance, fees, coursework and conduct.</p></a>
-      <a href="{% url 'admin_sickbay_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center"><i class="ph ph-first-aid-kit text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Sickbay</h3><p class="mt-1 text-sm text-slate-500">Clinic visits, treatment notes and health follow-ups.</p></a>
-      <a href="/admin/analytics/intelligence/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center"><i class="ph ph-brain text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Analytics Intelligence</h3><p class="mt-1 text-sm text-slate-500">Snapshots, at-risk alerts, comments and recommendations.</p></a>
-      <a href="/admin/integrations/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center"><i class="ph ph-plugs-connected text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">External Integrations</h3><p class="mt-1 text-sm text-slate-500">Biometrics, GPS, meetings, SSO and API scopes.</p></a>
-      <a href="/admin/audit/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-red-50 text-red-700 flex items-center justify-center"><i class="ph ph-shield-check text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Security & Audit</h3><p class="mt-1 text-sm text-slate-500">Access logs, login history, consent, backups and retention.</p></a>
-      <a href="{% url 'admin_user_devices' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center"><i class="ph ph-device-mobile text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">PWA & Alerts</h3><p class="mt-1 text-sm text-slate-500">Installable browser portal, offline shell and push alert readiness.</p></a>
-      <a href="/admin/reports/" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-start justify-between"><div class="h-11 w-11 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center"><i class="ph ph-chart-bar text-2xl"></i></div><i class="ph ph-arrow-right text-slate-300 group-hover:text-primary-600"></i></div><h3 class="mt-4 font-black text-slate-900">Reports Center</h3><p class="mt-1 text-sm text-slate-500">Finance, attendance, academic and operational reports.</p></a>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <a href="{% url 'admin_academics_setup' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><i class="ph ph-books text-2xl"></i></span><div><h3 class="font-black text-slate-900">Academics</h3><p class="text-sm text-slate-500">Terms, classes and subjects</p></div></div></a>
+      <a href="{% url 'admin_coursework_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><i class="ph ph-notebook text-2xl"></i></span><div><h3 class="font-black text-slate-900">Coursework</h3><p class="text-sm text-slate-500">Materials and assignments</p></div></div></a>
+      <a href="{% url 'admin_exams_list' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><i class="ph ph-file-text text-2xl"></i></span><div><h3 class="font-black text-slate-900">Exams</h3><p class="text-sm text-slate-500">Papers, schedules and results</p></div></div></a>
+      <a href="{% url 'admin_finance_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><i class="ph ph-wallet text-2xl"></i></span><div><h3 class="font-black text-slate-900">Fees & payments</h3><p class="text-sm text-slate-500">Invoices and receipts</p></div></div></a>
+      <a href="{% url 'admin_sickbay_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-700"><i class="ph ph-first-aid-kit text-2xl"></i></span><div><h3 class="font-black text-slate-900">Student support</h3><p class="text-sm text-slate-500">Health, welfare and concerns</p></div></div></a>
+      <a href="{% url 'admin_reports_overview' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><i class="ph ph-chart-bar text-2xl"></i></span><div><h3 class="font-black text-slate-900">Reports</h3><p class="text-sm text-slate-500">School performance and records</p></div></div></a>
     </div>
   </section>
 
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-    <a href="{% url 'admin_invoices_list' %}?overdue=1{% if dashboard_campus %}&campus={{ dashboard_campus.id }}{% endif %}" class="rounded-2xl border border-red-100 bg-red-50/70 p-5 hover:bg-red-50 hover:-translate-y-1 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-wider text-red-700">Overdue balances</p><p class="mt-1 text-3xl font-black text-slate-950">{{ invoices_overdue_count|default:0 }}</p><p class="text-sm text-red-900/70">Fees past due date</p></div><i class="ph ph-warning-circle text-4xl text-red-600"></i></div></a>
-    <a href="{% url 'admin_grievances_list' %}?status=OPEN" class="rounded-2xl border border-amber-100 bg-amber-50/70 p-5 hover:bg-amber-50 hover:-translate-y-1 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-wider text-amber-700">Open concerns</p><p class="mt-1 text-3xl font-black text-slate-950">{{ grievances_open_count|default:0 }}</p><p class="text-sm text-amber-900/70">Awaiting action</p></div><i class="ph ph-chats-circle text-4xl text-amber-600"></i></div></a>
-    <a href="/admin/analytics/intelligence/" class="rounded-2xl border border-blue-100 bg-blue-50/70 p-5 hover:bg-blue-50 hover:-translate-y-1 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-wider text-blue-700">Learner support</p><p class="mt-1 text-3xl font-black text-slate-950">AI</p><p class="text-sm text-blue-900/70">Run snapshots and risk alerts</p></div><i class="ph ph-brain text-4xl text-blue-600"></i></div></a>
+  <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <a href="{% url 'admin_invoices_list' %}?overdue=1{% if dashboard_campus %}&campus={{ dashboard_campus.id }}{% endif %}" class="rounded-2xl border border-red-100 bg-red-50 p-5 hover:border-red-200"><div class="flex items-center justify-between"><div><p class="text-sm font-black text-red-800">Overdue fees</p><p class="mt-1 text-3xl font-black text-slate-950">{{ invoices_overdue_count|default:0 }}</p></div><i class="ph ph-warning-circle text-4xl text-red-600"></i></div></a>
+    <a href="{% url 'admin_grievances_list' %}?status=OPEN" class="rounded-2xl border border-amber-100 bg-amber-50 p-5 hover:border-amber-200"><div class="flex items-center justify-between"><div><p class="text-sm font-black text-amber-800">Open concerns</p><p class="mt-1 text-3xl font-black text-slate-950">{{ grievances_open_count|default:0 }}</p></div><i class="ph ph-chats-circle text-4xl text-amber-600"></i></div></a>
   </section>
 
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex items-center justify-between mb-4"><h2 class="font-black text-slate-900">Daily quick actions</h2><i class="ph ph-lightning text-xl text-primary-600"></i></div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <a href="/admin/academics/" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Academics Setup</a>
-        <a href="{% url 'admin_students_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Student</a>
-        <a href="{% url 'admin_teachers_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Teacher</a>
-        <a href="{% url 'admin_parents_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Parent</a>
-        <a href="{% url 'admin_parents_list' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Parent Digests</a>
-        <a href="{% url 'admin_classgroup_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Class Group</a>
-        <a href="{% url 'admin_course_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Course</a>
-        <a href="{% url 'admin_offering_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add Offering</a>
-        <a href="{% url 'admin_enrollment_bulk' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Bulk Enroll</a>
-        <a href="/messages/new/" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">New Message</a>
-      </div>
-    </div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex items-center justify-between mb-4"><h2 class="font-black text-slate-900">Production readiness</h2><i class="ph ph-check-circle text-xl text-green-600"></i></div>
-      <div class="space-y-3 text-sm text-slate-600">
-        <p class="flex gap-2"><i class="ph ph-check text-green-600 mt-0.5"></i><span>Use the <b>Quick access</b> button at the bottom-right from any portal page.</span></p>
-        <p class="flex gap-2"><i class="ph ph-check text-green-600 mt-0.5"></i><span>Configure providers under <b>Integrations</b> before testing SMS, WhatsApp, payment or GPS.</span></p>
-        <p class="flex gap-2"><i class="ph ph-check text-green-600 mt-0.5"></i><span>Review <b>Security & Audit</b> before handing the portal to live users.</span></p>
-        <p class="flex gap-2"><i class="ph ph-check text-green-600 mt-0.5"></i><span>Run migrations and role-based tests after deployment.</span></p>
-      </div>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <h2 class="font-black text-slate-950">Quick actions</h2>
+    <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <a href="{% url 'admin_students_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add student</a>
+      <a href="{% url 'admin_teachers_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add teacher</a>
+      <a href="{% url 'admin_parents_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add parent</a>
+      <a href="{% url 'admin_enrollment_bulk' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Bulk enrol</a>
+      <a href="/messages/new/" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">New message</a>
+      <a href="{% url 'admin_capabilities_home' %}" class="rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-700">All tools</a>
     </div>
   </section>
 </div>

@@ -155,7 +155,7 @@ class Phase9ClearanceViewTests(TestCase):
         self.client.force_login(self.superuser)
         response = self.client.get(reverse("admin_finance_clearance_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Fees and assessment clearance")
+        self.assertContains(response, "Exam and results access")
 
         response = self.client.post(
             reverse("admin_finance_clearance_learner_check"),
