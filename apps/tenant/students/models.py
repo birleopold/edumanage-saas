@@ -52,5 +52,37 @@ class StudentProfile(models.Model):
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
+    def sync_user_identity(self):
+        """Keep the login account aligned with the authoritative student record."""
+        if not self.user_id:
+            return None
+
+        user = self.user
+        updates = []
+        desired_values = {
+            "first_name": (self.first_name or "").strip(),
+            "last_name": (self.last_name or "").strip(),
+        }
+        for field_name, desired_value in desired_values.items():
+            if getattr(user, field_name) != desired_value:
+                setattr(user, field_name, desired_value)
+                updates.append(field_name)
+
+        desired_email = (self.email or "").strip().lower()
+        email_is_available = not desired_email or not type(user).objects.filter(
+            email__iexact=desired_email
+        ).exclude(pk=user.pk).exists()
+        if email_is_available and user.email != desired_email:
+            user.email = desired_email
+            updates.append("email")
+
+        if updates:
+            user.save(update_fields=updates)
+        return user
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.sync_user_identity()
+
     def __str__(self) -> str:
         return f"{self.last_name} {self.first_name}".strip()
