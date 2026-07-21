@@ -4,7 +4,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.tenant.portals.permissions import admin_portal_required, role_required
-from apps.tenant.students.models import StudentProfile
 from apps.tenant.users.models import Role
 
 from .hardening_forms import GuardianContactLogForm, WelfareCaseEscalationForm
@@ -20,6 +19,22 @@ from .models import BoardingProfile, HostelRollCall
 from .welfare_views import _case_queryset_for, _leave_queryset_for, _student_queryset_for
 
 
+def _save_guardian_contact(*, form, student, recorded_by, **source_kwargs):
+    cleaned = dict(form.cleaned_data)
+    parent = cleaned.pop("parent", None)
+    log = record_guardian_contact(
+        student=student,
+        recorded_by=recorded_by,
+        **source_kwargs,
+        **cleaned,
+    )
+    if parent is not None:
+        log.parent = parent
+        log.full_clean()
+        log.save(update_fields=["parent"])
+    return log
+
+
 @role_required(Role.ADMIN)
 def operational_hardening_dashboard(request):
     readiness = phase7_operational_readiness()
@@ -30,7 +45,7 @@ def operational_hardening_dashboard(request):
     ]
     incomplete_rows = [row for row in readiness_rows if not row["readiness"]["ready"]]
     recent_contacts = GuardianContactLog.objects.select_related(
-        "student", "recorded_by", "boarding_leave", "welfare_case", "roll_call_entry"
+        "student", "parent", "recorded_by", "boarding_leave", "welfare_case", "roll_call_entry"
     )[:15]
     recent_escalations = WelfareCaseEscalation.objects.select_related(
         "welfare_case", "welfare_case__student", "escalated_by"
@@ -52,14 +67,14 @@ def operational_hardening_dashboard(request):
 def boarding_leave_contact_create(request, pk):
     leave = get_object_or_404(_leave_queryset_for(request.user), pk=pk)
     if request.method == "POST":
-        form = GuardianContactLogForm(request.POST)
+        form = GuardianContactLogForm(request.POST, student=leave.student)
         if form.is_valid():
             try:
-                record_guardian_contact(
+                _save_guardian_contact(
+                    form=form,
                     student=leave.student,
                     boarding_leave=leave,
                     recorded_by=request.user,
-                    **form.cleaned_data,
                 )
                 messages.success(request, "Guardian contact recorded for this leave.")
                 return redirect("admin_boarding_leave_detail", pk=leave.pk)
@@ -67,6 +82,7 @@ def boarding_leave_contact_create(request, pk):
                 form.add_error(None, exc)
     else:
         form = GuardianContactLogForm(
+            student=leave.student,
             default_name=leave.guardian_name,
             default_phone=leave.guardian_phone,
             default_purpose=GuardianContactLog.LEAVE_APPROVAL,
@@ -88,14 +104,14 @@ def welfare_case_contact_create(request, pk):
     case = get_object_or_404(_case_queryset_for(request.user), pk=pk)
     profile = BoardingProfile.objects.filter(student=case.student).first()
     if request.method == "POST":
-        form = GuardianContactLogForm(request.POST)
+        form = GuardianContactLogForm(request.POST, student=case.student)
         if form.is_valid():
             try:
-                record_guardian_contact(
+                _save_guardian_contact(
+                    form=form,
                     student=case.student,
                     welfare_case=case,
                     recorded_by=request.user,
-                    **form.cleaned_data,
                 )
                 messages.success(request, "Guardian contact recorded for this welfare case.")
                 return redirect("admin_welfare_case_detail", pk=case.pk)
@@ -103,6 +119,7 @@ def welfare_case_contact_create(request, pk):
                 form.add_error(None, exc)
     else:
         form = GuardianContactLogForm(
+            student=case.student,
             default_name=profile.primary_guardian_name if profile else "",
             default_phone=profile.primary_guardian_phone if profile else "",
             default_purpose=GuardianContactLog.WELFARE,
