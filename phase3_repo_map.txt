@@ -1,5 +1,6 @@
 COURSEWORK FILES
 apps/tenant/coursework/__init__.py
+apps/tenant/coursework/activity_forms.py
 apps/tenant/coursework/activity_services.py
 apps/tenant/coursework/admin.py
 apps/tenant/coursework/admin_urls.py
