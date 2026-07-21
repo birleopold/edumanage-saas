@@ -76,6 +76,35 @@ def _student_number_exists(student_number: str) -> bool:
     )
 
 
+def sync_student_user_identity(student, *, save: bool = True):
+    """Keep the login account aligned with the authoritative student record.
+
+    Student names and contact details are entered once in ``StudentProfile``.
+    The linked authentication user mirrors those values for greetings, account
+    pages and email delivery; learners are never asked to re-enter a second set
+    of names in their portal.
+    """
+
+    user = getattr(student, "user", None)
+    if user is None:
+        return None
+
+    updates = []
+    desired = {
+        "first_name": (student.first_name or "").strip(),
+        "last_name": (student.last_name or "").strip(),
+        "email": (student.email or "").strip(),
+    }
+    for field_name, value in desired.items():
+        if getattr(user, field_name) != value:
+            setattr(user, field_name, value)
+            updates.append(field_name)
+
+    if save and updates:
+        user.save(update_fields=updates)
+    return user
+
+
 def generate_next_student_id(campus: Optional[Campus], today: Optional[date] = None) -> str:
     if campus is None:
         raise ValueError("Campus is required to generate a student number")
