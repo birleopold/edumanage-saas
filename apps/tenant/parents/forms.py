@@ -2,10 +2,23 @@ from typing import Optional
 
 from django import forms
 from django.contrib.auth.hashers import check_password
+from django.db.models import Q
 
 from apps.tenant.students.models import StudentProfile
 
 from .models import ParentProfile, ParentStudentLink
+
+
+GUARDIAN_RELATIONSHIP_CHOICES = (
+    ("", "Select relationship"),
+    ("Mother", "Mother"),
+    ("Father", "Father"),
+    ("Guardian", "Guardian"),
+    ("Grandparent", "Grandparent"),
+    ("Sibling", "Sibling"),
+    ("Sponsor", "Sponsor"),
+    ("Other", "Other"),
+)
 
 
 class ParentCommunicationPreferencesForm(forms.ModelForm):
@@ -90,6 +103,37 @@ class ParentProfileForm(forms.ModelForm):
             "digest_pwa_enabled",
             "is_active",
         ]
+
+    def __init__(
+        self,
+        *args,
+        campus_scope=None,
+        include_student_link: bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        if include_student_link:
+            students = StudentProfile.objects.filter(is_active=True).order_by(
+                "last_name", "first_name", "student_id"
+            )
+            if campus_scope is not None:
+                students = students.filter(campus=campus_scope)
+            self.fields["student"] = forms.ModelChoiceField(
+                label="Student cared for",
+                queryset=students,
+                required=True,
+                help_text="Select the learner this parent or guardian is responsible for.",
+            )
+            self.fields["relationship"] = forms.ChoiceField(
+                label="Relationship to student",
+                choices=GUARDIAN_RELATIONSHIP_CHOICES,
+                required=True,
+            )
+            self.fields["is_primary_guardian"] = forms.BooleanField(
+                label="Primary guardian for this student",
+                required=False,
+                initial=True,
+            )
 
     def clean_results_pin(self):
         pin = (self.cleaned_data.get("results_pin") or "").strip()
@@ -181,17 +225,71 @@ class ParentResultsPinSelfServiceForm(forms.Form):
 
 
 class ParentStudentLinkForm(forms.ModelForm):
-    student = forms.ModelChoiceField(queryset=StudentProfile.objects.all())
+    student = forms.ModelChoiceField(
+        label="Student",
+        queryset=StudentProfile.objects.filter(is_active=True).order_by(
+            "last_name", "first_name", "student_id"
+        ),
+    )
+    relationship = forms.ChoiceField(
+        label="Relationship",
+        choices=GUARDIAN_RELATIONSHIP_CHOICES,
+        required=True,
+    )
+    is_primary = forms.BooleanField(
+        label="Primary guardian",
+        required=False,
+    )
 
     def __init__(self, *args, campus_scope=None, **kwargs):
         super().__init__(*args, **kwargs)
         if campus_scope is not None:
-            self.fields["student"].queryset = self.fields["student"].queryset.filter(campus=campus_scope)
+            self.fields["student"].queryset = self.fields["student"].queryset.filter(
+                campus=campus_scope
+            )
 
     class Meta:
         model = ParentStudentLink
         fields = [
             "student",
+            "relationship",
+            "is_primary",
+        ]
+
+
+class StudentGuardianLinkForm(forms.ModelForm):
+    parent = forms.ModelChoiceField(
+        label="Parent or guardian",
+        queryset=ParentProfile.objects.filter(is_active=True).order_by(
+            "last_name", "first_name"
+        ),
+    )
+    relationship = forms.ChoiceField(
+        label="Relationship",
+        choices=GUARDIAN_RELATIONSHIP_CHOICES,
+        required=True,
+    )
+    is_primary = forms.BooleanField(
+        label="Primary guardian",
+        required=False,
+    )
+
+    def __init__(self, *args, campus_scope=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if campus_scope is not None:
+            self.fields["parent"].queryset = (
+                self.fields["parent"].queryset.filter(
+                    Q(parentstudentlink__student__campus=campus_scope)
+                    | Q(parentstudentlink__isnull=True)
+                )
+                .distinct()
+                .order_by("last_name", "first_name")
+            )
+
+    class Meta:
+        model = ParentStudentLink
+        fields = [
+            "parent",
             "relationship",
             "is_primary",
         ]
