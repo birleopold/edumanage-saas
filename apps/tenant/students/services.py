@@ -112,3 +112,39 @@ def generate_next_student_id(campus: Optional[Campus], today: Optional[date] = N
             if not _student_number_exists(candidate):
                 locked.save(update_fields=["last_student_sequence"])
                 return candidate
+
+
+def sync_student_user(student):
+    """Keep the login identity aligned with the authoritative learner profile.
+
+    StudentProfile remains the source of truth for a learner's name and email.
+    This helper updates the linked login account and guarantees the student role
+    without changing the learner record itself.
+    """
+
+    if not getattr(student, "user_id", None):
+        return None
+
+    from apps.tenant.users.models import Role
+
+    user = student.user
+    desired = {
+        "first_name": (student.first_name or "").strip(),
+        "last_name": (student.last_name or "").strip(),
+        "email": (student.email or "").strip(),
+    }
+    changed_fields = []
+    for field, value in desired.items():
+        if getattr(user, field) != value:
+            setattr(user, field, value)
+            changed_fields.append(field)
+
+    if changed_fields:
+        user.save(update_fields=changed_fields)
+
+    student_role, _ = Role.objects.get_or_create(
+        code=Role.STUDENT,
+        defaults={"name": "Student"},
+    )
+    user.roles.add(student_role)
+    return user
