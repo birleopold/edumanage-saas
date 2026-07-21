@@ -13,6 +13,12 @@ from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_http_methods
 
+from apps.tenant.parents.models import ParentProfile
+from apps.tenant.students.models import StudentProfile
+from apps.tenant.students.services import sync_student_user_identity
+from apps.tenant.teachers.models import TeacherProfile
+
+from .device_portal import base_template_for
 from .forms import (
     CustomLoginForm,
     CustomPasswordChangeForm,
@@ -38,12 +44,7 @@ def _audit_login(request, username="", user=None, status="SUCCESS", reason=""):
 
 
 def _account_page_messages(request):
-    """Consume stale session messages and return a safe, deduplicated list.
-
-    A redirect loop can queue the same operational feature notice many times.
-    Account-security pages must stay focused on authentication and must not
-    expose package-level operational notices to the user.
-    """
+    """Consume stale session messages and return a safe, deduplicated list."""
     unique_messages = []
     seen = set()
 
@@ -76,6 +77,40 @@ def _role_home_url(user) -> str:
     return reverse("admin_home")
 
 
+def _role_profile_for(user):
+    """Return the authoritative role profile and a human-friendly role label."""
+    from apps.tenant.users.models import Role
+
+    if user.has_role(Role.STUDENT):
+        return StudentProfile.objects.filter(user=user).select_related("campus", "stream").first(), "Student"
+    if user.has_role(Role.PARENT):
+        return ParentProfile.objects.filter(user=user).first(), "Parent or guardian"
+    if user.has_role(Role.TEACHER):
+        return TeacherProfile.objects.filter(user=user).select_related("campus").first(), "Teacher"
+    if user.has_role(Role.CAMPUS_ADMIN):
+        return None, "Campus administrator"
+    if user.has_role(Role.PRINCIPAL):
+        return None, "Principal"
+    return None, "Administrator"
+
+
+def _sync_role_identity(user, profile):
+    if profile is None:
+        return
+    if isinstance(profile, StudentProfile):
+        sync_student_user_identity(profile)
+        return
+
+    updates = []
+    for field_name in ("first_name", "last_name", "email"):
+        value = (getattr(profile, field_name, "") or "").strip()
+        if getattr(user, field_name) != value:
+            setattr(user, field_name, value)
+            updates.append(field_name)
+    if updates:
+        user.save(update_fields=updates)
+
+
 class CustomLoginView(LoginView):
     """Enhanced login view with remember me functionality."""
     form_class = CustomLoginForm
@@ -98,7 +133,6 @@ class CustomLoginView(LoginView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        """Redirect first-login users to password change, then to their role portal."""
         user = self.request.user
         if getattr(user, "must_change_password", False):
             return reverse("change_password")
@@ -106,7 +140,6 @@ class CustomLoginView(LoginView):
 
 
 class CustomPasswordResetView(PasswordResetView):
-    """Enhanced password reset view."""
     form_class = CustomPasswordResetForm
     template_name = "auth/password_reset.html"
     email_template_name = "auth/password_reset_email.html"
@@ -124,7 +157,6 @@ class CustomPasswordResetView(PasswordResetView):
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    """Enhanced password reset confirmation view."""
     form_class = CustomPasswordResetConfirmForm
     template_name = "auth/password_reset_confirm.html"
     success_url = reverse_lazy("password_reset_complete")
@@ -142,7 +174,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 @login_required
 @require_http_methods(["GET", "POST"])
 def change_password(request):
-    """Change a tenant user's password without depending on a portal dashboard shell."""
     password_change_required = bool(getattr(request.user, "must_change_password", False))
     account_messages = _account_page_messages(request)
 
@@ -180,19 +211,39 @@ def change_password(request):
 
 @login_required
 def user_profile(request):
-    """User profile view and edit."""
-    if request.method == "POST":
-        form = UserProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Your profile has been updated successfully.")
-            return redirect("user_profile")
-    else:
-        form = UserProfileForm(instance=request.user)
-    user_roles = []
-    if hasattr(request.user, "roles"):
-        user_roles = request.user.roles.all()
-    return render(request, "auth/profile.html", {"form": form, "user_roles": user_roles})
+    """Role-locked account page backed by the user's authoritative profile."""
+    profile_record, role_label = _role_profile_for(request.user)
+    _sync_role_identity(request.user, profile_record)
+
+    is_role_managed = profile_record is not None
+    form = None
+    if not is_role_managed:
+        if request.method == "POST":
+            form = UserProfileForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Your profile has been updated successfully.")
+                return redirect("user_profile")
+        else:
+            form = UserProfileForm(instance=request.user)
+    elif request.method == "POST":
+        messages.info(request, "Your name and contact details are managed from your school record.")
+        return redirect("user_profile")
+
+    user_roles = request.user.roles.all() if hasattr(request.user, "roles") else []
+    return render(
+        request,
+        "auth/profile.html",
+        {
+            "form": form,
+            "user_roles": user_roles,
+            "profile_record": profile_record,
+            "role_label": role_label,
+            "profile_base_template": base_template_for(request.user),
+            "portal_home_url": _role_home_url(request.user),
+            "identity_is_school_managed": is_role_managed,
+        },
+    )
 
 
 @require_http_methods(["GET", "POST"])
