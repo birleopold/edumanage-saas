@@ -6,8 +6,17 @@ from django.http import HttpResponseForbidden
 from apps.tenant.users.models import Role
 
 
+ACTIVE_PORTAL_ROLE_SESSION_KEY = "active_portal_role"
+
+
 def _is_superuser(user) -> bool:
     return bool(getattr(user, "is_superuser", False))
+
+
+def _remember_active_portal(request, role_code: str) -> None:
+    """Remember only a role the current user has already been authorized to use."""
+    if request.session.get(ACTIVE_PORTAL_ROLE_SESSION_KEY) != role_code:
+        request.session[ACTIVE_PORTAL_ROLE_SESSION_KEY] = role_code
 
 
 def role_required(role_code: str):
@@ -17,8 +26,10 @@ def role_required(role_code: str):
         def _wrapped(request, *args, **kwargs):
             user = request.user
             if _is_superuser(user):
+                _remember_active_portal(request, role_code)
                 return view_func(request, *args, **kwargs)
             if hasattr(user, "has_role") and user.has_role(role_code):
+                _remember_active_portal(request, role_code)
                 return view_func(request, *args, **kwargs)
             return HttpResponseForbidden("Forbidden")
 
@@ -36,9 +47,13 @@ def roles_required(*role_codes: str):
         def _wrapped(request, *args, **kwargs):
             user = request.user
             if _is_superuser(user):
+                _remember_active_portal(request, role_codes[0] if role_codes else Role.ADMIN)
                 return view_func(request, *args, **kwargs)
-            if hasattr(user, "has_role") and any(user.has_role(r) for r in role_codes):
-                return view_func(request, *args, **kwargs)
+            if hasattr(user, "has_role"):
+                authorized_role = next((role for role in role_codes if user.has_role(role)), None)
+                if authorized_role:
+                    _remember_active_portal(request, authorized_role)
+                    return view_func(request, *args, **kwargs)
             return HttpResponseForbidden("Forbidden")
 
         return _wrapped
