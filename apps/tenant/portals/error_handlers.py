@@ -24,7 +24,11 @@ def _dashboard_action(request):
 
     has_role = getattr(user, "has_role", None)
     if callable(has_role):
-        if has_role(Role.ADMIN) or has_role(Role.CAMPUS_ADMIN):
+        if (
+            has_role(Role.ADMIN)
+            or has_role(Role.CAMPUS_ADMIN)
+            or has_role(Role.PRINCIPAL)
+        ):
             return "Back to dashboard", _safe_reverse("admin_home", "/admin/")
         if has_role(Role.TEACHER):
             return "Back to dashboard", _safe_reverse("teacher_home", "/teacher/")
