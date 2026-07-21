@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -6,6 +7,7 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>Sign in | EduManage</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script defer src="{% static 'js/login-password-toggle.js' %}"></script>
     <style>
       @keyframes float {
         0%, 100% { transform: translateY(0); }
@@ -108,6 +110,7 @@
                 type="password"
                 name="{{ form.password.name }}"
                 id="{{ form.password.id_for_label }}"
+                data-login-password
                 class="public-input block w-full rounded-2xl border-2 border-slate-200 py-3 pl-10 pr-12 font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 placeholder="Password"
                 autocomplete="current-password"
@@ -115,7 +118,7 @@
                 aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}"
                 {% if form.password.errors %}aria-describedby="password-errors"{% endif %}
               />
-              <button id="password-visibility-toggle" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Show password" aria-controls="{{ form.password.id_for_label }}" aria-pressed="false">
+              <button id="password-visibility-toggle" data-password-visibility-toggle type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Show password" aria-controls="{{ form.password.id_for_label }}" aria-pressed="false">
                 <i class="ph ph-eye text-lg" aria-hidden="true"></i>
               </button>
             </div>
@@ -141,23 +144,5 @@
         </form>
       </section>
     </main>
-
-    <script>
-      (() => {
-        const password = document.getElementById("{{ form.password.id_for_label }}");
-        const toggle = document.getElementById("password-visibility-toggle");
-        if (!password || !toggle) return;
-
-        toggle.addEventListener("click", () => {
-          const showing = password.type === "text";
-          password.type = showing ? "password" : "text";
-          toggle.setAttribute("aria-pressed", showing ? "false" : "true");
-          toggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
-          const icon = toggle.querySelector("i");
-          if (icon) icon.className = showing ? "ph ph-eye text-lg" : "ph ph-eye-slash text-lg";
-          password.focus({ preventScroll: true });
-        });
-      })();
-    </script>
   </body>
 </html>
