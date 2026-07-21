@@ -1,74 +1,87 @@
-<div class="space-y-7 motion-rich">
-  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-primary-800 p-6 sm:p-8 text-white shadow-xl">
-    <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
-    <div class="absolute right-8 bottom-4 hidden lg:block text-white/10"><i class="ph ph-circles-four text-9xl"></i></div>
-    <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-      <div class="max-w-3xl">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-100">EduManage modernisation · Phases 1–9</p>
-        <h1 class="mt-2 text-3xl sm:text-4xl font-black tracking-tight">Your integrated feature centre</h1>
-        <p class="mt-3 text-sm sm:text-base font-semibold text-indigo-100">Every completed education-framework improvement is organised here for the {{ capability_role_label|lower }} experience. You only see actions that your existing role is allowed to use.</p>
+<div class="space-y-7 motion-rich" data-tool-directory>
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-primary-800 p-6 text-white shadow-xl">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">{{ capability_role_label }}</p>
+        <h1 class="mt-2 text-3xl font-black tracking-tight">{{ capability_page_title }}</h1>
+        <p class="mt-2 max-w-2xl text-sm font-semibold text-indigo-100">{{ capability_intro }}</p>
       </div>
-      <div class="grid grid-cols-3 gap-2 text-center">
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"><p class="text-xs text-indigo-100">Phases</p><p class="text-2xl font-black">9</p></div>
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"><p class="text-xs text-indigo-100">Available</p><p class="text-2xl font-black">{{ capability_available_count }}</p></div>
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"><p class="text-xs text-indigo-100">Actions</p><p class="text-2xl font-black">{{ capability_action_count }}</p></div>
-      </div>
+      <label class="block w-full lg:max-w-sm">
+        <span class="sr-only">Search tools</span>
+        <span class="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
+          <i class="ph ph-magnifying-glass text-xl text-indigo-100" aria-hidden="true"></i>
+          <input id="tool-directory-search" type="search" autocomplete="off" placeholder="Search tools…" class="w-full border-0 bg-transparent text-sm font-bold text-white placeholder:text-indigo-200 focus:outline-none focus:ring-0">
+        </span>
+      </label>
     </div>
   </section>
 
-  {% if capability_is_campus_admin %}
-  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
-    <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="ph ph-lock-key"></i></span><div><h2 class="font-black">Campus-scoped access is preserved</h2><p class="mt-1 text-sm font-semibold text-amber-900">Institution-wide framework, grading, pathway, external-exam and clearance configuration remains with full administrators. Your links lead only to existing campus or operational workflows.</p></div></div>
-  </section>
-  {% elif not capability_is_full_admin %}
-  <section class="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-blue-950">
-    <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-800"><i class="ph ph-info"></i></span><div><h2 class="font-black">Configured rules apply automatically</h2><p class="mt-1 text-sm font-semibold text-blue-900">The school manages curriculum, grading, pathways and clearance settings. Your portal presents the relevant learning, assessment, examination, finance and welfare actions without exposing administrative controls.</p></div></div>
-  </section>
-  {% endif %}
-
-  <section>
-    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-      <div><p class="text-xs font-black uppercase tracking-[0.16em] text-primary-600">Role-aware capability map</p><h2 class="mt-1 text-2xl font-black text-slate-950">What each completed phase means in your portal</h2></div>
-      <span class="inline-flex w-fit items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-black text-green-700"><i class="ph ph-check-circle"></i> Existing permissions retained</span>
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      {% for phase in capability_phases %}
-      <article id="phase-{{ phase.number }}" class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-lg">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex items-start gap-3">
-            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-primary-700"><i class="ph {{ phase.icon }} text-2xl"></i></span>
-            <div><p class="text-xs font-black uppercase tracking-[0.15em] text-slate-500">Phase {{ phase.number }}</p><h3 class="mt-1 text-lg font-black text-slate-950">{{ phase.title }}</h3></div>
+  {% for group in capability_groups %}
+  <section data-tool-group>
+    <h2 class="mb-3 text-sm font-black uppercase tracking-[0.14em] text-slate-500">{{ group.name }}</h2>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {% for tool in group.tools %}
+      <article data-tool-card data-search="{{ tool.search_text }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-primary-300 hover:shadow-md">
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><i class="ph {{ tool.icon }} text-2xl" aria-hidden="true"></i></span>
+          <div class="min-w-0">
+            <h3 class="font-black text-slate-950">{{ tool.title }}</h3>
+            <p class="mt-1 text-sm leading-5 text-slate-500">{{ tool.summary }}</p>
           </div>
-          <span class="rounded-full px-3 py-1 text-xs font-black {% if phase.available %}bg-green-100 text-green-700{% else %}bg-slate-100 text-slate-600{% endif %}">{% if phase.available %}Available{% else %}Managed{% endif %}</span>
         </div>
-
-        <p class="mt-4 text-sm font-semibold leading-6 text-slate-600">{{ phase.summary }}</p>
-
-        {% if capability_is_full_admin or capability_is_campus_admin %}
-        <div class="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-          <span class="text-xs font-black uppercase tracking-wider text-slate-500">Configured records</span>
-          <span class="text-lg font-black text-slate-900">{{ phase.configured_count }}</span>
-        </div>
-        {% endif %}
-
-        {% if phase.actions %}
-        <div class="mt-5 flex flex-wrap gap-2">
-          {% for action in phase.actions %}
-          <a href="{{ action.url }}" class="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-black {% if action.primary %}bg-primary-600 text-white hover:bg-primary-700{% else %}border border-slate-200 bg-white text-slate-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700{% endif %}">{{ action.label }} <i class="ph ph-arrow-right"></i></a>
+        <div class="mt-4 flex flex-wrap gap-2">
+          {% for action in tool.actions %}
+          <a href="{{ action.url }}" class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black {% if action.primary %}bg-primary-600 text-white hover:bg-primary-700{% else %}border border-slate-200 bg-white text-slate-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700{% endif %}">{{ action.label }} <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
           {% endfor %}
         </div>
-        {% else %}
-        <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p class="text-sm font-bold text-slate-700">{{ phase.managed_message }}</p>
-        </div>
-        {% endif %}
       </article>
       {% endfor %}
     </div>
   </section>
+  {% endfor %}
 
-  <section class="rounded-3xl border border-primary-200 bg-gradient-to-r from-primary-50 to-indigo-50 p-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p class="text-xs font-black uppercase tracking-[0.16em] text-primary-700">Phase 10 rollout hardening</p><h2 class="mt-1 text-xl font-black text-slate-950">One interface, existing sources of truth</h2><p class="mt-2 max-w-3xl text-sm font-semibold text-slate-600">These links reuse the original Phase 1–9 services and routes. No curriculum, mark, invoice, candidate, welfare, activity, enrollment or learner record is copied by this feature centre.</p></div><a href="#phase-1" class="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-black text-white hover:bg-primary-800"><i class="ph ph-arrow-up mr-2"></i> Review from Phase 1</a></div>
+  <section id="tool-directory-empty" class="hidden rounded-2xl border border-slate-200 bg-white p-8 text-center">
+    <i class="ph ph-magnifying-glass text-3xl text-slate-300" aria-hidden="true"></i>
+    <h2 class="mt-3 font-black text-slate-900">No matching tool</h2>
+    <p class="mt-1 text-sm text-slate-500">Try a shorter word such as fees, exams, attendance or documents.</p>
   </section>
 </div>
+
+<script>
+(function () {
+  const input = document.getElementById("tool-directory-search");
+  if (!input) return;
+
+  const cards = Array.from(document.querySelectorAll("[data-tool-card]"));
+  const groups = Array.from(document.querySelectorAll("[data-tool-group]"));
+  const empty = document.getElementById("tool-directory-empty");
+
+  function filterTools() {
+    const query = input.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    cards.forEach(function (card) {
+      const visible = !query || card.dataset.search.includes(query);
+      card.classList.toggle("hidden", !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    groups.forEach(function (group) {
+      const hasVisibleCard = Array.from(group.querySelectorAll("[data-tool-card]")).some(function (card) {
+        return !card.classList.contains("hidden");
+      });
+      group.classList.toggle("hidden", !hasVisibleCard);
+    });
+
+    empty.classList.toggle("hidden", visibleCount !== 0);
+  }
+
+  input.addEventListener("input", filterTools);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "/" && document.activeElement !== input) {
+      event.preventDefault();
+      input.focus();
+    }
+  });
+})();
+</script>
