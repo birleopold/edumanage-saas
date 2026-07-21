@@ -238,7 +238,7 @@ def tenant_suspended(request):
         _error_context(
             request,
             "403",
-            "School portal unavailable",
+            "School Portal Unavailable",
             f"{school_name} is temporarily suspended. Access is paused until the account is reactivated by the platform owner.",
             icon="ph-pause-circle",
             action_label="Open platform home",
