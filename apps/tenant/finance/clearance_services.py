@@ -12,6 +12,7 @@ from .clearance_models import (
     ClearanceDecisionLog,
     ClearanceOverride,
     ClearancePolicy,
+    normalize_clearance_code,
 )
 from .models import Invoice
 
@@ -301,7 +302,7 @@ def bootstrap_policy_templates(*, apply=False):
     ]
     rows = []
     for access_type, name in templates:
-        code = f"TEMPLATE-{access_type}"
+        code = normalize_clearance_code(f"TEMPLATE-{access_type}")
         exists = ClearancePolicy.objects.filter(code=code).exists()
         rows.append({"code": code, "access_type": access_type, "exists": exists})
         if apply and not exists:
