@@ -17,14 +17,16 @@ class PortalEditorialQualityTests(SimpleTestCase):
             "operational hardening wording": re.compile(r"\boperational hardening\b", re.IGNORECASE),
             "compatibility-first wording": re.compile(r"\bcompatibility-first\b", re.IGNORECASE),
         }
+        html_comment = re.compile(r"<!--.*?-->", re.DOTALL)
 
         failures = []
         for template in sorted(portal_templates.rglob("*.html")):
             text = template.read_text(encoding="utf-8")
+            visible_text = html_comment.sub("", text)
             for label, pattern in forbidden.items():
-                match = pattern.search(text)
+                match = pattern.search(visible_text)
                 if match:
-                    line = text.count("\n", 0, match.start()) + 1
+                    line = visible_text.count("\n", 0, match.start()) + 1
                     failures.append(
                         f"{template.relative_to(settings.BASE_DIR)}:{line}: {label}: {match.group(0)!r}"
                     )
