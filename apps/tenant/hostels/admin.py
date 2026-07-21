@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from .hardening_models import GuardianContactLog, WelfareCaseEscalation
 from .models import (
     Bed,
     BedAllocation,
@@ -96,3 +97,41 @@ class WelfareCaseActionAdmin(admin.ModelAdmin):
     list_filter = ("action_type",)
     search_fields = ("welfare_case__title", "note")
     raw_id_fields = ("welfare_case", "performed_by")
+
+
+@admin.register(GuardianContactLog)
+class GuardianContactLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "student",
+        "purpose",
+        "method",
+        "outcome",
+        "contact_name",
+        "occurred_at",
+        "recorded_by",
+    )
+    list_filter = ("purpose", "method", "outcome", "occurred_at")
+    search_fields = (
+        "student__first_name",
+        "student__last_name",
+        "student__student_id",
+        "contact_name",
+        "contact_phone",
+        "note",
+    )
+    raw_id_fields = ("student", "boarding_leave", "welfare_case", "roll_call_entry", "recorded_by")
+
+
+@admin.register(WelfareCaseEscalation)
+class WelfareCaseEscalationAdmin(admin.ModelAdmin):
+    list_display = (
+        "welfare_case",
+        "level",
+        "response_due_at",
+        "guardian_contact_required",
+        "escalated_by",
+        "escalated_at",
+    )
+    list_filter = ("level", "guardian_contact_required")
+    search_fields = ("welfare_case__title", "welfare_case__student__student_id", "reason")
+    raw_id_fields = ("welfare_case", "escalated_by")
