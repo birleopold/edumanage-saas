@@ -1,0 +1,26 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Pathway Offering Planner{% endblock %}
+{% block page_title %}Pathway Offering Planner{% endblock %}
+{% block breadcrumbs %}Preview and explicitly create only missing course offerings from a class group's active subject combination.{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_pathway_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Programme Pathways</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="space-y-7">
+  <section class="rounded-3xl bg-gradient-to-br from-slate-950 via-emerald-950 to-primary-800 p-6 text-white shadow-xl"><p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-100">Explicit offering workflow</p><h2 class="mt-2 text-3xl font-black">Preview before creating offerings</h2><p class="mt-3 max-w-3xl text-sm text-emerald-100">This tool never changes existing offerings, teachers or enrollments. It creates only missing class-group/course/term offerings after you review and submit the creation action.</p></section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="post" class="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">{% csrf_token %}<div><label class="mb-2 block text-sm font-black text-slate-700">Class group</label>{{ form.class_group }}{% for error in form.class_group.errors %}<p class="mt-1 text-xs font-bold text-red-600">{{ error }}</p>{% endfor %}</div><div><label class="mb-2 block text-sm font-black text-slate-700">Academic term</label>{{ form.term }}{% for error in form.term.errors %}<p class="mt-1 text-xs font-bold text-red-600">{{ error }}</p>{% endfor %}</div><button name="action" value="preview" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Preview Plan</button></form>
+  </section>
+
+  {% if plan %}
+  <section class="grid gap-4 md:grid-cols-3"><div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Resolved pathway</p><p class="mt-2 text-lg font-black text-slate-950">{{ plan.resolution.pathway|default:"No valid pathway" }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Existing offerings</p><p class="mt-2 text-3xl font-black text-emerald-700">{{ plan.existing_count }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Missing offerings</p><p class="mt-2 text-3xl font-black text-amber-600">{{ plan.missing_count }}</p></div></section>
+
+  {% if plan.resolution.combination %}
+  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between"><div><h3 class="text-lg font-black text-slate-950">{{ plan.resolution.combination }}</h3><p class="text-sm text-slate-500">{{ plan.class_group }} · {{ plan.term }}</p></div>{% if plan.missing_count %}<form method="post">{% csrf_token %}<input type="hidden" name="class_group" value="{{ plan.class_group.pk }}"><input type="hidden" name="term" value="{{ plan.term.pk }}"><button name="action" value="create" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-black text-white">Create {{ plan.missing_count }} Missing Offering{{ plan.missing_count|pluralize }}</button></form>{% endif %}</div>
+    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Course</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Role</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Group</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Offering status</th></tr></thead><tbody class="divide-y divide-slate-100">{% for row in plan.rows %}<tr><td class="px-5 py-4 font-black text-slate-950">{{ row.membership.course }}</td><td class="px-5 py-4 text-sm text-slate-700">{{ row.membership.get_role_display }}</td><td class="px-5 py-4 text-sm text-slate-600">{{ row.membership.subject_group|default:"—" }}</td><td class="px-5 py-4 text-sm">{% if row.exists %}<span class="font-bold text-emerald-700">Existing — preserved</span>{% else %}<span class="font-bold text-amber-700">Missing</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="p-8 text-center text-slate-500">No active courses are available in the resolved combination.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  {% else %}<section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-bold text-amber-900">No structurally valid pathway and subject combination could be resolved for this class group and term. Current offerings remain unchanged.</section>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}
