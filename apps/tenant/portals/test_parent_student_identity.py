@@ -73,9 +73,9 @@ class ParentStudentRelationshipUiTests(TestCase):
             last_name="Guardian",
             phone="0700000000",
         )
-        other_parent = ParentProfile.objects.create(
-            first_name="Other",
-            last_name="Parent",
+        unrelated_parent = ParentProfile.objects.create(
+            first_name="UnlinkedGuardianZZZ",
+            last_name="Outside",
             phone="0711111111",
         )
         ParentStudentLink.objects.create(
@@ -100,8 +100,9 @@ class ParentStudentRelationshipUiTests(TestCase):
         )
 
         form_page = self.client.get(reverse("admin_boarding_leave_contact", args=[leave.pk]))
-        self.assertContains(form_page, linked_parent.first_name)
-        self.assertNotContains(form_page, other_parent.first_name)
+        parent_queryset = form_page.context["form"].fields["parent"].queryset
+        self.assertIn(linked_parent, parent_queryset)
+        self.assertNotIn(unrelated_parent, parent_queryset)
 
         response = self.client.post(
             reverse("admin_boarding_leave_contact", args=[leave.pk]),
