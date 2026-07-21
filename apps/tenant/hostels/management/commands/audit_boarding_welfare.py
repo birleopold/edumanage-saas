@@ -3,6 +3,7 @@ from django_tenants.utils import tenant_context
 
 from apps.public.tenants.models import Tenant
 
+from ...hardening_services import phase7_operational_readiness
 from ...welfare_services import boarding_welfare_readiness
 
 
@@ -14,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--fail-on-incomplete",
             action="store_true",
-            help="Return a non-zero exit code when structural Phase 7 readiness is incomplete.",
+            help="Return a non-zero exit code when structural or operational Phase 7 readiness is incomplete.",
         )
 
     def handle(self, *args, **options):
@@ -31,6 +32,7 @@ class Command(BaseCommand):
             audited += 1
             with tenant_context(tenant):
                 readiness = boarding_welfare_readiness()
+                operations = phase7_operational_readiness()
                 self.stdout.write(self.style.MIGRATE_HEADING(f"Tenant: {tenant.schema_name}"))
                 self.stdout.write(
                     f"Profiles: {readiness['profile_count']}/{readiness['active_student_count']}; "
@@ -42,10 +44,15 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"Operational alerts: overdue leave {readiness['overdue_leave_count']}; "
                     f"open welfare cases {readiness['open_case_count']}; "
-                    f"unresolved critical cases {readiness['unresolved_critical_case_count']}."
+                    f"unresolved critical cases {readiness['unresolved_critical_case_count']}; "
+                    f"boarders missing guardian contacts {operations['boarder_missing_guardian_contact_count']}; "
+                    f"departures without confirmation {operations['departed_without_confirmation_count']}; "
+                    f"overdue case responses {operations['overdue_case_response_count']}; "
+                    f"unassigned high-priority cases {operations['unassigned_high_priority_case_count']}; "
+                    f"draft roll calls needing reconciliation {operations['draft_roll_call_mismatch_count']}."
                 )
-                if readiness["ready"]:
-                    self.stdout.write(self.style.SUCCESS("Phase 7 boarding and welfare structure is ready."))
+                if readiness["ready"] and operations["ready"]:
+                    self.stdout.write(self.style.SUCCESS("Phase 7 boarding and welfare structure and operations are ready."))
                 else:
                     incomplete += 1
                     self.stdout.write(
