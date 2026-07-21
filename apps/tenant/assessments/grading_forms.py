@@ -1,6 +1,6 @@
 from django import forms
 
-from .grading_services import grading_profile_errors
+from .grading_services import grading_scale_errors
 from .models import GradingProfile, ReportRule, normalize_assessment_code
 
 
@@ -40,11 +40,9 @@ class GradingProfileForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if self.instance:
-            for field, value in cleaned.items():
-                if hasattr(self.instance, field):
-                    setattr(self.instance, field, value)
-            errors = grading_profile_errors(self.instance)
+        scale = cleaned.get("grading_scale")
+        if scale:
+            errors = grading_scale_errors(scale)
             if errors:
                 raise forms.ValidationError(errors)
         return cleaned
