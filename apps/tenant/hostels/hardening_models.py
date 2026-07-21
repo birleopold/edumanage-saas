@@ -64,6 +64,14 @@ class GuardianContactLog(models.Model):
         on_delete=models.CASCADE,
         related_name="guardian_contact_logs",
     )
+    parent = models.ForeignKey(
+        "parents.ParentProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="guardian_contact_logs",
+        help_text="Linked parent or guardian contacted for this student.",
+    )
     boarding_leave = models.ForeignKey(
         "hostels.BoardingLeave",
         on_delete=models.SET_NULL,
@@ -124,8 +132,13 @@ class GuardianContactLog(models.Model):
             source = getattr(self, field_name, None)
             if source and source.student_id != self.student_id:
                 errors[field_name] = "The linked record must belong to the selected student."
-        if self.outcome in {self.CONFIRMED, self.REACHED} and not (self.contact_name or self.contact_phone):
-            errors["contact_name"] = "Record the contacted person or phone number for a successful contact."
+        if self.parent_id:
+            from apps.tenant.parents.models import ParentStudentLink
+
+            if not ParentStudentLink.objects.filter(parent_id=self.parent_id, student_id=self.student_id).exists():
+                errors["parent"] = "Select a parent or guardian linked to this student."
+        if self.outcome in {self.CONFIRMED, self.REACHED} and not (self.contact_name or self.contact_phone or self.parent_id):
+            errors["contact_name"] = "Record the contacted person, linked parent or phone number for a successful contact."
         if errors:
             raise ValidationError(errors)
 
