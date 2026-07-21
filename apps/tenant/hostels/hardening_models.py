@@ -104,8 +104,14 @@ class GuardianContactLog(models.Model):
     class Meta:
         ordering = ("-occurred_at", "-created_at")
         indexes = [
-            models.Index(fields=["student", "occurred_at"]),
-            models.Index(fields=["outcome", "occurred_at"]),
+            models.Index(
+                fields=["student", "occurred_at"],
+                name="hostels_gua_student_4b7267_idx",
+            ),
+            models.Index(
+                fields=["outcome", "occurred_at"],
+                name="hostels_gua_outcome_b21f3f_idx",
+            ),
         ]
 
     def __str__(self):
