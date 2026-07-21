@@ -118,26 +118,35 @@ def sync_student_user(student):
     """Keep the login identity aligned with the authoritative learner profile.
 
     StudentProfile remains the source of truth for a learner's name and email.
-    This helper updates the linked login account and guarantees the student role
-    without changing the learner record itself.
+    Names and role assignment must never fail because of an older conflicting
+    account email; in that case the existing login email is retained for an
+    administrator to resolve separately.
     """
 
     if not getattr(student, "user_id", None):
         return None
 
-    from apps.tenant.users.models import Role
+    from apps.tenant.users.models import Role, User
 
     user = student.user
-    desired = {
-        "first_name": (student.first_name or "").strip(),
-        "last_name": (student.last_name or "").strip(),
-        "email": (student.email or "").strip(),
-    }
+    desired_first_name = (student.first_name or "").strip()
+    desired_last_name = (student.last_name or "").strip()
+    desired_email = (student.email or "").strip().lower()
+
     changed_fields = []
-    for field, value in desired.items():
-        if getattr(user, field) != value:
-            setattr(user, field, value)
-            changed_fields.append(field)
+    if user.first_name != desired_first_name:
+        user.first_name = desired_first_name
+        changed_fields.append("first_name")
+    if user.last_name != desired_last_name:
+        user.last_name = desired_last_name
+        changed_fields.append("last_name")
+
+    email_available = not desired_email or not User.objects.filter(
+        email__iexact=desired_email
+    ).exclude(pk=user.pk).exists()
+    if email_available and user.email != desired_email:
+        user.email = desired_email
+        changed_fields.append("email")
 
     if changed_fields:
         user.save(update_fields=changed_fields)
