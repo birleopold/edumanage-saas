@@ -26,7 +26,7 @@ class PortalEditorialQualityTests(SimpleTestCase):
             for label, pattern in forbidden.items():
                 match = pattern.search(visible_text)
                 if match:
-                    line = visible_text.count("\n", 0, match.start()) + 1
+                    line = text.count("\n", 0, match.start()) + 1
                     failures.append(
                         f"{template.relative_to(settings.BASE_DIR)}:{line}: {label}: {match.group(0)!r}"
                     )
