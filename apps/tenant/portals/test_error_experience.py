@@ -26,8 +26,14 @@ class ErrorExperienceTests(TestCase):
             connection.schema_name = self.original_schema_name
 
     def _student_user(self):
-        user = User.objects.create_user(username="student-error-test", password="not-used")
-        role, _ = Role.objects.get_or_create(code=Role.STUDENT, defaults={"name": "Student"})
+        user = User.objects.create_user(
+            username="student-error-test",
+            password="not-used",
+        )
+        role, _ = Role.objects.get_or_create(
+            code=Role.STUDENT,
+            defaults={"name": "Student"},
+        )
         user.roles.add(role)
         return user
 
@@ -42,7 +48,12 @@ class ErrorExperienceTests(TestCase):
         self.assertContains(response, reverse("student_home"), status_code=404)
         self.assertContains(response, "req-student-404", status_code=404)
         self.assertEqual(response[REQUEST_ID_HEADER], "req-student-404")
-        self.assertNotContains(response, "Technical details", status_code=404)
+        self.assertContains(
+            response,
+            "Technical details are hidden to protect the school system",
+            status_code=404,
+        )
+        self.assertNotContains(response, "Traceback", status_code=404)
 
     def test_csrf_failure_explains_that_nothing_was_saved(self):
         request = self.factory.post("/parent/account/message-preferences/")
@@ -67,4 +78,8 @@ class ErrorExperienceTests(TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertContains(response, "req-safe-500", status_code=500)
         self.assertContains(response, "support@example.com", status_code=500)
-        self.assertContains(response, "technical details have been kept private", status_code=500)
+        self.assertContains(
+            response,
+            "technical details have been kept private",
+            status_code=500,
+        )
