@@ -9,6 +9,12 @@ from apps.tenant.users.models import Role, User
 from .error_handlers import csrf_failure, handler404, handler500
 
 
+class BrokenAuthenticationUser:
+    @property
+    def is_authenticated(self):
+        raise RuntimeError("Authentication storage unavailable")
+
+
 @override_settings(SUPPORT_CONTACT_EMAIL="support@example.com")
 class ErrorExperienceTests(TestCase):
     def setUp(self):
@@ -81,5 +87,21 @@ class ErrorExperienceTests(TestCase):
         self.assertContains(
             response,
             "technical details have been kept private",
+            status_code=500,
+        )
+
+    def test_server_error_still_renders_when_authentication_storage_fails(self):
+        request = self.factory.get("/admin/reports/")
+        request.user = BrokenAuthenticationUser()
+        request.request_id = "req-auth-storage-fault"
+
+        response = handler500(request)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertContains(response, "req-auth-storage-fault", status_code=500)
+        self.assertContains(response, "Sign in", status_code=500)
+        self.assertNotContains(
+            response,
+            "Authentication storage unavailable",
             status_code=500,
         )
