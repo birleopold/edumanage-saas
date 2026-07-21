@@ -5,6 +5,8 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.tenant.finance.clearance_gates import clearance_gate
+from apps.tenant.finance.clearance_models import ClearancePolicy
 from apps.tenant.orgsettings.services import (
     selected_campus_id_from_request,
     update_current_campus_from_request,
@@ -112,6 +114,13 @@ def results_home(request):
     gate_response = _require_pin_or_render_gate(request, parent, student)
     if gate_response is not None:
         return gate_response
+    clearance_decision, finance_gate = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.ASSESSMENT_RESULTS,
+    )
+    if finance_gate is not None:
+        return finance_gate
 
     assessments = list(published_assessments_for_student(student))
     score_map = score_map_for_student(student, assessments)
@@ -129,6 +138,7 @@ def results_home(request):
             "score_map": score_map,
             "result_map": result_map,
             "report": build_report_card(student),
+            "clearance_decision": clearance_decision,
         },
     )
 
@@ -143,6 +153,13 @@ def report_card(request, student_id: int):
     gate_response = _require_pin_or_render_gate(request, parent, student)
     if gate_response is not None:
         return gate_response
+    clearance_decision, finance_gate = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.ASSESSMENT_REPORT,
+    )
+    if finance_gate is not None:
+        return finance_gate
 
     return render(
         request,
@@ -152,6 +169,7 @@ def report_card(request, student_id: int):
             "student": student,
             "children": list(parent_linked_students(parent)),
             "report": build_report_card(student),
+            "clearance_decision": clearance_decision,
         },
     )
 
@@ -166,9 +184,21 @@ def report_card_print(request, student_id: int):
     gate_response = _require_pin_or_render_gate(request, parent, student)
     if gate_response is not None:
         return gate_response
+    clearance_decision, finance_gate = clearance_gate(
+        request,
+        student,
+        ClearancePolicy.ASSESSMENT_REPORT,
+    )
+    if finance_gate is not None:
+        return finance_gate
 
     return render(
         request,
         "portals/parent/results/report_card_print.html",
-        {"parent": parent, "student": student, "report": build_report_card(student)},
+        {
+            "parent": parent,
+            "student": student,
+            "report": build_report_card(student),
+            "clearance_decision": clearance_decision,
+        },
     )
