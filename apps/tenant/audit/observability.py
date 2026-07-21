@@ -2,7 +2,9 @@ import logging
 import time
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.db import connection
+from django.http import Http404
 
 from .request_ids import apply_request_id, ensure_request_id
 
@@ -24,6 +26,8 @@ class QueryCounter:
 class ObservabilityMiddleware:
     """Log production diagnostics without surfacing stack traces to users."""
 
+    expected_http_exceptions = (Http404, PermissionDenied, SuspiciousOperation)
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -35,6 +39,10 @@ class ObservabilityMiddleware:
         try:
             with connection.execute_wrapper(query_counter):
                 response = self.get_response(request)
+        except self.expected_http_exceptions:
+            # These exceptions deliberately drive normal 400/403/404 handling.
+            # The outer professional error middleware will render the response.
+            raise
         except Exception:
             context = self._request_context(request)
             context.update(
@@ -73,7 +81,14 @@ class ObservabilityMiddleware:
             "request_id": ensure_request_id(request),
             "method": getattr(request, "method", ""),
             "path": getattr(request, "path", ""),
-            "user_id": getattr(user, "pk", None) if getattr(user, "is_authenticated", False) else None,
-            "tenant": getattr(tenant, "schema_name", None) or getattr(tenant, "name", None),
-            "remote_addr": request.META.get("REMOTE_ADDR") if hasattr(request, "META") else None,
+            "user_id": (
+                getattr(user, "pk", None)
+                if getattr(user, "is_authenticated", False)
+                else None
+            ),
+            "tenant": getattr(tenant, "schema_name", None)
+            or getattr(tenant, "name", None),
+            "remote_addr": (
+                request.META.get("REMOTE_ADDR") if hasattr(request, "META") else None
+            ),
         }
