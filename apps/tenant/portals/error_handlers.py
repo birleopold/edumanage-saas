@@ -16,27 +16,48 @@ def _safe_reverse(name, fallback):
         return fallback
 
 
+def _authenticated_user(request):
+    """Resolve the current user without allowing auth storage faults to escape."""
+
+    try:
+        user = getattr(request, "user", None)
+        return user if user is not None and bool(user.is_authenticated) else None
+    except Exception:
+        # Error pages must still render during session, tenant or database faults.
+        return None
+
+
+def _role_codes(user):
+    """Read a user's role codes once and fail closed if storage is unavailable."""
+
+    if user is None:
+        return set()
+
+    try:
+        prefetched_roles = getattr(user, "_prefetched_objects_cache", {}).get("roles")
+        if prefetched_roles is not None:
+            return {role.code for role in prefetched_roles}
+        return set(user.roles.values_list("code", flat=True))
+    except Exception:
+        return set()
+
+
 def _dashboard_action(request):
     """Return the safest useful destination for the signed-in account."""
 
-    user = getattr(request, "user", None)
-    if not getattr(user, "is_authenticated", False):
+    user = _authenticated_user(request)
+    if user is None:
         return "Sign in", _safe_reverse("login", "/login/")
 
-    has_role = getattr(user, "has_role", None)
-    if callable(has_role):
-        if (
-            has_role(Role.ADMIN)
-            or has_role(Role.CAMPUS_ADMIN)
-            or has_role(Role.PRINCIPAL)
-        ):
-            return "Back to dashboard", _safe_reverse("admin_home", "/admin/")
-        if has_role(Role.TEACHER):
-            return "Back to dashboard", _safe_reverse("teacher_home", "/teacher/")
-        if has_role(Role.STUDENT):
-            return "Back to dashboard", _safe_reverse("student_home", "/student/")
-        if has_role(Role.PARENT):
-            return "Back to dashboard", _safe_reverse("parent_home", "/parent/")
+    role_codes = _role_codes(user)
+    if role_codes.intersection({Role.ADMIN, Role.CAMPUS_ADMIN, Role.PRINCIPAL}):
+        return "Back to dashboard", _safe_reverse("admin_home", "/admin/")
+    if Role.TEACHER in role_codes:
+        return "Back to dashboard", _safe_reverse("teacher_home", "/teacher/")
+    if Role.STUDENT in role_codes:
+        return "Back to dashboard", _safe_reverse("student_home", "/student/")
+    if Role.PARENT in role_codes:
+        return "Back to dashboard", _safe_reverse("parent_home", "/parent/")
 
     return "Open my profile", _safe_reverse("user_profile", "/profile/")
 
@@ -67,6 +88,7 @@ def _error_context(
         "support_hint": support_hint,
         "support_contact_email": getattr(settings, "SUPPORT_CONTACT_EMAIL", ""),
         "request_reference": ensure_request_id(request),
+        "viewer_is_authenticated": _authenticated_user(request) is not None,
     }
 
 
@@ -74,14 +96,10 @@ def render_error_page(request, template_name, status, context):
     """Render a failure page without running database-backed context processors.
 
     Error handling must remain operational when tenant resolution, schema access,
-    or a downstream database query is itself the reason the request failed. The
-    request object is supplied explicitly for the small amount of template logic
-    that needs authentication state, while normal portal context processors are
-    deliberately bypassed.
+    or a downstream database query is itself the reason the request failed.
     """
 
-    isolated_context = {**context, "request": request}
-    content = render_to_string(template_name, isolated_context)
+    content = render_to_string(template_name, context)
     response = HttpResponse(
         content,
         status=status,
