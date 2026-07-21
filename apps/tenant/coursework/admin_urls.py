@@ -1,9 +1,11 @@
 from django.urls import path
 
-from . import admin_views, dashboard_views
+from . import activity_views, admin_views, dashboard_views
 
 urlpatterns = [
     path("", dashboard_views.coursework_dashboard, name="admin_coursework_dashboard"),
+    path("activities/", activity_views.activity_framework_dashboard, name="admin_coursework_activity_framework"),
+    path("activities/<int:pk>/edit/", activity_views.activity_policy_edit, name="admin_coursework_activity_policy_edit"),
     path("materials/", admin_views.material_list, name="admin_coursework_materials_list"),
     path("materials/create/", admin_views.material_create, name="admin_coursework_materials_create"),
     path("materials/<int:pk>/edit/", admin_views.material_edit, name="admin_coursework_materials_edit"),
