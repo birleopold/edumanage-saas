@@ -1,7 +1,7 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Learning Activities{% endblock %}
-{% block page_title %}Unified Learning Activities{% endblock %}
+{% block page_title %}Learning Activities{% endblock %}
 {% block header_actions %}<a href="{% url 'admin_coursework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Coursework</a>{% endblock %}
 
 {% block content %}
@@ -9,10 +9,10 @@
 <div class="space-y-6">
   <section class="rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-primary-900 p-6 text-white shadow-lg">
     <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Phase 3 orchestration</p><h2 class="mt-2 text-2xl font-black">One learning-activity view, existing records preserved</h2><p class="mt-2 max-w-3xl text-sm text-indigo-100">Materials and assignments remain the source records. This screen manages sequencing, completion, submission and optional assessment policy without copying learner work.</p></div>
+      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Activity settings</p><h2 class="mt-2 text-2xl font-black">Organise materials and assignments</h2><p class="mt-2 max-w-3xl text-sm text-indigo-100">Set activity types, order, completion rules and submission requirements.</p></div>
       <div class="flex flex-wrap gap-2">
-        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="sync"><button class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900">Synchronize safely</button></form>
-        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="refresh"><button class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20">Refresh classification</button></form>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="sync"><button class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900">Update Activity List</button></form>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="refresh"><button class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20">Refresh Types</button></form>
       </div>
     </div>
   </section>
@@ -21,23 +21,23 @@
     <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Activities</p><p class="text-2xl font-black">{{ readiness.activity_count }}</p></div>
     <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Materials</p><p class="text-2xl font-black">{{ readiness.material_count }}</p></div>
     <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Assignments</p><p class="text-2xl font-black">{{ readiness.assignment_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Missing links</p><p class="text-2xl font-black text-amber-700">{{ readiness.missing_source_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Metadata links</p><p class="text-2xl font-black text-amber-700">{{ readiness.unlinked_submission_count|add:readiness.unlinked_comment_count|add:readiness.unlinked_progress_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Readiness</p><p class="text-lg font-black {% if readiness.ready %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Missing activity links</p><p class="text-2xl font-black text-amber-700">{{ readiness.missing_source_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Items to review</p><p class="text-2xl font-black text-amber-700">{{ readiness.unlinked_submission_count|add:readiness.unlinked_comment_count|add:readiness.unlinked_progress_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4"><p class="text-xs font-black uppercase text-slate-500">Status</p><p class="text-lg font-black {% if readiness.ready %}text-green-700{% else %}text-amber-700{% endif %}">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div>
   </section>
 
-  {% if not readiness.ready %}<section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p class="font-black">{{ readiness.issue_count }} structural issue(s) detected.</p><p class="mt-1">Run safe synchronization. It creates orchestration rows and nullable metadata links only; submissions, scores, comments and progress values are not changed.</p></section>{% endif %}
+  {% if not readiness.ready %}<section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p class="font-black">{{ readiness.issue_count }} item{{ readiness.issue_count|pluralize }} need attention.</p><p class="mt-1">Update the activity list, then review any remaining items.</p></section>{% endif %}
 
   <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <form method="get" class="grid gap-3 md:grid-cols-[1fr_240px_auto]">
-      <input name="q" value="{{ q }}" placeholder="Search activity title" class="rounded-xl border border-slate-300 px-4 py-2">
-      <select name="kind" class="rounded-xl border border-slate-300 px-4 py-2"><option value="">All activity kinds</option>{% for value,label in kind_choices %}<option value="{{ value }}" {% if selected_kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <input name="q" value="{{ q }}" placeholder="Search activities" class="rounded-xl border border-slate-300 px-4 py-2">
+      <select name="kind" class="rounded-xl border border-slate-300 px-4 py-2"><option value="">All activity types</option>{% for value,label in kind_choices %}<option value="{{ value }}" {% if selected_kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
       <button class="rounded-xl bg-primary-600 px-5 py-2 font-bold text-white">Filter</button>
     </form>
   </section>
 
   <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200 text-sm"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Activity</th><th class="px-4 py-3 text-left">Source</th><th class="px-4 py-3 text-left">Policies</th><th class="px-4 py-3 text-left">Assessment</th><th class="px-4 py-3 text-right">Action</th></tr></thead><tbody class="divide-y divide-slate-100">{% for activity in activities %}<tr><td class="px-4 py-4"><p class="font-black text-slate-900">{{ activity.title }}</p><p class="text-xs text-slate-500">{{ activity.get_kind_display }} · position {{ activity.position }}</p></td><td class="px-4 py-4"><p class="font-bold">{{ activity.source_type|title }}</p><p class="text-xs text-slate-500">{% if activity.offering %}{{ activity.offering }}{% else %}General scope{% endif %}</p></td><td class="px-4 py-4"><p>{{ activity.get_completion_policy_display }}</p><p class="text-xs text-slate-500">{{ activity.get_submission_policy_display }}</p></td><td class="px-4 py-4">{% if activity.assessment_type %}{{ activity.assessment_type.name }}{% else %}<span class="text-slate-400">Not linked</span>{% endif %}</td><td class="px-4 py-4 text-right"><a href="{% url 'admin_coursework_activity_policy_edit' activity.pk %}" class="font-black text-primary-700">Edit policy</a></td></tr>{% empty %}<tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">No unified activities yet. Run safe synchronization.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200 text-sm"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Activity</th><th class="px-4 py-3 text-left">Type</th><th class="px-4 py-3 text-left">Completion</th><th class="px-4 py-3 text-left">Assessment</th><th class="px-4 py-3 text-right">Action</th></tr></thead><tbody class="divide-y divide-slate-100">{% for activity in activities %}<tr><td class="px-4 py-4"><p class="font-black text-slate-900">{{ activity.title }}</p><p class="text-xs text-slate-500">{{ activity.get_kind_display }} · position {{ activity.position }}</p></td><td class="px-4 py-4"><p class="font-bold">{{ activity.source_type|title }}</p><p class="text-xs text-slate-500">{% if activity.offering %}{{ activity.offering }}{% else %}General{% endif %}</p></td><td class="px-4 py-4"><p>{{ activity.get_completion_policy_display }}</p><p class="text-xs text-slate-500">{{ activity.get_submission_policy_display }}</p></td><td class="px-4 py-4">{% if activity.assessment_type %}{{ activity.assessment_type.name }}{% else %}<span class="text-slate-400">Not linked</span>{% endif %}</td><td class="px-4 py-4 text-right"><a href="{% url 'admin_coursework_activity_policy_edit' activity.pk %}" class="font-black text-primary-700">Edit</a></td></tr>{% empty %}<tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">No activities found. Update the activity list to begin.</td></tr>{% endfor %}</tbody></table></div>
   </section>
 </div>
 {% endblock %}
