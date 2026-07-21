@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from .models import (
     AcademicTerm,
@@ -112,7 +113,7 @@ class SubjectCombinationCourseForm(forms.ModelForm):
         if combination:
             used = combination.course_memberships.exclude(pk=self.instance.pk).values_list("course_id", flat=True)
             program_id = combination.pathway.program_id
-            courses = courses.filter(program_id__in=[program_id, None]).exclude(pk__in=used)
+            courses = courses.filter(Q(program_id=program_id) | Q(program__isnull=True)).exclude(pk__in=used)
         self.fields["course"].queryset = courses.order_by("name")
 
     def save(self, commit=True):
