@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -15,6 +15,28 @@ class User(AbstractUser):
 
     def has_role(self, role_code: str) -> bool:
         return self.roles.filter(code=role_code).exists()
+
+    def get_full_name(self):
+        """Return the account name, falling back to its linked school profile."""
+        account_name = super().get_full_name().strip()
+        if account_name:
+            return account_name
+
+        for relation_name in ("student_profile", "teacher_profile", "parent_profile"):
+            try:
+                profile = getattr(self, relation_name)
+            except ObjectDoesNotExist:
+                continue
+
+            profile_name = ""
+            if hasattr(profile, "get_full_name"):
+                profile_name = profile.get_full_name()
+            else:
+                profile_name = f"{getattr(profile, 'first_name', '')} {getattr(profile, 'last_name', '')}".strip()
+            if profile_name:
+                return profile_name
+
+        return self.get_username()
 
     def save(self, *args, **kwargs):
         normalized_email = (self.email or "").strip().lower()
