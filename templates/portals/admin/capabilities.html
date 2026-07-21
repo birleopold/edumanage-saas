@@ -1,0 +1,13 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Phase 1–9 Feature Centre{% endblock %}
+{% block page_title %}Phase 1–9 Feature Centre{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_home' %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-primary-300 hover:text-primary-700"><i class="ph ph-squares-four"></i> Dashboard</a>
+{% if capability_is_full_admin %}<a href="{% url 'admin_school_health_score' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white hover:bg-primary-700"><i class="ph ph-gauge"></i> Readiness</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+{% include 'portals/shared/capability_hub.html' %}
+{% endblock %}
