@@ -1,0 +1,32 @@
+name: Apply Phase 4 implementation
+
+on:
+  push:
+    branches:
+      - feature/level-specific-grading-profiles
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]' && contains(github.event.head_commit.message, 'Stage Phase 4 implementation workflow')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/level-specific-grading-profiles
+          fetch-depth: 0
+      - name: Apply source changes
+        run: |
+          python phase4_apply.py
+          python -m compileall -q apps/tenant/assessments
+          git diff --check
+          rm phase4_apply.py .github/workflows/apply-phase4.yml
+      - name: Commit Phase 4
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement Phase 4 grading profiles and report rules"
+          git push origin HEAD:feature/level-specific-grading-profiles
