@@ -1,0 +1,62 @@
+{% extends 'portals/admin/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ student }} Guardians{% endblock %}
+{% block page_title %}Parents & Guardians{% endblock %}
+{% block breadcrumbs %}Manage the people responsible for {{ student }}.{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_students_edit' student.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Student Profile</a>
+<a href="{% url 'admin_parents_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add New Parent</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="mx-auto max-w-5xl space-y-6">
+  <section class="rounded-3xl bg-gradient-to-br from-rose-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
+    <p class="text-xs font-black uppercase tracking-[0.18em] text-rose-100">Guardian relationships</p>
+    <h2 class="mt-2 text-2xl font-black">{{ student.get_full_name }}</h2>
+    <p class="mt-2 text-sm text-rose-100">Student number: {{ student.student_id|default:'Not assigned' }}</p>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h3 class="text-lg font-black text-slate-900">Link an existing parent or guardian</h3>
+    <form method="post" class="mt-5 grid gap-4 md:grid-cols-3 md:items-end">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-black text-slate-700">{{ field.label }}</label>
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <label class="flex min-h-[44px] items-center gap-3 rounded-xl border-2 border-slate-200 px-4 py-2.5">{{ field }}<span class="text-sm font-bold text-slate-700">Yes</span></label>
+        {% else %}
+          {% render_field field class="block w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-900" %}
+        {% endif %}
+        {% for error in field.errors %}<p class="mt-1 text-xs font-bold text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white">Link Guardian</button>
+    </form>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 px-6 py-4"><h3 class="text-lg font-black text-slate-900">Linked parents and guardians</h3></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Name</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Relationship</th><th class="px-6 py-3 text-left text-xs font-black uppercase text-slate-500">Contact</th><th class="px-6 py-3 text-center text-xs font-black uppercase text-slate-500">Primary</th><th class="px-6 py-3 text-right text-xs font-black uppercase text-slate-500">Action</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for link in links %}
+          <tr>
+            <td class="px-6 py-4"><a href="{% url 'admin_parents_edit' link.parent.pk %}" class="font-black text-primary-700">{{ link.parent }}</a>{% if link.parent.user_id %}<p class="text-xs text-slate-500">Portal account active</p>{% endif %}</td>
+            <td class="px-6 py-4 text-sm font-bold text-slate-700">{{ link.relationship|default:'Guardian' }}</td>
+            <td class="px-6 py-4 text-sm text-slate-600">{{ link.parent.phone|default:'No phone' }}<br>{{ link.parent.email|default:'' }}</td>
+            <td class="px-6 py-4 text-center">{% if link.is_primary %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Primary</span>{% else %}<span class="text-sm text-slate-400">—</span>{% endif %}</td>
+            <td class="px-6 py-4 text-right"><form method="post" action="{% url 'admin_student_guardian_remove' student.pk link.pk %}" onsubmit="return confirm('Remove this guardian link?');">{% csrf_token %}<button class="rounded-xl bg-red-50 px-3 py-1.5 text-sm font-black text-red-700">Remove</button></form></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-6 py-10 text-center text-slate-500">No parent or guardian has been linked to this student.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
