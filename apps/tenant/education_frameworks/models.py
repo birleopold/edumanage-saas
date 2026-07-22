@@ -264,7 +264,10 @@ class CampusEducationStage(models.Model):
             )
         if self.grading_scale_id and not self.grading_scale.is_active:
             errors["grading_scale"] = "Choose an active grading scale."
-        if self.report_mode == self.REPORT_CUSTOM and not self.report_layout_key.strip():
+        if (
+            self.report_mode == self.REPORT_CUSTOM
+            and not (self.report_layout_key or "").strip()
+        ):
             errors["report_layout_key"] = (
                 "Enter a report layout key when the custom report mode is selected."
             )
