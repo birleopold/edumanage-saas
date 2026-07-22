@@ -51,6 +51,7 @@ TENANT_APPS = (
     "apps.tenant.inventory",
     "apps.tenant.exams",
     "apps.tenant.reports",
+    "apps.tenant.institutional",
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",

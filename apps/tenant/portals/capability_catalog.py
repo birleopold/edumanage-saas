@@ -138,6 +138,7 @@ ROLE_TOOL_GROUPS = {
                 _tool("finance", "Fees & payments", "Invoices, payments and receipts.", "ph-wallet", _action("Finance dashboard", "admin_finance_dashboard", primary=True), _action("Invoices", "admin_invoices_list")),
                 _tool("announcements", "Announcements", "School notices and communication.", "ph-megaphone", _action("Announcements", "admin_announcements_list", primary=True), _action("Communication", "admin_communication_center")),
                 _tool("reports", "Reports & analytics", "Campus performance and operational reports.", "ph-chart-bar", _action("Reports", "admin_reports_overview", primary=True), _action("Analytics", "admin_analytics_dashboard")),
+                _tool("institutional", "Institutional operations", "Report templates, national results, candidate permits, visitation, meals and learner property.", "ph-buildings", _action("Open institutional centre", "institutional_dashboard", primary=True)),
                 _tool("inventory", "Inventory", "School items and stock records.", "ph-package", _action("Open inventory", "admin_inventory_items_list", primary=True)),
             ),
         },
@@ -198,6 +199,7 @@ ROLE_TOOL_GROUPS = {
                 _tool("fees", "Fees & receipts", "Invoices, balances and payment receipts.", "ph-wallet", _action("View fees", "student_invoices_list", primary=True)),
                 _tool("documents", "Documents", "Files shared with students.", "ph-file-doc", _action("View documents", "student_documents_list", primary=True)),
                 _tool("id-card", "Student ID", "Open or print your student ID card.", "ph-identification-card", _action("Open ID card", "student_id_card_self", primary=True)),
+                _tool("institutional-records", "Verified records", "Candidate readiness, permits, report cards, transcripts and boarding records.", "ph-seal-check", _action("Open verified records", "institutional_my_records", primary=True)),
                 _tool("profile", "Profile & devices", "Update your profile and manage signed-in devices.", "ph-user-circle", _action("My profile", "user_profile", primary=True), _action("My devices", "my_devices")),
             ),
         },
@@ -229,6 +231,7 @@ ROLE_TOOL_GROUPS = {
                 _tool("concerns", "Concerns", "Raise a concern and follow its progress.", "ph-chats-circle", _action("My concerns", "parent_grievances_list", primary=True), _action("Raise concern", "parent_grievances_submit")),
                 _tool("documents", "Documents", "Files shared with parents and guardians.", "ph-file-doc", _action("View documents", "parent_documents_list", primary=True)),
                 _tool("fees", "Fees & payments", "Invoices, balances, payments and receipts.", "ph-wallet", _action("View fees", "parent_invoices_list", primary=True)),
+                _tool("institutional-records", "Verified learner records", "Candidate readiness, permits, reports, transcripts, visits, meals and property records.", "ph-seal-check", _action("Open learner records", "institutional_my_records", primary=True)),
             ),
         },
         {
