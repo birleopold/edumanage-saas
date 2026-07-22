@@ -7,4 +7,4 @@ class InstitutionalConfig(AppConfig):
     verbose_name = "Institutional Education Operations"
 
     def ready(self):
-        from . import academic_records, uace_signals  # noqa: F401
+        from . import academic_records, candidate_readiness, uace_signals  # noqa: F401
