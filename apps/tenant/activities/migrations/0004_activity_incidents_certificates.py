@@ -1,3 +1,4 @@
+import apps.tenant.activities.engagement_models
 import django.db.models.deletion
 import django.utils.timezone
 from django.conf import settings
@@ -76,7 +77,7 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("reference", models.CharField(max_length=64, unique=True)),
-                ("verification_token", models.CharField(editable=False, max_length=64, unique=True)),
+                ("verification_token", models.CharField(default=apps.tenant.activities.engagement_models._token, editable=False, max_length=64, unique=True)),
                 ("title", models.CharField(max_length=200)),
                 ("statement", models.TextField()),
                 ("issued_at", models.DateTimeField(auto_now_add=True)),
