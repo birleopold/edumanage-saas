@@ -24,7 +24,7 @@ REQUIRED_TEST_EVIDENCE = {
     "Coursework self-service scope": ("apps/tenant/coursework/tests.py", "test_student_cannot_force_browse_other_coursework_items"),
     "Tenant status isolation": ("apps/public/tenants/tests.py", "TenantStatusMiddlewareTests"),
     "Role continuity and principal access": ("apps/tenant/portals/test_role_continuity_hardening.py", "RoleContinuityHardeningTests"),
-    "Privacy and 2FA continuity": ("apps/tenant/audit/test_account_gate_continuity.py", "AccountGateContinuityTests"),
+    "Privacy and 2FA continuity": ("apps/tenant/audit/test_account_gate_continuity.py", "PrivacyAndTwoFactorContinuityTests"),
     "Payslip role continuity": ("apps/tenant/hr/test_staff_payslip_continuity.py", "StaffPayslipContinuityTests"),
     "Quiz role and campus scope": ("apps/tenant/quizzes/test_role_and_campus_hardening.py", "QuizRoleAndCampusHardeningTests"),
     "Poll role and campus scope": ("apps/tenant/polls/test_portal_and_campus_hardening.py", "PollPortalAndCampusHardeningTests"),
