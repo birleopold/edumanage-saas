@@ -7,4 +7,4 @@ class HostelsConfig(AppConfig):
     label = "hostels"
 
     def ready(self):
-        from . import hardening_models  # noqa: F401
+        from . import hardening_models, house_models  # noqa: F401
