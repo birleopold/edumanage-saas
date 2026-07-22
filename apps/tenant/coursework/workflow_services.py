@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -58,9 +58,11 @@ def activity_profile_for(activity: LearningActivity) -> LearningActivityProfile:
     except LearningActivityProfile.DoesNotExist:
         return LearningActivityProfile.objects.create(
             activity=activity,
-            detailed_kind=activity.kind
-            if activity.kind in dict(LearningActivityProfile.DETAILED_KIND_CHOICES)
-            else LearningActivityProfile.OTHER,
+            detailed_kind=(
+                activity.kind
+                if activity.kind in dict(LearningActivityProfile.DETAILED_KIND_CHOICES)
+                else LearningActivityProfile.OTHER
+            ),
         )
 
 
@@ -71,16 +73,29 @@ def submission_workflow_for(submission: AssignmentSubmission) -> SubmissionWorkf
         return SubmissionWorkflow.objects.create(submission=submission)
 
 
+def _aware_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        value = datetime.combine(value, time.max)
+    if timezone.is_naive(value):
+        return timezone.make_aware(value, timezone.get_current_timezone())
+    return value
+
+
 def submission_deadline(activity: LearningActivity):
-    due_at = activity.due_at
+    due_at = _aware_datetime(activity.due_at)
     profile = activity_profile_for(activity)
     if due_at and profile.late_grace_minutes:
         due_at += timedelta(minutes=profile.late_grace_minutes)
     return due_at
 
 
-def classify_submission_time(activity: LearningActivity, submitted_at=None) -> tuple[bool, str]:
-    submitted_at = submitted_at or timezone.now()
+def classify_submission_time(
+    activity: LearningActivity,
+    submitted_at=None,
+) -> tuple[bool, str]:
+    submitted_at = _aware_datetime(submitted_at or timezone.now())
     due_at = submission_deadline(activity)
     is_late = bool(due_at and submitted_at > due_at)
     return is_late, (
