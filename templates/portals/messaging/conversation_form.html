@@ -1,11 +1,23 @@
-{% extends 'portals/admin/base.html' %}
+{% extends base_template %}
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
-{% block header_actions %}<a href="{% url 'messaging_inbox' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Inbox</a><a href="{% url 'messaging_bulk_message' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Group Message</a>{% endblock %}
+{% block breadcrumbs %}Secure school messaging{% endblock %}
+{% block header_actions %}
+<a href="{% url 'messaging_inbox' %}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300 focus:outline-none focus:ring-4 focus:ring-slate-100"><i class="ph ph-arrow-left mr-2" aria-hidden="true"></i>Inbox</a>
+{% if can_bulk_message %}<a href="{% url 'messaging_bulk_message' %}" class="inline-flex items-center rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-100"><i class="ph ph-users-three mr-2" aria-hidden="true"></i>Group Message</a>{% endif %}
+{% endblock %}
 {% block content %}
 {% include 'components/ui_toast.html' %}
-<div class="grid grid-cols-1 lg:grid-cols-[.9fr_1.1fr] gap-6">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-purple-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Compose</p><h2 class="mt-2 text-2xl font-black">Send a message</h2><p class="mt-2 text-sm leading-6 text-blue-100">Start a secure conversation with a teacher, parent, student or staff user. Attachments can be included where needed.</p><div class="mt-5 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"><p class="text-sm font-bold"><i class="ph ph-lightbulb mr-1"></i> Tip</p><p class="mt-1 text-sm text-blue-100">Use group messages for official notices to many recipients.</p></div></section>
-  <section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm"><form method="post" enctype="multipart/form-data" class="space-y-4">{% csrf_token %}{{ form.as_p }}<button class="rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700"><i class="ph ph-paper-plane-right mr-1"></i> Send Message</button></form></section>
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[.9fr_1.1fr]">
+  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-purple-900 p-6 text-white shadow-lg" aria-labelledby="compose-heading"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Compose</p><h2 id="compose-heading" class="mt-2 text-2xl font-black">{{ title }}</h2><p class="mt-2 text-sm leading-6 text-blue-100">{{ compose_description }}</p><div class="mt-5 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"><p class="text-sm font-bold"><i class="ph ph-shield-check mr-1" aria-hidden="true"></i> Private and role-safe</p><p class="mt-1 text-sm text-blue-100">Recipients are restricted by your role and school campus. Only conversation participants can open replies and attachments.</p></div></section>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" aria-label="Message form">
+    {% if no_recipients %}<div class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" role="status">No authorised recipient is currently configured for this request. Please contact the school office.</div>{% endif %}
+    <form method="post" enctype="multipart/form-data" class="space-y-5" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}<div><label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ field.label }}{% if field.field.required %}<span class="text-red-600" aria-hidden="true"> *</span><span class="sr-only"> required</span>{% endif %}</label>{{ field }}{% if field.help_text %}<p id="{{ field.id_for_label }}_help" class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="mt-1 text-sm font-semibold text-red-700" role="alert">{{ error }}</p>{% endfor %}</div>{% endfor %}
+      <button {% if no_recipients %}disabled aria-disabled="true"{% endif %} class="inline-flex items-center rounded-xl bg-primary-600 px-5 py-3 font-black text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-50"><i class="ph ph-paper-plane-right mr-2" aria-hidden="true"></i>Send Message</button>
+    </form>
+  </section>
 </div>
 {% endblock %}
