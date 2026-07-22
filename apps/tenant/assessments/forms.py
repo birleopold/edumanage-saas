@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from apps.tenant.academics.models import CourseOffering
 from apps.tenant.teachers.models import TeacherProfile
@@ -104,24 +105,41 @@ class AssessmentForm(forms.ModelForm):
             "order",
         )
 
-        selected_offering = None
+        selected_offering_id = None
         if self.is_bound:
-            selected_offering = self.data.get("offering")
+            selected_offering_id = self.data.get("offering")
         elif self.instance and self.instance.offering_id:
-            selected_offering = self.instance.offering_id
-        teachers = TeacherProfile.objects.all().order_by("last_name", "first_name")
+            selected_offering_id = self.instance.offering_id
+
+        selected_offering = None
+        if selected_offering_id:
+            selected_offering = (
+                CourseOffering.objects.select_related("class_group")
+                .filter(pk=selected_offering_id)
+                .first()
+            )
+
+        teachers = TeacherProfile.objects.filter(is_active=True).order_by(
+            "last_name",
+            "first_name",
+        )
         makeup_assessments = Assessment.objects.all().select_related(
             "offering",
             "offering__course",
         )
         if selected_offering:
-            teachers = teachers.filter(
-                campus_id__in=CourseOffering.objects.filter(pk=selected_offering).values_list(
-                    "campus_id",
-                    flat=True,
+            campus_id = selected_offering.campus_id or getattr(
+                selected_offering.class_group,
+                "campus_id",
+                None,
+            )
+            if campus_id:
+                teachers = teachers.filter(
+                    Q(campus_id=campus_id) | Q(campus__isnull=True)
                 )
-            ) | teachers.filter(campus__isnull=True)
-            makeup_assessments = makeup_assessments.filter(offering_id=selected_offering)
+            makeup_assessments = makeup_assessments.filter(
+                offering_id=selected_offering.pk
+            )
         if self.instance and self.instance.pk:
             makeup_assessments = makeup_assessments.exclude(pk=self.instance.pk)
         self.fields["responsible_teacher"].queryset = teachers.distinct()
@@ -171,6 +189,7 @@ class AssessmentForm(forms.ModelForm):
         allow_makeup = bool(cleaned.get("allow_makeup"))
         makeup_for = cleaned.get("makeup_for")
         offering = cleaned.get("offering")
+        responsible_teacher = cleaned.get("responsible_teacher")
         if component and assessment_type and component.assessment_type_id != assessment_type.pk:
             self.add_error(
                 "weighting_component",
@@ -194,6 +213,21 @@ class AssessmentForm(forms.ModelForm):
                 "makeup_for",
                 "The original and makeup assessments must use the same course offering.",
             )
+        if responsible_teacher and offering:
+            offering_campus_id = offering.campus_id or getattr(
+                offering.class_group,
+                "campus_id",
+                None,
+            )
+            if (
+                responsible_teacher.campus_id
+                and offering_campus_id
+                and responsible_teacher.campus_id != offering_campus_id
+            ):
+                self.add_error(
+                    "responsible_teacher",
+                    "The responsible teacher belongs to another campus.",
+                )
         return cleaned
 
     def save(self, commit=True):
