@@ -81,6 +81,7 @@ class AssessmentWeightingComponentAdmin(admin.ModelAdmin):
 
 class AssessmentPolicyInline(admin.StackedInline):
     model = AssessmentPolicy
+    fk_name = "assessment"
     extra = 0
     max_num = 1
     can_delete = False
@@ -106,6 +107,7 @@ class AssessmentAdmin(admin.ModelAdmin):
 
 class AssessmentScorePolicyInline(admin.StackedInline):
     model = AssessmentScorePolicy
+    fk_name = "score_record"
     extra = 0
     max_num = 1
     can_delete = False
