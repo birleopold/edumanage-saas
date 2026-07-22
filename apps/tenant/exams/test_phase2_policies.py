@@ -34,15 +34,15 @@ class ExamPolicyTests(TestCase):
             last_name="Teacher",
         )
         year = AcademicYear.objects.create(name="2026")
-        term = AcademicTerm.objects.create(year=year, name="Term 1", order=1)
+        self.term = AcademicTerm.objects.create(year=year, name="Term 1", order=1)
         course = Course.objects.create(name="English", code="ENG")
         self.offering = CourseOffering.objects.create(
             campus=self.campus,
             course=course,
-            term=term,
+            term=self.term,
             teacher=self.teacher,
         )
-        self.exam = Exam.objects.create(name="End of Term", term=term)
+        self.exam = Exam.objects.create(name="End of Term", term=self.term)
         self.assessment_type = AssessmentType.objects.create(
             code="EXAM-POLICY",
             name="Formal Examination",
@@ -113,8 +113,9 @@ class ExamPolicyTests(TestCase):
         original = self.make_paper()
         original.policy.allow_makeup = True
         original.policy.save(update_fields=["allow_makeup", "updated_at"])
+        makeup_exam = Exam.objects.create(name="Makeup Examination", term=self.term)
         makeup = ExamPaper.objects.create(
-            exam=self.exam,
+            exam=makeup_exam,
             offering=self.offering,
             assessment_type=self.assessment_type,
             max_score=Decimal("100"),
