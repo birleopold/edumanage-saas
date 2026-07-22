@@ -8,4 +8,4 @@ class ActivitiesConfig(AppConfig):
     verbose_name = "Activities"
 
     def ready(self):
-        from . import programme_models  # noqa: F401
+        from . import engagement_models, programme_models  # noqa: F401
