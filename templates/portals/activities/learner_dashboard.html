@@ -1,0 +1,76 @@
+{% extends base_template %}
+
+{% block title %}Co-curricular record{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-6">
+  {% include "components/ui_toast.html" %}
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <p class="text-sm font-bold uppercase tracking-wide text-primary-600">Clubs, sports and activities</p>
+      <h1 class="text-3xl font-black text-slate-900">{{ student.get_full_name }}</h1>
+      <p class="text-slate-600">{{ student.student_id|default:"No student number" }}</p>
+    </div>
+    {% if can_manage %}
+    <a href="{% url 'activities_incident_create' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-bold text-white hover:bg-primary-700"><i class="ph ph-warning-circle"></i>Record incident</a>
+    {% endif %}
+  </div>
+
+  {% if children %}
+  <div class="flex flex-wrap gap-2">
+    {% for child in children %}<a href="{% url 'activities_learner_dashboard_for_student' child.id %}" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{{ child.get_full_name }}</a>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="grid gap-4 md:grid-cols-5">
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Programmes</p><p class="mt-1 text-3xl font-black text-slate-900">{{ summary.membership_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Sessions</p><p class="mt-1 text-3xl font-black text-slate-900">{{ summary.session_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Attendance</p><p class="mt-1 text-3xl font-black text-slate-900">{% if summary.attendance_rate != None %}{{ summary.attendance_rate }}%{% else %}—{% endif %}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Achievements</p><p class="mt-1 text-3xl font-black text-emerald-700">{{ summary.achievement_count }}</p></div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-slate-500">Open concerns</p><p class="mt-1 text-3xl font-black {% if summary.open_incident_count %}text-rose-700{% else %}text-slate-900{% endif %}">{{ summary.open_incident_count }}</p></div>
+  </div>
+
+  <section class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+    <h2 class="font-black text-indigo-950">Report-card comment</h2>
+    <p class="mt-2 leading-7 text-indigo-900">{{ summary.report_comment }}</p>
+  </section>
+
+  <div class="space-y-4">
+    {% for row in summary.rows %}
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h2 class="text-xl font-black text-slate-900">{{ row.activity.name }}</h2>
+          <p class="text-sm text-slate-600">{{ row.activity.get_type_display }}{% if row.participation %} · {{ row.participation.get_role_display }}{% endif %}</p>
+        </div>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">{% if row.attendance_rate != None %}{{ row.attendance_rate }}% attendance{% else %}No sessions marked{% endif %}</span>
+      </div>
+      {% if row.achievements %}
+      <div class="mt-4 grid gap-3 md:grid-cols-2">
+        {% for achievement in row.achievements %}
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p class="font-black text-amber-950">{{ achievement.title }}</p>
+          <p class="text-sm text-amber-800">{{ achievement.get_achievement_type_display }} · {{ achievement.get_level_display }} · {{ achievement.achieved_on }}</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            {% if achievement.certificate %}<a href="{% url 'activities_certificate_pdf' achievement.certificate.id %}" class="rounded-lg bg-amber-600 px-3 py-2 text-xs font-black text-white">Open certificate</a>{% elif can_manage %}<a href="{% url 'activities_certificate_issue' achievement.id %}" class="rounded-lg bg-primary-600 px-3 py-2 text-xs font-black text-white">Issue certificate</a>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+    {% empty %}
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">No active club, sport or activity membership has been recorded.</div>
+    {% endfor %}
+  </div>
+
+  {% if summary.incidents %}
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <h2 class="text-xl font-black text-slate-900">Visible activity concerns</h2>
+    <div class="mt-4 space-y-3">
+      {% for incident in summary.incidents %}<div class="rounded-xl border border-slate-200 p-4"><p class="font-bold text-slate-900">{{ incident.activity }} · {{ incident.get_incident_type_display }}</p><p class="mt-1 text-sm text-slate-600">{{ incident.summary }}</p><p class="mt-2 text-xs font-bold uppercase text-slate-500">{{ incident.get_status_display }} · {{ incident.get_severity_display }} · {{ incident.occurred_at }}</p></div>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
