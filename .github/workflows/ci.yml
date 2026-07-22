@@ -63,13 +63,18 @@ jobs:
                       raise SystemExit(f'Unsafe archive path: {member.name}')
           PY
 
-      - name: Extract and compile reviewed source
+      - name: Extract reviewed source
         shell: bash
         run: |
           set -euo pipefail
           tar -xzf /tmp/role-continuity.tar.gz
-          python -m compileall -q apps config
           test -f apps/tenant/portals/role_navigation.py
+
+      - name: Compile reviewed Python source
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m compileall apps config 2>&1 | tee /tmp/role-continuity-compile.log
 
       - name: Remove staging material
         shell: bash
