@@ -26,6 +26,7 @@ class ExamAdmin(admin.ModelAdmin):
 
 class ExamPaperPolicyInline(admin.StackedInline):
     model = ExamPaperPolicy
+    fk_name = "paper"
     extra = 0
     max_num = 1
     can_delete = False
@@ -208,6 +209,7 @@ class ExamAntiCheatEventAdmin(admin.ModelAdmin):
 
 class ExamScorePolicyInline(admin.StackedInline):
     model = ExamScorePolicy
+    fk_name = "score_record"
     extra = 0
     max_num = 1
     can_delete = False
