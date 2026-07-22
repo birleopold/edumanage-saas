@@ -51,6 +51,7 @@ TENANT_APPS = (
     "apps.tenant.inventory",
     "apps.tenant.exams",
     "apps.tenant.reports",
+    "apps.tenant.institutional",
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",
@@ -70,6 +71,8 @@ MIDDLEWARE = [
     *MIDDLEWARE,
     "apps.tenant.orgsettings.feature_gate.FeatureGateMiddleware",
 ]
+
+CSRF_FAILURE_VIEW = "apps.tenant.portals.error_handlers.csrf_failure"
 
 TENANT_STATUS_UNAVAILABLE_STATUSES = ("suspended", "archived")
 TENANT_STATUS_EXEMPT_PATH_PREFIXES = (f"/{STATIC_URL.lstrip('/')}", f"/{MEDIA_URL.lstrip('/')}", "/health/")

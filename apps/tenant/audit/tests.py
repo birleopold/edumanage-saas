@@ -1,17 +1,10 @@
 from unittest import mock
 
-from django.test import RequestFactory, TestCase, override_settings
+from django.db import connection
 from django.http import HttpResponse
+from django.test import RequestFactory, TestCase, override_settings
 
 from .observability import ObservabilityMiddleware
-
-
-class QueryLogProbe:
-    def __init__(self, lengths):
-        self.lengths = list(lengths)
-
-    def __len__(self):
-        return self.lengths.pop(0) if self.lengths else 0
 
 
 class ObservabilityMiddlewareTests(TestCase):
@@ -37,7 +30,10 @@ class ObservabilityMiddlewareTests(TestCase):
         def respond(_request):
             return HttpResponse("ok")
 
-        with mock.patch("apps.tenant.audit.observability.time.monotonic", side_effect=[1.0, 1.2]):
+        with mock.patch(
+            "apps.tenant.audit.observability.time.monotonic",
+            side_effect=[1.0, 1.2],
+        ):
             with self.assertLogs("edumanage.observability", level="WARNING") as logs:
                 response = ObservabilityMiddleware(respond)(request)
 
@@ -49,13 +45,16 @@ class ObservabilityMiddlewareTests(TestCase):
         request = self.factory.get("/query-heavy/")
 
         def respond(_request):
+            # Use an actual database execution because production query counting
+            # is implemented with Django's execution wrapper, not DEBUG-only
+            # connection.queries bookkeeping.
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
             return HttpResponse("ok")
 
-        fake_connection = mock.Mock()
-        fake_connection.queries = QueryLogProbe([0, 3])
-        with mock.patch("apps.tenant.audit.observability.connection", fake_connection):
-            with self.assertLogs("edumanage.observability", level="WARNING") as logs:
-                response = ObservabilityMiddleware(respond)(request)
+        with self.assertLogs("edumanage.observability", level="WARNING") as logs:
+            response = ObservabilityMiddleware(respond)(request)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("High query count request detected", "\n".join(logs.output))

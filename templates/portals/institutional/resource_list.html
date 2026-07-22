@@ -1,0 +1,10 @@
+{% extends "portals/admin/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p class="text-sm font-bold text-primary-700">Institutional operations</p><h1 class="text-3xl font-black text-slate-950">{{ title }}</h1></div><div class="flex gap-2"><a class="rounded-xl border border-slate-300 px-4 py-2 font-bold text-slate-700" href="{% url 'institutional_dashboard' %}">Back to centre</a><a class="rounded-xl bg-primary-600 px-4 py-2 font-bold text-white" href="{% url 'institutional_resource_create' resource %}">Add record</a></div></div>
+  <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200"><caption class="sr-only">{{ title }}</caption><thead class="bg-slate-50"><tr><th scope="col" class="px-4 py-3 text-left text-xs font-black uppercase tracking-wide text-slate-600">Record</th><th scope="col" class="px-4 py-3 text-right text-xs font-black uppercase tracking-wide text-slate-600">Action</th></tr></thead><tbody class="divide-y divide-slate-100">{% for object in objects %}<tr><td class="px-4 py-4 font-semibold text-slate-900">{{ object }}</td><td class="px-4 py-4 text-right"><a class="font-black text-primary-700 hover:underline" href="{% url 'institutional_resource_edit' resource object.pk %}">View or edit</a></td></tr>{% empty %}<tr><td colspan="2" class="px-4 py-12 text-center text-slate-500">No records have been added yet.</td></tr>{% endfor %}</tbody></table>
+  </div>
+</div>
+{% endblock %}

@@ -1,37 +1,146 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sign In - EduManage</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Sign in | EduManage</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <style>@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}.floating{animation:float 7s ease-in-out infinite}</style>
+    <script defer src="{% static 'js/login-password-toggle.js' %}"></script>
+    <style>
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-18px); }
+      }
+      .floating { animation: float 7s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) {
+        .floating { animation: none; }
+      }
+    </style>
     {% include "components/ui_public_polish.html" %}
   </head>
   <body class="relative min-h-screen bg-slate-950 flex items-center justify-center p-4 public-fade-in overflow-hidden">
     <a href="#auth-main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white border border-gray-300 rounded px-3 py-2 text-sm z-50 shadow">Skip to main content</a>
-    <div class="absolute inset-0 pointer-events-none" aria-hidden="true"><div class="absolute -top-24 -right-16 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl floating"></div><div class="absolute bottom-0 -left-20 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl floating" style="animation-delay:-3s"></div></div>
+
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div class="absolute -top-24 -right-16 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl floating"></div>
+      <div class="absolute bottom-0 -left-20 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl floating" style="animation-delay:-3s"></div>
+    </div>
 
     <main id="auth-main" tabindex="-1" class="relative grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl outline-none lg:grid-cols-[1fr_.9fr]">
-      <section class="hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <a href="/" class="flex items-center gap-3"><div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15"><i class="ph ph-graduation-cap text-2xl"></i></div><div><h1 class="text-xl font-black">EduManage</h1><p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">School portal</p></div></a>
-        <div><p class="mb-4 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-blue-100">Secure role-based access</p><h2 class="text-4xl font-black leading-tight">Sign in to manage learning, finance and communication.</h2><p class="mt-4 max-w-md text-sm leading-7 text-blue-100">Admins, teachers, parents and students access their own dashboards with quick links, alerts and protected school data.</p></div>
-        <div class="grid grid-cols-2 gap-3 text-sm"><div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"><i class="ph ph-shield-check text-xl"></i><p class="mt-2 font-bold">Audited access</p></div><div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"><i class="ph ph-device-mobile text-xl"></i><p class="mt-2 font-bold">Mobile ready</p></div></div>
+      <section class="hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 p-10 text-white lg:flex lg:flex-col lg:justify-between" aria-label="EduManage school portal">
+        <a href="/" class="flex items-center gap-3">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15" aria-hidden="true"><i class="ph ph-graduation-cap text-2xl"></i></div>
+          <div><h1 class="text-xl font-black">EduManage</h1><p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">School portal</p></div>
+        </a>
+        <div>
+          <p class="mb-4 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-blue-100">Secure role-based access</p>
+          <h2 class="text-4xl font-black leading-tight">Sign in to manage learning, finance and communication.</h2>
+          <p class="mt-4 max-w-md text-sm leading-7 text-blue-100">Administrators, teachers, parents and students access their own dashboards with quick links, alerts and protected school data.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"><i class="ph ph-shield-check text-xl" aria-hidden="true"></i><p class="mt-2 font-bold">Audited access</p></div>
+          <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"><i class="ph ph-device-mobile text-xl" aria-hidden="true"></i><p class="mt-2 font-bold">Mobile ready</p></div>
+        </div>
       </section>
 
-      <section class="p-6 sm:p-10">
-        <div class="mb-8 text-center lg:text-left"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 lg:mx-0"><i class="ph ph-lock-key text-3xl"></i></div><h2 class="text-3xl font-black tracking-tight text-slate-950">Welcome back</h2><p class="mt-2 text-sm text-slate-600">Enter your credentials to continue to your portal.</p></div>
+      <section class="p-6 sm:p-10" aria-labelledby="sign-in-title">
+        <div class="mb-8 text-center lg:text-left">
+          <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 lg:mx-0" aria-hidden="true"><i class="ph ph-lock-key text-3xl"></i></div>
+          <h2 id="sign-in-title" class="text-3xl font-black tracking-tight text-slate-950">Welcome back</h2>
+          <p class="mt-2 text-sm text-slate-600">Enter your credentials to continue to your portal.</p>
+        </div>
 
-        {% if messages %}<div class="mb-6 space-y-3" aria-label="Notifications">{% for message in messages %}<div class="rounded-2xl border-l-4 p-4 {% if 'error' in message.tags or 'danger' in message.tags %}bg-red-50 border-red-500 text-red-700{% elif 'warning' in message.tags %}bg-amber-50 border-amber-500 text-amber-900{% elif 'success' in message.tags %}bg-green-50 border-green-500 text-green-700{% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %}" role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}"><div class="flex items-start gap-3"><i class="ph ph-{% if 'error' in message.tags or 'danger' in message.tags %}warning-circle{% elif 'warning' in message.tags %}warning{% elif 'success' in message.tags %}check-circle{% else %}info{% endif %} text-xl mt-0.5 shrink-0"></i><span class="text-sm font-bold">{{ message }}</span></div></div>{% endfor %}</div>{% endif %}
+        {% if messages %}
+          <div class="mb-6 space-y-3" aria-label="Notifications">
+            {% for message in messages %}
+              <div class="rounded-2xl border-l-4 p-4 {% if 'error' in message.tags or 'danger' in message.tags %}bg-red-50 border-red-500 text-red-700{% elif 'warning' in message.tags %}bg-amber-50 border-amber-500 text-amber-900{% elif 'success' in message.tags %}bg-green-50 border-green-500 text-green-700{% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %}" role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}">
+                <div class="flex items-start gap-3"><i class="ph ph-{% if 'error' in message.tags or 'danger' in message.tags %}warning-circle{% elif 'warning' in message.tags %}warning{% elif 'success' in message.tags %}check-circle{% else %}info{% endif %} text-xl mt-0.5 shrink-0" aria-hidden="true"></i><span class="text-sm font-bold">{{ message }}</span></div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
 
         <form method="post" novalidate class="space-y-5">
           {% csrf_token %}
-          {% if form.non_field_errors %}<div class="rounded-2xl border border-red-200 bg-red-50 p-4" role="alert"><ul class="space-y-1 text-sm text-red-700">{% for error in form.non_field_errors %}<li class="flex gap-2"><i class="ph ph-warning mt-0.5"></i><span>{{ error }}</span></li>{% endfor %}</ul></div>{% endif %}
-          <div><label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ form.username.label }}</label><div class="relative"><i class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" class="public-input block w-full rounded-2xl border-2 border-slate-200 py-3 pl-10 pr-4 font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" placeholder="Username or email" {% if form.username.value %}value="{{ form.username.value }}"{% endif %} required></div>{% if form.username.errors %}<ul class="mt-2 text-sm text-red-600">{% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</div>
-          <div><div class="mb-2 flex items-center justify-between"><label for="{{ form.password.id_for_label }}" class="block text-sm font-black text-slate-700">{{ form.password.label }}</label><a href="{% url 'password_reset' %}" class="text-xs font-bold text-blue-600 hover:text-blue-800">Forgot password?</a></div><div class="relative"><i class="ph ph-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" class="public-input block w-full rounded-2xl border-2 border-slate-200 py-3 pl-10 pr-4 font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" placeholder="Password" required></div>{% if form.password.errors %}<ul class="mt-2 text-sm text-red-600">{% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</div>
-          {% if form.remember_me %}<div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><label for="{{ form.remember_me.id_for_label }}" class="text-sm font-bold text-slate-700">{{ form.remember_me.label }}</label><input type="checkbox" name="{{ form.remember_me.name }}" id="{{ form.remember_me.id_for_label }}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"></div>{% endif %}
-          <button type="submit" class="public-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-black text-white shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 hover:shadow-xl"><i class="ph ph-sign-in text-lg"></i><span>Sign In</span></button>
-          <a href="/" class="flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"><i class="ph ph-arrow-left"></i> Back to portal selection</a>
+          {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
+
+          {% if form.non_field_errors %}
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4" role="alert">
+              <ul class="space-y-1 text-sm text-red-700">
+                {% for error in form.non_field_errors %}<li class="flex gap-2"><i class="ph ph-warning mt-0.5" aria-hidden="true"></i><span>{{ error }}</span></li>{% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <div>
+            <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ form.username.label }}</label>
+            <div class="relative">
+              <i class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
+              <input
+                type="text"
+                name="{{ form.username.name }}"
+                id="{{ form.username.id_for_label }}"
+                class="public-input block w-full rounded-2xl border-2 border-slate-200 py-3 pl-10 pr-4 font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Username or email"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                autofocus
+                required
+                aria-invalid="{% if form.username.errors %}true{% else %}false{% endif %}"
+                {% if form.username.errors %}aria-describedby="username-errors"{% endif %}
+                {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+              />
+            </div>
+            {% if form.username.errors %}
+              <ul id="username-errors" class="mt-2 text-sm font-semibold text-red-600">{% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <label for="{{ form.password.id_for_label }}" class="block text-sm font-black text-slate-700">{{ form.password.label }}</label>
+              <a href="{% url 'password_reset' %}" class="text-xs font-bold text-blue-600 hover:text-blue-800">Forgot password?</a>
+            </div>
+            <div class="relative">
+              <i class="ph ph-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
+              <input
+                type="password"
+                name="{{ form.password.name }}"
+                id="{{ form.password.id_for_label }}"
+                data-login-password
+                class="public-input block w-full rounded-2xl border-2 border-slate-200 py-3 pl-10 pr-12 font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Password"
+                autocomplete="current-password"
+                required
+                aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}"
+                {% if form.password.errors %}aria-describedby="password-errors"{% endif %}
+              />
+              <button id="password-visibility-toggle" data-password-visibility-toggle type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Show password" aria-controls="{{ form.password.id_for_label }}" aria-pressed="false">
+                <i class="ph ph-eye text-lg" aria-hidden="true"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <ul id="password-errors" class="mt-2 text-sm font-semibold text-red-600">{% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+          </div>
+
+          {% if form.remember_me %}
+            <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+              <div>
+                <label for="{{ form.remember_me.id_for_label }}" class="text-sm font-bold text-slate-700">{{ form.remember_me.label }}</label>
+                <p class="mt-0.5 text-xs font-medium text-slate-500">Keep this browser signed in for up to 14 days. Avoid this on shared computers.</p>
+              </div>
+              <input type="checkbox" name="{{ form.remember_me.name }}" id="{{ form.remember_me.id_for_label }}" class="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500" {% if form.remember_me.value %}checked{% endif %} />
+            </div>
+          {% endif %}
+
+          <button type="submit" class="public-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-black text-white shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-200">
+            <i class="ph ph-sign-in text-lg" aria-hidden="true"></i><span>Sign in</span>
+          </button>
+          <a href="/" class="flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"><i class="ph ph-arrow-left" aria-hidden="true"></i>Back to portal selection</a>
         </form>
       </section>
     </main>

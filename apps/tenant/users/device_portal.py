@@ -4,7 +4,7 @@ from decouple import config
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -17,13 +17,14 @@ from .models import Role
 
 
 def base_template_for(user):
-    if user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN):
+    role_codes = set(user.roles.values_list("code", flat=True))
+    if role_codes.intersection({Role.ADMIN, Role.CAMPUS_ADMIN, Role.PRINCIPAL}):
         return "portals/admin/base.html"
-    if user.has_role(Role.TEACHER):
+    if Role.TEACHER in role_codes:
         return "portals/teacher/base.html"
-    if user.has_role(Role.STUDENT):
+    if Role.STUDENT in role_codes:
         return "portals/student/base.html"
-    if user.has_role(Role.PARENT):
+    if Role.PARENT in role_codes:
         return "portals/parent/base.html"
     return "portals/admin/base.html"
 
@@ -32,13 +33,25 @@ def alert_ready(queryset):
     return queryset.filter(is_active=True).exclude(p256dh_key="").exclude(auth_key="")
 
 
+def device_counts(queryset):
+    """Return all device-state counts in one database aggregate."""
+
+    return queryset.aggregate(
+        total_count=Count("id"),
+        active_count=Count("id", filter=Q(is_active=True)),
+        ready_count=Count(
+            "id",
+            filter=Q(is_active=True) & ~Q(p256dh_key="") & ~Q(auth_key=""),
+        ),
+        error_count=Count("id", filter=~Q(last_error="")),
+    )
+
+
 def pwa_readiness(all_devices):
     public_key = config("WEB_PUSH_PUBLIC_KEY", default="")
     private_key = config("WEB_PUSH_PRIVATE_KEY", default="")
     subject = config("WEB_PUSH_SUBJECT", default="")
-    active_count = all_devices.filter(is_active=True).count()
-    ready_count = alert_ready(all_devices).count()
-    error_count = all_devices.exclude(last_error="").count()
+    counts = device_counts(all_devices)
     pywebpush_installed = find_spec("pywebpush") is not None
     return {
         "service_worker": True,
@@ -47,24 +60,33 @@ def pwa_readiness(all_devices):
         "private_key": bool(private_key),
         "subject": bool(subject),
         "pywebpush": pywebpush_installed,
-        "active_count": active_count,
-        "ready_count": ready_count,
-        "error_count": error_count,
-        "deliverable": bool(public_key and private_key and pywebpush_installed and active_count and ready_count),
+        **counts,
+        "deliverable": bool(
+            public_key
+            and private_key
+            and pywebpush_installed
+            and counts["active_count"]
+            and counts["ready_count"]
+        ),
     }
 
 
 @login_required
 def my_devices(request):
-    devices = WebPushSubscription.objects.filter(user=request.user).order_by("-is_active", "-last_seen_at", "-updated_at")
+    devices = WebPushSubscription.objects.filter(user=request.user).order_by(
+        "-is_active",
+        "-last_seen_at",
+        "-updated_at",
+    )
+    counts = device_counts(devices)
     return render(
         request,
         "auth/devices.html",
         {
             "base_template": base_template_for(request.user),
             "devices": devices,
-            "active_count": devices.filter(is_active=True).count(),
-            "ready_count": alert_ready(devices).count(),
+            "active_count": counts["active_count"],
+            "ready_count": counts["ready_count"],
         },
     )
 
@@ -85,28 +107,32 @@ def admin_device_monitor(request):
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status") or "").strip()
 
-    qs = WebPushSubscription.objects.select_related("user").order_by("-is_active", "-last_seen_at", "-updated_at")
+    queryset = WebPushSubscription.objects.select_related("user").order_by(
+        "-is_active",
+        "-last_seen_at",
+        "-updated_at",
+    )
     if q:
-        qs = qs.filter(
+        queryset = queryset.filter(
             Q(user__username__icontains=q)
             | Q(user__email__icontains=q)
             | Q(endpoint__icontains=q)
             | Q(user_agent__icontains=q)
         )
     if status == "active":
-        qs = qs.filter(is_active=True)
+        queryset = queryset.filter(is_active=True)
     elif status == "inactive":
-        qs = qs.filter(is_active=False)
+        queryset = queryset.filter(is_active=False)
     elif status == "ready":
-        qs = alert_ready(qs)
+        queryset = alert_ready(queryset)
     elif status == "missing_keys":
-        qs = qs.filter(Q(p256dh_key="") | Q(auth_key=""))
+        queryset = queryset.filter(Q(p256dh_key="") | Q(auth_key=""))
     elif status == "error":
-        qs = qs.exclude(last_error="")
+        queryset = queryset.exclude(last_error="")
 
     all_devices = WebPushSubscription.objects.all()
     readiness = pwa_readiness(all_devices)
-    page_obj = Paginator(qs, 30).get_page(request.GET.get("page") or 1)
+    page_obj = Paginator(queryset, 30).get_page(request.GET.get("page") or 1)
     return render(
         request,
         "portals/admin/users/device_monitor.html",
@@ -115,9 +141,9 @@ def admin_device_monitor(request):
             "page_obj": page_obj,
             "q": q,
             "status": status,
-            "total_devices": all_devices.count(),
-            "active_devices": all_devices.filter(is_active=True).count(),
-            "ready_devices": alert_ready(all_devices).count(),
+            "total_devices": readiness["total_count"],
+            "active_devices": readiness["active_count"],
+            "ready_devices": readiness["ready_count"],
             "error_devices": readiness["error_count"],
             "readiness": readiness,
         },
@@ -134,10 +160,24 @@ def admin_test_pwa_push(request):
         url="/admin/users/devices/",
     )
     if result["attempted"] == 0:
-        messages.warning(request, "Enable PWA alerts for your account before sending a test alert.")
+        messages.warning(
+            request,
+            "Enable PWA alerts for your account before sending a test alert.",
+        )
     elif result["sent"]:
-        messages.success(request, f"Sent {result['sent']} test alert{'' if result['sent'] == 1 else 's'} to your browser.")
+        messages.success(
+            request,
+            f"Sent {result['sent']} test alert{'' if result['sent'] == 1 else 's'} to your browser.",
+        )
     else:
-        reasons = sorted({item.get("reason", "Unknown delivery error.") for item in result["results"]})
-        messages.error(request, "Could not send the test alert: " + "; ".join(reasons))
+        reasons = sorted(
+            {
+                item.get("reason", "Unknown delivery error.")
+                for item in result["results"]
+            }
+        )
+        messages.error(
+            request,
+            "Could not send the test alert: " + "; ".join(reasons),
+        )
     return redirect("admin_user_devices")

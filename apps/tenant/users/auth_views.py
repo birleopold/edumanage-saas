@@ -1,13 +1,16 @@
 """
 Enhanced authentication views with better UX and login audit tracking.
 """
+
+import logging
+
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     LoginView,
-    PasswordResetView,
     PasswordResetConfirmView,
+    PasswordResetView,
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
@@ -28,6 +31,8 @@ from .forms import (
 )
 
 
+logger = logging.getLogger("edumanage.security")
+
 _AUDIT_DISABLED_NOTICE = "Audit is turned off for this school."
 
 
@@ -35,12 +40,35 @@ def _audit_login(request, username="", user=None, status="SUCCESS", reason=""):
     try:
         from apps.tenant.audit.models import LoginHistory
         from apps.tenant.audit.services import log_audit, log_login
-        mapped = LoginHistory.SUCCESS if status == "SUCCESS" else LoginHistory.FAILED if status == "FAILED" else LoginHistory.LOGOUT
+
+        mapped = (
+            LoginHistory.SUCCESS
+            if status == "SUCCESS"
+            else LoginHistory.FAILED
+            if status == "FAILED"
+            else LoginHistory.LOGOUT
+        )
         log_login(request, username=username, user=user, status=mapped, reason=reason)
         if status in ["SUCCESS", "LOGOUT"]:
-            log_audit(request, action="LOGIN" if status == "SUCCESS" else "LOGOUT", metadata={"username": username or getattr(user, "username", "")})
+            log_audit(
+                request,
+                action="LOGIN" if status == "SUCCESS" else "LOGOUT",
+                metadata={"username": username or getattr(user, "username", "")},
+            )
     except Exception:
-        pass
+        # Login and logout must remain available if the audit subsystem is
+        # temporarily unavailable, but the failure must not disappear silently.
+        logger.warning(
+            "Authentication audit recording failed",
+            exc_info=True,
+            extra={
+                "request_context": {
+                    "event": status,
+                    "path": getattr(request, "path", ""),
+                    "user_id": getattr(user, "pk", None),
+                }
+            },
+        )
 
 
 def _account_page_messages(request):
@@ -66,7 +94,11 @@ def _role_home_url(user) -> str:
     if hasattr(user, "has_role"):
         from apps.tenant.users.models import Role
 
-        if user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN) or user.has_role(Role.PRINCIPAL):
+        if (
+            user.has_role(Role.ADMIN)
+            or user.has_role(Role.CAMPUS_ADMIN)
+            or user.has_role(Role.PRINCIPAL)
+        ):
             return reverse("admin_home")
         if user.has_role(Role.TEACHER):
             return reverse("teacher_home")
@@ -82,11 +114,19 @@ def _role_profile_for(user):
     from apps.tenant.users.models import Role
 
     if user.has_role(Role.STUDENT):
-        return StudentProfile.objects.filter(user=user).select_related("campus", "stream").first(), "Student"
+        return (
+            StudentProfile.objects.filter(user=user)
+            .select_related("campus", "stream")
+            .first(),
+            "Student",
+        )
     if user.has_role(Role.PARENT):
         return ParentProfile.objects.filter(user=user).first(), "Parent or guardian"
     if user.has_role(Role.TEACHER):
-        return TeacherProfile.objects.filter(user=user).select_related("campus").first(), "Teacher"
+        return (
+            TeacherProfile.objects.filter(user=user).select_related("campus").first(),
+            "Teacher",
+        )
     if user.has_role(Role.CAMPUS_ADMIN):
         return None, "Campus administrator"
     if user.has_role(Role.PRINCIPAL):
@@ -112,7 +152,8 @@ def _sync_role_identity(user, profile):
 
 
 class CustomLoginView(LoginView):
-    """Enhanced login view with remember me functionality."""
+    """Enhanced login view with remember-me and safe return navigation."""
+
     form_class = CustomLoginForm
     template_name = "auth/login.html"
     redirect_authenticated_user = True
@@ -124,18 +165,36 @@ class CustomLoginView(LoginView):
         else:
             self.request.session.set_expiry(1209600)
         response = super().form_valid(form)
-        _audit_login(self.request, username=form.cleaned_data.get("username") or "", user=self.request.user, status="SUCCESS")
+        _audit_login(
+            self.request,
+            username=form.cleaned_data.get("username") or "",
+            user=self.request.user,
+            status="SUCCESS",
+        )
         return response
 
     def form_invalid(self, form):
         username = self.request.POST.get("username") or self.request.POST.get("email") or ""
-        _audit_login(self.request, username=username, user=None, status="FAILED", reason="Invalid credentials")
+        _audit_login(
+            self.request,
+            username=username,
+            user=None,
+            status="FAILED",
+            reason="Invalid credentials",
+        )
         return super().form_invalid(form)
 
     def get_success_url(self):
         user = self.request.user
         if getattr(user, "must_change_password", False):
             return reverse("change_password")
+
+        # LoginView validates this value against the current host and allowed
+        # schemes. Honour it so users return to the protected page they chose,
+        # while ignoring external or otherwise unsafe redirect targets.
+        redirect_to = self.get_redirect_url()
+        if redirect_to:
+            return redirect_to
         return _role_home_url(user)
 
 
@@ -147,12 +206,20 @@ class CustomPasswordResetView(PasswordResetView):
     success_url = reverse_lazy("password_reset_done")
 
     def form_valid(self, form):
-        messages.success(self.request, "Password reset instructions have been sent to your email address.")
+        messages.success(
+            self.request,
+            "Password reset instructions have been sent to your email address.",
+        )
         try:
             from apps.tenant.audit.services import log_audit
-            log_audit(self.request, action="PASSWORD", metadata={"event": "password_reset_requested"})
+
+            log_audit(
+                self.request,
+                action="PASSWORD",
+                metadata={"event": "password_reset_requested"},
+            )
         except Exception:
-            pass
+            logger.warning("Password-reset request audit failed", exc_info=True)
         return super().form_valid(form)
 
 
@@ -162,12 +229,20 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy("password_reset_complete")
 
     def form_valid(self, form):
-        messages.success(self.request, "Your password has been reset successfully. You can now log in with your new password.")
+        messages.success(
+            self.request,
+            "Your password has been reset successfully. You can now log in with your new password.",
+        )
         try:
             from apps.tenant.audit.services import log_audit
-            log_audit(self.request, action="PASSWORD", metadata={"event": "password_reset_completed"})
+
+            log_audit(
+                self.request,
+                action="PASSWORD",
+                metadata={"event": "password_reset_completed"},
+            )
         except Exception:
-            pass
+            logger.warning("Password-reset completion audit failed", exc_info=True)
         return super().form_valid(form)
 
 
@@ -189,9 +264,21 @@ def change_password(request):
 
             try:
                 from apps.tenant.audit.services import log_audit
-                log_audit(request, action="PASSWORD", metadata={"event": "password_changed", "first_login": password_change_required})
+
+                log_audit(
+                    request,
+                    action="PASSWORD",
+                    metadata={
+                        "event": "password_changed",
+                        "first_login": password_change_required,
+                    },
+                )
             except Exception:
-                pass
+                logger.warning(
+                    "Password-change audit failed",
+                    exc_info=True,
+                    extra={"request_context": {"user_id": user.pk}},
+                )
 
             messages.success(request, "Your password has been changed successfully.")
             return redirect(_role_home_url(user))
@@ -227,7 +314,10 @@ def user_profile(request):
         else:
             form = UserProfileForm(instance=request.user)
     elif request.method == "POST":
-        messages.info(request, "Your name and contact details are managed from your school record.")
+        messages.info(
+            request,
+            "Your name and contact details are managed from your school record.",
+        )
         return redirect("user_profile")
 
     user_roles = request.user.roles.all() if hasattr(request.user, "roles") else []
