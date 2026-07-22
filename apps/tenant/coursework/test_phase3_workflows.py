@@ -95,7 +95,7 @@ class DetailedCourseworkWorkflowTests(TestCase):
         self.assertTrue(hasattr(self.activity, "workflow_profile"))
         self.assertEqual(
             self.activity.workflow_profile.detailed_kind,
-            LearningActivityProfile.FIELDWORK,
+            LearningActivityProfile.ASSIGNMENT,
         )
 
     def test_policy_form_persists_exact_activity_type(self):
