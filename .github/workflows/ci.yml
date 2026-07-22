@@ -31,14 +31,26 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify and apply reviewed payload
+      - name: Reconstruct payload
         shell: bash
         run: |
           set -euo pipefail
           test -d .role-continuity-payload
+          test "$(find .role-continuity-payload -maxdepth 1 -name 'segment-*' -type f | wc -l)" -eq 9
           cat .role-continuity-payload/segment-* > /tmp/role-continuity.tar.gz.b64
           base64 --decode /tmp/role-continuity.tar.gz.b64 > /tmp/role-continuity.tar.gz
+          test -s /tmp/role-continuity.tar.gz
+
+      - name: Verify payload checksum
+        shell: bash
+        run: |
+          set -euo pipefail
           echo '3ae0d24e68ac7eec4650de55cbb587a049e5c9877a22502c8836a398fc6db785  /tmp/role-continuity.tar.gz' | sha256sum --check --strict
+
+      - name: Verify archive paths
+        shell: bash
+        run: |
+          set -euo pipefail
           python - <<'PY'
           import pathlib
           import tarfile
@@ -50,8 +62,19 @@ jobs:
                   if path.is_absolute() or '..' in path.parts:
                       raise SystemExit(f'Unsafe archive path: {member.name}')
           PY
+
+      - name: Extract and compile reviewed source
+        shell: bash
+        run: |
+          set -euo pipefail
           tar -xzf /tmp/role-continuity.tar.gz
           python -m compileall -q apps config
+          test -f apps/tenant/portals/role_navigation.py
+
+      - name: Remove staging material
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -rf \
             .role-continuity-payload \
             .role-continuity-trigger \
