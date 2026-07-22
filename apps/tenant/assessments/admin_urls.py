@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views, grading_views
+from . import admin_views, grading_views, policy_views
 
 urlpatterns = [
     path("", admin_views.assessment_list, name="admin_assessments_list"),
@@ -20,4 +20,9 @@ urlpatterns = [
     path("framework/components/<int:pk>/edit/", admin_views.weighting_component_edit, name="admin_weighting_component_edit"),
     path("<int:pk>/edit/", admin_views.assessment_edit, name="admin_assessments_edit"),
     path("<int:pk>/scores/", admin_views.assessment_scores, name="admin_assessments_scores"),
+    path(
+        "<int:pk>/result-policies/",
+        policy_views.assessment_result_policies,
+        name="admin_assessment_result_policies",
+    ),
 ]
