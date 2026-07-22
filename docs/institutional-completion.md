@@ -26,6 +26,10 @@ python manage.py collectstatic --noinput --settings=config.settings.tenants
 
 Create at least one active default report template and result policy for each institution before enabling strict readiness checks.
 
+## Validation
+
+The release must pass migration drift, Django system and deployment checks, route verification, the complete automated test suite, dependency audit and PostgreSQL tenant-isolation proof before deployment.
+
 ## Safety
 
 The migration is additive. Existing marks, reports, invoices, payments, examination results, bed allocations, activity memberships and learner profiles are not copied or rewritten.
