@@ -14,17 +14,25 @@ def normalize_clearance_code(value: str) -> str:
 
 class ClearancePolicy(models.Model):
     ONLINE_EXAM = "ONLINE_EXAM"
+    PHYSICAL_EXAM = "PHYSICAL_EXAM"
     ASSESSMENT_RESULTS = "ASSESSMENT_RESULTS"
     ASSESSMENT_REPORT = "ASSESSMENT_REPORT"
     EXAM_RESULTS = "EXAM_RESULTS"
     EXAM_REPORT = "EXAM_REPORT"
+    CANDIDATE_REGISTRATION = "CANDIDATE_REGISTRATION"
+    EXTERNAL_SUBMISSION = "EXTERNAL_SUBMISSION"
+    PERMIT_ISSUANCE = "PERMIT_ISSUANCE"
 
     ACCESS_TYPE_CHOICES = (
         (ONLINE_EXAM, "Online examination access"),
+        (PHYSICAL_EXAM, "Physical examination attendance"),
         (ASSESSMENT_RESULTS, "Assessment results"),
         (ASSESSMENT_REPORT, "Assessment report card"),
         (EXAM_RESULTS, "Examination results"),
         (EXAM_REPORT, "Examination report card"),
+        (CANDIDATE_REGISTRATION, "Candidate registration"),
+        (EXTERNAL_SUBMISSION, "External examination submission"),
+        (PERMIT_ISSUANCE, "Examination or clearance permit issuance"),
     )
 
     ADVISORY = "ADVISORY"
@@ -36,10 +44,12 @@ class ClearancePolicy(models.Model):
 
     FULL_PAYMENT = "FULL_PAYMENT"
     MINIMUM_PERCENTAGE = "MIN_PERCENT"
+    MINIMUM_PAID_AMOUNT = "MIN_PAID_AMOUNT"
     MAXIMUM_BALANCE = "MAX_BALANCE"
     RULE_CHOICES = (
         (FULL_PAYMENT, "Require full payment"),
         (MINIMUM_PERCENTAGE, "Require minimum paid percentage"),
+        (MINIMUM_PAID_AMOUNT, "Require a minimum amount paid"),
         (MAXIMUM_BALANCE, "Allow up to a maximum outstanding balance"),
     )
 
@@ -91,13 +101,30 @@ class ClearancePolicy(models.Model):
         related_name="clearance_policies",
     )
 
-    calculation_basis = models.CharField(max_length=20, choices=BASIS_CHOICES, default=CURRENT_TERM)
-    rule_type = models.CharField(max_length=20, choices=RULE_CHOICES, default=FULL_PAYMENT)
+    calculation_basis = models.CharField(
+        max_length=20,
+        choices=BASIS_CHOICES,
+        default=CURRENT_TERM,
+    )
+    rule_type = models.CharField(
+        max_length=20,
+        choices=RULE_CHOICES,
+        default=FULL_PAYMENT,
+    )
     minimum_paid_percentage = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=Decimal("100.00"),
-        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+        validators=[
+            MinValueValidator(Decimal("0")),
+            MaxValueValidator(Decimal("100")),
+        ],
+    )
+    minimum_paid_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0"))],
     )
     maximum_outstanding_balance = models.DecimalField(
         max_digits=12,
@@ -109,7 +136,19 @@ class ClearancePolicy(models.Model):
         default=True,
         help_text="Keep access available when no invoice exists in the selected calculation basis.",
     )
-    enforcement_mode = models.CharField(max_length=16, choices=ENFORCEMENT_CHOICES, default=ADVISORY)
+    enforcement_mode = models.CharField(
+        max_length=16,
+        choices=ENFORCEMENT_CHOICES,
+        default=ADVISORY,
+    )
+    issue_permit_on_success = models.BooleanField(
+        default=False,
+        help_text="Issue or refresh a verifiable permit when this clearance decision succeeds.",
+    )
+    permit_validity_days = models.PositiveSmallIntegerField(
+        default=30,
+        help_text="Validity period used when an automatic permit is issued.",
+    )
     user_message = models.CharField(
         max_length=255,
         blank=True,
@@ -139,8 +178,12 @@ class ClearancePolicy(models.Model):
         if self.rule_type == self.MINIMUM_PERCENTAGE:
             if not Decimal("0") <= self.minimum_paid_percentage <= Decimal("100"):
                 errors["minimum_paid_percentage"] = "Percentage must be between 0 and 100."
+        if self.rule_type == self.MINIMUM_PAID_AMOUNT and self.minimum_paid_amount < 0:
+            errors["minimum_paid_amount"] = "Minimum paid amount cannot be negative."
         if self.rule_type == self.MAXIMUM_BALANCE and self.maximum_outstanding_balance < 0:
             errors["maximum_outstanding_balance"] = "Maximum balance cannot be negative."
+        if self.issue_permit_on_success and self.permit_validity_days < 1:
+            errors["permit_validity_days"] = "Permit validity must be at least one day."
         if self.calculation_basis == self.CURRENT_TERM and not self.academic_term_id:
             # A runtime target term may still be supplied; this remains valid as a current-term default.
             pass
@@ -158,7 +201,9 @@ class ClearancePolicy(models.Model):
             if self.pk:
                 duplicate = duplicate.exclude(pk=self.pk)
             if duplicate.exists():
-                errors["__all__"] = "Another active policy has the same access type, scope and priority."
+                errors["__all__"] = (
+                    "Another active policy has the same access type, scope and priority."
+                )
         if errors:
             raise ValidationError(errors)
 
@@ -184,7 +229,26 @@ class ClearancePolicy(models.Model):
 
 class ClearanceOverride(models.Model):
     ALL = "ALL"
-    ACCESS_TYPE_CHOICES = ((ALL, "All clearance-controlled access"),) + ClearancePolicy.ACCESS_TYPE_CHOICES
+    ACCESS_TYPE_CHOICES = (
+        (ALL, "All clearance-controlled access"),
+    ) + ClearancePolicy.ACCESS_TYPE_CHOICES
+
+    SCHOLARSHIP = "SCHOLARSHIP"
+    SPONSORSHIP = "SPONSORSHIP"
+    BURSARY = "BURSARY"
+    PAYMENT_PLAN = "PAYMENT_PLAN"
+    SPECIAL_ARRANGEMENT = "SPECIAL_ARRANGEMENT"
+    MANUAL_BURSAR_APPROVAL = "MANUAL_BURSAR_APPROVAL"
+    OTHER = "OTHER"
+    EXCEPTION_TYPE_CHOICES = (
+        (SCHOLARSHIP, "Scholarship"),
+        (SPONSORSHIP, "Sponsorship"),
+        (BURSARY, "Bursary"),
+        (PAYMENT_PLAN, "Approved payment plan"),
+        (SPECIAL_ARRANGEMENT, "Special arrangement"),
+        (MANUAL_BURSAR_APPROVAL, "Manual bursar approval"),
+        (OTHER, "Other authorised exception"),
+    )
 
     student = models.ForeignKey(
         "students.StudentProfile",
@@ -198,7 +262,16 @@ class ClearanceOverride(models.Model):
         blank=True,
         related_name="overrides",
     )
-    access_type = models.CharField(max_length=32, choices=ACCESS_TYPE_CHOICES, default=ALL)
+    access_type = models.CharField(
+        max_length=32,
+        choices=ACCESS_TYPE_CHOICES,
+        default=ALL,
+    )
+    exception_type = models.CharField(
+        max_length=32,
+        choices=EXCEPTION_TYPE_CHOICES,
+        default=OTHER,
+    )
     academic_term = models.ForeignKey(
         "academics.AcademicTerm",
         on_delete=models.SET_NULL,
@@ -210,6 +283,18 @@ class ClearanceOverride(models.Model):
     valid_until = models.DateField(null=True, blank=True)
     reason = models.TextField()
     reference = models.CharField(max_length=96, blank=True)
+    evidence_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Document, award letter, payment-plan, sponsorship, or approval reference.",
+    )
+    approved_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
     is_active = models.BooleanField(default=True)
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -223,7 +308,9 @@ class ClearanceOverride(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=["student", "is_active", "valid_from", "valid_until"])]
+        indexes = [
+            models.Index(fields=["student", "is_active", "valid_from", "valid_until"])
+        ]
 
     def __str__(self) -> str:
         return f"{self.student} — {self.get_access_type_display()}"
@@ -234,10 +321,20 @@ class ClearanceOverride(models.Model):
         if self.valid_until and self.valid_until < self.valid_from:
             errors["valid_until"] = "The end date cannot be before the start date."
         if self.policy_id and self.access_type not in (self.ALL, self.policy.access_type):
-            errors["access_type"] = "The override access type must match the selected policy or apply to all access."
+            errors["access_type"] = (
+                "The override access type must match the selected policy or apply to all access."
+            )
         if self.policy_id and self.academic_term_id and self.policy.academic_term_id:
             if self.academic_term_id != self.policy.academic_term_id:
-                errors["academic_term"] = "The override term must match the selected policy term."
+                errors["academic_term"] = (
+                    "The override term must match the selected policy term."
+                )
+        if self.exception_type != self.OTHER and not (
+            self.reference.strip() or self.evidence_reference.strip()
+        ):
+            errors["evidence_reference"] = (
+                "Record an approval or evidence reference for this exception type."
+            )
         if errors:
             raise ValidationError(errors)
 
@@ -265,7 +362,15 @@ class ClearanceDecisionLog(models.Model):
     PORTAL = "PORTAL"
     ADMIN = "ADMIN"
     COMMAND = "COMMAND"
-    SOURCE_CHOICES = ((PORTAL, "Portal"), (ADMIN, "Administrator check"), (COMMAND, "Command audit"))
+    CANDIDATE = "CANDIDATE"
+    PERMIT = "PERMIT"
+    SOURCE_CHOICES = (
+        (PORTAL, "Portal"),
+        (ADMIN, "Administrator check"),
+        (COMMAND, "Command audit"),
+        (CANDIDATE, "Candidate readiness"),
+        (PERMIT, "Permit issuance"),
+    )
 
     student = models.ForeignKey(
         "students.StudentProfile",
@@ -293,13 +398,32 @@ class ClearanceDecisionLog(models.Model):
         blank=True,
         related_name="clearance_decision_logs",
     )
-    access_type = models.CharField(max_length=32, choices=ClearancePolicy.ACCESS_TYPE_CHOICES)
+    access_type = models.CharField(
+        max_length=32,
+        choices=ClearancePolicy.ACCESS_TYPE_CHOICES,
+    )
     decision = models.CharField(max_length=16, choices=DECISION_CHOICES)
     source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default=PORTAL)
-    invoiced_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
-    paid_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
-    outstanding_balance = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
-    paid_percentage = models.DecimalField(max_digits=7, decimal_places=2, default=Decimal("0"))
+    invoiced_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0"),
+    )
+    paid_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0"),
+    )
+    outstanding_balance = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0"),
+    )
+    paid_percentage = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        default=Decimal("0"),
+    )
     reason = models.CharField(max_length=255, blank=True)
     checked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -312,7 +436,9 @@ class ClearanceDecisionLog(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=["student", "access_type", "created_at"])]
+        indexes = [
+            models.Index(fields=["student", "access_type", "created_at"])
+        ]
 
     def __str__(self) -> str:
         return f"{self.student} — {self.access_type} — {self.decision}"
