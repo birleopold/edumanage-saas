@@ -6,122 +6,201 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-
-concurrency:
-  group: role-continuity-bootstrap-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  apply-role-continuity:
-    name: Apply verified role continuity patch
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/role-continuity-hardening'
+  quality-gates:
+    name: Django quality gates
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout feature branch
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+          cache: "pip"
 
-      - name: Reconstruct payload
-        shell: bash
+      - name: Install Python dependencies
         run: |
-          set -euo pipefail
-          test -d .role-continuity-payload
-          test "$(find .role-continuity-payload -maxdepth 1 -name 'segment-*' -type f | wc -l)" -eq 9
-          cat .role-continuity-payload/segment-* > /tmp/role-continuity.tar.gz.b64
-          base64 --decode /tmp/role-continuity.tar.gz.b64 > /tmp/role-continuity.tar.gz
-          test -s /tmp/role-continuity.tar.gz
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pip-audit
 
-      - name: Verify payload checksum
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo '3ae0d24e68ac7eec4650de55cbb587a049e5c9877a22502c8836a398fc6db785  /tmp/role-continuity.tar.gz' | sha256sum --check --strict
+      - name: Check dependency lifecycle
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py check_dependency_lifecycle --strict
 
-      - name: Verify archive paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import pathlib
-          import tarfile
+      - name: Check release gates
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_SECURE_HSTS_PRELOAD: "True"
+          POSTGRES_PASSWORD: ci-postgres-password
+          ADMIN_2FA_REQUIRED: "True"
+          PAYMENT_CALLBACKS_ENABLED: "False"
+          MOBILE_MONEY_DRY_RUN_ENABLED: "False"
+          WEBHOOK_ALLOW_PRIVATE_TARGETS: "False"
+        run: python manage.py check_release_gates --strict
 
-          archive = pathlib.Path('/tmp/role-continuity.tar.gz')
-          with tarfile.open(archive, 'r:gz') as handle:
-              for member in handle.getmembers():
-                  path = pathlib.PurePosixPath(member.name)
-                  if path.is_absolute() or '..' in path.parts:
-                      raise SystemExit(f'Unsafe archive path: {member.name}')
-          PY
+      - name: Check access-control evidence
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py check_access_control_evidence --strict
 
-      - name: Extract reviewed source
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -xzf /tmp/role-continuity.tar.gz
-          test -f apps/tenant/portals/role_navigation.py
+      - name: Check migration drift
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py makemigrations --check --dry-run
 
-      - name: Compile reviewed Python source
-        shell: bash
-        run: python -m compileall -q apps config
+      - name: Run Django checks
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py check
 
-      - name: Remove staging material
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf \
-            .role-continuity-payload \
-            .role-continuity-trigger \
-            .github/workflows/apply-role-continuity-hardening.yml
+      - name: Run production deploy checks
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          POSTGRES_DB: edumanage_saas
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-postgres-password
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
+          DJANGO_SECURE_HSTS_PRELOAD: "True"
+          ADMIN_2FA_REQUIRED: "True"
+          PAYMENT_CALLBACKS_ENABLED: "False"
+          MOBILE_MONEY_DRY_RUN_ENABLED: "False"
+          WEBHOOK_ALLOW_PRIVATE_TARGETS: "False"
+        run: python manage.py check --deploy
 
-      - name: Stage source changes
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add -A
-          test -n "$(git status --short)"
-          git status --short
+      - name: Verify template routes
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python verify_routes.py
 
-      - name: Validate staged source
-        id: staged-validation
+      - name: Run Django tests
+        id: django-tests
         continue-on-error: true
-        shell: bash
-        run: git diff --cached --check > /tmp/role-continuity-git-check.log 2>&1
+        env:
+          DJANGO_SECRET_KEY: ci-secret-key-not-for-production-but-long-enough-for-deploy-checks
+          DJANGO_DEBUG: "True"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+        run: python manage.py test > django-tests.log 2>&1
 
-      - name: Upload staged-source diagnostics
+      - name: Upload Django test failure report
+        if: steps.django-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-test-failure-report
+          path: django-tests.log
+          if-no-files-found: error
+
+      - name: Report Django test failure
+        if: steps.django-tests.outcome == 'failure'
+        run: |
+          tail -n 160 django-tests.log
+          exit 1
+
+      - name: Audit Python dependencies
+        id: python-audit
+        continue-on-error: true
+        run: pip-audit -r requirements.txt --format=json --output=pip-audit.json
+
+      - name: Upload Python dependency audit report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: role-continuity-git-check
-          path: /tmp/role-continuity-git-check.log
+          name: pip-audit-report
+          path: pip-audit.json
           if-no-files-found: error
 
-      - name: Report staged-source failure
-        if: steps.staged-validation.outcome == 'failure'
-        shell: bash
+      - name: Report Python dependency audit failure
+        if: steps.python-audit.outcome == 'failure'
         run: |
-          cat /tmp/role-continuity-git-check.log
+          cat pip-audit.json
           exit 1
 
-      - name: Create source commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Harden role continuity and campus isolation'
+  postgres-tenant-isolation:
+    name: PostgreSQL tenant isolation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: edumanage_saas
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d edumanage_saas"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      - name: Push source commit
-        shell: bash
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.tenants
+      DJANGO_SECRET_KEY: ci-tenant-secret-key-not-for-production
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      POSTGRES_DB: edumanage_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
         run: |
-          set -euo pipefail
-          git push origin HEAD:${GITHUB_HEAD_REF}
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check tenant settings
+        run: python manage.py check --settings=config.settings.tenants
+
+      - name: Migrate PostgreSQL shared schema
+        id: migrate-shared
+        continue-on-error: true
+        run: python manage.py migrate_schemas --shared --noinput --settings=config.settings.tenants > shared-migration.log 2>&1
+
+      - name: Upload shared migration traceback
+        if: steps.migrate-shared.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-migration-traceback
+          path: shared-migration.log
+          if-no-files-found: error
+
+      - name: Report shared migration failure
+        if: steps.migrate-shared.outcome == 'failure'
+        run: |
+          tail -n 100 shared-migration.log
+          exit 1
+
+      - name: Prove PostgreSQL tenant isolation
+        run: python manage.py check_tenant_isolation --strict --settings=config.settings.tenants
