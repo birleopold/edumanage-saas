@@ -19,6 +19,7 @@ from apps.tenant.assessments.result_facade import (
 )
 
 from .models import ECDObservation, ReportTemplate, ResultPolicy
+from .uace_services import calculate_uace_points
 
 
 def _q(value, places="0.01"):
@@ -147,33 +148,26 @@ def academic_summary(student, term=None):
         )
         summary.update({"aggregate": aggregate, "division": division})
     elif system == ResultPolicy.UACE:
-        grade_points = settings.get(
-            "principal_grade_points",
-            {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0},
-        )
-        principal_count = int(settings.get("principal_subject_count", 3))
-        ordered = sorted(
-            [row for row in results if row["percentage"] is not None],
-            key=lambda row: row["percentage"],
-            reverse=True,
-        )
-        principal_points = sum(
-            int(grade_points.get(row["grade"], 0))
-            for row in ordered[:principal_count]
-        )
-        subsidiary_points = sum(
-            1
-            for row in ordered[principal_count:]
-            if row["percentage"]
-            >= Decimal(str(settings.get("subsidiary_pass_percentage", 50)))
+        academic_year = getattr(term, "year", None) if term else None
+        uace = calculate_uace_points(
+            student,
+            results,
+            academic_year=academic_year,
+            settings=settings,
         )
         summary.update(
             {
-                "principal_points": principal_points,
-                "subsidiary_points": subsidiary_points,
-                "total_points": principal_points + subsidiary_points,
+                "principal_points": uace["principal_points"],
+                "subsidiary_points": uace["subsidiary_points"],
+                "total_points": uace["total_points"],
+                "uace_configured": uace["configured"],
+                "uace_incomplete": uace["incomplete"],
+                "uace_reason": uace.get("reason", ""),
+                "subject_points": uace.get("subject_points", []),
             }
         )
+        if uace["incomplete"]:
+            summary["is_complete"] = False
     elif system == ResultPolicy.GPA:
         weighted = Decimal("0")
         credits = Decimal("0")
@@ -418,7 +412,7 @@ def report_pdf(student, verify_url, term=None):
             summary_text = ", ".join(
                 f"{key.replace('_', ' ').title()} {value}"
                 for key, value in summary.items()
-                if key not in {"system", "result_count"}
+                if key not in {"system", "result_count", "subject_points"}
             )
             story.extend(
                 [
