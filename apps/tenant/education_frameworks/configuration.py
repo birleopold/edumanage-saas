@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from django.apps import apps
-from django.db.models import F
+from django.db.models import F, Q
 
 from .models import CampusEducationStage, FrameworkStage, InstitutionEducationProfile
 from .services import mapped_stage_ids_for_campus, resolve_terminology
@@ -55,7 +55,6 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
     """Return a non-mutating setup summary for administrators and rollout checks."""
 
     Level = apps.get_model("academics", "Level")
-    GradingScale = apps.get_model("academics", "GradingScale")
 
     level_count = Level.objects.count()
     mapped_level_ids = set(
@@ -106,17 +105,30 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
         ):
             configured_campuses += 1
 
-    grading_configured = campus_stages.exclude(
-        grading_scale_id__isnull=True
+    grading_configured = campus_stages.filter(
+        grading_scale__isnull=False,
     ).count()
-    valid_grading_ids = set(GradingScale.objects.values_list("id", flat=True))
-    invalid_grading_links = sum(
-        1
-        for grading_scale_id in campus_stages.exclude(
-            grading_scale_id__isnull=True
-        ).values_list("grading_scale_id", flat=True)
-        if grading_scale_id not in valid_grading_ids
+    unresolved_legacy_grading_links = campus_stages.filter(
+        legacy_grading_scale_id__isnull=False,
+        grading_scale__isnull=True,
+    ).count()
+    inactive_grading_links = campus_stages.filter(
+        grading_scale__isnull=False,
+        grading_scale__is_active=False,
+    ).count()
+    invalid_grading_links = (
+        unresolved_legacy_grading_links + inactive_grading_links
     )
+    numeric_without_grading = campus_stages.filter(
+        default_assessment_mode__in=(
+            CampusEducationStage.ASSESSMENT_NUMERIC,
+            CampusEducationStage.ASSESSMENT_MIXED,
+        ),
+        grading_scale__isnull=True,
+    ).count()
+    custom_report_without_layout = campus_stages.filter(
+        report_mode=CampusEducationStage.REPORT_CUSTOM,
+    ).filter(Q(report_layout_key__isnull=True) | Q(report_layout_key="")).count()
 
     framework_mismatches = campus_stages.filter(
         framework_stage__isnull=False,
@@ -144,6 +156,8 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
         "levels_mapped": unmapped_levels == 0,
         "no_orphaned_mappings": orphaned_mappings == 0,
         "grading_links_valid": invalid_grading_links == 0,
+        "grading_required_configured": numeric_without_grading == 0,
+        "report_modes_valid": custom_report_without_layout == 0,
         "framework_links_valid": framework_mismatches == 0,
         "stage_links_valid": stage_mismatches == 0,
         "stages_supported": unsupported_stage_links == 0,
@@ -166,6 +180,10 @@ def framework_readiness(profile: InstitutionEducationProfile) -> dict:
         "orphaned_mapping_count": orphaned_mappings,
         "grading_configured_count": grading_configured,
         "invalid_grading_link_count": invalid_grading_links,
+        "unresolved_legacy_grading_link_count": unresolved_legacy_grading_links,
+        "inactive_grading_link_count": inactive_grading_links,
+        "numeric_without_grading_count": numeric_without_grading,
+        "custom_report_without_layout_count": custom_report_without_layout,
         "framework_mismatch_count": framework_mismatches,
         "stage_mismatch_count": stage_mismatches,
         "unsupported_stage_link_count": unsupported_stage_links,
