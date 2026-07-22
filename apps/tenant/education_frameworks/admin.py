@@ -102,7 +102,12 @@ class FrameworkStageAdmin(admin.ModelAdmin):
 class CampusEducationStageInline(admin.TabularInline):
     model = CampusEducationStage
     extra = 0
-    autocomplete_fields = ("campus", "stage", "framework_stage")
+    autocomplete_fields = (
+        "campus",
+        "stage",
+        "framework_stage",
+        "grading_scale",
+    )
 
 
 class LevelStageMappingInline(admin.TabularInline):
@@ -134,17 +139,36 @@ class CampusEducationStageAdmin(admin.ModelAdmin):
         "stage",
         "local_name",
         "academic_period_type",
-        "grading_scale_name",
+        "grading_scale",
+        "default_assessment_mode",
+        "report_mode",
+        "candidate_class",
         "is_active",
     )
-    list_filter = ("stage", "academic_period_type", "is_active")
+    list_filter = (
+        "stage",
+        "academic_period_type",
+        "default_assessment_mode",
+        "report_mode",
+        "candidate_class",
+        "supports_promotion_decisions",
+        "is_active",
+    )
     search_fields = (
         "campus__name",
         "stage__name",
         "local_name",
+        "grading_scale__name",
         "grading_scale_name",
+        "report_layout_key",
     )
-    autocomplete_fields = ("profile", "campus", "stage", "framework_stage")
+    autocomplete_fields = (
+        "profile",
+        "campus",
+        "stage",
+        "framework_stage",
+        "grading_scale",
+    )
 
 
 @admin.register(LevelStageMapping)
