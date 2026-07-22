@@ -150,6 +150,26 @@ class InstitutionEducationProfile(models.Model):
 
 
 class CampusEducationStage(models.Model):
+    ASSESSMENT_NUMERIC = "NUMERIC"
+    ASSESSMENT_COMPETENCY = "COMPETENCY"
+    ASSESSMENT_MIXED = "MIXED"
+    ASSESSMENT_MODE_CHOICES = (
+        (ASSESSMENT_NUMERIC, "Numeric marks and grades"),
+        (ASSESSMENT_COMPETENCY, "Competency or developmental assessment"),
+        (ASSESSMENT_MIXED, "Mixed numeric and competency assessment"),
+    )
+
+    REPORT_STANDARD = "STANDARD"
+    REPORT_COMPETENCY = "COMPETENCY"
+    REPORT_TRANSCRIPT = "TRANSCRIPT"
+    REPORT_CUSTOM = "CUSTOM"
+    REPORT_MODE_CHOICES = (
+        (REPORT_STANDARD, "Standard report card"),
+        (REPORT_COMPETENCY, "Competency or developmental report"),
+        (REPORT_TRANSCRIPT, "Transcript-oriented report"),
+        (REPORT_CUSTOM, "Custom report layout"),
+    )
+
     profile = models.ForeignKey(
         InstitutionEducationProfile,
         on_delete=models.CASCADE,
@@ -178,9 +198,39 @@ class CampusEducationStage(models.Model):
         choices=EducationStage.PERIOD_TYPE_CHOICES,
         default=EducationStage.PERIOD_TERM,
     )
-    grading_scale_id = models.PositiveBigIntegerField(null=True, blank=True)
+    legacy_grading_scale_id = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        editable=False,
+        help_text="Legacy compatibility identifier retained during the Phase 1 migration.",
+    )
+    grading_scale = models.ForeignKey(
+        "academics.GradingScale",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="education_stage_configurations",
+    )
     grading_scale_name = models.CharField(max_length=128, blank=True)
+    default_assessment_mode = models.CharField(
+        max_length=16,
+        choices=ASSESSMENT_MODE_CHOICES,
+        default=ASSESSMENT_NUMERIC,
+    )
+    report_mode = models.CharField(
+        max_length=16,
+        choices=REPORT_MODE_CHOICES,
+        default=REPORT_STANDARD,
+    )
     report_layout_key = models.CharField(max_length=64, blank=True)
+    candidate_class = models.BooleanField(
+        default=False,
+        help_text="Mark this campus stage as containing external-examination candidate classes.",
+    )
+    supports_promotion_decisions = models.BooleanField(
+        default=True,
+        help_text="Allow result policies to produce progression or promotion decisions for this stage.",
+    )
     terminology = models.JSONField(default=dict, blank=True)
     candidate_settings = models.JSONField(default=dict, blank=True)
     settings = models.JSONField(default=dict, blank=True)
@@ -199,20 +249,41 @@ class CampusEducationStage(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
         if self.profile_id and self.campus_id:
             if self.profile.organization_id != self.campus.organization_id:
-                raise ValidationError(
-                    {"campus": "Campus must belong to the profile's organization."}
-                )
+                errors["campus"] = "Campus must belong to the profile's organization."
         if self.framework_stage_id and self.profile.primary_framework_id:
             if self.framework_stage.framework_id != self.profile.primary_framework_id:
-                raise ValidationError(
-                    {"framework_stage": "Framework stage must belong to the profile's primary framework."}
+                errors["framework_stage"] = (
+                    "Framework stage must belong to the profile's primary framework."
                 )
         if self.framework_stage_id and self.framework_stage.stage_id != self.stage_id:
-            raise ValidationError(
-                {"framework_stage": "Framework stage must match the selected education stage."}
+            errors["framework_stage"] = (
+                "Framework stage must match the selected education stage."
             )
+        if self.grading_scale_id and not self.grading_scale.is_active:
+            errors["grading_scale"] = "Choose an active grading scale."
+        if self.report_mode == self.REPORT_CUSTOM and not self.report_layout_key.strip():
+            errors["report_layout_key"] = (
+                "Enter a report layout key when the custom report mode is selected."
+            )
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if self.grading_scale_id:
+            self.legacy_grading_scale_id = self.grading_scale_id
+            self.grading_scale_name = self.grading_scale.name
+        else:
+            self.legacy_grading_scale_id = None
+            self.grading_scale_name = ""
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            fields = set(update_fields)
+            fields.update({"legacy_grading_scale_id", "grading_scale_name"})
+            kwargs["update_fields"] = list(fields)
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.campus} — {self.local_name or self.stage.name}"
