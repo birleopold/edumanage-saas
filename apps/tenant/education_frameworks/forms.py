@@ -121,12 +121,20 @@ class CampusEducationStageForm(forms.ModelForm):
             "local_name",
             "academic_period_type",
             "grading_scale",
+            "default_assessment_mode",
+            "report_mode",
             "report_layout_key",
+            "candidate_class",
+            "supports_promotion_decisions",
             "is_active",
         ]
         help_texts = {
             "local_name": "Optional local label, for example O-Level, A-Level, Lower Primary or TVET.",
-            "report_layout_key": "Optional report layout identifier. Leave blank to use the default report.",
+            "default_assessment_mode": "Choose the default interpretation for marks and competency records in this stage.",
+            "report_mode": "Choose the normal report presentation used by this stage.",
+            "report_layout_key": "Required only for a custom report mode. Leave blank for standard templates.",
+            "candidate_class": "Enable candidate registration and external-examination readiness for this stage.",
+            "supports_promotion_decisions": "Allow configured result policies to produce progression or promotion decisions.",
         }
 
     def __init__(self, *args, profile, **kwargs):
@@ -149,6 +157,8 @@ class CampusEducationStageForm(forms.ModelForm):
         cleaned = super().clean()
         campus = cleaned.get("campus")
         stage = cleaned.get("stage")
+        report_mode = cleaned.get("report_mode")
+        report_layout_key = (cleaned.get("report_layout_key") or "").strip()
         if campus and campus.organization_id != self.profile.organization_id:
             self.add_error("campus", "Select a campus belonging to this institution.")
         if campus and stage:
@@ -174,6 +184,11 @@ class CampusEducationStageForm(forms.ModelForm):
                     "The selected curriculum framework does not currently support this education stage.",
                 )
             cleaned["framework_stage"] = framework_stage
+        if report_mode == CampusEducationStage.REPORT_CUSTOM and not report_layout_key:
+            self.add_error(
+                "report_layout_key",
+                "Enter a report layout key when the custom report mode is selected.",
+            )
         return cleaned
 
     def save(self, commit=True):
@@ -181,7 +196,8 @@ class CampusEducationStageForm(forms.ModelForm):
         instance.profile = self.profile
         instance.framework_stage = self.cleaned_data.get("framework_stage")
         grading_scale = self.cleaned_data.get("grading_scale")
-        instance.grading_scale_id = grading_scale.pk if grading_scale else None
+        instance.grading_scale = grading_scale
+        instance.legacy_grading_scale_id = grading_scale.pk if grading_scale else None
         instance.grading_scale_name = grading_scale.name if grading_scale else ""
         if not instance.local_name and instance.framework_stage_id:
             instance.local_name = instance.framework_stage.local_name
