@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.tenant.academics.models import CourseOffering
+from apps.tenant.teachers.models import TeacherProfile
 
 from .models import (
     Assessment,
@@ -9,10 +10,38 @@ from .models import (
     AssessmentWeightingScheme,
     normalize_assessment_code,
 )
+from .policy_models import AssessmentPolicy
 from .services import scheme_validation_errors
 
 
 class AssessmentForm(forms.ModelForm):
+    grading_mode = forms.ChoiceField(
+        choices=AssessmentPolicy.GRADING_MODE_CHOICES,
+        initial=AssessmentPolicy.NUMERIC,
+    )
+    absence_policy = forms.ChoiceField(
+        choices=AssessmentPolicy.ABSENCE_POLICY_CHOICES,
+        initial=AssessmentPolicy.MISSING,
+    )
+    show_on_report = forms.BooleanField(required=False, initial=True)
+    allow_makeup = forms.BooleanField(required=False)
+    responsible_teacher = forms.ModelChoiceField(
+        queryset=TeacherProfile.objects.none(),
+        required=False,
+    )
+    competency_framework_key = forms.CharField(
+        required=False,
+        max_length=96,
+    )
+    makeup_for = forms.ModelChoiceField(
+        queryset=Assessment.objects.none(),
+        required=False,
+    )
+    deferred_until = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+
     class Meta:
         model = Assessment
         fields = [
@@ -23,6 +52,14 @@ class AssessmentForm(forms.ModelForm):
             "max_score",
             "weight",
             "date",
+            "grading_mode",
+            "absence_policy",
+            "show_on_report",
+            "allow_makeup",
+            "responsible_teacher",
+            "competency_framework_key",
+            "makeup_for",
+            "deferred_until",
             "is_published",
         ]
         widgets = {
@@ -32,14 +69,24 @@ class AssessmentForm(forms.ModelForm):
             "assessment_type": "Optional classification used by the configurable weighting framework.",
             "weighting_component": "Optional explicit scheme component. Leave blank to resolve by assessment type.",
             "weight": "Legacy weight remains supported when no weighting scheme applies.",
+            "grading_mode": "Choose numeric, competency, or mixed result interpretation.",
+            "absence_policy": "Controls how an absent learner affects the result.",
+            "show_on_report": "Include this published assessment in report-card and transcript calculations.",
+            "allow_makeup": "Allow a later assessment to replace a deferred or missed attempt.",
+            "competency_framework_key": "Optional competency framework or rubric identifier.",
+            "makeup_for": "Optional original assessment replaced by this makeup assessment.",
             "is_published": "Only published assessments are visible to students and parents.",
         }
 
     def __init__(self, *args, **kwargs):
         offerings = kwargs.pop("offerings", None)
         super().__init__(*args, **kwargs)
-        self.fields["offering"].queryset = offerings if offerings is not None else CourseOffering.objects.all()
-        self.fields["assessment_type"].queryset = AssessmentType.objects.filter(is_active=True).order_by("kind", "name")
+        self.fields["offering"].queryset = (
+            offerings if offerings is not None else CourseOffering.objects.all()
+        )
+        self.fields["assessment_type"].queryset = AssessmentType.objects.filter(
+            is_active=True
+        ).order_by("kind", "name")
         components = AssessmentWeightingComponent.objects.filter(
             is_active=True,
             scheme__is_active=True,
@@ -52,7 +99,57 @@ class AssessmentForm(forms.ModelForm):
             selected_type = self.instance.assessment_type_id
         if selected_type:
             components = components.filter(assessment_type_id=selected_type)
-        self.fields["weighting_component"].queryset = components.order_by("scheme__name", "order")
+        self.fields["weighting_component"].queryset = components.order_by(
+            "scheme__name",
+            "order",
+        )
+
+        selected_offering = None
+        if self.is_bound:
+            selected_offering = self.data.get("offering")
+        elif self.instance and self.instance.offering_id:
+            selected_offering = self.instance.offering_id
+        teachers = TeacherProfile.objects.all().order_by("last_name", "first_name")
+        makeup_assessments = Assessment.objects.all().select_related(
+            "offering",
+            "offering__course",
+        )
+        if selected_offering:
+            teachers = teachers.filter(
+                campus_id__in=CourseOffering.objects.filter(pk=selected_offering).values_list(
+                    "campus_id",
+                    flat=True,
+                )
+            ) | teachers.filter(campus__isnull=True)
+            makeup_assessments = makeup_assessments.filter(offering_id=selected_offering)
+        if self.instance and self.instance.pk:
+            makeup_assessments = makeup_assessments.exclude(pk=self.instance.pk)
+        self.fields["responsible_teacher"].queryset = teachers.distinct()
+        self.fields["makeup_for"].queryset = makeup_assessments.order_by(
+            "-created_at",
+            "name",
+        )
+
+        policy = None
+        if self.instance and self.instance.pk:
+            try:
+                policy = self.instance.policy
+            except AssessmentPolicy.DoesNotExist:
+                policy = None
+        if policy:
+            for field_name in (
+                "grading_mode",
+                "absence_policy",
+                "show_on_report",
+                "allow_makeup",
+                "responsible_teacher",
+                "competency_framework_key",
+                "makeup_for",
+                "deferred_until",
+            ):
+                self.fields[field_name].initial = getattr(policy, field_name)
+        elif self.instance and self.instance.offering_id:
+            self.fields["responsible_teacher"].initial = self.instance.offering.teacher_id
 
     def clean_max_score(self):
         value = self.cleaned_data.get("max_score")
@@ -70,11 +167,58 @@ class AssessmentForm(forms.ModelForm):
         cleaned = super().clean()
         assessment_type = cleaned.get("assessment_type")
         component = cleaned.get("weighting_component")
+        absence_policy = cleaned.get("absence_policy")
+        allow_makeup = bool(cleaned.get("allow_makeup"))
+        makeup_for = cleaned.get("makeup_for")
+        offering = cleaned.get("offering")
         if component and assessment_type and component.assessment_type_id != assessment_type.pk:
-            self.add_error("weighting_component", "The component must use the selected assessment type.")
+            self.add_error(
+                "weighting_component",
+                "The component must use the selected assessment type.",
+            )
         if component and (not component.is_active or not component.scheme.is_active):
-            self.add_error("weighting_component", "Choose a component from an active scheme.")
+            self.add_error(
+                "weighting_component",
+                "Choose a component from an active scheme.",
+            )
+        if absence_policy in {
+            AssessmentPolicy.DEFERRED,
+            AssessmentPolicy.MAKEUP_REQUIRED,
+        } and not allow_makeup:
+            self.add_error(
+                "allow_makeup",
+                "Deferred or makeup-required absence policies must allow a makeup assessment.",
+            )
+        if makeup_for and offering and makeup_for.offering_id != offering.pk:
+            self.add_error(
+                "makeup_for",
+                "The original and makeup assessments must use the same course offering.",
+            )
         return cleaned
+
+    def save(self, commit=True):
+        assessment = super().save(commit=commit)
+        if not commit:
+            return assessment
+        policy, _ = AssessmentPolicy.objects.update_or_create(
+            assessment=assessment,
+            defaults={
+                "grading_mode": self.cleaned_data["grading_mode"],
+                "absence_policy": self.cleaned_data["absence_policy"],
+                "show_on_report": bool(self.cleaned_data.get("show_on_report")),
+                "allow_makeup": bool(self.cleaned_data.get("allow_makeup")),
+                "responsible_teacher": self.cleaned_data.get("responsible_teacher"),
+                "competency_framework_key": self.cleaned_data.get(
+                    "competency_framework_key",
+                    "",
+                ),
+                "makeup_for": self.cleaned_data.get("makeup_for"),
+                "deferred_until": self.cleaned_data.get("deferred_until"),
+            },
+        )
+        policy.full_clean()
+        policy.save()
+        return assessment
 
 
 class AssessmentTypeForm(forms.ModelForm):
@@ -170,7 +314,10 @@ class AssessmentWeightingComponentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         types = AssessmentType.objects.filter(is_active=True)
         if self.scheme:
-            used_ids = self.scheme.components.exclude(pk=self.instance.pk).values_list("assessment_type_id", flat=True)
+            used_ids = self.scheme.components.exclude(pk=self.instance.pk).values_list(
+                "assessment_type_id",
+                flat=True,
+            )
             types = types.exclude(pk__in=used_ids)
         self.fields["assessment_type"].queryset = types.order_by("kind", "name")
 
