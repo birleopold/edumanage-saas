@@ -1,0 +1,74 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Assessment result policies{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  {% include "components/ui_toast.html" %}
+
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Assessment result policies</h1>
+      <p class="mt-1 text-gray-600">{{ assessment.name }} · {{ assessment.offering }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'admin_assessments_scores' assessment.id %}" class="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-2.5 font-semibold text-gray-700 hover:bg-gray-50"><i class="ph ph-list-numbers"></i>Scores</a>
+      <a href="{% url 'admin_assessments_edit' assessment.id %}" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 font-semibold text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit assessment</a>
+    </div>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Grading mode</p><p class="mt-1 font-black text-gray-900">{{ assessment_policy.get_grading_mode_display }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Absence policy</p><p class="mt-1 font-black text-gray-900">{{ assessment_policy.get_absence_policy_display }}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Report card</p><p class="mt-1 font-black {% if assessment_policy.show_on_report %}text-green-700{% else %}text-amber-700{% endif %}">{% if assessment_policy.show_on_report %}Included{% else %}Hidden{% endif %}</p></div>
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><p class="text-xs font-bold uppercase text-gray-500">Makeup</p><p class="mt-1 font-black {% if assessment_policy.allow_makeup %}text-green-700{% else %}text-gray-700{% endif %}">{% if assessment_policy.allow_makeup %}Allowed{% else %}Not allowed{% endif %}</p></div>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Learner</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Current score</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Attendance/result status</th>
+            {% if competency_mode %}<th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Competency</th>{% endif %}
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Deferred until</th>
+            {% if competency_mode %}<th class="px-4 py-3 text-left text-xs font-bold uppercase text-gray-500">Evidence</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          {% for row in rows %}
+          <tr class="align-top hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900">{{ row.student }}<input type="hidden" name="student_ids" value="{{ row.student.id }}"></td>
+            <td class="px-4 py-3 text-sm text-gray-700">{% if row.score and row.score.score != None %}{{ row.score.score }} / {{ assessment.max_score }}{% else %}<span class="text-gray-400">No numeric score</span>{% endif %}</td>
+            <td class="px-4 py-3">
+              <select name="attendance_status_{{ row.student.id }}" class="min-w-48 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                {% for value, label in attendance_choices %}<option value="{{ value }}" {% if row.policy and row.policy.attendance_status == value %}selected{% elif not row.policy and value == 'PRESENT' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </td>
+            {% if competency_mode %}
+            <td class="px-4 py-3">
+              <select name="competency_rating_{{ row.student.id }}" class="min-w-44 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                {% for value, label in competency_choices %}<option value="{{ value }}" {% if row.policy and row.policy.competency_rating == value %}selected{% elif not row.policy and value == 'NOT_ASSESSED' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </td>
+            {% endif %}
+            <td class="px-4 py-3"><input type="date" name="deferred_until_{{ row.student.id }}" value="{% if row.policy and row.policy.deferred_until %}{{ row.policy.deferred_until|date:'Y-m-d' }}{% endif %}" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"></td>
+            {% if competency_mode %}<td class="px-4 py-3"><textarea name="competency_evidence_{{ row.student.id }}" rows="2" class="min-w-72 rounded-lg border border-gray-300 px-3 py-2 text-sm">{% if row.policy %}{{ row.policy.competency_evidence }}{% endif %}</textarea></td>{% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No enrolled learners.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sticky bottom-0 flex items-center justify-between rounded-xl border border-gray-200 bg-white/95 p-3 shadow-sm">
+      <a href="{% url 'admin_assessments_list' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900"><i class="ph ph-arrow-left"></i>Back to assessments</a>
+      <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><i class="ph ph-floppy-disk"></i>Save result policies</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
