@@ -8,4 +8,4 @@ class CourseworkConfig(AppConfig):
     verbose_name = "Coursework"
 
     def ready(self):
-        from . import signals  # noqa: F401
+        from . import signals, workflow_models, workflow_signals  # noqa: F401
