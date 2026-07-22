@@ -12,6 +12,7 @@
       <p class="text-gray-600 mt-1">{{ assessment.name }} · {{ assessment.offering }}</p>
     </div>
     <div class="flex flex-wrap gap-2">
+      <a href="{% url 'admin_assessment_result_policies' assessment.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-50 text-indigo-700 rounded-lg font-semibold border-2 border-indigo-200 hover:bg-indigo-100"><i class="ph ph-sliders-horizontal text-lg"></i><span>Result policies</span></a>
       <a href="{% url 'admin_assessments_edit' assessment.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50"><i class="ph ph-pencil-simple text-lg"></i><span>Edit assessment</span></a>
       <a href="{% url 'admin_assessments_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 shadow-sm"><i class="ph ph-arrow-left text-lg"></i><span>Back</span></a>
     </div>
@@ -40,7 +41,7 @@
     <div class="bg-white shadow-md rounded-xl border border-gray-300 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
         <p class="text-sm font-bold text-gray-900">Publishing</p>
-        <p class="text-sm text-gray-600">Only published assessments are visible to students and parents.</p>
+        <p class="text-sm text-gray-600">Only published assessments are visible to students and parents. Absence, competency and makeup handling is managed under Result policies.</p>
       </div>
       <button type="submit" name="action" value="toggle_publish" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold {% if assessment.is_published %}bg-amber-100 text-amber-800 hover:bg-amber-200{% else %}bg-green-600 text-white hover:bg-green-700{% endif %}">
         <i class="ph ph-megaphone"></i>{% if assessment.is_published %}Unpublish Results{% else %}Publish Results{% endif %}
