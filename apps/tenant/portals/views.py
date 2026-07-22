@@ -37,6 +37,7 @@ from apps.tenant.users.models import Role
 from .campus_permissions import get_user_campus_scope
 from .experience_services import build_school_health_score, school_setup_progress
 from .permissions import admin_portal_required, role_required
+from .role_navigation import portal_home_url_for
 
 
 _TIMETABLE_WEEKDAY_CODES = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
@@ -363,15 +364,7 @@ def landing_page(request):
     - If not authenticated: show portal selection page with login prompt
     """
     if request.user.is_authenticated:
-        if request.user.has_role(Role.ADMIN) or request.user.has_role(Role.CAMPUS_ADMIN):
-            return redirect("admin_home")
-        if request.user.has_role(Role.TEACHER):
-            return redirect("teacher_home")
-        if request.user.has_role(Role.STUDENT):
-            return redirect("student_home")
-        if request.user.has_role(Role.PARENT):
-            return redirect("parent_home")
-        return redirect("login")
+        return redirect(portal_home_url_for(request.user))
     
     # Not authenticated - show beautiful landing page
     return render(request, 'landing.html')

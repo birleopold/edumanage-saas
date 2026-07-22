@@ -21,6 +21,8 @@ from apps.tenant.students.models import StudentProfile
 from apps.tenant.students.services import sync_student_user_identity
 from apps.tenant.teachers.models import TeacherProfile
 
+from apps.tenant.portals.role_navigation import portal_home_url_for
+
 from .device_portal import base_template_for
 from .forms import (
     CustomLoginForm,
@@ -91,22 +93,8 @@ def _account_page_messages(request):
 
 def _role_home_url(user) -> str:
     """Return the safest portal landing page for an authenticated tenant user."""
-    if hasattr(user, "has_role"):
-        from apps.tenant.users.models import Role
 
-        if (
-            user.has_role(Role.ADMIN)
-            or user.has_role(Role.CAMPUS_ADMIN)
-            or user.has_role(Role.PRINCIPAL)
-        ):
-            return reverse("admin_home")
-        if user.has_role(Role.TEACHER):
-            return reverse("teacher_home")
-        if user.has_role(Role.STUDENT):
-            return reverse("student_home")
-        if user.has_role(Role.PARENT):
-            return reverse("parent_home")
-    return reverse("admin_home")
+    return portal_home_url_for(user)
 
 
 def _role_profile_for(user):

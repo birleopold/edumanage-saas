@@ -8,6 +8,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from apps.tenant.portals.role_navigation import portal_home_url_for
 from apps.tenant.users.models import Role
 
 from .models import UserTwoFactorSetting
@@ -17,7 +18,9 @@ def _eligible_for_admin_2fa(user) -> bool:
     if not getattr(user, "is_authenticated", False):
         return False
     return hasattr(user, "has_role") and (
-        user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN)
+        user.has_role(Role.ADMIN)
+        or user.has_role(Role.CAMPUS_ADMIN)
+        or user.has_role(Role.PRINCIPAL)
     )
 
 
@@ -89,6 +92,9 @@ def two_factor_settings(request):
 
 @login_required
 def verify_2fa(request):
+    if not _eligible_for_admin_2fa(request.user):
+        return HttpResponseForbidden("Verification codes are available to administrator accounts only.")
+
     setting, _ = UserTwoFactorSetting.objects.get_or_create(user=request.user)
     if request.method == "POST":
         code = (request.POST.get("code") or "").strip()
@@ -98,7 +104,7 @@ def verify_2fa(request):
             setting.is_enabled = True
             setting.save(update_fields=["last_verified_at", "is_enabled"])
             messages.success(request, "Verification complete.")
-            return redirect("admin_home")
+            return redirect(portal_home_url_for(request.user))
         messages.error(request, "Invalid verification code.")
     generate_code(request)
     return render(request, "portals/audit/verify_2fa.html", {"setting": setting})

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends base_template %}
 {% block content %}
 {% for row in results %}
 <p>{{ row.option.option_text }} - {{ row.votes }}</p>

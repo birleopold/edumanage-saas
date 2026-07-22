@@ -3,6 +3,8 @@ from django.contrib.auth import login
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from apps.tenant.portals.role_navigation import portal_home_url_for
+
 from .models import PasswordSetupToken, User
 
 
@@ -51,17 +53,7 @@ def password_setup(request, token: str):
         login(request, user, backend="apps.tenant.users.backends.EmailOrUsernameModelBackend")
         messages.success(request, "Password set successfully! You are now logged in.")
         
-        from apps.tenant.users.models import Role
-        if user.has_role(Role.ADMIN) or user.has_role(Role.CAMPUS_ADMIN):
-            return redirect("admin_home")
-        elif user.has_role(Role.TEACHER):
-            return redirect("teacher_home")
-        elif user.has_role(Role.STUDENT):
-            return redirect("student_home")
-        elif user.has_role(Role.PARENT):
-            return redirect("parent_home")
-        
-        return redirect("admin_home")
+        return redirect(portal_home_url_for(user))
     
     return render(
         request,
