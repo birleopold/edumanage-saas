@@ -1,4 +1,4 @@
-{% extends 'portals/teacher/base.html' %}
+{% extends base_template %}
 {% block title %}{% if mode == 'edit' %}Edit Quiz{% else %}Create Quiz{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'edit' %}Edit Quiz{% else %}Create Quiz{% endif %}{% endblock %}
 {% block header_actions %}<a href="{% if quiz %}{% url 'teacher_quiz_detail' quiz.id %}{% else %}{% url 'teacher_quiz_list' %}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Back</a>{% endblock %}

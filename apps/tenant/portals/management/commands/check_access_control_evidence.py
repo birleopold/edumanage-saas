@@ -23,11 +23,16 @@ REQUIRED_TEST_EVIDENCE = {
     "Teachers campus scope": ("apps/tenant/teachers/tests.py", "TeacherCampusScopeTests"),
     "Coursework self-service scope": ("apps/tenant/coursework/tests.py", "test_student_cannot_force_browse_other_coursework_items"),
     "Tenant status isolation": ("apps/public/tenants/tests.py", "TenantStatusMiddlewareTests"),
+    "Role continuity and principal access": ("apps/tenant/portals/test_role_continuity_hardening.py", "RoleContinuityHardeningTests"),
+    "Privacy and 2FA continuity": ("apps/tenant/audit/test_account_gate_continuity.py", "PrivacyAndTwoFactorContinuityTests"),
+    "Payslip role continuity": ("apps/tenant/hr/test_staff_payslip_continuity.py", "StaffPayslipContinuityTests"),
+    "Quiz role and campus scope": ("apps/tenant/quizzes/test_role_and_campus_hardening.py", "QuizRoleAndCampusHardeningTests"),
+    "Poll role and campus scope": ("apps/tenant/polls/test_portal_and_campus_hardening.py", "PollPortalAndCampusHardeningTests"),
 }
 
 
 class Command(BaseCommand):
-    help = "Verify Phase 2 access-control and tenant-isolation test evidence."
+    help = "Verify access-control and tenant-isolation implementation evidence."
 
     def add_arguments(self, parser):
         parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
@@ -52,16 +57,47 @@ class Command(BaseCommand):
     def _checks(self):
         root = Path(settings.BASE_DIR)
         permissions = self._read_text(root / "apps" / "tenant" / "portals" / "permissions.py")
+        role_navigation = self._read_text(root / "apps" / "tenant" / "portals" / "role_navigation.py")
         campus_permissions = self._read_text(root / "apps" / "tenant" / "portals" / "campus_permissions.py")
         onboarding = self._read_text(root / "apps" / "public" / "tenants" / "onboarding.py")
         deployment_readiness = self._read_text(root / "apps" / "public" / "tenants" / "deployment_readiness.py")
 
+        admin_role_contract = all(
+            evidence in role_navigation
+            for evidence in (
+                "ADMIN_PORTAL_ROLE_CODES",
+                "Role.ADMIN",
+                "Role.CAMPUS_ADMIN",
+                "Role.PRINCIPAL",
+            )
+        ) and "admin_portal_required = roles_required(*ADMIN_PORTAL_ROLE_CODES)" in permissions
+
         checks = [
-            self._check("Role gate primitive", "role_required" in permissions and "roles_required" in permissions, "permissions.py exposes role_required/roles_required"),
-            self._check("Admin portal role gate", "admin_portal_required" in permissions and "Role.CAMPUS_ADMIN" in permissions, "admin portal allows global and campus admins"),
-            self._check("Campus scope helpers", "enforce_campus_scope" in campus_permissions and "validate_campus_access" in campus_permissions, "campus_permissions.py filters and validates campus access"),
-            self._check("Tenant schema context", "tenant_context" in onboarding and "connection.vendor == \"postgresql\"" in onboarding, "onboarding writes into tenant_context under PostgreSQL"),
-            self._check("PostgreSQL tenant readiness", "Production tenant schemas require PostgreSQL" in deployment_readiness, "deployment readiness blocks real tenant schema claims on non-PostgreSQL"),
+            self._check(
+                "Role gate primitive",
+                "role_required" in permissions and "roles_required" in permissions,
+                "permissions.py exposes role_required/roles_required",
+            ),
+            self._check(
+                "Admin portal role contract",
+                admin_role_contract,
+                "central role_navigation contract includes admin, campus-admin and principal roles",
+            ),
+            self._check(
+                "Campus scope helpers",
+                "enforce_campus_scope" in campus_permissions and "validate_campus_access" in campus_permissions,
+                "campus_permissions.py filters and validates campus access",
+            ),
+            self._check(
+                "Tenant schema context",
+                "tenant_context" in onboarding and 'connection.vendor == "postgresql"' in onboarding,
+                "onboarding writes into tenant_context under PostgreSQL",
+            ),
+            self._check(
+                "PostgreSQL tenant readiness",
+                "Production tenant schemas require PostgreSQL" in deployment_readiness,
+                "deployment readiness blocks real tenant schema claims on non-PostgreSQL",
+            ),
         ]
         for name, (relative_path, evidence) in REQUIRED_TEST_EVIDENCE.items():
             text = self._read_text(root / relative_path)

@@ -11,22 +11,16 @@ from django.views.decorators.http import require_POST
 
 from apps.tenant.portals.models import WebPushSubscription
 from apps.tenant.portals.permissions import role_required
+from apps.tenant.portals.role_navigation import portal_base_template_for
 from apps.tenant.portals.push_delivery import send_web_push_to_user
 
 from .models import Role
 
 
 def base_template_for(user):
-    role_codes = set(user.roles.values_list("code", flat=True))
-    if role_codes.intersection({Role.ADMIN, Role.CAMPUS_ADMIN, Role.PRINCIPAL}):
-        return "portals/admin/base.html"
-    if Role.TEACHER in role_codes:
-        return "portals/teacher/base.html"
-    if Role.STUDENT in role_codes:
-        return "portals/student/base.html"
-    if Role.PARENT in role_codes:
-        return "portals/parent/base.html"
-    return "portals/admin/base.html"
+    """Compatibility wrapper around the shared portal-shell resolver."""
+
+    return portal_base_template_for(user)
 
 
 def alert_ready(queryset):

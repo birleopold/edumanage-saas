@@ -8,8 +8,10 @@ from django.http import HttpResponseForbidden
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.users.models import Role
 
+from .role_navigation import is_global_admin_user
+
 def _is_global_admin(user) -> bool:
-    return bool(getattr(user, "is_authenticated", False) and (getattr(user, "is_superuser", False) or user.has_role(Role.ADMIN)))
+    return bool(getattr(user, "is_authenticated", False) and is_global_admin_user(user))
 
 def _is_campus_admin(user) -> bool:
     return bool(getattr(user, "is_authenticated", False) and user.has_role(Role.CAMPUS_ADMIN))

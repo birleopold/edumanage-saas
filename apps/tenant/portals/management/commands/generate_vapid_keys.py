@@ -28,10 +28,11 @@ class Command(BaseCommand):
             format=serialization.PublicFormat.UncompressedPoint,
         )
         private_pem = vapid.private_pem().decode("ascii").strip()
+        escaped_private_pem = private_pem.replace("\n", r"\n")
 
         self.stdout.write("# Add these values to your environment or .env file:")
         self.stdout.write(f"WEB_PUSH_PUBLIC_KEY={base64url_no_padding(public_raw)}")
-        self.stdout.write(f"WEB_PUSH_PRIVATE_KEY={private_pem.replace(chr(10), r'\n')}")
+        self.stdout.write(f"WEB_PUSH_PRIVATE_KEY={escaped_private_pem}")
         self.stdout.write(f"WEB_PUSH_SUBJECT={options['subject']}")
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Generated VAPID keys for PWA push notifications."))

@@ -4,6 +4,7 @@ from apps.tenant.users.models import Role
 
 from .capability_catalog import build_capability_context
 from .permissions import admin_portal_required, role_required
+from .role_navigation import is_global_admin_user
 
 
 def _render_tools(request, *, role: str, template_name: str):
@@ -16,7 +17,7 @@ def _render_tools(request, *, role: str, template_name: str):
 
 @admin_portal_required
 def admin_capabilities(request):
-    role = "admin" if request.user.is_superuser or request.user.has_role(Role.ADMIN) else "campus_admin"
+    role = "admin" if is_global_admin_user(request.user) else "campus_admin"
     return _render_tools(
         request,
         role=role,
