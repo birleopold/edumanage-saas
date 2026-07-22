@@ -71,25 +71,8 @@ jobs:
           test -f apps/tenant/portals/role_navigation.py
 
       - name: Compile reviewed Python source
-        id: compile-source
-        continue-on-error: true
         shell: bash
-        run: python -m compileall apps config > /tmp/role-continuity-compile.log 2>&1
-
-      - name: Upload compile diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: role-continuity-compile-diagnostics
-          path: /tmp/role-continuity-compile.log
-          if-no-files-found: error
-
-      - name: Report compile failure
-        if: steps.compile-source.outcome == 'failure'
-        shell: bash
-        run: |
-          tail -n 120 /tmp/role-continuity-compile.log
-          exit 1
+        run: python -m compileall -q apps config
 
       - name: Remove staging material
         shell: bash
@@ -100,14 +83,45 @@ jobs:
             .role-continuity-trigger \
             .github/workflows/apply-role-continuity-hardening.yml
 
-      - name: Commit complete source
+      - name: Stage source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          test -n "$(git status --short)"
+          git status --short
+
+      - name: Validate staged source
+        id: staged-validation
+        continue-on-error: true
+        shell: bash
+        run: git diff --cached --check > /tmp/role-continuity-git-check.log 2>&1
+
+      - name: Upload staged-source diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: role-continuity-git-check
+          path: /tmp/role-continuity-git-check.log
+          if-no-files-found: error
+
+      - name: Report staged-source failure
+        if: steps.staged-validation.outcome == 'failure'
+        shell: bash
+        run: |
+          cat /tmp/role-continuity-git-check.log
+          exit 1
+
+      - name: Create source commit
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          test -n "$(git status --short)"
           git commit -m 'Harden role continuity and campus isolation'
+
+      - name: Push source commit
+        shell: bash
+        run: |
+          set -euo pipefail
           git push origin HEAD:${GITHUB_HEAD_REF}
