@@ -10,6 +10,7 @@ class FinanceConfig(AppConfig):
         from . import (  # noqa: F401
             accounting_models,
             clearance_models,
+            clearance_permits,
             integration_models,
             payment_gateway_models,
             signals,
