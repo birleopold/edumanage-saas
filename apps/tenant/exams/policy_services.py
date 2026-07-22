@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.db.models import F
 
 from apps.tenant.assessments.models import AssessmentType
 
@@ -106,7 +107,7 @@ def exam_policy_readiness() -> dict:
         competency_rating=ExamScorePolicy.NOT_ASSESSED,
     ).count()
     report_visibility_mismatch = ExamPaperPolicy.objects.exclude(
-        show_on_report=models.F("paper__report_cards_enabled")
+        show_on_report=F("paper__report_cards_enabled")
     ).count()
 
     checks = {
