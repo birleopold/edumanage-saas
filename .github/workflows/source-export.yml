@@ -28,27 +28,30 @@ jobs:
           fetch-depth: 0
           ref: agent/institutional-ux-observability
 
-      - name: Apply validated source payload
+      - name: Verify payload archive
         shell: bash
         run: |
           set -euo pipefail
           test -d .github/institutional-payload
           cat .github/institutional-payload/chunk-* > /tmp/institutional-payload.b64
           base64 --decode /tmp/institutional-payload.b64 > /tmp/institutional-payload.tar.gz
+          gzip -t /tmp/institutional-payload.tar.gz
+          tar -tzf /tmp/institutional-payload.tar.gz >/tmp/institutional-files.txt
+          test -s /tmp/institutional-files.txt
+
+      - name: Apply institutional source
+        shell: bash
+        run: |
+          set -euo pipefail
           tar -xzf /tmp/institutional-payload.tar.gz
-
           rm -rf .github/institutional-payload
-          rm -f .github/workflows/apply-institutional.yml
-          rm -f .github/workflows/source-export.yml
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-
+          git diff --cached --check
           if git diff --cached --quiet; then
             echo "No changes to apply"
             exit 0
           fi
-
           git commit -m "Complete institutional education roadmap"
           git push origin HEAD:agent/institutional-ux-observability
