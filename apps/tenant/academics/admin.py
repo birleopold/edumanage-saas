@@ -17,6 +17,7 @@ from .models import (
     SubjectCombination,
     SubjectCombinationCourse,
 )
+from .pathway_extensions import SubjectCombinationPolicy, SubjectRoleProfile
 
 
 admin.site.register(AcademicYear)
@@ -93,10 +94,24 @@ class ProgrammePathwayLevelAdmin(admin.ModelAdmin):
     raw_id_fields = ("pathway", "level")
 
 
+class SubjectRoleProfileInline(admin.StackedInline):
+    model = SubjectRoleProfile
+    extra = 0
+    max_num = 1
+    can_delete = False
+
+
 class SubjectCombinationCourseInline(admin.TabularInline):
     model = SubjectCombinationCourse
     extra = 0
     raw_id_fields = ("course",)
+
+
+class SubjectCombinationPolicyInline(admin.StackedInline):
+    model = SubjectCombinationPolicy
+    extra = 0
+    max_num = 1
+    can_delete = False
 
 
 @admin.register(SubjectCombination)
@@ -120,7 +135,7 @@ class SubjectCombinationAdmin(admin.ModelAdmin):
         "pathway__program__name",
     )
     raw_id_fields = ("pathway", "level")
-    inlines = (SubjectCombinationCourseInline,)
+    inlines = (SubjectCombinationPolicyInline, SubjectCombinationCourseInline)
 
 
 @admin.register(SubjectCombinationCourse)
@@ -129,11 +144,16 @@ class SubjectCombinationCourseAdmin(admin.ModelAdmin):
         "combination",
         "course",
         "role",
+        "academic_role",
         "subject_group",
         "order",
         "is_active",
     )
-    list_filter = ("role", "is_active")
+    list_filter = (
+        "role",
+        "academic_role_profile__academic_role",
+        "is_active",
+    )
     search_fields = (
         "combination__code",
         "combination__name",
@@ -141,6 +161,58 @@ class SubjectCombinationCourseAdmin(admin.ModelAdmin):
         "course__name",
     )
     raw_id_fields = ("combination", "course")
+    inlines = (SubjectRoleProfileInline,)
+
+    @admin.display(description="Academic role")
+    def academic_role(self, obj):
+        try:
+            return obj.academic_role_profile.get_academic_role_display()
+        except SubjectRoleProfile.DoesNotExist:
+            return "Not configured"
+
+
+@admin.register(SubjectCombinationPolicy)
+class SubjectCombinationPolicyAdmin(admin.ModelAdmin):
+    list_display = (
+        "combination",
+        "maximum_students",
+        "minimum_principal_subjects",
+        "maximum_principal_subjects",
+        "minimum_subsidiary_subjects",
+        "maximum_subsidiary_subjects",
+        "require_general_paper",
+    )
+    list_filter = ("require_general_paper",)
+    search_fields = (
+        "combination__code",
+        "combination__name",
+        "combination__pathway__name",
+    )
+    raw_id_fields = ("combination",)
+
+
+@admin.register(SubjectRoleProfile)
+class SubjectRoleProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "membership",
+        "academic_role",
+        "contributes_principal_points",
+        "contributes_subsidiary_points",
+        "required_for_completion",
+    )
+    list_filter = (
+        "academic_role",
+        "contributes_principal_points",
+        "contributes_subsidiary_points",
+        "required_for_completion",
+    )
+    search_fields = (
+        "membership__combination__code",
+        "membership__combination__name",
+        "membership__course__code",
+        "membership__course__name",
+    )
+    raw_id_fields = ("membership",)
 
 
 @admin.register(ClassGroupPathwayAssignment)
