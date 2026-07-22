@@ -1,5 +1,6 @@
 name: Apply institutional completion
 
+# One-time assembly workflow. It deletes itself after applying the validated payload.
 on:
   push:
     branches:
