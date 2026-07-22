@@ -45,6 +45,8 @@ def effective_score(assessment: Assessment, score: AssessmentScore | None):
     if score is None:
         return None
     policy = score_policy_for(score)
+    if policy.makeup_completed_by_id:
+        return policy.makeup_completed_by.score
     if policy.attendance_status == AssessmentScorePolicy.PRESENT:
         return score.score
     assessment_policy = assessment_policy_for(assessment)
@@ -53,8 +55,6 @@ def effective_score(assessment: Assessment, score: AssessmentScore | None):
         and assessment_policy.absence_policy == AssessmentPolicy.ZERO
     ):
         return ZERO
-    if policy.makeup_completed_by_id:
-        return policy.makeup_completed_by.score
     return None
 
 
