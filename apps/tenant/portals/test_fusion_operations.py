@@ -1,0 +1,118 @@
+from django.test import TestCase
+from django.urls import reverse
+
+from apps.tenant.admissions.models import Applicant
+from apps.tenant.announcements.models import Announcement
+from apps.tenant.orgsettings.models import Campus
+from apps.tenant.orgsettings.services import get_or_create_organization
+from apps.tenant.parents.models import ParentProfile
+from apps.tenant.users.models import Role, User
+
+
+class FusedOperationsWorkspaceTests(TestCase):
+    """Render the fused administrator workspaces through their secured routes."""
+
+    @classmethod
+    def setUpTestData(cls):
+        organization = get_or_create_organization()
+        cls.campus = Campus.objects.filter(organization=organization).first()
+        if cls.campus is None:
+            cls.campus = Campus.objects.create(
+                organization=organization,
+                name="Main Campus",
+                is_active=True,
+            )
+
+        admin_role, _ = Role.objects.get_or_create(
+            code=Role.ADMIN,
+            defaults={"name": "Administrator"},
+        )
+        cls.admin = User.objects.create_user(
+            username="fusion-operations-admin",
+            password="StrongPass123!",
+            email="fusion-admin@example.test",
+        )
+        cls.admin.roles.add(admin_role)
+
+        cls.applicant = Applicant.objects.create(
+            campus=cls.campus,
+            first_name="Amina",
+            last_name="Fusion",
+            phone="0700000099",
+            status=Applicant.IN_REVIEW,
+        )
+        ParentProfile.objects.create(
+            first_name="Grace",
+            last_name="Guardian",
+            phone="0710000099",
+            is_active=True,
+        )
+        Announcement.objects.create(
+            title="Term opening guidance",
+            body="Learners should report by 8:00 a.m.",
+            audience=Announcement.ALL,
+            is_active=True,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+
+    def assert_workspace(self, route_name: str, expected_text: str):
+        response = self.client.get(reverse(route_name))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, expected_text)
+        return response
+
+    def test_admissions_register_and_pipeline_render_fused_workspaces(self):
+        register_response = self.assert_workspace(
+            "admin_admissions_applicants",
+            "Move every applicant forward with confidence",
+        )
+        pipeline_response = self.assert_workspace(
+            "admin_admissions_pipeline",
+            "See where every application stands",
+        )
+
+        self.assertContains(register_response, self.applicant.application_reference)
+        self.assertContains(pipeline_response, self.applicant.full_name)
+
+    def test_applicant_review_workspace_renders_decision_evidence(self):
+        response = self.client.get(
+            reverse(
+                "admin_admissions_applicant_detail",
+                kwargs={"pk": self.applicant.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Review evidence before conversion")
+        self.assertContains(response, "Interviews and tests")
+        self.assertContains(response, "Communication history")
+
+    def test_family_and_communication_workspaces_render(self):
+        self.assert_workspace(
+            "admin_parents_list",
+            "Keep every learner connected to the right guardian",
+        )
+        self.assert_workspace(
+            "admin_announcements_list",
+            "Publish clear messages to the right school audience",
+        )
+
+    def test_library_inventory_and_examination_workspaces_render(self):
+        self.assert_workspace(
+            "admin_library_books_list",
+            "Keep books available, traceable and returned on time",
+        )
+        self.assert_workspace(
+            "admin_inventory_dashboard",
+            "Know what the school owns",
+        )
+        self.assert_workspace(
+            "admin_exams_list",
+            "Plan, supervise and publish examinations responsibly",
+        )
+        self.assert_workspace(
+            "admin_exam_papers_list",
+            "Build each paper from setup through scores",
+        )
