@@ -74,7 +74,7 @@ class FusedOperationsWorkspaceTests(TestCase):
         )
 
         self.assertContains(register_response, self.applicant.application_reference)
-        self.assertContains(pipeline_response, self.applicant.full_name)
+        self.assertContains(pipeline_response, self.applicant.full_name())
 
     def test_applicant_review_workspace_renders_decision_evidence(self):
         response = self.client.get(
