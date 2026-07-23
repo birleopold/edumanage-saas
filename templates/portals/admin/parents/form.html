@@ -3,14 +3,100 @@
 
 {% block title %}{% if mode == 'create' %}Add Parent{% else %}Edit Parent{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Parent{% else %}Edit Parent{% endif %}{% endblock %}
-{% block breadcrumbs %}Parent profile, guardian account and linked students{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_parents_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Parents</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_parents_list' %}" class="hover:text-primary-700">Parents & guardians</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'create' %}New guardian{% else %}{{ parent }}{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_parents_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Guardian register</a>
+{% if mode == 'edit' %}<a href="{% url 'admin_parents_digest' parent.id %}" class="edu-pill-button"><i class="ph ph-newspaper" aria-hidden="true"></i> Preview digest</a>{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-rose-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-rose-100">Parent records</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'create' %}Add parent{% else %}Edit parent{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-rose-100">Capture parent details, portal access and linked student relationships.</p></section>
-  {% if mode == 'edit' and parent.user_id and parent.email %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 p-6"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="text-lg font-black text-slate-900">Password Reset</h3><p class="mt-1 text-sm text-slate-600">Send a secure password reset link to the parent's email address.</p></div><form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-black text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200" onclick="return confirm('Send password reset link to {{ parent.email }}?');"><i class="ph ph-key mr-2"></i>Reset Password</button></form></div></section>{% endif %}
-  {% include "components/ui_form.html" %}
-  {% if mode == 'edit' %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 overflow-hidden"><div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center"><h2 class="text-lg font-black text-slate-900"><i class="ph ph-users-three mr-2"></i>Linked Students</h2></div><div class="p-6"><form method="post" action="{% url 'admin_parents_add_student' parent.id %}" class="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-200">{% csrf_token %}<h3 class="text-sm font-black text-slate-700 mb-4">Link a new student to this parent</h3><div class="flex flex-col sm:flex-row items-end gap-4">{% for field in link_form %}<div class="w-full sm:flex-1"><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-700 mb-1.5">{{ field.label }}</label>{% render_field field class="block w-full border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-0 focus:border-primary-500 sm:text-sm px-3 py-2 bg-white font-bold" %}</div>{% endfor %}<button type="submit" class="w-full sm:w-auto inline-flex justify-center items-center py-2 px-4 rounded-xl text-sm font-black text-white bg-primary-600 hover:bg-primary-700"><i class="ph ph-link mr-2"></i>Link Student</button></div></form><div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Relationship</th><th class="px-6 py-3 text-center text-xs font-black text-slate-500 uppercase">Primary Guardian</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for link in links %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-black text-slate-900">{{ link.student }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-bold">{{ link.get_relationship_display|default:link.relationship }}</td><td class="px-6 py-4 whitespace-nowrap text-center">{% if link.is_primary %}<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-green-100 text-green-700">Yes</span>{% else %}<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600">No</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right"><form method="post" action="{% url 'admin_parents_remove_student' parent.id link.id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this link?');">{% csrf_token %}<button type="submit" class="text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl font-black inline-flex items-center"><i class="ph ph-trash mr-1.5"></i>Remove</button></form></td></tr>{% empty %}<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No students linked to this parent yet.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endif %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page max-w-6xl mx-auto">
+  <section class="edu-ops-hero" aria-labelledby="parent-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-heart" aria-hidden="true"></i> Guardian record</span>
+      <h2 id="parent-form-heading">{% if mode == 'create' %}Create a secure, communication-ready guardian profile{% else %}Keep guardian identity, consent and access accurate{% endif %}</h2>
+      <p>The guided workflow separates identity, communication consent and portal security so staff can make careful decisions without overlooking results protection or account delivery.</p>
+    </div>
+  </section>
+
+  {% if mode == 'edit' and parent.user_id and parent.email %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-labelledby="parent-password-reset-heading">
+    <span class="edu-ops-note__icon"><i class="ph ph-key" aria-hidden="true"></i></span>
+    <div><strong id="parent-password-reset-heading">Secure password reset</strong><span>Send a one-time reset link to {{ parent.email }}. The existing password is never shown to administrators.</span></div>
+    <form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="edu-ops-button" onclick="return confirm('Send a secure password reset link to {{ parent.email }}?');"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> Send reset link</button></form>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-split">
+    <div>{% include "components/ui_form.html" with guided_form='parent' form_submit_text='Save guardian' form_submit_icon='ph-floppy-disk' %}</div>
+    <aside class="edu-ops-panel h-fit" aria-labelledby="parent-checklist-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="parent-checklist-heading">Guardian safeguarding checklist</h3><p>Complete these checks before relying on the account for learner information.</p></div></header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item"><i class="ph ph-identification-card" aria-hidden="true"></i><div><strong>Confirm the person’s identity</strong><span>Use the guardian’s full official name and a contact the school has independently verified.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-chat-circle-text" aria-hidden="true"></i><div><strong>Record real consent</strong><span>Enable SMS, WhatsApp, email or browser alerts only where the guardian has agreed to that channel.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-lock-key" aria-hidden="true"></i><div><strong>Protect published results</strong><span>Use the optional results PIN where the school or family needs an additional privacy step.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-link" aria-hidden="true"></i><div><strong>Link the correct learners</strong><span>After saving, connect only learners for whom this person has an authorised relationship.</span></div></div>
+      </div>
+    </aside>
+  </section>
+
+  {% if mode == 'edit' %}
+  <section class="edu-ops-table-shell" aria-labelledby="linked-students-heading">
+    <header class="edu-ops-table-heading">
+      <div><h3 id="linked-students-heading">Linked learners</h3><p>Manage family relationships and identify the primary guardian for each learner.</p></div>
+      <span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-shield-check" aria-hidden="true"></i> Campus-scoped</span>
+    </header>
+
+    <div class="p-4 border-b border-slate-100">
+      <form method="post" action="{% url 'admin_parents_add_student' parent.id %}" class="edu-ops-filter" aria-label="Link a learner to this guardian">
+        {% csrf_token %}
+        {% for field in link_form %}
+        <div class="edu-ops-field {% if field.name == 'student' %}md:col-span-2{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="min-h-[2.65rem] flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">{% render_field field class="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" %}<span class="text-sm font-semibold text-slate-700">Mark as primary guardian</span></div>
+          {% else %}
+            {% render_field field class="w-full min-h-[2.65rem] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 focus:border-primary-500 focus:ring-primary-500" %}
+          {% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="edu-pill-button"><i class="ph ph-link" aria-hidden="true"></i> Link learner</button>
+      </form>
+    </div>
+
+    {% if links %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Learners linked to {{ parent }} and their guardian relationship</caption>
+        <thead><tr><th scope="col">Learner</th><th scope="col">Relationship</th><th scope="col">Guardian priority</th><th scope="col" class="text-right">Action</th></tr></thead>
+        <tbody>
+          {% for link in links %}
+          <tr>
+            <td><div class="edu-ops-person"><span class="edu-ops-avatar" aria-hidden="true">{{ link.student.first_name|slice:':1'|upper }}{{ link.student.last_name|slice:':1'|upper }}</span><div><strong>{{ link.student }}</strong><span>{{ link.student.student_id|default:'Student number not recorded' }} · {{ link.student.campus|default:'Campus not recorded' }}</span></div></div></td>
+            <td><span class="edu-ops-badge edu-ops-badge--blue">{{ link.relationship|default:'Relationship not specified' }}</span></td>
+            <td>{% if link.is_primary %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-star" aria-hidden="true"></i> Primary guardian</span>{% else %}<span class="edu-ops-badge">Additional guardian</span>{% endif %}</td>
+            <td><div class="edu-ops-actions"><form method="post" action="{% url 'admin_parents_remove_student' parent.id link.id %}" onsubmit="return confirm('Remove this guardian-to-learner relationship?');">{% csrf_token %}<button type="submit" class="edu-ops-button edu-ops-button--danger"><i class="ph ph-link-break" aria-hidden="true"></i> Remove link</button></form></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="edu-empty-state"><i class="ph ph-link-break" aria-hidden="true"></i><strong>No learner is linked yet</strong><span>Use the form above to add the first authorised learner relationship.</span></div>
+    {% endif %}
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
