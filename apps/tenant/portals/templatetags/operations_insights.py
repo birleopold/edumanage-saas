@@ -190,9 +190,12 @@ def transport_workspace_summary(context):
 @register.simple_tag
 def document_workspace_summary():
     documents = Document.objects.all()
+    total = documents.count()
+    active = documents.filter(is_active=True).count()
     return {
-        "total": documents.count(),
-        "active": documents.filter(is_active=True).count(),
+        "total": total,
+        "active": active,
+        "inactive": max(0, total - active),
         "all": documents.filter(audience=Document.ALL).count(),
         "teachers": documents.filter(audience=Document.TEACHERS).count(),
         "students": documents.filter(audience=Document.STUDENTS).count(),
