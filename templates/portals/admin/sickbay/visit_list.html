@@ -1,12 +1,82 @@
 {% extends "portals/admin/base.html" %}
+{% load operations_insights %}
+
 {% block title %}Sickbay Visits{% endblock %}
-{% block page_title %}Sickbay Visits{% endblock %}
-{% block breadcrumbs %}Student clinic visit log and follow-up tracking{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_sickbay_visit_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Record Visit</a>{% endblock %}
+{% block page_title %}Sickbay Visit Register{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_sickbay_dashboard' %}" class="hover:text-primary-700">Student health</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Visit register</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_sickbay_dashboard' %}" class="edu-outline-button"><i class="ph ph-squares-four" aria-hidden="true"></i> Health overview</a>
+<a href="{% url 'admin_sickbay_visit_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Record visit</a>
+{% endblock %}
+
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_14rem_8rem_auto_auto] gap-4 items-end"><div><label class="block text-sm font-black text-slate-700 mb-2">Search</label><input type="text" name="q" value="{{ q }}" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Student, complaint or symptoms"></div><div><label class="block text-sm font-black text-slate-700 mb-2">Outcome</label><select name="outcome" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"><option value="">All outcomes</option>{% for value,label in outcome_choices %}<option value="{{ value }}" {% if outcome == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><label class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200">Apply</button><a href="{% url 'admin_sickbay_visit_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50">Clear</a></form></section>
-  {% if visits %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Complaint</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Severity</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Outcome</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Parent</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase">Visit Time</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase">Actions</th></tr></thead><tbody class="divide-y divide-slate-100">{% for visit in visits %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 text-sm"><p class="font-black text-slate-900">{{ visit.student }}</p><p class="text-xs font-mono text-primary-700">{{ visit.student.student_id|default:"No ID" }}</p></td><td class="px-6 py-4 text-sm font-bold text-slate-900">{{ visit.complaint }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-black {% if visit.severity == 'SEVERE' %}bg-red-100 text-red-700{% elif visit.severity == 'MODERATE' %}bg-amber-100 text-amber-700{% else %}bg-green-100 text-green-700{% endif %}">{{ visit.get_severity_display }}</span></td><td class="px-6 py-4 text-sm text-slate-700">{{ visit.get_outcome_display }}</td><td class="px-6 py-4 text-sm">{% if visit.parent_notified %}<span class="text-green-700 font-black">Notified</span>{% else %}<span class="text-slate-500 font-bold">Not yet</span>{% endif %}</td><td class="px-6 py-4 text-sm text-slate-600">{{ visit.visit_at|date:"M j, Y H:i" }}</td><td class="px-6 py-4 text-right"><a href="{% url 'admin_sickbay_visit_detail' visit.pk %}" class="font-black text-primary-700">View</a></td></tr>{% endfor %}</tbody></table></section>{% include "components/ui_pagination.html" with page_obj=page_obj %}{% else %}<section class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">No sickbay visits found.</section>{% endif %}
+{% sickbay_workspace_summary as health_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="visit-register-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-clipboard-text" aria-hidden="true"></i> Care records</span>
+      <h2 id="visit-register-heading">Find every visit, outcome and follow-up quickly</h2>
+      <p>Search learner care records, review severity and outcomes, and verify that guardians and referrals were handled appropriately.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_sickbay_visit_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Record visit</a>
+      <a href="{% url 'admin_sickbay_profile_list' %}"><i class="ph ph-identification-card" aria-hidden="true"></i> Medical profiles</a>
+    </div>
+  </section>
+
+  <section class="edu-ops-stat-grid" aria-label="Visit-register summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>All visits</small><strong>{{ health_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span><div><small>Today</small><strong>{{ health_summary.today }}</strong></div></article>
+    <article class="edu-ops-stat {% if health_summary.follow_up %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i></span><div><small>Follow-up</small><strong>{{ health_summary.follow_up }}</strong></div></article>
+    <article class="edu-ops-stat {% if health_summary.escalated %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-ambulance" aria-hidden="true"></i></span><div><small>Referred or emergency</small><strong>{{ health_summary.escalated }}</strong></div></article>
+  </section>
+
+  <form method="get" class="edu-ops-filter" aria-label="Filter sickbay visits">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search visits</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Learner, student ID, complaint or symptom"></div>
+    <div class="edu-ops-field"><label for="id_outcome">Outcome</label><select id="id_outcome" name="outcome"><option value="">All outcomes</option>{% for value,label in outcome_choices %}<option value="{{ value }}" {% if outcome == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_sickbay_visit_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section class="edu-ops-table-shell" aria-labelledby="visit-table-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="visit-table-heading">Visit register</h3><p>{{ page_obj.paginator.count|default:health_summary.total }} visit{{ page_obj.paginator.count|default:health_summary.total|pluralize }} match the current filters.</p></div><span class="edu-ops-badge {% if health_summary.follow_up %}edu-ops-badge--warning{% else %}edu-ops-badge--success{% endif %}"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> {{ health_summary.follow_up }} follow-up</span></header>
+    {% if visits %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Sickbay visits with learner, complaint, severity, outcome, communication and follow-up</caption>
+        <thead><tr><th scope="col">Learner</th><th scope="col">Visit</th><th scope="col">Severity</th><th scope="col">Outcome</th><th scope="col">Communication</th><th scope="col">Follow-up</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for visit in visits %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><strong>{{ visit.student }}</strong><span>{{ visit.student.student_id|default:'Student ID not recorded' }} · {{ visit.campus|default:'Campus not recorded' }}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ visit.complaint }}</strong>{{ visit.visit_at|date:'M j, Y H:i' }}{% if visit.temperature_c %} · {{ visit.temperature_c }}°C{% endif %}</div></td>
+            <td><span class="edu-ops-badge {% if visit.severity == 'SEVERE' %}edu-ops-badge--danger{% elif visit.severity == 'MODERATE' %}edu-ops-badge--warning{% else %}edu-ops-badge--success{% endif %}"><i class="ph ph-heartbeat" aria-hidden="true"></i> {{ visit.get_severity_display }}</span></td>
+            <td><span class="edu-ops-badge {% if visit.outcome == 'EMERGENCY' or visit.outcome == 'REFERRED' %}edu-ops-badge--danger{% elif visit.outcome == 'OBSERVATION' %}edu-ops-badge--warning{% else %}edu-ops-badge--blue{% endif %}">{{ visit.get_outcome_display }}</span></td>
+            <td>{% if visit.parent_notified %}<div class="edu-table-meta"><strong class="text-emerald-700">Guardian notified</strong>{{ visit.get_parent_notification_method_display|default:'Method not recorded' }}{% if visit.parent_notified_at %} · {{ visit.parent_notified_at|date:'M j, H:i' }}{% endif %}</div>{% else %}<span class="edu-ops-badge"><i class="ph ph-phone-slash" aria-hidden="true"></i> Not recorded</span>{% endif %}</td>
+            <td>{% if visit.follow_up_required %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Required</span>{% else %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check" aria-hidden="true"></i> Clear</span>{% endif %}</td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_sickbay_visit_detail' visit.pk %}" class="edu-ops-button"><i class="ph ph-eye" aria-hidden="true"></i> Review</a><a href="{% url 'admin_sickbay_visit_edit' visit.pk %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_sickbay_visit_create' as create_visit_url %}
+      {% include "components/ui_empty_state.html" with icon="first-aid-kit" title="No sickbay visits match this view" description="Record a visit or adjust the learner, complaint or outcome filters." action_url=create_visit_url action_text="Record Visit" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
