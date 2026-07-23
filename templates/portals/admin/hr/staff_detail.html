@@ -1,46 +1,90 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Staff {{ staff.last_name }}, {{ staff.first_name }}{% endblock %}
+{% block title %}{{ staff.first_name }} {{ staff.last_name }}{% endblock %}
+{% block page_title %}Staff Profile{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_hr_staff_list' %}" class="hover:text-primary-700">Human resources</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{{ staff.first_name }} {{ staff.last_name }}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_hr_staff_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Staff register</a>
+<a href="{% url 'admin_hr_staff_edit' staff.id %}" class="edu-pill-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit staff record</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
-  {% include "components/ui_toast.html" %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="staff-profile-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-identification-badge" aria-hidden="true"></i> {{ staff.staff_id|default:'Staff ID not recorded' }}</span>
+      <h2 id="staff-profile-heading">{{ staff.first_name }} {{ staff.last_name }}</h2>
+      <p>{{ staff.position|default:'Position not assigned' }} · {{ staff.department|default:'Department not assigned' }} · {{ staff.campus|default:'Campus not assigned' }}</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_hr_staff_edit' staff.id %}" class="edu-ops-primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit profile</a>
+      {% if staff.user_id %}<a href="{% url 'admin_users_list' %}?q={{ staff.user.username|urlencode }}"><i class="ph ph-user-circle" aria-hidden="true"></i> Account</a>{% endif %}
+      <a href="{% url 'admin_hr_payroll_payslips_list' %}?q={{ staff.staff_id|urlencode }}"><i class="ph ph-receipt" aria-hidden="true"></i> Payroll</a>
+    </div>
+  </section>
 
-  <div>
-    <h1 class="text-3xl font-bold text-gray-900">{{ staff.first_name }} {{ staff.last_name }}</h1>
-    <p class="text-gray-600 mt-1 font-mono text-sm">{{ staff.staff_id|default:"No staff ID" }}</p>
-  </div>
+  <section class="edu-ops-stat-grid" aria-label="Staff profile summary">
+    <article class="edu-ops-stat {% if staff.is_active %}edu-ops-stat--sage{% else %}edu-ops-stat--amber{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-activity" aria-hidden="true"></i></span><div><small>Employment status</small><strong>{% if staff.is_active %}Active{% else %}Inactive{% endif %}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-briefcase" aria-hidden="true"></i></span><div><small>Staff category</small><strong>{{ staff.get_staff_category_display }}</strong></div></article>
+    <article class="edu-ops-stat {% if staff.user_id %}edu-ops-stat--sage{% else %}edu-ops-stat--amber{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-user-circle" aria-hidden="true"></i></span><div><small>Portal account</small><strong>{% if staff.user_id %}Linked{% else %}Not linked{% endif %}</strong></div></article>
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-calendar" aria-hidden="true"></i></span><div><small>Record created</small><strong>{{ staff.created_at|date:'M j, Y' }}</strong></div></article>
+  </section>
 
-  <div class="flex flex-wrap gap-2">
-    <a href="{% url 'admin_hr_staff_edit' staff.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 shadow-sm">
-      <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
-    </a>
-    <a href="{% url 'admin_hr_staff_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50">
-      <i class="ph ph-arrow-left text-lg" aria-hidden="true"></i><span>Back to list</span>
-    </a>
-  </div>
+  {% if not staff.department_id or not staff.position_id or not staff.email or not staff.phone %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Staff profile completeness warning">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>This staff profile is incomplete</strong><span>{% if not staff.department_id %}Department is missing. {% endif %}{% if not staff.position_id %}Position is missing. {% endif %}{% if not staff.email %}Email is missing. {% endif %}{% if not staff.phone %}Phone is missing.{% endif %} Complete the record before relying on communication, reporting lines or payroll preparation.</span></div>
+    <a href="{% url 'admin_hr_staff_edit' staff.id %}" class="edu-ops-button">Complete record</a>
+  </section>
+  {% endif %}
 
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48 align-top">Campus</th><td class="px-6 py-4 text-sm text-gray-900">{{ staff.campus|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Staff ID</th><td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-800">{{ staff.staff_id|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Name</th><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ staff.last_name }}, {{ staff.first_name }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Email</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.email|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Phone</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.phone|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Department</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.department|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Position</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.position|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">User</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.user|default:"—" }}</td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Active</th><td class="px-6 py-4 text-sm">
-          {% if staff.is_active %}
-            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="ph ph-check-circle" aria-hidden="true"></i> Yes</span>
-          {% else %}
-            <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold"><i class="ph ph-x-circle" aria-hidden="true"></i> No</span>
-          {% endif %}
-        </td></tr>
-        <tr class="hover:bg-gray-50 transition-colors"><th scope="row" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider align-top">Created</th><td class="px-6 py-4 text-sm text-gray-800">{{ staff.created_at|date:"M j, Y H:i"|default:"—" }}</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr_.46fr] gap-6 items-start">
+    <div class="space-y-6">
+      <section class="edu-ops-table-shell p-6" aria-labelledby="employment-details-heading">
+        <header class="edu-ops-table-heading"><div><h3 id="employment-details-heading">Employment and organisation</h3><p>Official placement and reporting information.</p></div><span class="edu-ops-badge {% if staff.is_active %}edu-ops-badge--success{% endif %}">{% if staff.is_active %}Active{% else %}Inactive{% endif %}</span></header>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Staff ID</dt><dd class="mt-1 font-mono font-black text-slate-900">{{ staff.staff_id|default:'Not recorded' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Campus</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.campus|default:'Not assigned' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Department</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.department|default:'Not assigned' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Position</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.position|default:'Not assigned' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Staff category</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.get_staff_category_display }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Reports to</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.reports_to|default:'Not assigned' }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="edu-ops-table-shell p-6" aria-labelledby="staff-contact-heading">
+        <header class="edu-ops-table-heading"><div><h3 id="staff-contact-heading">Identity and contact</h3><p>Information used for official school communication.</p></div></header>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Full name</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.first_name }} {{ staff.last_name }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Email</dt><dd class="mt-1 font-bold {% if staff.email %}text-slate-900{% else %}text-amber-700{% endif %}">{{ staff.email|default:'Not recorded' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Phone</dt><dd class="mt-1 font-bold {% if staff.phone %}text-slate-900{% else %}text-amber-700{% endif %}">{{ staff.phone|default:'Not recorded' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Portal user</dt><dd class="mt-1 font-bold text-slate-900">{{ staff.user|default:'No account linked' }}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <aside class="space-y-6 xl:sticky xl:top-24">
+      <section class="edu-ops-table-shell p-5">
+        <h3 class="font-black text-slate-900">Record actions</h3>
+        <div class="mt-4 grid gap-3">
+          <a href="{% url 'admin_hr_staff_edit' staff.id %}" class="edu-ops-button edu-ops-button--primary justify-center"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit staff record</a>
+          {% if staff.user_id %}<a href="{% url 'admin_users_list' %}?q={{ staff.user.username|urlencode }}" class="edu-ops-button justify-center"><i class="ph ph-user-circle" aria-hidden="true"></i> Review portal account</a>{% endif %}
+          <a href="{% url 'admin_hr_payroll_payslips_list' %}?q={{ staff.staff_id|urlencode }}" class="edu-ops-button justify-center"><i class="ph ph-receipt" aria-hidden="true"></i> Review payslips</a>
+        </div>
+      </section>
+      <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-900"><strong>Access reminder</strong><p class="mt-1">A linked user account does not automatically confirm correct roles. Review permissions through System Users whenever duties change.</p></section>
+    </aside>
+  </section>
 </div>
 {% endblock %}
