@@ -116,3 +116,18 @@ class FusedOperationsWorkspaceTests(TestCase):
             "admin_exam_papers_list",
             "Build each paper from setup through scores",
         )
+
+    def test_guided_operational_forms_render_progressive_enhancement_markers(self):
+        expectations = {
+            "admin_admissions_applicant_create": 'data-guided-form="applicant"',
+            "admin_parents_create": 'data-guided-form="parent"',
+            "admin_announcements_create": 'data-guided-form="announcement"',
+            "admin_library_book_create": 'data-guided-form="book"',
+            "admin_exams_create": 'data-guided-form="exam"',
+        }
+
+        for route_name, marker in expectations.items():
+            with self.subTest(route_name=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, marker, html=False)
