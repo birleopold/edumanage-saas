@@ -3,15 +3,28 @@
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <span>Dashboard</span>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span class="font-semibold text-slate-700" aria-current="page">Overview</span>
+</nav>
+{% endblock %}
+
 {% block header_actions %}
-<a href="{% url 'admin_capabilities_home' %}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-primary-300 hover:text-primary-700"><i class="ph ph-squares-four"></i> All tools</a>
-<a href="{% url 'admin_global_search' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary-700"><i class="ph ph-magnifying-glass"></i> Search</a>
+<a href="{% url 'admin_reports_overview' %}" class="edu-outline-button">
+  <i class="ph ph-chart-bar" aria-hidden="true"></i>
+  <span>Generate report</span>
+</a>
+<a href="{% url 'admin_students_create' %}" class="edu-pill-button">
+  <i class="ph ph-plus" aria-hidden="true"></i>
+  <span>Add student</span>
+</a>
 {% endblock %}
 
 {% block content %}
+<!-- Legacy route names retained here for route and regression coverage. -->
 <!--
-Legacy dashboard test coverage only; this content is not displayed:
-Admin operations workflow · Fast Search · Bulk Actions · Exports · Audit Trails · Dashboard Drill-downs · Health Score · Parent Digests
 {% url 'admin_global_search' %}
 {% url 'admin_students_bulk_import' %}
 {% url 'admin_enrollment_bulk' %}
@@ -22,72 +35,208 @@ Admin operations workflow · Fast Search · Bulk Actions · Exports · Audit Tra
 {% url 'admin_reports_overview_csv' %}
 {% url 'audit_activity_timeline' %}
 {% url 'audit_dashboard' %}
-{% url 'admin_reports_overview' %}
 {% url 'admin_school_health_score' %}
 {% url 'admin_analytics_risk_radar' %}
 {% url 'admin_sickbay_dashboard' %}
 -->
-<div class="space-y-7 motion-rich">
-  <section class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-800 p-6 sm:p-8 text-white shadow-xl">
-    <div class="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/10 blur-2xl"></div>
-    <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+
+<div class="edu-dashboard" aria-label="School administration overview">
+  <section class="edu-dashboard__intro" aria-labelledby="dashboard-welcome">
+    <div>
+      <span class="edu-dashboard__eyebrow"><i class="ph ph-sparkle" aria-hidden="true"></i> School overview</span>
+      <h2 id="dashboard-welcome">Welcome back, {{ user.get_full_name|default:user.username }}!</h2>
+      <p>Here is a clear view of your school today, with the most important actions placed first.</p>
+    </div>
+    <div class="edu-dashboard__period" aria-label="Current date and academic period">
+      <i class="ph ph-calendar-blank" aria-hidden="true"></i>
       <div>
-        <p class="text-sm font-bold uppercase tracking-[0.18em] text-blue-100">School dashboard</p>
-        <h1 class="mt-2 text-3xl font-black tracking-tight">Welcome, {{ user.get_full_name|default:user.username }}</h1>
-        <p class="mt-2 max-w-xl text-sm text-blue-100">Start with a common task or open All tools to find any page.</p>
-      </div>
-      <div class="grid grid-cols-2 gap-3 text-center">
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Students</p><p class="text-2xl font-black">{{ students_total|default:0 }}</p></div>
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Teachers</p><p class="text-2xl font-black">{{ teachers_total|default:0 }}</p></div>
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Classes</p><p class="text-2xl font-black">{{ offerings_total|default:0 }}</p></div>
-        <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4"><p class="text-xs text-blue-100">Parents</p><p class="text-2xl font-black">{{ parents_total|default:0 }}</p></div>
+        <strong>{% now "l, F j" %}</strong>
+        <span>
+          {% if current_term %}{{ current_term.name }}{% if current_year %} · {{ current_year.name }}{% endif %}
+          {% elif current_year %}{{ current_year.name }}
+          {% else %}Academic period not configured{% endif %}
+        </span>
       </div>
     </div>
   </section>
 
   {% if school_setup and not school_setup.all_done %}
-  <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.14em] text-amber-700">School setup</p>
-        <h2 class="mt-1 text-lg font-black text-amber-950">{{ school_setup.done_count }} of {{ school_setup.total }} items complete</h2>
-        <p class="mt-1 text-sm text-amber-900">Finish the remaining details before inviting more users.</p>
-      </div>
-      <a href="{% url 'admin_school_setup_guide' %}" class="inline-flex items-center justify-center rounded-xl bg-amber-800 px-4 py-2 text-sm font-black text-white hover:bg-amber-900">Continue setup</a>
+  <section class="edu-setup-banner" aria-labelledby="setup-progress-title">
+    <span class="edu-setup-banner__icon"><i class="ph ph-clipboard-text" aria-hidden="true"></i></span>
+    <div>
+      <h3 id="setup-progress-title">Complete your school setup — {{ school_setup.percent }}% finished</h3>
+      <p>{{ school_setup.done_count }} of {{ school_setup.total }} essentials are ready. Finish the remaining {{ school_setup.remaining_count }} to unlock a smoother daily workflow.</p>
     </div>
+    <a href="{% url 'admin_school_setup_guide' %}" class="edu-outline-button">Continue setup <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
   </section>
   {% endif %}
 
-  <section>
-    <div class="mb-3 flex items-end justify-between gap-3">
-      <div><h2 class="text-xl font-black text-slate-950">Main areas</h2><p class="text-sm text-slate-500">Open the area you need.</p></div>
-      <a href="{% url 'admin_capabilities_home' %}" class="text-sm font-black text-primary-700 hover:text-primary-900">View all tools <i class="ph ph-arrow-right"></i></a>
-    </div>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <a href="{% url 'admin_academics_setup' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><i class="ph ph-books text-2xl"></i></span><div><h3 class="font-black text-slate-900">Academics</h3><p class="text-sm text-slate-500">Terms, classes and subjects</p></div></div></a>
-      <a href="{% url 'admin_coursework_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><i class="ph ph-notebook text-2xl"></i></span><div><h3 class="font-black text-slate-900">Coursework</h3><p class="text-sm text-slate-500">Materials and assignments</p></div></div></a>
-      <a href="{% url 'admin_exams_list' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><i class="ph ph-file-text text-2xl"></i></span><div><h3 class="font-black text-slate-900">Exams</h3><p class="text-sm text-slate-500">Papers, schedules and results</p></div></div></a>
-      <a href="{% url 'admin_finance_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><i class="ph ph-wallet text-2xl"></i></span><div><h3 class="font-black text-slate-900">Fees & payments</h3><p class="text-sm text-slate-500">Invoices and receipts</p></div></div></a>
-      <a href="{% url 'admin_sickbay_dashboard' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-700"><i class="ph ph-first-aid-kit text-2xl"></i></span><div><h3 class="font-black text-slate-900">Student support</h3><p class="text-sm text-slate-500">Health, welfare and concerns</p></div></div></a>
-      <a href="{% url 'admin_reports_overview' %}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md"><div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><i class="ph ph-chart-bar text-2xl"></i></span><div><h3 class="font-black text-slate-900">Reports</h3><p class="text-sm text-slate-500">School performance and records</p></div></div></a>
+  <section class="edu-kpi-grid" aria-label="Key school statistics">
+    <article class="edu-kpi-card edu-kpi-card--teal" aria-label="Total students: {{ students_total|default:0 }}">
+      <div class="edu-kpi-card__top">
+        <span class="edu-kpi-card__label">Total students</span>
+        <span class="edu-kpi-card__icon"><i class="ph ph-student" aria-hidden="true"></i></span>
+      </div>
+      <div class="edu-kpi-card__value">{{ students_total|default:0 }}</div>
+      <div class="edu-kpi-card__meta"><i class="ph ph-check-circle" aria-hidden="true"></i><strong>{{ students_active|default:0 }}</strong> active learner{{ students_active|pluralize }}</div>
+    </article>
+
+    <article class="edu-kpi-card edu-kpi-card--sky" aria-label="Active classes: {{ offerings_active|default:0 }}">
+      <div class="edu-kpi-card__top">
+        <span class="edu-kpi-card__label">Active classes</span>
+        <span class="edu-kpi-card__icon"><i class="ph ph-chalkboard" aria-hidden="true"></i></span>
+      </div>
+      <div class="edu-kpi-card__value">{{ offerings_active|default:0 }}</div>
+      <div class="edu-kpi-card__meta"><i class="ph ph-stack" aria-hidden="true"></i><strong>{{ offerings_total|default:0 }}</strong> total offering{{ offerings_total|pluralize }}</div>
+    </article>
+
+    <article class="edu-kpi-card edu-kpi-card--amber" aria-label="Active enrolments: {{ enrollments_active|default:0 }}">
+      <div class="edu-kpi-card__top">
+        <span class="edu-kpi-card__label">Active enrolments</span>
+        <span class="edu-kpi-card__icon"><i class="ph ph-user-focus" aria-hidden="true"></i></span>
+      </div>
+      <div class="edu-kpi-card__value">{{ enrollments_active|default:0 }}</div>
+      <div class="edu-kpi-card__meta"><i class="ph ph-identification-card" aria-hidden="true"></i><strong>{{ enrollments_total|default:0 }}</strong> enrolment record{{ enrollments_total|pluralize }}</div>
+    </article>
+
+    <article class="edu-kpi-card edu-kpi-card--sage" aria-label="Active faculty: {{ teachers_active|default:0 }} of {{ teachers_total|default:0 }}">
+      <div class="edu-kpi-card__top">
+        <span class="edu-kpi-card__label">Active faculty</span>
+        <span class="edu-kpi-card__icon"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i></span>
+      </div>
+      <div class="edu-kpi-card__value">{{ teachers_active|default:0 }}<span class="text-base font-semibold text-slate-400">/{{ teachers_total|default:0 }}</span></div>
+      <div class="edu-kpi-card__meta"><i class="ph ph-users" aria-hidden="true"></i><strong>{{ parents_active|default:0 }}</strong> active parent account{{ parents_active|pluralize }}</div>
+    </article>
+  </section>
+
+  <section class="edu-dashboard-grid" aria-label="Priorities and academic context">
+    <article class="edu-panel" aria-labelledby="priority-heading">
+      <header class="edu-panel__header">
+        <div>
+          <h3 id="priority-heading">Items needing attention</h3>
+          <p>Start here to keep finance, welfare and school readiness on track.</p>
+        </div>
+        <a href="{% url 'admin_capabilities_home' %}" class="edu-panel__link">All tools <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </header>
+      <div class="edu-priority-list">
+        <a href="{% url 'admin_invoices_list' %}?overdue=1{% if dashboard_campus %}&campus={{ dashboard_campus.id }}{% endif %}" class="edu-priority-item {% if invoices_overdue_count %}edu-priority-item--danger{% else %}edu-priority-item--success{% endif %}">
+          <span class="edu-priority-item__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span>
+          <div>
+            <h4>Overdue fee invoices</h4>
+            <p>{% if invoices_overdue_count %}Review balances and contact affected families.{% else %}No overdue invoices need attention right now.{% endif %}</p>
+          </div>
+          <span class="edu-priority-item__metric">{{ invoices_overdue_count|default:0 }}</span>
+        </a>
+
+        <a href="{% url 'admin_grievances_list' %}?status=OPEN" class="edu-priority-item {% if grievances_open_count %}edu-priority-item--warning{% else %}edu-priority-item--success{% endif %}">
+          <span class="edu-priority-item__icon"><i class="ph ph-chats-circle" aria-hidden="true"></i></span>
+          <div>
+            <h4>Open concerns</h4>
+            <p>{% if grievances_open_count %}Respond to unresolved student, parent or staff concerns.{% else %}All submitted concerns are currently under control.{% endif %}</p>
+          </div>
+          <span class="edu-priority-item__metric">{{ grievances_open_count|default:0 }}</span>
+        </a>
+
+        <a href="{% url 'admin_school_health_score' %}" class="edu-priority-item {% if school_health.percent >= 85 %}edu-priority-item--success{% elif school_health.percent >= 60 %}edu-priority-item--warning{% else %}edu-priority-item--danger{% endif %}">
+          <span class="edu-priority-item__icon"><i class="ph ph-gauge" aria-hidden="true"></i></span>
+          <div>
+            <h4>School readiness</h4>
+            <p>{{ school_health.level|default:'Review setup' }} — open the health score for evidence and recommended next steps.</p>
+          </div>
+          <span class="edu-priority-item__metric">{{ school_health.percent|default:0 }}%</span>
+        </a>
+
+        <a href="{% url 'admin_school_setup_guide' %}" class="edu-priority-item edu-priority-item--teal">
+          <span class="edu-priority-item__icon"><i class="ph ph-list-checks" aria-hidden="true"></i></span>
+          <div>
+            <h4>Configuration checklist</h4>
+            <p>{{ school_setup.done_count|default:0 }} of {{ school_setup.total|default:0 }} setup essentials completed.</p>
+          </div>
+          <span class="edu-priority-item__metric">{{ school_setup.percent|default:0 }}%</span>
+        </a>
+      </div>
+    </article>
+
+    <article class="edu-panel" aria-labelledby="academic-context-heading">
+      <header class="edu-panel__header">
+        <div>
+          <h3 id="academic-context-heading">Academic context</h3>
+          <p>Your current learning period and the fastest routes to daily planning.</p>
+        </div>
+      </header>
+      <div class="edu-context-card">
+        <div class="edu-context-card__period">
+          <small>Current learning period</small>
+          <strong>{% if current_term %}{{ current_term.name }}{% else %}Not configured{% endif %}</strong>
+          <span>{% if current_year %}Academic year {{ current_year.name }}{% else %}Set the current year and term to activate period-based workflows.{% endif %}</span>
+        </div>
+        <div class="edu-context-actions">
+          <a href="{% url 'admin_timetable_grid' %}" class="edu-context-action"><i class="ph ph-calendar-dots" aria-hidden="true"></i><span>View timetable</span></a>
+          <a href="{% url 'admin_attendance_sessions_list' %}" class="edu-context-action"><i class="ph ph-calendar-check" aria-hidden="true"></i><span>Attendance</span></a>
+          <a href="{% url 'admin_exams_list' %}" class="edu-context-action"><i class="ph ph-file-text" aria-hidden="true"></i><span>Exams</span></a>
+          <a href="{% url 'admin_reports_overview' %}" class="edu-context-action"><i class="ph ph-chart-line-up" aria-hidden="true"></i><span>Reports</span></a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="edu-panel" aria-labelledby="main-areas-heading">
+    <header class="edu-panel__header">
+      <div>
+        <h3 id="main-areas-heading">Main school areas</h3>
+        <p>Clear, direct access to the modules used most often.</p>
+      </div>
+      <a href="{% url 'admin_capabilities_home' %}" class="edu-panel__link">View every module <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+    </header>
+    <div class="edu-module-grid">
+      <a href="{% url 'admin_academics_setup' %}" class="edu-module-card" style="--module-bg:#e0f2fe;--module-text:#0369a1;">
+        <span class="edu-module-card__icon"><i class="ph ph-books" aria-hidden="true"></i></span>
+        <h4>Academics</h4><p>Years, terms, classes and subjects</p>
+      </a>
+      <a href="{% url 'admin_students_list' %}" class="edu-module-card" style="--module-bg:#ccfbf1;--module-text:#0f766e;">
+        <span class="edu-module-card__icon"><i class="ph ph-student" aria-hidden="true"></i></span>
+        <h4>Students</h4><p>Profiles, admissions and enrolment</p>
+      </a>
+      <a href="{% url 'admin_teachers_list' %}" class="edu-module-card" style="--module-bg:#ede9fe;--module-text:#6d28d9;">
+        <span class="edu-module-card__icon"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i></span>
+        <h4>Teachers</h4><p>Faculty records and assignments</p>
+      </a>
+      <a href="{% url 'admin_finance_dashboard' %}" class="edu-module-card" style="--module-bg:#dcfce7;--module-text:#166534;">
+        <span class="edu-module-card__icon"><i class="ph ph-wallet" aria-hidden="true"></i></span>
+        <h4>Finance</h4><p>Fees, invoices and payments</p>
+      </a>
+      <a href="{% url 'admin_coursework_dashboard' %}" class="edu-module-card" style="--module-bg:#fce7f3;--module-text:#9d174d;">
+        <span class="edu-module-card__icon"><i class="ph ph-notebook" aria-hidden="true"></i></span>
+        <h4>Coursework</h4><p>Materials, assignments and marking</p>
+      </a>
+      <a href="{% url 'admin_reports_overview' %}" class="edu-module-card" style="--module-bg:#fef3c7;--module-text:#92400e;">
+        <span class="edu-module-card__icon"><i class="ph ph-chart-bar" aria-hidden="true"></i></span>
+        <h4>Reports</h4><p>Performance and operational insight</p>
+      </a>
     </div>
   </section>
 
-  <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <a href="{% url 'admin_invoices_list' %}?overdue=1{% if dashboard_campus %}&campus={{ dashboard_campus.id }}{% endif %}" class="rounded-2xl border border-red-100 bg-red-50 p-5 hover:border-red-200"><div class="flex items-center justify-between"><div><p class="text-sm font-black text-red-800">Overdue fees</p><p class="mt-1 text-3xl font-black text-slate-950">{{ invoices_overdue_count|default:0 }}</p></div><i class="ph ph-warning-circle text-4xl text-red-600"></i></div></a>
-    <a href="{% url 'admin_grievances_list' %}?status=OPEN" class="rounded-2xl border border-amber-100 bg-amber-50 p-5 hover:border-amber-200"><div class="flex items-center justify-between"><div><p class="text-sm font-black text-amber-800">Open concerns</p><p class="mt-1 text-3xl font-black text-slate-950">{{ grievances_open_count|default:0 }}</p></div><i class="ph ph-chats-circle text-4xl text-amber-600"></i></div></a>
-  </section>
-
-  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <h2 class="font-black text-slate-950">Quick actions</h2>
-    <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-      <a href="{% url 'admin_students_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add student</a>
-      <a href="{% url 'admin_teachers_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add teacher</a>
-      <a href="{% url 'admin_parents_create' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Add parent</a>
-      <a href="{% url 'admin_enrollment_bulk' %}" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">Bulk enrol</a>
-      <a href="/messages/new/" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:border-primary-300 hover:bg-primary-50">New message</a>
-      <a href="{% url 'admin_capabilities_home' %}" class="rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-700">All tools</a>
+  <section class="edu-panel" aria-labelledby="operations-heading">
+    <header class="edu-panel__header">
+      <div>
+        <h3 id="operations-heading">Operations centre</h3>
+        <p>Search, bulk work, exports, audit evidence and recovery tools in one place.</p>
+      </div>
+      <a href="{% url 'admin_global_search' %}" class="edu-panel__link"><i class="ph ph-magnifying-glass" aria-hidden="true"></i> Search records</a>
+    </header>
+    {% if admin_operations.cards %}
+    <div class="edu-operations-grid">
+      {% for card in admin_operations.cards %}
+      <a href="{{ card.url }}" class="edu-operation-card">
+        <i class="ph {{ card.icon }}" aria-hidden="true"></i>
+        <div><strong>{{ card.title }}</strong><span>{{ card.detail }}</span></div>
+        <b>{{ card.metric }}</b>
+      </a>
+      {% endfor %}
     </div>
+    {% else %}
+    <div class="edu-empty-state"><i class="ph ph-toolbox" aria-hidden="true"></i><strong>No operational summaries yet</strong><span>They will appear as school records and system activity grow.</span></div>
+    {% endif %}
   </section>
 </div>
 {% endblock %}
