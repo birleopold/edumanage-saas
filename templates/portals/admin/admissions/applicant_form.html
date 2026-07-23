@@ -1,9 +1,44 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}{% if mode == 'edit' %}Edit Applicant{% else %}Add Applicant{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Applicant{% else %}Add Applicant{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_admissions_applicants' %}" class="hover:text-primary-700">Admissions</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}{{ applicant.application_reference }}{% else %}New applicant{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_admissions_applicants' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Applicant register</a>
+{% if mode == 'edit' %}<a href="{% url 'admin_admissions_applicant_detail' applicant.id %}" class="edu-pill-button"><i class="ph ph-eye" aria-hidden="true"></i> Review applicant</a>{% endif %}
+{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Applicant{% else %}Add Applicant{% endif %}</h1>
+<div class="edu-ops-page max-w-6xl mx-auto">
+  <section class="edu-ops-hero" aria-labelledby="applicant-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-user-plus" aria-hidden="true"></i> Applicant record</span>
+      <h2 id="applicant-form-heading">{% if mode == 'edit' %}Keep the application accurate and review-ready{% else %}Register a complete, follow-up-ready applicant{% endif %}</h2>
+      <p>The guided workflow separates applicant identity, guardian information, intended placement and admissions status so staff can complete the record without facing one overwhelming form.</p>
+    </div>
+  </section>
 
-  {% include 'components/ui_form.html' %}
+  <section class="edu-ops-split">
+    <div>{% include 'components/ui_form.html' with guided_form='applicant' form_submit_text='Save applicant' form_submit_icon='ph-floppy-disk' %}</div>
+    <aside class="edu-ops-panel h-fit" aria-labelledby="applicant-checklist-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="applicant-checklist-heading">Application quality checklist</h3><p>Complete these checks before moving the applicant to review or admission.</p></div></header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item"><i class="ph ph-identification-card" aria-hidden="true"></i><div><strong>Use official identity</strong><span>Names and date of birth should match the documents the school will retain.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-phone" aria-hidden="true"></i><div><strong>Confirm reachable contact</strong><span>At least one reliable applicant or guardian contact should be available for follow-up.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-buildings" aria-hidden="true"></i><div><strong>Check target placement</strong><span>Campus, term, level, programme and class choices must describe the intended admission accurately.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-note-pencil" aria-hidden="true"></i><div><strong>Leave useful handover notes</strong><span>Record only relevant internal information that another authorised staff member can understand.</span></div></div>
+      </div>
+    </aside>
+  </section>
+</div>
 {% endblock %}
