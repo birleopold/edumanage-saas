@@ -1,0 +1,66 @@
+<section class="edu-insight-grid" aria-label="Recent school activity and seven-day pulse">
+  <article class="edu-panel" aria-labelledby="recent-activity-heading">
+    <header class="edu-panel__header">
+      <div>
+        <h3 id="recent-activity-heading">Recent activity</h3>
+        <p>Latest recorded changes and account actions across the school.</p>
+      </div>
+      <a href="{% url 'audit_activity_timeline' %}" class="edu-panel__link">Full timeline <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+    </header>
+    {% if activity_items %}
+      <div class="edu-activity-feed">
+        {% for item in activity_items %}
+          <div class="edu-activity-row edu-activity-row--{{ item.tone }}">
+            <span class="edu-activity-icon"><i class="ph {{ item.icon }}" aria-hidden="true"></i></span>
+            <div>
+              <h4>{{ item.title|truncatechars:80 }}</h4>
+              <p>{{ item.detail }}</p>
+            </div>
+            <time class="edu-activity-time" datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|timesince }} ago</time>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="edu-empty-state">
+        <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>
+        <strong>No activity has been recorded yet</strong>
+        <span>Actions will appear here as administrators and staff use the system.</span>
+      </div>
+    {% endif %}
+  </article>
+
+  <article class="edu-panel" aria-labelledby="school-pulse-heading">
+    <header class="edu-panel__header">
+      <div>
+        <h3 id="school-pulse-heading">Seven-day school pulse</h3>
+        <p>A compact view of the most common recorded actions this week.</p>
+      </div>
+    </header>
+    <div class="edu-pulse-card">
+      <div class="edu-pulse-total">
+        <div>
+          <small>Recorded actions</small>
+          <strong>{{ activity_total }}</strong>
+        </div>
+        <span>Last 7 days</span>
+      </div>
+      {% if activity_bars %}
+        <div class="edu-pulse-bars">
+          {% for row in activity_bars %}
+            <div class="edu-pulse-row">
+              <span class="edu-pulse-row__label">{{ row.label }}</span>
+              <span class="edu-pulse-row__track" aria-hidden="true"><span class="edu-pulse-row__fill" style="--pulse-width:{{ row.percent }}%"></span></span>
+              <span class="edu-pulse-row__count">{{ row.count }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="edu-empty-state">
+          <i class="ph ph-chart-line" aria-hidden="true"></i>
+          <strong>No weekly activity yet</strong>
+          <span>The chart will build automatically from audit records.</span>
+        </div>
+      {% endif %}
+    </div>
+  </article>
+</section>
