@@ -2,12 +2,55 @@
 
 {% block title %}{% if mode == 'edit' %}Edit Exam{% else %}Add Exam{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'edit' %}Edit Exam{% else %}Add Exam{% endif %}{% endblock %}
-{% block breadcrumbs %}Exam setup, academic term and exam naming{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_exams_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Exams</a><a href="{% url 'admin_exam_papers_list' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Papers</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_exams_list' %}" class="hover:text-primary-700">Examinations</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}{{ exam.name }}{% else %}New exam period{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_exams_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Exam periods</a>
+<a href="{% url 'admin_exam_papers_list' %}" class="edu-outline-button"><i class="ph ph-files" aria-hidden="true"></i> Exam papers</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Exam setup</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit exam{% else %}Add exam{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Create or update the exam record used by papers, schedules and results.</p></section>
-  {% include 'components/ui_form.html' %}
+<div class="edu-ops-page max-w-6xl mx-auto">
+  <section class="edu-ops-hero" aria-labelledby="exam-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-calendar-dots" aria-hidden="true"></i> Exam period setup</span>
+      <h2 id="exam-form-heading">{% if mode == 'edit' %}Keep the examination window accurate and operationally clear{% else %}Create the foundation for papers, schedules and results{% endif %}</h2>
+      <p>The guided setup separates the examination identity, date window and shared instructions so administrators can establish a reliable period before creating individual papers.</p>
+    </div>
+  </section>
+
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Examination publication guidance">
+    <span class="edu-ops-note__icon"><i class="ph ph-lock-key" aria-hidden="true"></i></span>
+    <div><strong>An active exam period does not publish results</strong><span>Papers, scores, grades, rankings and publication controls remain separate. Review each paper before making results visible to learners or guardians.</span></div>
+    <a href="{% url 'admin_exam_review_dashboard' %}" class="edu-ops-button">Review console</a>
+  </section>
+
+  <section class="edu-ops-split">
+    <div>{% include 'components/ui_form.html' with guided_form='exam' form_submit_text='Save exam period' form_submit_icon='ph-calendar-check' %}</div>
+    <aside class="edu-ops-panel h-fit" aria-labelledby="exam-checklist-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="exam-checklist-heading">Exam setup checklist</h3><p>Confirm these foundations before creating papers and schedules.</p></div></header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item"><i class="ph ph-calendar-blank" aria-hidden="true"></i><div><strong>Choose the correct term</strong><span>Every paper added later must use an offering from the same academic term.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-monitor" aria-hidden="true"></i><div><strong>Select the real delivery mode</strong><span>Paper, online and hybrid modes affect the operational tools staff will prepare.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-clock" aria-hidden="true"></i><div><strong>Use a realistic date window</strong><span>The start and end dates should cover the full examination operation, not only one paper.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-file-text" aria-hidden="true"></i><div><strong>Separate general and paper guidance</strong><span>Place shared rules here; subject-specific instructions belong on the individual paper.</span></div></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="edu-ops-note" aria-label="Examination next steps">
+    <span class="edu-ops-note__icon"><i class="ph ph-flow-arrow" aria-hidden="true"></i></span>
+    <div><strong>After saving the period</strong><span>Create exam papers, add or select questions, build room schedules, allocate seats, enter scores, review analytics and only then decide whether results are ready for publication.</span></div>
+    <a href="{% url 'admin_exam_papers_list' %}" class="edu-ops-button">Open exam papers</a>
+  </section>
 </div>
 {% endblock %}
