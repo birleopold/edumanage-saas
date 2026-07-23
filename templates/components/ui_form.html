@@ -1,7 +1,7 @@
 {% load widget_tweaks %}
 
 <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8 {% if guided_form %}edu-guided-form-shell{% endif %}"{% if guided_form %} data-guided-form="{{ guided_form }}" data-form-mode="{{ mode|default:'edit' }}"{% endif %}>
-    <form method="{% block form_method %}post{% endblock %}" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} {% block form_attributes %}{% endblock %} class="space-y-6" novalidate>
+    <form method="{% block form_method %}post{% endblock %}" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} {% block form_attributes %}{% endblock %} class="space-y-6"{% if guided_form %} novalidate{% endif %}>
         {% csrf_token %}
         
         {% if form.non_field_errors %}
