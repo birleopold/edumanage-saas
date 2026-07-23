@@ -1,9 +1,45 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}{% if mode == 'edit' %}Edit Staff{% else %}Add Staff{% endif %}{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Staff Member{% else %}Add Staff Member{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Manage Staff Record{% else %}Add Staff Member{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_hr_staff_list' %}" class="hover:text-primary-700">Human resources</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}Edit staff{% else %}Add staff{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}<a href="{% url 'admin_hr_staff_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Staff register</a>{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Staff{% else %}Add Staff{% endif %}</h1>
+<div class="edu-ops-page max-w-6xl">
+  <section class="edu-ops-hero" aria-labelledby="staff-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-identification-badge" aria-hidden="true"></i> Employee record</span>
+      <h2 id="staff-form-heading">{% if mode == 'edit' %}Keep identity, placement and reporting lines accurate{% else %}Create a complete staff record from the beginning{% endif %}</h2>
+      <p>Capture official identity and contact information, assign the correct campus, department, position and supervisor, then make a deliberate portal-account decision.</p>
+    </div>
+  </section>
 
-  {% include 'components/ui_form.html' %}
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.42fr] gap-6 items-start">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {% include 'components/ui_form.html' with form_cancel_url='/admin/hr/' form_submit_text='Save Staff Record' form_submit_icon='ph-floppy-disk' %}
+    </div>
+    <aside class="edu-ops-table-shell p-5 lg:sticky lg:top-24">
+      <h3 class="text-base font-black text-slate-900">Staff-record checklist</h3>
+      <div class="mt-4 space-y-4 text-sm text-slate-600">
+        <p class="flex gap-3"><i class="ph ph-identification-card mt-0.5 text-blue-600" aria-hidden="true"></i><span><strong class="text-slate-900">Use official identity.</strong><br>Confirm staff number, names and reliable contact details.</span></p>
+        <p class="flex gap-3"><i class="ph ph-buildings mt-0.5 text-violet-600" aria-hidden="true"></i><span><strong class="text-slate-900">Assign the correct workplace.</strong><br>Campus, department and position should reflect the employee’s actual duties.</span></p>
+        <p class="flex gap-3"><i class="ph ph-tree-structure mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Set the reporting line.</strong><br>Choose the accountable supervisor and avoid self-reporting or circular structures.</span></p>
+        <p class="flex gap-3"><i class="ph ph-user-circle mt-0.5 text-amber-600" aria-hidden="true"></i><span><strong class="text-slate-900">Create access deliberately.</strong><br>Only create a portal user when the role and username are appropriate.</span></p>
+        <p class="flex gap-3"><i class="ph ph-shield-check mt-0.5 text-primary-600" aria-hidden="true"></i><span><strong class="text-slate-900">Apply least privilege.</strong><br>Portal roles control access to school, payroll and student information.</span></p>
+      </div>
+      {% if mode == 'edit' and staff.user_id %}<div class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900"><strong>Portal account linked:</strong> {{ staff.user }}. Account roles should be reviewed from the System Users workspace.</div>{% endif %}
+    </aside>
+  </section>
+</div>
 {% endblock %}
