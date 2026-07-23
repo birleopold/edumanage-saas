@@ -117,6 +117,29 @@ class FusedOperationsWorkspaceTests(TestCase):
             "Build each paper from setup through scores",
         )
 
+    def test_welfare_health_and_transport_workspaces_render(self):
+        expectations = {
+            "admin_incidents_list": "Respond consistently, fairly and with complete evidence",
+            "admin_sickbay_dashboard": "Record care clearly and never lose a follow-up",
+            "admin_sickbay_visit_list": "Find every visit, outcome and follow-up quickly",
+            "admin_transport_vehicles_list": "Keep every route staffed, roadworthy and within capacity",
+        }
+
+        for route_name, marker in expectations.items():
+            with self.subTest(route_name=route_name):
+                self.assert_workspace(route_name, marker)
+
+    def test_welfare_health_and_transport_forms_render_supporting_guidance(self):
+        expectations = {
+            "admin_incidents_create": "Case-quality checklist",
+            "admin_sickbay_visit_create": "Care-record checklist",
+            "admin_transport_vehicle_create": "Fleet-readiness checklist",
+        }
+
+        for route_name, marker in expectations.items():
+            with self.subTest(route_name=route_name):
+                self.assert_workspace(route_name, marker)
+
     def test_guided_operational_forms_render_progressive_enhancement_markers(self):
         expectations = {
             "admin_admissions_applicant_create": 'data-guided-form="applicant"',
