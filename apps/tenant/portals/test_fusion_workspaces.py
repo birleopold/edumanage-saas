@@ -57,6 +57,7 @@ class FusionWorkspaceRenderingTests(TestCase):
 
         self.assertContains(response, "css/fusion-workflows.css")
         self.assertContains(response, "css/fusion-scheduling.css")
+        self.assertContains(response, "css/fusion-operations.css")
         self.assertContains(response, "js/fusion-workflows.js")
 
 
