@@ -2,13 +2,91 @@
 
 {% block title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Student{% else %}Edit Student{% endif %}{% endblock %}
-{% block breadcrumbs %}Student profile, stream, campus and portal account setup{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_students_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Students</a>{% if mode == 'edit' %}<a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">ID Card PDF</a>{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_students_list' %}" class="hover:text-primary-700">Students</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'create' %}New student{% else %}{{ student.get_full_name }}{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_students_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Student registry</a>
+{% if mode == 'edit' %}<a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="edu-pill-button"><i class="ph ph-identification-card" aria-hidden="true"></i> ID card PDF</a>{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Student records</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'create' %}Add student{% else %}Edit student{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Capture student details, campus, stream and optional portal account setup.</p></section>
-  {% if mode == 'edit' and student.user_id and student.email %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 p-6"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="text-lg font-black text-slate-900">Password Reset</h3><p class="mt-1 text-sm text-slate-600">Send a secure password reset link to the student's email address.</p></div><form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-black text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200" onclick="return confirm('Send password reset link to {{ student.email }}?');"><i class="ph ph-key mr-2"></i>Reset Password</button></form></div></section>{% endif %}
-  {% include "components/ui_form.html" %}
+{% include "components/ui_toast.html" %}
+{% url 'admin_students_list' as students_url %}
+
+<div class="edu-record-form-page">
+  <section class="edu-registry-intro" aria-labelledby="student-form-heading">
+    <div>
+      <span class="edu-registry-intro__eyebrow"><i class="ph ph-student" aria-hidden="true"></i> Guided student record</span>
+      <h2 id="student-form-heading">{% if mode == 'create' %}Create a complete learner profile{% else %}Update {{ student.get_full_name }}{% endif %}</h2>
+      <p>{% if mode == 'create' %}Move through identity, school placement, supporting information and portal access in four clear steps.{% else %}Review each section carefully so the official student record, class placement and portal account remain consistent.{% endif %}</p>
+    </div>
+    {% if mode == 'edit' %}
+      <div class="edu-registry-actions">
+        {% if student.user_id %}<a href="{% url 'admin_students_credentials' student.id %}" class="edu-outline-button"><i class="ph ph-key" aria-hidden="true"></i> Account access</a>{% endif %}
+        <a href="{% url 'admin_students_id_card_pdf' student.id %}" target="_blank" rel="noopener noreferrer" class="edu-pill-button"><i class="ph ph-printer" aria-hidden="true"></i> Print ID</a>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if mode == 'edit' and student.user_id and student.email %}
+    <section class="edu-account-reset-card" aria-labelledby="student-password-reset-heading">
+      <div>
+        <h3 id="student-password-reset-heading">Secure password reset</h3>
+        <p>Send a single-use reset link to {{ student.email }}. The learner’s role and school record will not change.</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="reset_password" class="edu-outline-button" onclick="return confirm('Send a password reset link to {{ student.email|escapejs }}?');"><i class="ph ph-key" aria-hidden="true"></i> Send reset link</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <div class="edu-record-form-layout">
+    <div>
+      {% if mode == 'create' %}
+        {% include "components/ui_form.html" with guided_form="student" form_submit_text="Create student" form_submit_icon="ph-user-plus" form_cancel_url=students_url %}
+      {% else %}
+        {% include "components/ui_form.html" with guided_form="student" form_submit_text="Save student changes" form_submit_icon="ph-floppy-disk" form_cancel_url=students_url %}
+      {% endif %}
+    </div>
+
+    <aside class="edu-form-guide" aria-labelledby="student-form-guide-heading">
+      <header class="edu-form-guide__header">
+        <h3 id="student-form-guide-heading">Before you save</h3>
+        <p>These checks reduce duplicate records, wrong class placement and inaccessible learner accounts.</p>
+      </header>
+      <div class="edu-form-guide__items">
+        <div class="edu-form-guide__item">
+          <i class="ph ph-identification-card" aria-hidden="true"></i>
+          <div><strong>Use official names</strong><span>Match admission documents and avoid nicknames in the official learner record.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-buildings" aria-hidden="true"></i>
+          <div><strong>Confirm campus and stream</strong><span>Placement controls attendance, coursework, reporting and campus-level access.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-fingerprint" aria-hidden="true"></i>
+          <div><strong>Check identifiers</strong><span>Student, learner and national identification numbers should not be copied from another learner.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-envelope-simple" aria-hidden="true"></i>
+          <div><strong>Use a reachable email</strong><span>Email is required when the school intends to send a secure portal setup link.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-shield-check" aria-hidden="true"></i>
+          <div><strong>Create only needed access</strong><span>Portal accounts should be issued securely and changed by the learner at first sign-in.</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
 </div>
 {% endblock %}
