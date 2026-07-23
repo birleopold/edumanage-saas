@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -82,6 +83,7 @@ def user_roles_edit(request, pk: int):
     if request.method == "POST":
         role_ids = request.POST.getlist("role_ids")
         user_obj.roles.set(role_ids)
+        messages.success(request, f"Access roles for {user_obj.username} were updated.")
         return redirect("admin_users_roles_edit", pk=user_obj.pk)
 
     selected_role_ids = set(user_obj.roles.values_list("id", flat=True))
