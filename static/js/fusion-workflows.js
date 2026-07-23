@@ -62,6 +62,144 @@
         fields: ["create_user", "send_email"],
       },
     ],
+    applicant: [
+      {
+        key: "identity",
+        label: "Applicant identity",
+        description: "Names, birth details and contact",
+        heading: "Who is applying?",
+        help: "Capture the applicant’s official names, birth details and reliable contact information.",
+        fields: ["first_name", "last_name", "date_of_birth", "email", "phone", "address"],
+      },
+      {
+        key: "guardian",
+        label: "Guardian background",
+        description: "Family contact and previous school",
+        heading: "Who supports this applicant?",
+        help: "Record the guardian relationship and previous school so follow-up and transition checks are clear.",
+        fields: ["guardian_name", "guardian_relationship", "previous_school"],
+      },
+      {
+        key: "placement",
+        label: "Target placement",
+        description: "Campus, term, level and class",
+        heading: "Where is the applicant seeking admission?",
+        help: "Choose the intended campus and the most accurate academic target available.",
+        fields: ["campus", "target_term", "target_level", "target_program", "target_class_group"],
+      },
+      {
+        key: "workflow",
+        label: "Workflow status",
+        description: "Source, stage and internal notes",
+        heading: "Set the admissions workflow state",
+        help: "Confirm how the applicant reached the school, their current stage and any internal handover notes.",
+        fields: ["source", "status", "note"],
+      },
+    ],
+    parent: [
+      {
+        key: "identity",
+        label: "Guardian identity",
+        description: "Names and reliable contact details",
+        heading: "Who is the parent or guardian?",
+        help: "Enter the guardian’s official name and the contact details the school can safely use.",
+        fields: ["first_name", "last_name", "phone", "email"],
+      },
+      {
+        key: "communication",
+        label: "Communication",
+        description: "Alerts and weekly digest channels",
+        heading: "Choose approved communication channels",
+        help: "Record the guardian’s consent for SMS, WhatsApp, email, browser alerts and weekly family summaries.",
+        fields: ["allow_sms_alerts", "allow_whatsapp_alerts", "digest_enabled", "digest_email_enabled", "digest_whatsapp_enabled", "digest_pwa_enabled"],
+      },
+      {
+        key: "security",
+        label: "Access and security",
+        description: "Results PIN, account status and invitation",
+        heading: "Prepare secure parent access",
+        help: "Set results protection, account status and secure portal delivery without sharing passwords informally.",
+        fields: ["results_pin", "clear_results_pin", "is_active", "create_user", "send_email"],
+      },
+    ],
+    announcement: [
+      {
+        key: "message",
+        label: "Message",
+        description: "Clear title and complete content",
+        heading: "What should the school community know?",
+        help: "Use a specific title and concise content that tells readers what happened, what to do and when.",
+        fields: ["title", "body"],
+      },
+      {
+        key: "audience",
+        label: "Audience",
+        description: "Who can see the announcement",
+        heading: "Who should receive this message?",
+        help: "Select the smallest appropriate audience to reduce noise and protect relevance.",
+        fields: ["audience"],
+      },
+      {
+        key: "delivery",
+        label: "Visibility and urgency",
+        description: "Publication and broadcast controls",
+        heading: "How should the message be handled?",
+        help: "Keep ordinary notices active in the portal. Mark a message urgent only when immediate parent-channel delivery may be justified.",
+        fields: ["is_active", "is_urgent"],
+      },
+    ],
+    book: [
+      {
+        key: "identity",
+        label: "Book identity",
+        description: "Title, authors and category",
+        heading: "What title is being catalogued?",
+        help: "Use the title page and official publication details to avoid duplicate or inconsistent catalogue records.",
+        fields: ["title", "authors", "category"],
+      },
+      {
+        key: "publication",
+        label: "Publication",
+        description: "ISBN, publisher, year and edition",
+        heading: "Record publication information",
+        help: "Add identifiers that help librarians distinguish editions and search the catalogue accurately.",
+        fields: ["isbn", "publisher", "published_year", "edition"],
+      },
+      {
+        key: "details",
+        label: "Details and visibility",
+        description: "Description, cover and active status",
+        heading: "Complete catalogue presentation",
+        help: "Add a helpful description and cover image, then decide whether the title should be available in searches.",
+        fields: ["description", "cover_image", "is_active"],
+      },
+    ],
+    exam: [
+      {
+        key: "identity",
+        label: "Exam identity",
+        description: "Term, name and delivery mode",
+        heading: "What examination period is being created?",
+        help: "Choose the correct academic term, a clear period name and the intended paper, online or hybrid mode.",
+        fields: ["term", "name", "exam_mode"],
+      },
+      {
+        key: "schedule",
+        label: "Schedule",
+        description: "Dates and operational status",
+        heading: "When will this examination period run?",
+        help: "Set a realistic date window and activate the period only when administrators are ready to build papers and schedules.",
+        fields: ["start_date", "end_date", "is_active"],
+      },
+      {
+        key: "guidance",
+        label: "Guidance",
+        description: "Description and instructions",
+        heading: "What guidance applies to this period?",
+        help: "Record the purpose and general instructions that should remain consistent across all papers.",
+        fields: ["description", "instructions"],
+      },
+    ],
   };
 
   function createElement(tag, className, html) {
@@ -270,7 +408,7 @@
         showStep(index, true);
       });
       step.button.addEventListener("keydown", (event) => {
-        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
         event.preventDefault();
         let target = currentIndex;
         if (event.key === "ArrowLeft") target = Math.max(0, currentIndex - 1);
