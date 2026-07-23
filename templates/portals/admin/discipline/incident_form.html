@@ -1,9 +1,43 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}{% if mode == 'edit' %}Edit Incident{% else %}Add Incident{% endif %}{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit Incident{% else %}Report Incident{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Manage Discipline Case{% else %}Report Discipline Incident{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_incidents_list' %}" class="hover:text-primary-700">Discipline cases</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}Edit{% else %}Report{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}<a href="{% url 'admin_incidents_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Case register</a>{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Incident{% else %}Add Incident{% endif %}</h1>
+<div class="edu-ops-page max-w-6xl">
+  <section class="edu-ops-hero" aria-labelledby="discipline-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-note-pencil" aria-hidden="true"></i> Safeguarding record</span>
+      <h2 id="discipline-form-heading">{% if mode == 'edit' %}Update the case with accurate evidence{% else %}Create a clear, factual incident record{% endif %}</h2>
+      <p>Use objective language, record what is known, select a proportionate severity and keep sensitive information limited to authorised school staff.</p>
+    </div>
+  </section>
 
-  {% include 'components/ui_form.html' %}
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.42fr] gap-6 items-start">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {% include 'components/ui_form.html' %}
+    </div>
+    <aside class="edu-ops-table-shell p-5 lg:sticky lg:top-24">
+      <h3 class="text-base font-black text-slate-900">Case-quality checklist</h3>
+      <div class="mt-4 space-y-4 text-sm text-slate-600">
+        <p class="flex gap-3"><i class="ph ph-check-circle mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Identify the correct learner.</strong><br>Confirm student number and campus before saving.</span></p>
+        <p class="flex gap-3"><i class="ph ph-check-circle mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Describe facts, not assumptions.</strong><br>Record observable behaviour, date, place and immediate response.</span></p>
+        <p class="flex gap-3"><i class="ph ph-check-circle mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Use severity consistently.</strong><br>High severity should trigger prompt safeguarding and leadership review.</span></p>
+        <p class="flex gap-3"><i class="ph ph-lock-key mt-0.5 text-primary-600" aria-hidden="true"></i><span><strong class="text-slate-900">Protect confidentiality.</strong><br>Do not include unnecessary medical, family or third-party details.</span></p>
+      </div>
+    </aside>
+  </section>
+</div>
 {% endblock %}

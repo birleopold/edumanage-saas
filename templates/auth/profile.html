@@ -8,14 +8,22 @@
 {% include "components/ui_toast.html" %}
 <div class="mx-auto max-w-5xl space-y-6">
   <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-primary-950 via-slate-950 to-indigo-900 p-6 text-white shadow-lg">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-100">{{ role_label }} account</p>
-        <h1 class="mt-2 text-3xl font-black">{{ profile_record.first_name|default:user.first_name }} {{ profile_record.last_name|default:user.last_name }}</h1>
-        <p class="mt-2 text-sm text-primary-100">View your school identity, login details and security settings.</p>
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="edu-profile-identity">
+        <span class="edu-profile-identity__avatar" aria-hidden="true">{{ profile_record.first_name|default:user.first_name|default:user.username|slice:':1'|upper }}{{ profile_record.last_name|default:user.last_name|slice:':1'|upper }}</span>
+        <div>
+          <p class="text-xs font-black uppercase tracking-[0.18em] text-primary-100">{{ role_label }} account</p>
+          <h1 class="mt-2 text-3xl font-black">{{ profile_record.first_name|default:user.first_name }} {{ profile_record.last_name|default:user.last_name }}</h1>
+          <p class="mt-2 text-sm text-primary-100">View your school identity, login details and security settings.</p>
+          <div class="edu-profile-badges">
+            <span class="edu-profile-badge"><i class="ph ph-identification-badge" aria-hidden="true"></i> {{ role_label }}</span>
+            {% if user.is_active %}<span class="edu-profile-badge"><i class="ph ph-seal-check" aria-hidden="true"></i> Active account</span>{% endif %}
+            {% if identity_is_school_managed %}<span class="edu-profile-badge"><i class="ph ph-buildings" aria-hidden="true"></i> School-managed identity</span>{% endif %}
+          </div>
+        </div>
       </div>
       <a href="{{ portal_home_url }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900">
-        <i class="ph ph-arrow-left"></i> Back to my dashboard
+        <i class="ph ph-arrow-left" aria-hidden="true"></i> Back to my dashboard
       </a>
     </div>
   </section>
@@ -59,7 +67,7 @@
               {% for error in field.errors %}<p class="mt-1 text-sm font-bold text-red-600">{{ error }}</p>{% endfor %}
             </div>
           {% endfor %}
-          <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white"><i class="ph ph-floppy-disk"></i> Save changes</button>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white"><i class="ph ph-floppy-disk" aria-hidden="true"></i> Save changes</button>
         </form>
       {% endif %}
     </section>
@@ -70,6 +78,7 @@
         <dl class="mt-5 space-y-3">
           <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Username</dt><dd class="mt-1 font-black text-slate-900">{{ user.username }}</dd></div>
           <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Portal</dt><dd class="mt-1 font-black text-slate-900">{{ role_label }}</dd></div>
+          <div class="rounded-xl bg-slate-50 p-4"><dt class="text-xs font-black uppercase text-slate-500">Last sign-in</dt><dd class="mt-1 font-black text-slate-900">{% if user.last_login %}{{ user.last_login|date:'M j, Y · g:i A' }}{% else %}No sign-in recorded{% endif %}</dd></div>
         </dl>
       </section>
 
@@ -77,9 +86,9 @@
         <h2 class="text-xl font-black text-slate-950">Security</h2>
         <p class="mt-1 text-sm text-slate-500">These links keep you inside your own account and do not change your role.</p>
         <div class="mt-5 grid gap-3">
-          <a href="{% url 'change_password' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-black text-slate-800 hover:bg-slate-200"><i class="ph ph-password"></i> Change password</a>
-          <a href="{% url 'my_devices' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-50 px-4 py-3 font-black text-primary-800 hover:bg-primary-100"><i class="ph ph-device-mobile"></i> My devices</a>
-          {% if not identity_is_school_managed %}<a href="{% url 'audit_two_factor_settings' %}" class="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 font-black text-green-800 hover:bg-green-100"><i class="ph ph-shield-check"></i> Verification settings</a>{% endif %}
+          <a href="{% url 'change_password' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-black text-slate-800 hover:bg-slate-200"><i class="ph ph-password" aria-hidden="true"></i> Change password</a>
+          <a href="{% url 'my_devices' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary-50 px-4 py-3 font-black text-primary-800 hover:bg-primary-100"><i class="ph ph-device-mobile" aria-hidden="true"></i> My devices</a>
+          {% if not identity_is_school_managed %}<a href="{% url 'audit_two_factor_settings' %}" class="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 font-black text-green-800 hover:bg-green-100"><i class="ph ph-shield-check" aria-hidden="true"></i> Verification settings</a>{% endif %}
         </div>
       </section>
     </div>

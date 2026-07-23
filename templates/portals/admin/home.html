@@ -1,4 +1,5 @@
 {% extends 'portals/admin/base.html' %}
+{% load dashboard_insights %}
 
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -179,6 +180,8 @@
       </div>
     </article>
   </section>
+
+  {% admin_dashboard_insights %}
 
   <section class="edu-panel" aria-labelledby="main-areas-heading">
     <header class="edu-panel__header">

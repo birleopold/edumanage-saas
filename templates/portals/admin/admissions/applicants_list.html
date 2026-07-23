@@ -1,29 +1,118 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Applicants{% endblock %}
-{% block page_title %}Admissions CRM{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_admissions_pipeline' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300"><i class="ph ph-kanban mr-1"></i> Pipeline</a><a href="{% url 'admin_admissions_applicant_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus-circle mr-1"></i> Add Applicant</a>{% endblock %}
+{% block page_title %}Admissions{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Admissions</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_admissions_pipeline' %}" class="edu-outline-button"><i class="ph ph-kanban" aria-hidden="true"></i> Pipeline</a>
+<a href="{% url 'admin_admissions_applicant_create' %}" class="edu-pill-button"><i class="ph ph-user-plus" aria-hidden="true"></i> Add applicant</a>
+{% endblock %}
 
 {% block content %}
-<div class="motion-fast space-y-7">
-  {% include "components/ui_toast.html" %}
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-orange-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-      <div><p class="text-xs font-black uppercase tracking-[0.18em] text-orange-100">Admissions workflow</p><h2 class="mt-2 text-2xl font-black">Applicants and admissions pipeline</h2><p class="mt-2 max-w-2xl text-sm text-orange-100">Manage leads, online applications, interview/test review, admission decisions, invoices and student conversion.</p></div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center"><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Total</p><p class="text-2xl font-black">{{ summary.total }}</p></div><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Review</p><p class="text-2xl font-black">{{ summary.in_review }}</p></div><div class="rounded-2xl bg-white/10 border border-white/15 px-4 py-3"><p class="text-[10px] uppercase text-orange-100">Admitted</p><p class="text-2xl font-black">{{ summary.admitted }}</p></div></div>
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="admissions-workspace-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Admissions workflow</span>
+      <h2 id="admissions-workspace-heading">Move every applicant forward with confidence</h2>
+      <p>Review enquiries, applications, decisions, fees and student conversion from one clear workspace without losing the applicant’s history.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_admissions_leads' %}"><i class="ph ph-address-book" aria-hidden="true"></i> Leads</a>
+      <a href="{% url 'admin_admissions_form_templates' %}"><i class="ph ph-note-pencil" aria-hidden="true"></i> Application forms</a>
+      <a href="{% url 'admin_admissions_pipeline' %}"><i class="ph ph-kanban" aria-hidden="true"></i> Pipeline</a>
+      <a href="{% url 'admin_admissions_applicant_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> New applicant</a>
     </div>
   </section>
 
-  <section class="grid grid-cols-2 md:grid-cols-6 gap-3">
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Total</p><p class="text-2xl font-black text-slate-900">{{ summary.total }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">New</p><p class="text-2xl font-black text-blue-700">{{ summary.new }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Review</p><p class="text-2xl font-black text-yellow-700">{{ summary.in_review }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Admitted</p><p class="text-2xl font-black text-green-700">{{ summary.admitted }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Converted</p><p class="text-2xl font-black text-primary-700">{{ summary.converted }}</p></div><div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Rejected</p><p class="text-2xl font-black text-red-700">{{ summary.rejected }}</p></div>
+  <section class="edu-ops-stat-grid" aria-label="Admissions pipeline summary">
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-users" aria-hidden="true"></i></span><div><small>Total applicants</small><strong>{{ summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--amber"><span class="edu-ops-stat__icon"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></span><div><small>Under review</small><strong>{{ summary.in_review }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-seal-check" aria-hidden="true"></i></span><div><small>Admitted</small><strong>{{ summary.admitted }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--violet"><span class="edu-ops-stat__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><small>Converted to students</small><strong>{{ summary.converted }}</strong></div></article>
   </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
-    <form method="get" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-6 gap-3 md:items-end"><div class="md:col-span-2"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl" placeholder="Reference, name, email, phone, guardian" /></div><div><label for="id_status" class="block text-sm font-black text-slate-700 mb-2">Status</label><select id="id_status" name="status" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><label for="id_source" class="block text-sm font-black text-slate-700 mb-2">Source</label><select id="id_source" name="source" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for value,label in source_choices %}<option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl"><option value="">All</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl" /></div></div><div class="flex justify-end gap-3 pt-3 border-t border-slate-100"><button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-black border-2 border-slate-200"><i class="ph ph-funnel"></i> Apply</button><a href="{% url 'admin_admissions_applicants' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-black border-2 border-slate-200"><i class="ph ph-x"></i> Reset</a></div></form>
+  <form method="get" class="edu-ops-filter" aria-label="Filter admission applicants">
+    <div class="edu-ops-field edu-ops-field--search">
+      <label for="id_q">Search applicants</label>
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Reference, applicant, contact or guardian">
+    </div>
+    <div class="edu-ops-field">
+      <label for="id_status">Stage</label>
+      <select id="id_status" name="status"><option value="">All stages</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="edu-ops-field">
+      <label for="id_source">Source</label>
+      <select id="id_source" name="source"><option value="">All sources</option>{% for value,label in source_choices %}<option value="{{ value }}" {% if source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="edu-ops-field">
+      <label for="id_campus">Campus</label>
+      <select id="id_campus" name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select>
+    </div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_admissions_applicants' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+    <input type="hidden" name="per_page" value="{{ per_page }}">
+  </form>
+
+  <section class="edu-ops-note" aria-label="Admission workflow guidance">
+    <span class="edu-ops-note__icon"><i class="ph ph-flow-arrow" aria-hidden="true"></i></span>
+    <div><strong>Recommended admission flow</strong><span>Receive application → review documents and appointments → record a decision → convert admitted applicants → issue the admission letter.</span></div>
+    <a href="{% url 'admin_admissions_pipeline' %}" class="edu-ops-button">Open pipeline <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
   </section>
 
-  <section class="rounded-2xl border border-blue-100 bg-blue-50 p-4"><p class="text-sm text-blue-900"><span class="font-black">Admission flow:</span> receive application → review → decide → convert admitted applicant into a student → issue admission letter.</p></section>
-
-  {% if applicants %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Reference</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Name</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Contact</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Target</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Applied</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for a in applicants %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-black text-primary-700">{{ a.application_reference }}</span><div class="text-xs text-slate-500">{{ a.get_source_display }}</div></td><td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-bold text-slate-900">{{ a.first_name }} {{ a.last_name }}</div><div class="text-xs text-slate-500">Guardian: {{ a.guardian_name|default:'-' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div>{{ a.phone|default:'No phone' }}</div><div class="text-xs text-slate-500">{{ a.email|default:'No email' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div>{{ a.campus|default:'No campus' }}</div><div class="text-xs text-slate-500">{{ a.target_class_group|default:'No class target' }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if a.status == 'NEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black"><i class="ph ph-circle"></i>New</span>{% elif a.status == 'IN_REVIEW' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black"><i class="ph ph-clock"></i>In Review</span>{% elif a.status == 'ADMITTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Admitted</span>{% elif a.status == 'REJECTED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Rejected</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-black">{{ a.status }}</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{% if a.created_student %}<a href="{% url 'admin_students_detail' a.created_student.id %}" class="text-primary-600 hover:text-primary-900 font-bold">{{ a.created_student.student_id }}</a>{% else %}<span class="text-slate-400 italic">Not converted</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ a.created_at|date:'M d, Y' }}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><div class="flex items-center justify-end gap-3"><a href="{% url 'admin_admissions_applicant_detail' a.id %}" class="text-blue-600 hover:text-blue-900 font-bold">View</a><a href="{% url 'admin_admissions_applicant_edit' a.id %}" class="text-primary-600 hover:text-primary-900 font-bold">Edit</a>{% if not a.created_student_id and a.status != 'REJECTED' %}<a href="{% url 'admin_admissions_applicant_admit' a.id %}" class="text-green-700 hover:text-green-900 font-bold">Convert</a>{% endif %}</div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_admissions_applicant_create' as create_url %}{% include "components/ui_empty_state.html" with icon="user-plus" title="No applicants found" description="No applicants have been added yet or match your search criteria" action_url=create_url action_text="Add Applicant" %}{% endif %}
+  <section class="edu-ops-table-shell" aria-labelledby="applicant-table-heading">
+    <header class="edu-ops-table-heading">
+      <div><h3 id="applicant-table-heading">Applicant register</h3><p>{{ page_obj.paginator.count|default:summary.total }} applicant{{ page_obj.paginator.count|default:summary.total|pluralize }} in the current view.</p></div>
+      <div class="edu-ops-badges">
+        <span class="edu-ops-badge edu-ops-badge--blue">{{ summary.new }} new</span>
+        <span class="edu-ops-badge edu-ops-badge--danger">{{ summary.rejected }} rejected</span>
+      </div>
+    </header>
+    {% if applicants %}
+      <div class="overflow-x-auto">
+        <table class="edu-ops-table">
+          <caption class="sr-only">Applicants, contact readiness, target placement, decision stage and conversion status</caption>
+          <thead><tr><th scope="col">Applicant</th><th scope="col">Contact & guardian</th><th scope="col">Target placement</th><th scope="col">Stage</th><th scope="col">Conversion</th><th scope="col">Applied</th><th scope="col" class="text-right">Actions</th></tr></thead>
+          <tbody>
+            {% for a in applicants %}
+            <tr>
+              <td>
+                <div class="edu-ops-person">
+                  <span class="edu-ops-avatar" aria-hidden="true">{{ a.first_name|slice:':1'|upper }}{{ a.last_name|slice:':1'|upper }}</span>
+                  <div><strong>{{ a.first_name }} {{ a.last_name }}</strong><span>{{ a.application_reference }} · {{ a.get_source_display }}</span></div>
+                </div>
+              </td>
+              <td><div class="edu-table-meta"><strong>{{ a.phone|default:'No phone recorded' }}</strong>{{ a.email|default:'No email recorded' }}<br>Guardian: {{ a.guardian_name|default:'Not recorded' }}</div></td>
+              <td><div class="edu-table-meta"><strong>{{ a.campus|default:'Campus not selected' }}</strong>{% if a.target_class_group %}{{ a.target_class_group }}{% elif a.target_program %}{{ a.target_program }}{% elif a.target_level %}{{ a.target_level }}{% else %}Target not selected{% endif %}</div></td>
+              <td>
+                {% if a.status == 'NEW' %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-sparkle" aria-hidden="true"></i> New</span>
+                {% elif a.status == 'IN_REVIEW' %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-clock" aria-hidden="true"></i> In review</span>
+                {% elif a.status == 'ADMITTED' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Admitted</span>
+                {% elif a.status == 'REJECTED' %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-x-circle" aria-hidden="true"></i> Rejected</span>
+                {% else %}<span class="edu-ops-badge">{{ a.get_status_display|default:a.status }}</span>{% endif %}
+              </td>
+              <td>{% if a.created_student %}<a href="{% url 'admin_students_detail' a.created_student.id %}" class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-student" aria-hidden="true"></i> {{ a.created_student.student_id }}</a>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">Not converted</span>{% endif %}</td>
+              <td><div class="edu-table-meta"><strong>{{ a.created_at|date:'M j, Y' }}</strong>{{ a.created_at|timesince }} ago</div></td>
+              <td><div class="edu-ops-actions"><a href="{% url 'admin_admissions_applicant_detail' a.id %}" class="edu-ops-button"><i class="ph ph-eye" aria-hidden="true"></i> Review</a><a href="{% url 'admin_admissions_applicant_edit' a.id %}" class="edu-ops-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a>{% if not a.created_student_id and a.status != 'REJECTED' %}<a href="{% url 'admin_admissions_applicant_admit' a.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-user-plus" aria-hidden="true"></i> Convert</a>{% endif %}</div></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_admissions_applicant_create' as create_url %}
+      {% include "components/ui_empty_state.html" with icon="user-plus" title="No applicants match this view" description="Add a new applicant or clear one or more filters." action_url=create_url action_text="Add Applicant" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

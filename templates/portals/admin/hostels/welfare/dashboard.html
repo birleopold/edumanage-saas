@@ -1,31 +1,89 @@
 {% extends 'portals/admin/base.html' %}
+
 {% block title %}Boarding & Welfare{% endblock %}
-{% block page_title %}Boarding & Welfare{% endblock %}
-{% block breadcrumbs %}Manage boarding profiles, leave, roll calls and student support.{% endblock %}
-{% block header_actions %}
-<a href="{% url 'admin_boarding_welfare_hardening' %}" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700">Safety Checks</a>
-<a href="{% url 'admin_boarding_profiles' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Boarding Profiles</a>
-<a href="{% url 'admin_hostel_roll_calls' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Roll Calls</a>
-<a href="{% url 'admin_welfare_case_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Open Welfare Case</a>
+{% block page_title %}Boarding & Student Welfare{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Boarding and welfare</span>
+</nav>
 {% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_boarding_welfare_hardening' %}" class="edu-outline-button"><i class="ph ph-shield-warning" aria-hidden="true"></i> Safety checks</a>
+<a href="{% url 'admin_welfare_case_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Open welfare case</a>
+{% endblock %}
+
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-xl">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-100">Boarding & welfare</p><h2 class="mt-2 text-3xl font-black">Student boarding and support</h2><p class="mt-3 max-w-3xl text-sm text-emerald-100">Manage boarder details, approved leave, hostel roll calls and welfare follow-up.</p></div><div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15"><p class="text-xs font-bold uppercase text-emerald-100">Setup status</p><p class="mt-1 text-3xl font-black">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div></div>
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="boarding-welfare-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-bed" aria-hidden="true"></i> Boarding operations</span>
+      <h2 id="boarding-welfare-heading">Know where every boarder is and who needs support</h2>
+      <p>Coordinate boarding profiles, bed allocation, approved leave, roll calls, guardian handover and confidential welfare follow-up.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_welfare_case_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Open welfare case</a>
+      <a href="{% url 'admin_boarding_profiles' %}"><i class="ph ph-identification-card" aria-hidden="true"></i> Boarding profiles</a>
+      <a href="{% url 'admin_hostel_roll_calls' %}"><i class="ph ph-clipboard-text" aria-hidden="true"></i> Roll calls</a>
+      <a href="{% url 'admin_boarding_leaves' %}"><i class="ph ph-sign-out" aria-hidden="true"></i> Leave register</a>
+    </div>
   </section>
-  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Boarding profiles</p><p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.profile_count }}/{{ readiness.active_student_count }}</p><p class="text-xs text-slate-500">{{ readiness.missing_profile_count }} missing</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Current bed allocations</p><p class="mt-2 text-3xl font-black text-primary-700">{{ readiness.active_allocation_count }}</p><p class="text-xs text-slate-500">{{ readiness.allocation_without_boarder_profile_count }} need profile review</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Overdue leave</p><p class="mt-2 text-3xl font-black {% if readiness.overdue_leave_count %}text-red-600{% else %}text-emerald-700{% endif %}">{{ readiness.overdue_leave_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Urgent welfare cases</p><p class="mt-2 text-3xl font-black {% if readiness.unresolved_critical_case_count %}text-red-600{% else %}text-emerald-700{% endif %}">{{ readiness.unresolved_critical_case_count }}</p></div>
+
+  <section class="edu-ops-stat-grid" aria-label="Boarding welfare summary">
+    <article class="edu-ops-stat {% if readiness.missing_profile_count %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-identification-card" aria-hidden="true"></i></span><div><small>Boarding profiles</small><strong>{{ readiness.profile_count }}/{{ readiness.active_student_count }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-bed" aria-hidden="true"></i></span><div><small>Active bed allocations</small><strong>{{ readiness.active_allocation_count }}</strong></div></article>
+    <article class="edu-ops-stat {% if readiness.overdue_leave_count %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-clock-countdown" aria-hidden="true"></i></span><div><small>Overdue leave</small><strong>{{ readiness.overdue_leave_count }}</strong></div></article>
+    <article class="edu-ops-stat {% if readiness.unresolved_critical_case_count %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span><div><small>Critical welfare cases</small><strong>{{ readiness.unresolved_critical_case_count }}</strong></div></article>
   </section>
-  <section class="rounded-2xl border border-slate-200 bg-white p-5"><div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><h3 class="text-lg font-black text-slate-950">Boarding profiles</h3><p class="mt-1 text-sm text-slate-500">Create missing profiles using current student and bed-allocation information.</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="bootstrap_profiles"><button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Create Missing Profiles</button></form></div></section>
-  <section class="grid gap-5 lg:grid-cols-4">
-    <a href="{% url 'admin_boarding_leaves' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Leave</p><h3 class="mt-2 text-xl font-black text-slate-950">Departures & returns</h3><p class="mt-2 text-sm text-slate-500">Approve leave, record handover and confirm return.</p></a>
-    <a href="{% url 'admin_hostel_roll_calls' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Hostel attendance</p><h3 class="mt-2 text-xl font-black text-slate-950">Roll calls</h3><p class="mt-2 text-sm text-slate-500">Prepare rosters and mark each learner's presence.</p></a>
-    <a href="{% url 'admin_welfare_cases' %}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase text-primary-700">Student support</p><h3 class="mt-2 text-xl font-black text-slate-950">Welfare cases</h3><p class="mt-2 text-sm text-slate-500">Record concerns, assign follow-up and track action.</p></a>
-    <a href="{% url 'admin_boarding_welfare_hardening' %}" class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm"><p class="text-xs font-black uppercase text-rose-700">Safety</p><h3 class="mt-2 text-xl font-black text-rose-950">Checks & follow-up</h3><p class="mt-2 text-sm text-rose-700">Review guardian contacts, deadlines and roll-call differences.</p></a>
+
+  <section class="edu-ops-card-grid" aria-label="Boarding and welfare work areas">
+    <a href="{% url 'admin_boarding_profiles' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-identification-card" aria-hidden="true"></i><div><strong>Boarding profiles</strong><span>Guardian contacts, authorised pickup, dietary, accessibility and safeguarding needs.</span></div></a>
+    <a href="{% url 'admin_boarding_leaves' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-sign-out" aria-hidden="true"></i><div><strong>Departures and returns</strong><span>Approve leave, record handover and confirm return against the expected time.</span></div></a>
+    <a href="{% url 'admin_hostel_roll_calls' %}" class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-clipboard-text" aria-hidden="true"></i><div><strong>Hostel roll calls</strong><span>Populate boarder rosters and reconcile absence, sickness and approved leave.</span></div></a>
+    <a href="{% url 'admin_welfare_cases' %}" class="edu-ops-module-card" style="--ops-card-bg:#fce7f3;--ops-card-text:#9d174d;"><i class="ph ph-heart" aria-hidden="true"></i><div><strong>Welfare cases</strong><span>Assign support, link health or discipline evidence and track resolution.</span></div></a>
+    <a href="{% url 'admin_hostels_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-buildings" aria-hidden="true"></i><div><strong>Hostels, rooms and beds</strong><span>Maintain physical boarding capacity and allocation readiness.</span></div></a>
+    <a href="{% url 'admin_boarding_welfare_hardening' %}" class="edu-ops-module-card" style="--ops-card-bg:#fee2e2;--ops-card-text:#991b1b;"><i class="ph ph-shield-warning" aria-hidden="true"></i><div><strong>Safety checks</strong><span>Review guardian gaps, overdue leave and roll-call reconciliation risks.</span></div></a>
+  </section>
+
+  {% if readiness.overdue_leave_count or readiness.unresolved_critical_case_count or readiness.missing_profile_count or readiness.allocation_without_boarder_profile_count %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Boarding readiness attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-bell-ringing" aria-hidden="true"></i></span>
+    <div><strong>Boarding readiness needs attention</strong><span>{{ readiness.missing_profile_count }} learner profile{{ readiness.missing_profile_count|pluralize }} are missing, {{ readiness.allocation_without_boarder_profile_count }} allocation{{ readiness.allocation_without_boarder_profile_count|pluralize }} need profile review, {{ readiness.overdue_leave_count }} leave record{{ readiness.overdue_leave_count|pluralize }} are overdue and {{ readiness.unresolved_critical_case_count }} critical case{{ readiness.unresolved_critical_case_count|pluralize }} remain unresolved.</span></div>
+    <a href="{% url 'admin_boarding_welfare_hardening' %}" class="edu-ops-button">Open safety checks</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Boarding readiness status">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>Boarding setup and welfare attention are currently clear</strong><span>Keep roll calls, leave returns, guardian contacts and welfare-case follow-up current.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">{% if readiness.ready %}Ready{% else %}Operational{% endif %}</span>
+  </section>
+  {% endif %}
+
+  {% if readiness.missing_profile_count %}
+  <section class="edu-ops-table-shell p-5">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h3 class="text-lg font-black text-slate-900">Create missing boarding profiles safely</h3><p class="mt-1 text-sm text-slate-600">This uses existing students and bed-allocation evidence. It does not change learner placement or allocate new beds.</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="bootstrap_profiles"><button class="edu-pill-button" type="submit" onclick="return confirm('Create missing boarding profiles from existing student and bed-allocation records?');"><i class="ph ph-magic-wand" aria-hidden="true"></i> Create missing profiles</button></form></div>
+  </section>
+  {% endif %}
+
+  <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="edu-ops-table-shell" aria-labelledby="recent-welfare-cases-heading">
+      <header class="edu-ops-table-heading"><div><h3 id="recent-welfare-cases-heading">Recent welfare cases</h3><p>Newest support and safeguarding records.</p></div><a href="{% url 'admin_welfare_cases' %}" class="edu-ops-button">View all</a></header>
+      <div class="divide-y divide-slate-100">{% for case in recent_cases %}<a href="{% url 'admin_welfare_case_detail' case.id %}" class="block p-4 hover:bg-slate-50"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm text-slate-900">{{ case.title }}</strong><p class="mt-1 text-xs text-slate-500">{{ case.student }} · {{ case.get_category_display }}{% if case.assigned_to %} · {{ case.assigned_to }}{% endif %}</p></div><span class="edu-ops-badge {% if case.severity == 'CRITICAL' or case.severity == 'HIGH' %}edu-ops-badge--danger{% elif case.severity == 'MEDIUM' %}edu-ops-badge--warning{% else %}edu-ops-badge--success{% endif %}">{{ case.get_severity_display }}</span></div></a>{% empty %}<div class="p-8 text-center text-sm text-slate-500">No welfare case has been recorded.</div>{% endfor %}</div>
+    </div>
+
+    <div class="edu-ops-table-shell" aria-labelledby="recent-boarding-leave-heading">
+      <header class="edu-ops-table-heading"><div><h3 id="recent-boarding-leave-heading">Recent boarding leave</h3><p>Departure and return accountability.</p></div><a href="{% url 'admin_boarding_leaves' %}" class="edu-ops-button">View all</a></header>
+      <div class="divide-y divide-slate-100">{% for leave in recent_leaves %}<a href="{% url 'admin_boarding_leave_detail' leave.id %}" class="block p-4 hover:bg-slate-50"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm text-slate-900">{{ leave.student }}</strong><p class="mt-1 text-xs text-slate-500">{{ leave.get_leave_type_display }} · due {{ leave.expected_return_at|date:'M j, H:i' }}</p></div><span class="edu-ops-badge {% if leave.is_overdue %}edu-ops-badge--danger{% elif leave.status == 'RETURNED' %}edu-ops-badge--success{% elif leave.status == 'DEPARTED' %}edu-ops-badge--warning{% else %}edu-ops-badge--blue{% endif %}">{% if leave.is_overdue %}Overdue{% else %}{{ leave.get_status_display }}{% endif %}</span></div></a>{% empty %}<div class="p-8 text-center text-sm text-slate-500">No boarding leave record has been created.</div>{% endfor %}</div>
+    </div>
+
+    <div class="edu-ops-table-shell" aria-labelledby="recent-roll-call-heading">
+      <header class="edu-ops-table-heading"><div><h3 id="recent-roll-call-heading">Recent roll calls</h3><p>Hostel presence and reconciliation.</p></div><a href="{% url 'admin_hostel_roll_calls' %}" class="edu-ops-button">View all</a></header>
+      <div class="divide-y divide-slate-100">{% for roll_call in recent_roll_calls %}<a href="{% url 'admin_hostel_roll_call_detail' roll_call.id %}" class="block p-4 hover:bg-slate-50"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm text-slate-900">{{ roll_call.hostel }}</strong><p class="mt-1 text-xs text-slate-500">{{ roll_call.roll_call_date|date:'M j, Y' }} · {{ roll_call.get_shift_display }}{% if roll_call.recorded_by %} · {{ roll_call.recorded_by }}{% endif %}</p></div><span class="edu-ops-badge {% if roll_call.status == 'COMPLETED' or roll_call.status == 'LOCKED' %}edu-ops-badge--success{% else %}edu-ops-badge--warning{% endif %}">{{ roll_call.get_status_display }}</span></div></a>{% empty %}<div class="p-8 text-center text-sm text-slate-500">No hostel roll call has been created.</div>{% endfor %}</div>
+    </div>
   </section>
 </div>
 {% endblock %}

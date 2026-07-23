@@ -1,17 +1,92 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
 {% block title %}Parents{% endblock %}
-{% block page_title %}Parents{% endblock %}
-{% block breadcrumbs %}Parent and guardian records, linked students and communication preferences{% endblock %}
-{% block header_actions %}<form method="post" action="{% url 'admin_parents_digest_send_all' %}" class="inline-flex">{% csrf_token %}<input type="hidden" name="use_parent_preferences" value="on"><button type="submit" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300"><i class="ph ph-newspaper mr-1"></i> Send Digests</button></form><a href="{% url 'admin_parents_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-user-plus mr-1"></i> Add Parent</a>{% endblock %}
+{% block page_title %}Parents & Guardians{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Parents and guardians</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<form method="post" action="{% url 'admin_parents_digest_send_all' %}" class="inline-flex">{% csrf_token %}<input type="hidden" name="use_parent_preferences" value="on"><button type="submit" class="edu-outline-button" onclick="return confirm('Send parent digests using each guardian’s communication preferences?');"><i class="ph ph-newspaper" aria-hidden="true"></i> Send digests</button></form>
+<a href="{% url 'admin_parents_create' %}" class="edu-pill-button"><i class="ph ph-user-plus" aria-hidden="true"></i> Add parent</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-rose-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-rose-100">Parents & guardians</p><h2 class="mt-2 text-2xl font-black">Parent and student relationships</h2><p class="mt-2 max-w-2xl text-sm text-rose-100">See who cares for each learner, manage portal access and update contact preferences.</p></div><a href="{% url 'admin_parents_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-rose-50">Add Parent</a></div></section>
+{% parent_registry_summary as parent_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="family-workspace-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-heart" aria-hidden="true"></i> Family relationships</span>
+      <h2 id="family-workspace-heading">Keep every learner connected to the right guardian</h2>
+      <p>Review family contacts, linked learners, portal readiness and digest preferences without losing sight of safeguarding and communication accuracy.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_communication_center' %}"><i class="ph ph-chats-circle" aria-hidden="true"></i> Communication centre</a>
+      <a href="{% url 'admin_parents_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> New parent</a>
+    </div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Name, phone, email or student..."></div></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_parents_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i>Clear</a></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Parent account summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><small>Total guardians</small><strong>{{ parent_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span><div><small>Active guardians</small><strong>{{ parent_summary.active }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--violet"><span class="edu-ops-stat__icon"><i class="ph ph-sign-in" aria-hidden="true"></i></span><div><small>Portal-linked</small><strong>{{ parent_summary.portal }}</strong></div></article>
+    <article class="edu-ops-stat {% if parent_summary.unlinked %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-link-break" aria-hidden="true"></i></span><div><small>Without a linked learner</small><strong>{{ parent_summary.unlinked }}</strong></div></article>
+  </section>
 
-{% if parents %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Parent</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Linked students</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Contact</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for p in parents %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-users text-xl"></i></div><div><span class="font-black text-slate-900">{{ p.last_name }}, {{ p.first_name }}</span><p class="text-xs text-slate-500">{% if p.user_id %}Portal account active{% else %}No login account{% endif %}</p></div></div></td><td class="px-6 py-4"><div class="flex max-w-sm flex-wrap gap-2">{% for link in p.parentstudentlink_set.all %}<span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black {% if link.is_primary %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-700{% endif %}"><i class="ph ph-student"></i>{{ link.student }}{% if link.relationship %} · {{ link.relationship }}{% endif %}{% if link.is_primary %} · Primary{% endif %}</span>{% empty %}<span class="font-bold text-amber-700">No student linked</span>{% endfor %}</div></td><td class="px-6 py-4 text-sm text-slate-700"><div class="flex flex-col gap-1"><span class="font-bold text-slate-900"><i class="ph ph-phone text-slate-400 mr-1"></i>{{ p.phone|default:'No phone' }}</span><span class="text-xs text-slate-500"><i class="ph ph-envelope text-slate-400 mr-1"></i>{{ p.email|default:'No email' }}</span></div></td><td class="px-6 py-4 text-sm">{% if p.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black">Inactive</span>{% endif %}</td><td class="px-6 py-4 text-right text-sm"><div class="inline-flex items-center gap-2"><a href="{% url 'admin_parents_digest' p.id %}" class="inline-flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-1.5 font-black text-slate-700 hover:bg-slate-200"><i class="ph ph-newspaper"></i>Digest</a><a href="{% url 'admin_parents_edit' p.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_parents_create' as create_parent_url %}{% include "components/ui_empty_state.html" with icon="users" title="No parents found" description="Add a parent or guardian and link them to a student." action_url=create_parent_url action_text="Add Parent" %}{% endif %}
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter parents and guardians">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search guardians</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Name, phone, email or linked student"></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_parents_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  {% if parent_summary.unlinked %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Guardian relationship attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+    <div><strong>{{ parent_summary.unlinked }} guardian record{{ parent_summary.unlinked|pluralize }} need learner links</strong><span>Link each guardian to the correct learner before relying on results, fee, attendance or digest communication.</span></div>
+    <a href="?q=" class="edu-ops-button">Review register</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Guardian relationship status">
+    <span class="edu-ops-note__icon"><i class="ph ph-seal-check" aria-hidden="true"></i></span>
+    <div><strong>Every guardian record has at least one learner link</strong><span>Continue reviewing primary-guardian status and contact consent when family circumstances change.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Relationship-ready</span>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-table-shell" aria-labelledby="parent-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="parent-register-heading">Guardian register</h3><p>{{ page_obj.paginator.count|default:parent_summary.total }} record{{ page_obj.paginator.count|default:parent_summary.total|pluralize }} match the current search.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-newspaper" aria-hidden="true"></i> {{ parent_summary.digest }} digest-enabled</span></header>
+    {% if parents %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Parents and guardians with linked learners, communication readiness and portal status</caption>
+        <thead><tr><th scope="col">Guardian</th><th scope="col">Linked learners</th><th scope="col">Contact readiness</th><th scope="col">Communication</th><th scope="col">Status</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for p in parents %}
+          <tr>
+            <td><div class="edu-ops-person"><span class="edu-ops-avatar" aria-hidden="true">{{ p.first_name|slice:':1'|upper }}{{ p.last_name|slice:':1'|upper }}</span><div><strong>{{ p.first_name }} {{ p.last_name }}</strong><span>{% if p.user_id %}Portal account linked{% else %}No portal account{% endif %}</span></div></div></td>
+            <td><div class="edu-ops-badges">{% for link in p.parentstudentlink_set.all %}<span class="edu-ops-badge {% if link.is_primary %}edu-ops-badge--success{% else %}edu-ops-badge--blue{% endif %}"><i class="ph ph-student" aria-hidden="true"></i> {{ link.student }}{% if link.is_primary %} · Primary{% endif %}</span>{% empty %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-link-break" aria-hidden="true"></i> No learner linked</span>{% endfor %}</div></td>
+            <td><div class="edu-table-meta"><strong>{{ p.phone|default:'No phone recorded' }}</strong>{{ p.email|default:'No email recorded' }}</div></td>
+            <td><div class="edu-ops-badges">{% if p.allow_sms_alerts %}<span class="edu-ops-badge edu-ops-badge--blue">SMS</span>{% endif %}{% if p.allow_whatsapp_alerts %}<span class="edu-ops-badge edu-ops-badge--success">WhatsApp</span>{% endif %}{% if p.digest_enabled %}<span class="edu-ops-badge edu-ops-badge--violet">Digest</span>{% endif %}{% if not p.allow_sms_alerts and not p.allow_whatsapp_alerts and not p.digest_enabled %}<span class="edu-ops-badge">No alerts enabled</span>{% endif %}</div></td>
+            <td>{% if p.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>{% endif %}</td>
+            <td><div class="edu-ops-actions">{% if p.user_id %}<a href="{% url 'admin_parents_credentials' p.id %}" class="edu-ops-button"><i class="ph ph-key" aria-hidden="true"></i> Credentials</a>{% endif %}<a href="{% url 'admin_parents_digest' p.id %}" class="edu-ops-button"><i class="ph ph-newspaper" aria-hidden="true"></i> Digest</a><a href="{% url 'admin_parents_edit' p.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_parents_create' as create_parent_url %}
+      {% include "components/ui_empty_state.html" with icon="users" title="No guardians match this view" description="Add a guardian or search using a different name, phone, email or learner." action_url=create_parent_url action_text="Add Parent" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

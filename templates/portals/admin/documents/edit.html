@@ -2,13 +2,57 @@
 {% load widget_tweaks %}
 
 {% block title %}Edit Document{% endblock %}
-{% block page_title %}Edit Document{% endblock %}
+{% block page_title %}Manage Document{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_documents_list' %}" class="hover:text-primary-700">Documents</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{{ doc.title }}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_documents_download' doc.id %}" class="edu-outline-button"><i class="ph ph-download-simple" aria-hidden="true"></i> Download current file</a>
+<a href="{% url 'admin_documents_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Document register</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7 max-w-5xl">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><a href="{% url 'admin_documents_list' %}" class="inline-flex items-center gap-2 text-sm font-black text-blue-100 hover:text-white mb-3"><i class="ph ph-arrow-left"></i> Back to documents</a><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Document center</p><h2 class="mt-2 text-2xl font-black">Edit document</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Update metadata, audience and visibility for this shared file.</p></section>
+<div class="edu-ops-page max-w-6xl">
+  <section class="edu-ops-hero" aria-labelledby="document-edit-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-file-text" aria-hidden="true"></i> Document #{{ doc.id }}</span>
+      <h2 id="document-edit-heading">{{ doc.title }}</h2>
+      <p>Update the title, description, audience or visibility of the existing file without changing its upload evidence.</p>
+    </div>
+    <div class="edu-ops-hero__actions"><a href="{% url 'admin_documents_download' doc.id %}" class="edu-ops-primary"><i class="ph ph-download-simple" aria-hidden="true"></i> Download and verify</a></div>
+  </section>
 
-  <div class="grid grid-cols-1 lg:grid-cols-[1fr_.55fr] gap-6"><section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8"><form method="post" novalidate class="space-y-6">{% csrf_token %}{% if form.non_field_errors %}<div class="rounded-2xl bg-red-50 border border-red-200 p-4" role="alert"><ul class="text-sm text-red-700 space-y-1">{% for error in form.non_field_errors %}<li class="flex gap-2"><i class="ph ph-warning mt-0.5"></i><span>{{ error }}</span></li>{% endfor %}</ul></div>{% endif %}<div><label for="{{ form.title.id_for_label }}" class="block text-sm font-black text-slate-700 mb-2">{{ form.title.label }}</label>{% render_field form.title class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl font-bold text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:ring-primary-500" %}{% if form.title.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.title.errors|join:', ' }}</p>{% endif %}</div><div><label for="{{ form.description.id_for_label }}" class="block text-sm font-black text-slate-700 mb-2">{{ form.description.label }}</label>{% render_field form.description class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl font-medium text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:ring-primary-500" rows="4" %}{% if form.description.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.description.errors|join:', ' }}</p>{% endif %}</div><div><label for="{{ form.audience.id_for_label }}" class="block text-sm font-black text-slate-700 mb-2">{{ form.audience.label }}</label>{% render_field form.audience class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl font-bold text-slate-900 bg-white focus:border-primary-500 focus:ring-primary-500" %}{% if form.audience.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.audience.errors|join:', ' }}</p>{% endif %}</div><div class="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">{% render_field form.is_active class="h-5 w-5 mt-0.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" %}<div><label for="{{ form.is_active.id_for_label }}" class="block text-sm font-black text-slate-900">{{ form.is_active.label }}</label><p class="mt-1 text-sm text-slate-600">Inactive documents are hidden from portal document lists.</p></div></div><div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-6 border-t border-slate-100"><a href="{% url 'admin_documents_list' %}" class="inline-flex justify-center items-center gap-2 px-6 py-3 bg-white text-slate-800 font-black rounded-xl border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-arrow-left"></i> Back</a><button type="submit" class="inline-flex justify-center items-center gap-2 px-6 py-3 bg-primary-600 text-white font-black rounded-xl hover:bg-primary-700 shadow-sm"><i class="ph ph-floppy-disk"></i> Save changes</button></div></form></section><aside class="space-y-4"><div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4"><div class="flex items-center gap-3"><div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-100 text-primary-700"><i class="ph ph-file-arrow-down text-xl"></i></div><div class="min-w-0"><p class="text-sm font-black text-slate-900">Current file</p><p class="text-sm text-slate-600 truncate">{{ doc.file.name|default:'—' }}</p></div></div><a href="{% url 'admin_documents_download' doc.id %}" class="inline-flex justify-center items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-800 font-black rounded-xl border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-download-simple"></i> Download</a></div><div class="bg-blue-50 rounded-2xl border border-blue-100 p-5 text-sm text-blue-900"><p class="font-black">Note</p><p class="mt-1">The uploaded file cannot be replaced here. Upload a new document if the actual file changes.</p></div></aside></div>
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.42fr] gap-6 items-start">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+      <form method="post" novalidate class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="rounded-xl border border-red-200 bg-red-50 p-4" role="alert"><p class="font-black text-red-800">Please correct the following:</p><ul class="mt-2 space-y-1 text-sm text-red-700">{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+
+        <div><label for="{{ form.title.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ form.title.label }}</label>{% render_field form.title class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-bold text-slate-900 focus:border-primary-500" %}{% if form.title.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.title.errors|join:', ' }}</p>{% endif %}</div>
+        <div><label for="{{ form.description.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ form.description.label }}</label>{% render_field form.description class="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-slate-900 focus:border-primary-500" rows="4" %}{% if form.description.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.description.errors|join:', ' }}</p>{% endif %}</div>
+        <div class="grid grid-cols-1 gap-5 md:grid-cols-2"><div><label for="{{ form.audience.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ form.audience.label }}</label>{% render_field form.audience class="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 font-bold text-slate-900 focus:border-primary-500" %}{% if form.audience.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ form.audience.errors|join:', ' }}</p>{% endif %}</div><div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">{% render_field form.is_active class="mt-0.5 h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" %}<div><label for="{{ form.is_active.id_for_label }}" class="block text-sm font-black text-slate-900">{{ form.is_active.label }}</label><p class="mt-1 text-sm text-slate-600">Changing this controls immediate portal visibility.</p></div></div></div>
+        <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end"><a href="{% url 'admin_documents_list' %}" class="edu-outline-button justify-center">Cancel</a><button type="submit" class="edu-pill-button justify-center"><i class="ph ph-floppy-disk" aria-hidden="true"></i> Save document settings</button></div>
+      </form>
+    </div>
+
+    <aside class="space-y-5 lg:sticky lg:top-24">
+      <section class="edu-ops-table-shell p-5">
+        <h3 class="font-black text-slate-900">Current file</h3>
+        <div class="mt-4 flex items-start gap-3"><span class="edu-ops-record__icon"><i class="ph ph-file-arrow-down" aria-hidden="true"></i></span><div class="min-w-0"><strong class="block text-sm text-slate-900">{{ doc.file.name|default:'File name unavailable' }}</strong><span class="mt-1 block text-xs text-slate-500">Uploaded {{ doc.created_at|date:'M j, Y H:i' }} by {{ doc.uploaded_by|default:'an unrecorded user' }}</span></div></div>
+        <a href="{% url 'admin_documents_download' doc.id %}" class="edu-ops-button mt-5 w-full justify-center"><i class="ph ph-download-simple" aria-hidden="true"></i> Download current file</a>
+      </section>
+      <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-900"><strong>The actual file is immutable here</strong><p class="mt-1">This page changes metadata and visibility only. Upload a new document when the file content or version changes, then deactivate the outdated record after verification.</p></section>
+      <section class="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-900"><strong>Audience changes take effect immediately</strong><p class="mt-1">Review the file before expanding access, especially when moving from a restricted audience to Everyone.</p></section>
+    </aside>
+  </section>
 </div>
 {% endblock %}

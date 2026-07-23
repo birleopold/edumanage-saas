@@ -1,18 +1,91 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
 {% block title %}Exam Papers{% endblock %}
 {% block page_title %}Exam Papers{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_assessment_framework_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assessment Framework</a><a href="{% url 'admin_exams_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Exam Periods</a><a href="{% url 'admin_question_bank_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Question Bank</a><a href="{% url 'admin_exam_papers_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus-circle mr-1"></i> Add Paper</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_exams_list' %}" class="hover:text-primary-700">Examinations</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Exam papers</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_exam_review_dashboard' %}" class="edu-outline-button"><i class="ph ph-shield-check" aria-hidden="true"></i> Review console</a>
+<a href="{% url 'admin_question_bank_list' %}" class="edu-outline-button"><i class="ph ph-question" aria-hidden="true"></i> Question bank</a>
+<a href="{% url 'admin_exam_papers_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add paper</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Assessment control</p><h2 class="mt-2 text-2xl font-black">Exam papers</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Manage papers, weights, score entry, analytics and publishing status by campus.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_online_attempts_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Online Attempts</a><a href="{% url 'admin_exam_papers_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-indigo-50">Add Paper</a></div></div>
+{% exam_workspace_summary as exam_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="paper-workspace-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-files" aria-hidden="true"></i> Paper readiness</span>
+      <h2 id="paper-workspace-heading">Build each paper from setup through scores and controlled publication</h2>
+      <p>Review subject offering, maximum score, weighting, questions, scheduling and publication states before learners or guardians can see results.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_assessment_framework_dashboard' %}"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Assessment framework</a>
+      <a href="{% url 'admin_exam_schedules_list' %}"><i class="ph ph-calendar-dots" aria-hidden="true"></i> Schedules</a>
+      <a href="{% url 'admin_online_attempts_list' %}"><i class="ph ph-monitor" aria-hidden="true"></i> Online attempts</a>
+      <a href="{% url 'admin_exam_papers_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> New paper</a>
+    </div>
   </section>
 
-  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><form method="get" class="grid grid-cols-1 xl:grid-cols-[1fr_auto_auto_auto] gap-3 xl:items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900" placeholder="Exam, offering, campus"></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="block w-56 rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900 bg-white"><option value="">All campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-28 rounded-xl border-2 border-slate-200 px-3 py-2.5 font-bold text-slate-900"></div><div class="flex gap-2"><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_exam_papers_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i> Clear</a></div></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Exam paper summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>Total papers</small><strong>{{ exam_summary.papers }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-broadcast" aria-hidden="true"></i></span><div><small>Results published</small><strong>{{ exam_summary.published }}</strong></div></article>
+    <article class="edu-ops-stat {% if exam_summary.unpublished %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-lock-key" aria-hidden="true"></i></span><div><small>Results unpublished</small><strong>{{ exam_summary.unpublished }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--violet"><span class="edu-ops-stat__icon"><i class="ph ph-monitor" aria-hidden="true"></i></span><div><small>Digital/hybrid periods</small><strong>{{ exam_summary.digital }}</strong></div></article>
+  </section>
 
-  {% if papers %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Campus</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Exam</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Offering</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Max</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Weight</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Date</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Published</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for p in papers %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">#{{ p.id }}</td><td class="px-6 py-4 text-sm text-slate-800">{{ p.offering.campus }}</td><td class="px-6 py-4 text-sm"><div class="font-black text-slate-900">{{ p.exam }}</div>{% if p.assessment_type %}<div class="mt-1 text-xs font-bold text-slate-500">{{ p.assessment_type }}{% if p.weighting_component %} · {{ p.weighting_component.scheme.code }}{% endif %}</div>{% endif %}</td><td class="px-6 py-4 text-sm text-slate-700">{{ p.offering }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold tabular-nums">{{ p.max_score }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold tabular-nums">{{ p.weight }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-800">{{ p.date|date:"M j, Y" }}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if p.is_published %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i> Published</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-eye-slash"></i> Draft</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2 flex-wrap"><a href="{% url 'admin_exam_paper_detail' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">View</a><a href="{% url 'admin_paper_scores' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Scores</a><a href="{% url 'admin_exam_papers_edit' p.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50">Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_exam_papers_create' as add_url %}{% include "components/ui_empty_state.html" with icon="clipboard-text" title="No exam papers" description="Schedule a paper or adjust filters." action_url=add_url action_text="Add paper" %}{% endif %}
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter exam papers">
+    <div class="edu-ops-field edu-ops-field--search"><label for="paper_q">Search papers</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="paper_q" type="search" name="q" value="{{ q }}" placeholder="Exam, subject, class or teacher"></div>
+    <div class="edu-ops-field"><label for="paper_campus">Campus</label><select id="paper_campus" name="campus"><option value="">All campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_exam_papers_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+    <input type="hidden" name="per_page" value="{{ per_page }}">
+  </form>
+
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Paper publication safeguard">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-warning" aria-hidden="true"></i></span>
+    <div><strong>Paper visibility and result visibility are separate controls</strong><span>Publishing a paper can make the assessment available, while results publication determines whether final scores are visible. Verify questions, scores, grades, rankings and clearance policy before enabling either state.</span></div>
+    <a href="{% url 'admin_exam_review_dashboard' %}" class="edu-ops-button">Open review console</a>
+  </section>
+
+  <section class="edu-ops-table-shell" aria-labelledby="paper-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="paper-register-heading">Exam paper register</h3><p>{{ page_obj.paginator.count|default:exam_summary.papers }} paper{{ page_obj.paginator.count|default:exam_summary.papers|pluralize }} match the current filters.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-buildings" aria-hidden="true"></i> Campus-aware</span></header>
+    {% if papers %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Exam papers with academic context, scoring setup, question readiness and publication states</caption>
+        <thead><tr><th scope="col">Paper</th><th scope="col">Academic context</th><th scope="col">Scoring setup</th><th scope="col">Questions</th><th scope="col">Schedule</th><th scope="col">Publication</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for p in papers %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-file-text" aria-hidden="true"></i></span><div><strong>{{ p.offering.course }}</strong><span>{{ p.exam.name }} · Paper #{{ p.id }}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ p.offering.class_group|default:'Class not set' }}</strong>{{ p.offering.campus|default:'Campus not set' }}{% if p.offering.teacher %}<br>{{ p.offering.teacher }}{% endif %}</div></td>
+            <td><div class="edu-ops-badges"><span class="edu-ops-badge edu-ops-badge--blue">Max {{ p.max_score }}</span>{% if p.passing_score %}<span class="edu-ops-badge edu-ops-badge--success">Pass {{ p.passing_score }}</span>{% endif %}{% if p.weight %}<span class="edu-ops-badge edu-ops-badge--violet">Weight {{ p.weight }}</span>{% endif %}</div>{% if p.assessment_type %}<div class="mt-1 text-xs text-slate-500">{{ p.assessment_type }}{% if p.weighting_component %} · {{ p.weighting_component.scheme.code }}{% endif %}</div>{% endif %}</td>
+            <td><div class="edu-ops-badges"><span class="edu-ops-badge {% if p.total_questions %}edu-ops-badge--success{% else %}edu-ops-badge--warning{% endif %}">{{ p.total_questions }} question{{ p.total_questions|pluralize }}</span><span class="edu-ops-badge">{{ p.total_marks }} marks</span></div></td>
+            <td><div class="edu-table-meta"><strong>{% if p.date %}{{ p.date|date:'M j, Y' }}{% else %}Date not set{% endif %}</strong>{% if p.start_time %}{{ p.start_time|time:'H:i' }}{% if p.end_time %}–{{ p.end_time|time:'H:i' }}{% endif %}{% else %}Time not set{% endif %}</div></td>
+            <td><div class="edu-ops-badges">{% if p.is_published %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-eye" aria-hidden="true"></i> Paper published</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-eye-slash" aria-hidden="true"></i> Paper draft</span>{% endif %}{% if p.results_published %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-broadcast" aria-hidden="true"></i> Results visible</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-lock-key" aria-hidden="true"></i> Results hidden</span>{% endif %}</div></td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_exam_paper_detail' p.id %}" class="edu-ops-button"><i class="ph ph-eye" aria-hidden="true"></i> Review</a><a href="{% url 'admin_paper_scores' p.id %}" class="edu-ops-button"><i class="ph ph-list-numbers" aria-hidden="true"></i> Scores</a><a href="{% url 'admin_paper_analytics' p.id %}" class="edu-ops-button"><i class="ph ph-chart-line-up" aria-hidden="true"></i> Analytics</a><a href="{% url 'admin_exam_papers_edit' p.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_exam_papers_create' as add_url %}
+      {% include "components/ui_empty_state.html" with icon="clipboard-text" title="No exam papers match this view" description="Add a paper or search using a different exam, subject, class, teacher or campus." action_url=add_url action_text="Add Paper" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

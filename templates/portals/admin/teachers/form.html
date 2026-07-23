@@ -2,13 +2,89 @@
 
 {% block title %}{% if mode == 'create' %}Add Teacher{% else %}Edit Teacher{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Teacher{% else %}Edit Teacher{% endif %}{% endblock %}
-{% block breadcrumbs %}Teacher profile, staff access and portal account setup{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_teachers_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Teachers</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_teachers_list' %}" class="hover:text-primary-700">Teachers</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'create' %}New teacher{% else %}{{ teacher.first_name }} {{ teacher.last_name }}{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_teachers_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Teacher registry</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Teacher records</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'create' %}Add teacher{% else %}Edit teacher{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Capture teacher biodata, contact details, account access and school assignment information.</p></section>
-  {% if mode == 'edit' and teacher.user_id and teacher.email %}<section class="bg-white shadow-sm rounded-2xl border border-slate-200 p-6"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"><div><h3 class="text-lg font-black text-slate-900">Password Reset</h3><p class="mt-1 text-sm text-slate-600">Send a secure password reset link to the teacher's email address.</p></div><form method="post">{% csrf_token %}<button type="submit" name="reset_password" class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-black text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200" onclick="return confirm('Send password reset link to {{ teacher.email }}?');"><i class="ph ph-key mr-2"></i>Reset Password</button></form></div></section>{% endif %}
-  {% include "components/ui_form.html" %}
+{% include "components/ui_toast.html" %}
+{% url 'admin_teachers_list' as teachers_url %}
+
+<div class="edu-record-form-page">
+  <section class="edu-registry-intro" aria-labelledby="teacher-form-heading">
+    <div>
+      <span class="edu-registry-intro__eyebrow"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Guided teacher record</span>
+      <h2 id="teacher-form-heading">{% if mode == 'create' %}Create a clear faculty profile{% else %}Update {{ teacher.first_name }} {{ teacher.last_name }}{% endif %}</h2>
+      <p>{% if mode == 'create' %}Capture staff identity, school assignment and secure portal access through a simple three-step process.{% else %}Review identity, campus assignment and account delivery so the teacher can use the correct school tools.{% endif %}</p>
+    </div>
+    {% if mode == 'edit' and teacher.user_id %}
+      <div class="edu-registry-actions">
+        <a href="{% url 'admin_teachers_credentials' teacher.id %}" class="edu-outline-button"><i class="ph ph-key" aria-hidden="true"></i> Account access</a>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if mode == 'edit' and teacher.user_id and teacher.email %}
+    <section class="edu-account-reset-card" aria-labelledby="teacher-password-reset-heading">
+      <div>
+        <h3 id="teacher-password-reset-heading">Secure password reset</h3>
+        <p>Send a single-use reset link to {{ teacher.email }} without changing the teacher’s role or faculty record.</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="reset_password" class="edu-outline-button" onclick="return confirm('Send a password reset link to {{ teacher.email|escapejs }}?');"><i class="ph ph-key" aria-hidden="true"></i> Send reset link</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <div class="edu-record-form-layout">
+    <div>
+      {% if mode == 'create' %}
+        {% include "components/ui_form.html" with guided_form="teacher" form_submit_text="Create teacher" form_submit_icon="ph-user-plus" form_cancel_url=teachers_url %}
+      {% else %}
+        {% include "components/ui_form.html" with guided_form="teacher" form_submit_text="Save teacher changes" form_submit_icon="ph-floppy-disk" form_cancel_url=teachers_url %}
+      {% endif %}
+    </div>
+
+    <aside class="edu-form-guide" aria-labelledby="teacher-form-guide-heading">
+      <header class="edu-form-guide__header">
+        <h3 id="teacher-form-guide-heading">Access and identity checks</h3>
+        <p>Use these reminders before creating or updating a faculty record.</p>
+      </header>
+      <div class="edu-form-guide__items">
+        <div class="edu-form-guide__item">
+          <i class="ph ph-identification-badge" aria-hidden="true"></i>
+          <div><strong>Verify staff identity</strong><span>Use the official staff number and names used by the school’s administration office.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-phone" aria-hidden="true"></i>
+          <div><strong>Record reliable contacts</strong><span>Phone and email details support password recovery and urgent school communication.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-buildings" aria-hidden="true"></i>
+          <div><strong>Confirm campus scope</strong><span>The campus determines which learners, classes and operational records the teacher can work with.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-envelope-simple-open" aria-hidden="true"></i>
+          <div><strong>Deliver access securely</strong><span>Use the one-time email setup link whenever a reachable staff email is available.</span></div>
+        </div>
+        <div class="edu-form-guide__item">
+          <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+          <div><strong>Review changes promptly</strong><span>Deactivate or update accounts when staff assignments or employment status changes.</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
 </div>
 {% endblock %}

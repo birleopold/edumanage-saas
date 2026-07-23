@@ -1,88 +1,127 @@
 {% extends 'portals/admin/base.html' %}
-{% load history_tags %}
+{% load history_tags widget_tweaks %}
 
 {% block title %}Applicant {{ applicant.application_reference }}{% endblock %}
-{% block page_title %}Applicant Detail{% endblock %}
+{% block page_title %}Applicant Review{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_admissions_applicants' %}" class="hover:text-primary-700">Admissions</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{{ applicant.application_reference|default:applicant.id }}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_admissions_pipeline' %}" class="edu-outline-button"><i class="ph ph-kanban" aria-hidden="true"></i> Pipeline</a>
+<a href="{% url 'admin_admissions_applicant_edit' applicant.id %}" class="edu-pill-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit applicant</a>
+{% if applicant.status == 'ADMITTED' and applicant.created_student_id %}<a href="{% url 'admin_admissions_applicant_letter_pdf' applicant.id %}" target="_blank" rel="noopener noreferrer" class="edu-outline-button"><i class="ph ph-file-pdf" aria-hidden="true"></i> Admission letter</a>{% endif %}
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-
-<div class="space-y-6 motion-rich">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Applicant {{ applicant.application_reference|default:applicant.id }}</h1>
-      <p class="text-sm text-gray-600 mt-1">Review profile, documents, appointments, payments, communications, decision, and conversion.</p>
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="applicant-review-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-user-focus" aria-hidden="true"></i> {{ applicant.application_reference|default:'Applicant record' }}</span>
+      <h2 id="applicant-review-heading">{{ applicant.full_name }}</h2>
+      <p>Review identity, guardian information, intended placement, appointments, payments, communication and documents before changing the decision or creating a student record.</p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <a href="{% url 'admin_admissions_pipeline' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Pipeline</a>
-      <a href="{% url 'admin_admissions_leads' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Leads</a>
-      <a href="{% url 'admin_admissions_applicants' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">Back</a>
-      <a href="{% url 'admin_admissions_applicant_edit' applicant.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700">Edit</a>
-      {% if applicant.status == 'ADMITTED' and applicant.created_student_id %}<a href="{% url 'admin_admissions_applicant_letter_pdf' applicant.id %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 border border-indigo-300 text-indigo-800 rounded-lg text-sm font-semibold hover:bg-indigo-50">Admission letter</a>{% endif %}
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_admissions_applicants' %}"><i class="ph ph-list-bullets" aria-hidden="true"></i> Applicant register</a>
+      <a href="{% url 'admin_admissions_applicant_edit' applicant.id %}" class="edu-ops-primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit record</a>
     </div>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Status</p><p class="text-xl font-black {% if applicant.status == 'ADMITTED' %}text-green-700{% elif applicant.status == 'REJECTED' %}text-red-700{% elif applicant.status == 'IN_REVIEW' %}text-yellow-700{% else %}text-blue-700{% endif %}">{{ applicant.get_status_display }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Source</p><p class="text-xl font-black text-gray-900">{{ applicant.get_source_display }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Appointments</p><p class="text-xl font-black text-primary-700">{{ applicant.appointments.count }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Payments</p><p class="text-xl font-black text-green-700">{{ applicant.admission_payments.count }}</p></div>
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"><p class="text-xs uppercase font-bold text-gray-500">Student</p><p class="text-lg font-black text-gray-900">{% if applicant.created_student %}{{ applicant.created_student.student_id }}{% else %}Not converted{% endif %}</p></div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <section class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div class="px-6 py-4 border-b border-gray-100"><h2 class="text-lg font-semibold text-gray-900">Applicant Profile</h2></div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-4 text-sm">
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Reference</p><p class="font-semibold text-gray-900">{{ applicant.application_reference|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Name</p><p class="font-semibold text-gray-900">{{ applicant.full_name }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Email</p><p>{{ applicant.email|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Phone</p><p>{{ applicant.phone|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Campus</p><p>{{ applicant.campus|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Target class</p><p>{{ applicant.target_class_group|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Guardian</p><p>{{ applicant.guardian_name|default:'-' }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-gray-500">Relationship</p><p>{{ applicant.guardian_relationship|default:'-' }}</p></div>
-        <div class="md:col-span-2"><p class="text-xs uppercase tracking-wide text-gray-500">Address</p><p class="whitespace-pre-wrap">{{ applicant.address|default:'No address provided' }}</p></div>
-      </div>
-    </section>
-    <aside class="space-y-4">
-      <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
-        <h3 class="text-base font-semibold text-gray-900">Admission Decision</h3>
-        {% if applicant.created_student_id %}<div class="rounded-lg bg-green-50 border border-green-100 p-3 text-sm text-green-800">Converted to student <span class="font-bold">{{ applicant.created_student.student_id }}</span>.</div>{% endif %}
-        {% if applicant.created_admission_invoice %}<div class="rounded-lg bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800">Admission invoice created: <span class="font-bold">{{ applicant.created_admission_invoice.reference|default:applicant.created_admission_invoice.id }}</span>.</div>{% endif %}
-        <form method="post" action="{% url 'admin_admissions_applicant_set_status' applicant.id %}" class="space-y-3">
-          {% csrf_token %}
-          <select name="status" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" {% if applicant.created_student_id %}disabled{% endif %}><option value="NEW" {% if applicant.status == 'NEW' %}selected{% endif %}>New</option><option value="IN_REVIEW" {% if applicant.status == 'IN_REVIEW' %}selected{% endif %}>In review</option><option value="REJECTED" {% if applicant.status == 'REJECTED' %}selected{% endif %}>Rejected</option></select>
-          <textarea name="note" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm" placeholder="Optional internal note" {% if applicant.created_student_id %}disabled{% endif %}></textarea>
-          <button type="submit" class="w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-semibold {% if applicant.created_student_id %}opacity-50 cursor-not-allowed{% endif %}" {% if applicant.created_student_id %}disabled{% endif %}>Update Decision</button>
-        </form>
-        {% if not applicant.created_student_id and applicant.status != 'REJECTED' %}<a href="{% url 'admin_admissions_applicant_admit' applicant.id %}" class="w-full inline-flex justify-center items-center gap-2 px-3 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">Convert to Student</a><a href="{% url 'admin_admissions_applicant_reject' applicant.id %}" class="w-full inline-flex justify-center items-center gap-2 px-3 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">Reject</a>{% endif %}
-      </section>
-    </aside>
-  </div>
-
-  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Interview / Test Scheduling</h2>
-      <form method="post" action="{% url 'admin_admissions_appointment_add' applicant.id %}" class="space-y-3 mb-5">{% csrf_token %}{{ appointment_form.as_p }}<button class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold">Schedule</button></form>
-      <div class="space-y-2">{% for item in applicant.appointments.all %}<div class="border border-gray-200 rounded-lg p-3 text-sm"><div class="flex justify-between gap-3"><span class="font-bold">{{ item.get_appointment_type_display }} · {{ item.scheduled_at }}</span><a href="{% url 'admin_admissions_appointment_edit' item.id %}" class="text-primary-700 font-semibold">Edit</a></div><p class="text-gray-600">{{ item.get_status_display }} · {{ item.location|default:'No location' }}{% if item.score %} · Score: {{ item.score }}{% endif %}</p>{% if item.outcome_note %}<p class="text-gray-500 mt-1">{{ item.outcome_note }}</p>{% endif %}</div>{% empty %}<p class="text-sm text-gray-500">No appointments scheduled.</p>{% endfor %}</div>
-    </section>
-    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Admission Fee Payments</h2>
-      <form method="post" action="{% url 'admin_admissions_payment_add' applicant.id %}" class="space-y-3 mb-5">{% csrf_token %}{{ payment_form.as_p }}<button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold">Record Payment</button></form>
-      <div class="space-y-2">{% for payment in applicant.admission_payments.all %}<div class="border border-gray-200 rounded-lg p-3 text-sm"><div class="flex justify-between"><span class="font-bold">{{ payment.amount }} · {{ payment.get_method_display }}</span><span class="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-bold">{{ payment.get_status_display }}</span></div><p class="text-gray-600">{{ payment.received_at }} · Ref: {{ payment.reference|default:'-' }}</p>{% if payment.note %}<p class="text-gray-500 mt-1">{{ payment.note }}</p>{% endif %}</div>{% empty %}<p class="text-sm text-gray-500">No applicant payment records.</p>{% endfor %}</div>
-    </section>
-  </div>
-
-  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Applicant Communication History</h2>
-    <form method="post" action="{% url 'admin_admissions_communication_add' applicant.id %}" class="space-y-3 mb-5">{% csrf_token %}{{ communication_form.as_p }}<button class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold">Log Communication</button></form>
-    <div class="space-y-2">{% for item in applicant.communications.all %}<div class="rounded-lg border border-gray-200 p-3 text-sm"><div class="flex justify-between"><span class="font-bold">{{ item.get_channel_display }} · {{ item.direction }}</span><span class="text-xs text-gray-500">{{ item.created_at }}</span></div>{% if item.subject %}<p class="font-semibold text-gray-800 mt-1">{{ item.subject }}</p>{% endif %}<p class="text-gray-700 whitespace-pre-wrap">{{ item.message }}</p></div>{% empty %}<p class="text-sm text-gray-500">No communication history yet.</p>{% endfor %}</div>
   </section>
 
-  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Custom Application Responses</h2>{% if applicant.custom_responses %}<div class="grid grid-cols-1 md:grid-cols-2 gap-3">{% for key,row in applicant.custom_responses.items %}<div class="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm"><p class="text-xs uppercase font-bold text-gray-500">{{ row.label }}</p><p class="font-semibold text-gray-900">{{ row.value }}</p></div>{% endfor %}</div>{% else %}<p class="text-sm text-gray-500">No custom responses recorded.</p>{% endif %}</section>
-  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h2><div class="space-y-3">{% for document in applicant.documents.all %}<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 rounded-lg border border-gray-200 bg-gray-50"><div><p class="text-sm font-semibold text-gray-900">{{ document.title }}</p><p class="text-xs text-gray-500">Uploaded {{ document.uploaded_at }}</p></div><a href="{{ document.file.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100">Open file</a></div>{% empty %}<p class="text-sm text-gray-500">No supporting documents uploaded.</p>{% endfor %}</div></section>
+  <section class="edu-ops-stat-grid" aria-label="Applicant summary">
+    <article class="edu-ops-stat {% if applicant.status == 'ADMITTED' %}edu-ops-stat--sage{% elif applicant.status == 'REJECTED' %}edu-ops-stat--rose{% elif applicant.status == 'IN_REVIEW' %}edu-ops-stat--amber{% else %}edu-ops-stat--blue{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-seal-check" aria-hidden="true"></i></span><div><small>Decision stage</small><strong class="text-lg">{{ applicant.get_status_display }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span><div><small>Appointments</small><strong>{{ applicant.appointments.count }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-money" aria-hidden="true"></i></span><div><small>Payments recorded</small><strong>{{ applicant.admission_payments.count }}</strong></div></article>
+    <article class="edu-ops-stat {% if applicant.created_student %}edu-ops-stat--violet{% else %}edu-ops-stat--amber{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><small>Student conversion</small><strong class="text-lg">{% if applicant.created_student %}{{ applicant.created_student.student_id }}{% else %}Pending{% endif %}</strong></div></article>
+  </section>
+
+  {% if applicant.created_student_id %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Applicant conversion status">
+    <span class="edu-ops-note__icon"><i class="ph ph-student" aria-hidden="true"></i></span>
+    <div><strong>Converted to student {{ applicant.created_student.student_id }}</strong><span>The admissions decision is now protected from moving backwards. Continue school operations from the student record.</span></div>
+    <a href="{% url 'admin_students_detail' applicant.created_student.id %}" class="edu-ops-button">Open student record</a>
+  </section>
+  {% elif applicant.status == 'REJECTED' %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Rejected applicant status">
+    <span class="edu-ops-note__icon"><i class="ph ph-x-circle" aria-hidden="true"></i></span>
+    <div><strong>This application is currently rejected</strong><span>Review the recorded notes and evidence before changing the stage or taking any further action.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--danger">Closed decision</span>
+  </section>
+  {% else %}
+  <section class="edu-ops-note" aria-label="Admissions decision guidance">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>Review evidence before conversion</strong><span>Confirm identity, placement, appointments, documents, guardian details and any required admission payment before creating the permanent student record.</span></div>
+    <a href="#decision-panel" class="edu-ops-button">Decision controls</a>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-split">
+    <article class="edu-ops-panel" aria-labelledby="applicant-profile-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="applicant-profile-heading">Applicant profile</h3><p>Identity, contact, guardian and intended school placement.</p></div><span class="edu-ops-badge edu-ops-badge--blue">{{ applicant.get_source_display }}</span></header>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Application reference</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.application_reference|default:'Not generated' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Date of birth</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.date_of_birth|date:'M j, Y'|default:'Not recorded' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Applicant contact</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.phone|default:'No phone' }}</dd><dd class="text-xs text-slate-500">{{ applicant.email|default:'No email' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Guardian</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.guardian_name|default:'Not recorded' }}</dd><dd class="text-xs text-slate-500">{{ applicant.guardian_relationship|default:'Relationship not recorded' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Target campus</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.campus|default:'Not selected' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Target placement</dt><dd class="mt-1 text-sm font-bold text-slate-900">{% if applicant.target_class_group %}{{ applicant.target_class_group }}{% elif applicant.target_program %}{{ applicant.target_program }}{% elif applicant.target_level %}{{ applicant.target_level }}{% else %}Not selected{% endif %}</dd><dd class="text-xs text-slate-500">{{ applicant.target_term|default:'Target term not selected' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Previous school</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.previous_school|default:'Not recorded' }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Applied</dt><dd class="mt-1 text-sm font-bold text-slate-900">{{ applicant.created_at|date:'M j, Y · g:i A' }}</dd></div>
+        <div class="md:col-span-2 rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Address</dt><dd class="mt-1 whitespace-pre-wrap text-sm text-slate-800">{{ applicant.address|default:'No address provided' }}</dd></div>
+      </dl>
+    </article>
+
+    <aside id="decision-panel" class="edu-ops-panel h-fit" aria-labelledby="admission-decision-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="admission-decision-heading">Admission decision</h3><p>Update the review stage or begin controlled student conversion.</p></div></header>
+      <div class="p-4 grid gap-4">
+        {% if applicant.created_admission_invoice %}<div class="edu-ops-note"><span class="edu-ops-note__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span><div><strong>Admission invoice created</strong><span>{{ applicant.created_admission_invoice.reference|default:applicant.created_admission_invoice.id }}</span></div></div>{% endif %}
+        <form method="post" action="{% url 'admin_admissions_applicant_set_status' applicant.id %}" class="grid gap-3">
+          {% csrf_token %}
+          <div class="edu-ops-field"><label for="decision_status">Review stage</label><select id="decision_status" name="status" {% if applicant.created_student_id %}disabled{% endif %}><option value="NEW" {% if applicant.status == 'NEW' %}selected{% endif %}>New</option><option value="IN_REVIEW" {% if applicant.status == 'IN_REVIEW' %}selected{% endif %}>In review</option><option value="REJECTED" {% if applicant.status == 'REJECTED' %}selected{% endif %}>Rejected</option></select></div>
+          <div class="edu-ops-field"><label for="decision_note">Decision note</label><textarea id="decision_note" name="note" rows="3" placeholder="Add a concise internal reason or handover note" {% if applicant.created_student_id %}disabled{% endif %}></textarea></div>
+          <button type="submit" class="edu-ops-button edu-ops-button--primary" {% if applicant.created_student_id %}disabled{% endif %}><i class="ph ph-floppy-disk" aria-hidden="true"></i> Update stage</button>
+        </form>
+        {% if not applicant.created_student_id and applicant.status != 'REJECTED' %}
+        <div class="grid gap-2 border-t border-slate-100 pt-4"><a href="{% url 'admin_admissions_applicant_admit' applicant.id %}" class="edu-pill-button justify-center"><i class="ph ph-user-plus" aria-hidden="true"></i> Convert to student</a><a href="{% url 'admin_admissions_applicant_reject' applicant.id %}" class="edu-ops-button edu-ops-button--danger"><i class="ph ph-x-circle" aria-hidden="true"></i> Review rejection</a></div>
+        {% endif %}
+      </div>
+    </aside>
+  </section>
+
+  <section class="grid grid-cols-1 xl:grid-cols-2 gap-4" aria-label="Applicant appointments and payments">
+    <article class="edu-ops-panel" aria-labelledby="appointment-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="appointment-heading">Interviews and tests</h3><p>Schedule and record outcomes for admission appointments.</p></div><span class="edu-ops-badge edu-ops-badge--blue">{{ applicant.appointments.count }}</span></header>
+      <form method="post" action="{% url 'admin_admissions_appointment_add' applicant.id %}" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border-b border-slate-100">{% csrf_token %}{% for field in appointment_form %}<div class="edu-ops-field {% if field.name == 'outcome_note' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{% render_field field class="w-full min-h-[2.65rem] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 focus:border-primary-500 focus:ring-primary-500" %}{% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}<button class="edu-pill-button sm:col-span-2 justify-center"><i class="ph ph-calendar-plus" aria-hidden="true"></i> Schedule appointment</button></form>
+      <div class="edu-ops-feed">{% for item in applicant.appointments.all %}<div class="edu-ops-feed-row"><span class="edu-ops-feed-row__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span><div><strong>{{ item.get_appointment_type_display }} · {{ item.scheduled_at|date:'M j, Y · g:i A' }}</strong><span>{{ item.get_status_display }} · {{ item.location|default:'Location not recorded' }}{% if item.score %} · Score {{ item.score }}{% endif %}{% if item.outcome_note %}<br>{{ item.outcome_note|truncatechars:90 }}{% endif %}</span></div><a href="{% url 'admin_admissions_appointment_edit' item.id %}" class="edu-ops-button">Edit</a></div>{% empty %}<div class="edu-empty-state"><i class="ph ph-calendar-x" aria-hidden="true"></i><strong>No appointment scheduled</strong><span>Add an interview or test where the admissions process requires one.</span></div>{% endfor %}</div>
+    </article>
+
+    <article class="edu-ops-panel" aria-labelledby="admission-payment-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="admission-payment-heading">Admission payments</h3><p>Record applicant-stage payments before or during conversion.</p></div><span class="edu-ops-badge edu-ops-badge--success">{{ applicant.admission_payments.count }}</span></header>
+      <form method="post" action="{% url 'admin_admissions_payment_add' applicant.id %}" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border-b border-slate-100">{% csrf_token %}{% for field in payment_form %}<div class="edu-ops-field {% if field.name == 'note' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{% render_field field class="w-full min-h-[2.65rem] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 focus:border-primary-500 focus:ring-primary-500" %}{% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}<button class="edu-pill-button sm:col-span-2 justify-center"><i class="ph ph-money" aria-hidden="true"></i> Record payment</button></form>
+      <div class="edu-ops-feed">{% for payment in applicant.admission_payments.all %}<div class="edu-ops-feed-row"><span class="edu-ops-feed-row__icon"><i class="ph ph-money" aria-hidden="true"></i></span><div><strong>{{ payment.amount }} · {{ payment.get_method_display }}</strong><span>{{ payment.received_at|date:'M j, Y' }} · Ref {{ payment.reference|default:'not recorded' }}{% if payment.note %}<br>{{ payment.note|truncatechars:90 }}{% endif %}</span></div><span class="edu-ops-badge {% if payment.status == 'PAID' or payment.status == 'CONFIRMED' %}edu-ops-badge--success{% else %}edu-ops-badge--warning{% endif %}">{{ payment.get_status_display }}</span></div>{% empty %}<div class="edu-empty-state"><i class="ph ph-receipt" aria-hidden="true"></i><strong>No applicant payment recorded</strong><span>Only record verified payments with a useful method and reference.</span></div>{% endfor %}</div>
+    </article>
+  </section>
+
+  <section class="edu-ops-panel" aria-labelledby="applicant-communication-heading">
+    <header class="edu-ops-panel__header"><div><h3 id="applicant-communication-heading">Communication history</h3><p>Maintain a concise record of important calls, messages and emails.</p></div><span class="edu-ops-badge edu-ops-badge--violet">{{ applicant.communications.count }} entries</span></header>
+    <form method="post" action="{% url 'admin_admissions_communication_add' applicant.id %}" class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 border-b border-slate-100">{% csrf_token %}{% for field in communication_form %}<div class="edu-ops-field {% if field.name == 'message' %}md:col-span-4{% elif field.name == 'subject' %}md:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{% render_field field class="w-full min-h-[2.65rem] rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 focus:border-primary-500 focus:ring-primary-500" %}{% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}<button class="edu-pill-button md:col-span-4 justify-center"><i class="ph ph-chat-circle-text" aria-hidden="true"></i> Log communication</button></form>
+    <div class="edu-ops-feed">{% for item in applicant.communications.all %}<div class="edu-ops-feed-row"><span class="edu-ops-feed-row__icon"><i class="ph ph-chat-circle-text" aria-hidden="true"></i></span><div><strong>{{ item.get_channel_display }} · {{ item.direction }}{% if item.subject %} · {{ item.subject }}{% endif %}</strong><span>{{ item.message|truncatechars:150 }}</span></div><time class="edu-activity-time" datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|timesince }} ago</time></div>{% empty %}<div class="edu-empty-state"><i class="ph ph-chats-circle" aria-hidden="true"></i><strong>No communication logged</strong><span>Record important admissions contact so another authorised staff member can continue the case.</span></div>{% endfor %}</div>
+  </section>
+
+  <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <article class="edu-ops-panel" aria-labelledby="custom-response-heading"><header class="edu-ops-panel__header"><div><h3 id="custom-response-heading">Custom application responses</h3><p>Answers captured from the selected admission form template.</p></div></header>{% if applicant.custom_responses %}<div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">{% for key,row in applicant.custom_responses.items %}<div class="rounded-xl bg-slate-50 p-3"><p class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{{ row.label }}</p><p class="mt-1 text-sm font-semibold text-slate-900">{{ row.value }}</p></div>{% endfor %}</div>{% else %}<div class="edu-empty-state"><i class="ph ph-note-blank" aria-hidden="true"></i><strong>No custom responses</strong><span>This application did not include template-specific questions.</span></div>{% endif %}</article>
+    <article class="edu-ops-panel" aria-labelledby="supporting-documents-heading"><header class="edu-ops-panel__header"><div><h3 id="supporting-documents-heading">Supporting documents</h3><p>Files submitted as evidence for the application.</p></div><span class="edu-ops-badge edu-ops-badge--blue">{{ applicant.documents.count }}</span></header><div class="edu-ops-feed">{% for document in applicant.documents.all %}<div class="edu-ops-feed-row"><span class="edu-ops-feed-row__icon"><i class="ph ph-file" aria-hidden="true"></i></span><div><strong>{{ document.title }}</strong><span>Uploaded {{ document.uploaded_at|date:'M j, Y · g:i A' }}</span></div><a href="{{ document.file.url }}" target="_blank" rel="noopener noreferrer" class="edu-ops-button">Open file</a></div>{% empty %}<div class="edu-empty-state"><i class="ph ph-file-x" aria-hidden="true"></i><strong>No supporting document uploaded</strong><span>Document requirements depend on the school’s admission process and selected form template.</span></div>{% endfor %}</div></article>
+  </section>
+
   {% history_timeline applicant "Applicant Timeline" %}
-  <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h2 class="text-lg font-semibold text-gray-900 mb-3">Notes</h2><p class="text-sm text-gray-800 whitespace-pre-wrap">{{ applicant.note|default:'No notes yet.' }}</p></section>
+
+  <section class="edu-ops-panel" aria-labelledby="applicant-notes-heading"><header class="edu-ops-panel__header"><div><h3 id="applicant-notes-heading">Internal notes</h3><p>Relevant admissions context visible only to authorised school staff.</p></div></header><p class="whitespace-pre-wrap p-4 text-sm leading-6 text-slate-800">{{ applicant.note|default:'No internal note has been recorded.' }}</p></section>
 </div>
 {% endblock %}

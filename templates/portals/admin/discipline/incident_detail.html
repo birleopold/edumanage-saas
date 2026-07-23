@@ -2,105 +2,90 @@
 {% load widget_tweaks history_tags %}
 
 {% block title %}Incident #{{ incident.id }}{% endblock %}
+{% block page_title %}Discipline Case Review{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_incidents_list' %}" class="hover:text-primary-700">Discipline cases</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Case #{{ incident.id }}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_incidents_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Case register</a>
+<a href="{% url 'admin_incidents_edit' incident.id %}" class="edu-pill-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit case</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
-  {% include "components/ui_toast.html" %}
-
-  <div>
-    <h1 class="text-3xl font-bold text-gray-900">Incident #{{ incident.id }}</h1>
-    <p class="text-gray-600 mt-1">{{ incident.title }}</p>
-  </div>
-
-  <div class="flex flex-wrap gap-2">
-    <a href="{% url 'admin_incidents_edit' incident.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 shadow-sm">
-      <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
-    </a>
-    <a href="{% url 'admin_incidents_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50">
-      <i class="ph ph-arrow-left text-lg" aria-hidden="true"></i><span>Back to list</span>
-    </a>
-  </div>
-
-  <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6">
-    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-      <i class="ph ph-warning-octagon text-primary-600" aria-hidden="true"></i><span>Details</span>
-    </h2>
-    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Student</dt><dd class="mt-1 text-gray-900 font-medium">{{ incident.student }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Student ID</dt><dd class="mt-1 text-gray-800 font-mono">{{ incident.student.student_id }}</dd></div>
-      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Title</dt><dd class="mt-1 text-gray-900">{{ incident.title }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Category</dt><dd class="mt-1 text-gray-800">{{ incident.category|default:"—" }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Severity</dt><dd class="mt-1">{{ incident.get_severity_display }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Status</dt><dd class="mt-1">{{ incident.get_status_display }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Incident date</dt><dd class="mt-1 text-gray-800">{{ incident.incident_date|default:"—" }}</dd></div>
-      <div><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Reported by</dt><dd class="mt-1 text-gray-800">{{ incident.reported_by|default:"—" }}</dd></div>
-      <div class="sm:col-span-2"><dt class="font-bold text-gray-500 uppercase tracking-wide text-xs">Description</dt><dd class="mt-1 text-gray-800 whitespace-pre-wrap">{{ incident.description|default:"—" }}</dd></div>
-    </dl>
-  </div>
-
-  {% history_timeline incident "Incident Timeline" %}
-
-  <div>
-    <h2 class="text-xl font-bold text-gray-900 mb-3">Actions taken</h2>
-    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">By</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {% for a in actions %}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ a.action }}</td>
-              <td class="px-6 py-4 text-sm text-gray-700">{{ a.note|default:"—" }}</td>
-              <td class="px-6 py-4 text-sm text-gray-700">{{ a.performed_by_user|default:"—" }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ a.created_at|date:"Y-m-d H:i" }}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">No actions recorded yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="incident-detail-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-scales" aria-hidden="true"></i> Case #{{ incident.id }}</span>
+      <h2 id="incident-detail-heading">{{ incident.title }}</h2>
+      <p>Review the learner, incident evidence, status and every documented follow-up action before changing or closing this case.</p>
     </div>
-  </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_incidents_edit' incident.id %}" class="edu-ops-primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit case</a>
+      <a href="{% url 'admin_students_detail' incident.student.id %}"><i class="ph ph-student" aria-hidden="true"></i> Learner record</a>
+    </div>
+  </section>
 
-  <div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8">
-    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-      <i class="ph ph-plus-circle text-primary-600" aria-hidden="true"></i><span>Add action</span>
-    </h3>
-    <form method="post" class="space-y-6">
-      {% csrf_token %}
-      {% if action_form.non_field_errors %}
-        <div class="rounded-lg bg-red-50 border-l-4 border-red-500 p-4">
-          <p class="text-sm font-bold text-red-800">Please correct the following:</p>
-          <ul class="mt-2 list-disc pl-5 text-sm text-red-700">
-            {% for error in action_form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-          </ul>
-        </div>
-      {% endif %}
-      <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-2 gap-x-6">
+  <section class="edu-ops-stat-grid" aria-label="Case status summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-hash" aria-hidden="true"></i></span><div><small>Case number</small><strong>#{{ incident.id }}</strong></div></article>
+    <article class="edu-ops-stat {% if incident.severity == 'HIGH' %}edu-ops-stat--rose{% elif incident.severity == 'MEDIUM' %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning" aria-hidden="true"></i></span><div><small>Severity</small><strong>{{ incident.get_severity_display }}</strong></div></article>
+    <article class="edu-ops-stat {% if incident.status == 'OPEN' %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-flag" aria-hidden="true"></i></span><div><small>Status</small><strong>{{ incident.get_status_display }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-list-checks" aria-hidden="true"></i></span><div><small>Actions recorded</small><strong>{{ actions|length }}</strong></div></article>
+  </section>
+
+  {% if incident.status == 'OPEN' and incident.severity == 'HIGH' %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="High severity open case warning">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span>
+    <div><strong>This is a high-severity open case</strong><span>Confirm safeguarding, leadership ownership, guardian communication where appropriate and a documented next action.</span></div>
+    <a href="#add-case-action" class="edu-ops-button">Add follow-up</a>
+  </section>
+  {% endif %}
+
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr_.48fr] gap-6 items-start">
+    <div class="space-y-6">
+      <section class="edu-ops-table-shell p-6" aria-labelledby="case-evidence-heading">
+        <header class="edu-ops-table-heading"><div><h3 id="case-evidence-heading">Incident evidence</h3><p>Core facts attached to this case.</p></div><span class="edu-ops-badge {% if incident.status == 'RESOLVED' %}edu-ops-badge--success{% elif incident.status == 'OPEN' %}edu-ops-badge--blue{% endif %}">{{ incident.get_status_display }}</span></header>
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Learner</dt><dd class="mt-1 font-black text-slate-900">{{ incident.student }}</dd><dd class="text-xs text-slate-500">{{ incident.student.student_id|default:'Student ID not recorded' }} · {{ incident.student.campus|default:'Campus not recorded' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Incident date</dt><dd class="mt-1 font-bold text-slate-900">{{ incident.incident_date|default:'Not recorded' }}</dd><dd class="text-xs text-slate-500">Created {{ incident.created_at|date:'M j, Y H:i' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Category</dt><dd class="mt-1 font-bold text-slate-900">{{ incident.category|default:'Uncategorised' }}</dd></div>
+          <div><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Reported by</dt><dd class="mt-1 font-bold text-slate-900">{{ incident.reported_by|default:'Not recorded' }}</dd></div>
+          <div class="md:col-span-2"><dt class="text-xs font-black uppercase tracking-wide text-slate-500">Description</dt><dd class="mt-2 whitespace-pre-wrap leading-6 text-slate-700">{{ incident.description|default:'No detailed description was recorded.' }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="edu-ops-table-shell" aria-labelledby="case-actions-heading">
+        <header class="edu-ops-table-heading"><div><h3 id="case-actions-heading">Documented follow-up</h3><p>Actions remain ordered to preserve the case chronology.</p></div><span class="edu-ops-badge">{{ actions|length }} recorded</span></header>
+        {% if actions %}
+        <div class="overflow-x-auto"><table class="edu-ops-table"><caption class="sr-only">Follow-up actions recorded for this discipline case</caption><thead><tr><th scope="col">Action</th><th scope="col">Note</th><th scope="col">Recorded by</th><th scope="col">Time</th></tr></thead><tbody>{% for action in actions %}<tr><td><strong class="text-slate-900">{{ action.action }}</strong></td><td>{{ action.note|default:'No supporting note' }}</td><td>{{ action.performed_by_user|default:'System or unknown user' }}</td><td>{{ action.created_at|date:'M j, Y H:i' }}</td></tr>{% endfor %}</tbody></table></div>
+        {% else %}
+        <div class="p-8 text-center text-sm text-slate-500">No follow-up action has been recorded yet.</div>
+        {% endif %}
+      </section>
+
+      {% history_timeline incident "Incident Timeline" %}
+    </div>
+
+    <aside id="add-case-action" class="edu-ops-table-shell p-6 xl:sticky xl:top-24">
+      <h3 class="text-lg font-black text-slate-900">Add follow-up action</h3>
+      <p class="mt-1 text-sm text-slate-600">Record what was done, by whom and any evidence or next step. Avoid vague entries such as “handled”.</p>
+      <form method="post" class="mt-5 space-y-5">
+        {% csrf_token %}
+        {% if action_form.non_field_errors %}<div class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{{ action_form.non_field_errors }}</div>{% endif %}
         {% for field in action_form %}
-          <div class="{% if field.field.widget.input_type == 'textarea' %}sm:col-span-2{% endif %}">
-            <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-800 mb-1.5">{{ field.label }}{% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}</label>
-            {% if field.errors %}
-              {% render_field field class="block w-full border-2 border-red-300 rounded-lg px-4 py-2.5 bg-red-50 text-gray-900 sm:text-sm placeholder-gray-400" %}
-              {% for error in field.errors %}<p class="mt-2 text-sm font-bold text-red-600">{{ error }}</p>{% endfor %}
-            {% else %}
-              {% render_field field class="block w-full border-2 border-gray-300 rounded-lg px-4 py-2.5 bg-white text-gray-900 focus:border-primary-500 sm:text-sm font-medium placeholder-gray-400" %}
-            {% endif %}
-          </div>
+        <div><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-black text-slate-700">{{ field.label }}{% if field.field.required %}<span class="ml-1 text-red-600">*</span>{% endif %}</label>{% if field.errors %}{% render_field field class="w-full rounded-xl border-2 border-red-300 bg-red-50 px-4 py-2.5 text-sm text-slate-900" %}<p class="mt-1 text-xs font-bold text-red-600">{{ field.errors|join:', ' }}</p>{% else %}{% render_field field class="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 focus:border-primary-400" %}{% endif %}</div>
         {% endfor %}
-      </div>
-      <div class="flex justify-end pt-2 border-t border-gray-200">
-        <button type="submit" class="inline-flex items-center gap-2 py-2.5 px-6 rounded-lg bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 border-2 border-transparent shadow-md">
-          <i class="ph ph-plus text-lg" aria-hidden="true"></i><span>Add action</span>
-        </button>
-      </div>
-    </form>
-  </div>
+        <button type="submit" class="edu-pill-button w-full justify-center"><i class="ph ph-plus" aria-hidden="true"></i> Record action</button>
+      </form>
+    </aside>
+  </section>
 </div>
 {% endblock %}

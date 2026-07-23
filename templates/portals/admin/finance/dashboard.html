@@ -2,17 +2,148 @@
 
 {% block title %}Finance{% endblock %}
 {% block page_title %}Finance{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_finance_clearance_dashboard' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Fees Clearance</a><a href="{% url 'admin_invoices_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Invoices</a><a href="{% url 'finance_books_home' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Accounts</a><a href="{% url 'admin_invoices_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> New Invoice</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Finance overview</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_finance_clearance_dashboard' %}" class="edu-outline-button"><i class="ph ph-shield-check" aria-hidden="true"></i> Fees clearance</a>
+<a href="{% url 'admin_invoices_list' %}" class="edu-outline-button"><i class="ph ph-receipt" aria-hidden="true"></i> Invoices</a>
+<a href="{% url 'admin_invoices_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> New invoice</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">School finance</p><h2 class="mt-2 text-2xl font-black">Fees, payments and accounts</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage invoices, payments, receipts, fee items and accounting records.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_invoices_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">New Invoice</a><a href="{% url 'admin_invoices_bulk_create' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Bulk Invoices</a><a href="{% url 'admin_finance_clearance_dashboard' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Fees Clearance</a><a href="{% url 'finance_books_payment_recon' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Match Payments</a></div></div></section>
 
-  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Invoices</p><p class="mt-1 text-3xl font-black text-slate-900">{{ invoice_count }}</p><p class="text-xs font-bold text-slate-500">{{ active_invoice_count }} active</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Payments Today</p><p class="mt-1 text-3xl font-black text-green-700">{{ payments_today }}</p><p class="text-xs font-bold text-slate-500">{{ payment_count }} total payments</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">This Month</p><p class="mt-1 text-3xl font-black text-primary-700">{{ payments_this_month }}</p><p class="text-xs font-bold text-slate-500">payments recorded this month</p></div><div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><p class="text-xs uppercase font-black text-slate-500">Pending Mobile Payments</p><p class="mt-1 text-3xl font-black text-amber-700">{{ mobile_pending_count }}</p><p class="text-xs font-bold text-slate-500">{{ failed_message_count }} failed messages</p></div></section>
+<div class="edu-registry-page">
+  <section class="edu-registry-intro" aria-labelledby="finance-overview-heading">
+    <div>
+      <span class="edu-registry-intro__eyebrow"><i class="ph ph-wallet" aria-hidden="true"></i> School finance</span>
+      <h2 id="finance-overview-heading">Money movement, obligations and follow-up</h2>
+      <p>See collections, invoices, mobile-payment queues and communication failures together, then move directly to the task that needs attention.</p>
+    </div>
+    <div class="edu-registry-actions">
+      <a href="{% url 'admin_invoices_bulk_create' %}" class="edu-outline-button"><i class="ph ph-stack-plus" aria-hidden="true"></i> Bulk invoices</a>
+      <a href="{% url 'finance_books_payment_recon' %}" class="edu-outline-button"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> Match payments</a>
+      <a href="{% url 'admin_invoices_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> New invoice</a>
+    </div>
+  </section>
 
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-5"><a href="{% url 'admin_finance_clearance_dashboard' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><i class="ph ph-shield-check text-xl"></i></span><div><h3 class="font-black text-slate-900">Fees Clearance</h3><p class="text-sm text-slate-500">Exam and results access rules</p></div></div></a><a href="{% url 'admin_fee_items_list' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-tag text-xl"></i></span><div><h3 class="font-black text-slate-900">Fee Items</h3><p class="text-sm text-slate-500">{{ fee_item_count }} items</p></div></div></a><a href="{% url 'admin_invoices_list' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center"><i class="ph ph-receipt text-xl"></i></span><div><h3 class="font-black text-slate-900">Invoices</h3><p class="text-sm text-slate-500">Create, print and export invoices</p></div></div></a><a href="{% url 'finance_books_home' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center"><i class="ph ph-book-open text-xl"></i></span><div><h3 class="font-black text-slate-900">Accounts</h3><p class="text-sm text-slate-500">Ledger, journals and reports</p></div></div></a><a href="{% url 'finance_books_payment_recon' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center"><i class="ph ph-bank text-xl"></i></span><div><h3 class="font-black text-slate-900">Match Payments</h3><p class="text-sm text-slate-500">Match mobile money and bank payments</p></div></div></a><a href="{% url 'admin_finance_communication_operations' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center"><i class="ph ph-chat-circle-text text-xl"></i></span><div><h3 class="font-black text-slate-900">Payment Messages</h3><p class="text-sm text-slate-500">Receipts, reminders and retries</p></div></div></a><a href="{% url 'admin_finance_message_logs' %}" class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:border-primary-300"><div class="flex items-center gap-3"><span class="h-11 w-11 rounded-2xl bg-red-50 text-red-700 flex items-center justify-center"><i class="ph ph-warning-circle text-xl"></i></span><div><h3 class="font-black text-slate-900">Failed Messages</h3><p class="text-sm text-slate-500">Review failed receipts and reminders</p></div></div></a></section>
+  <section class="edu-record-stat-grid" aria-label="Finance summary">
+    <article class="edu-record-stat">
+      <span class="edu-record-stat__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span>
+      <div><small>Total invoices</small><strong>{{ invoice_count }}</strong><span class="edu-record-meta">{{ active_invoice_count }} active</span></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--active">
+      <span class="edu-record-stat__icon"><i class="ph ph-money" aria-hidden="true"></i></span>
+      <div><small>Payments today</small><strong>{{ payments_today }}</strong><span class="edu-record-meta">{{ payment_count }} recorded payments</span></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--portal">
+      <span class="edu-record-stat__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span>
+      <div><small>Collected this month</small><strong>{{ payments_this_month }}</strong><span class="edu-record-meta">Current calendar month</span></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--attention">
+      <span class="edu-record-stat__icon"><i class="ph ph-device-mobile" aria-hidden="true"></i></span>
+      <div><small>Pending mobile payments</small><strong>{{ mobile_pending_count }}</strong><span class="edu-record-meta">{{ failed_message_count }} failed message{{ failed_message_count|pluralize }}</span></div>
+    </article>
+  </section>
 
-  <section class="grid grid-cols-1 xl:grid-cols-2 gap-6"><div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"><div class="p-5 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-black text-slate-900">Recent invoices</h3><p class="text-sm text-slate-500">Latest invoices.</p></div><a href="{% url 'admin_invoices_list' %}" class="text-sm font-black text-primary-700 hover:text-primary-900">View all</a></div><div class="divide-y divide-slate-100">{% for invoice in recent_invoices %}<a href="{% url 'admin_invoices_detail' invoice.pk %}" class="block p-4 hover:bg-slate-50"><div class="flex justify-between gap-3"><div><p class="font-black text-slate-900">{{ invoice.student }}</p><p class="text-xs text-slate-500">{{ invoice.reference|default:'No reference' }} · {{ invoice.created_at|date:'M j, Y' }}</p></div><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700 h-fit">{{ invoice.get_status_display }}</span></div></a>{% empty %}<div class="p-8 text-center text-slate-500">No invoices yet.</div>{% endfor %}</div></div><div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"><div class="p-5 border-b border-slate-100"><h3 class="font-black text-slate-900">Recent payments</h3><p class="text-sm text-slate-500">Latest payments.</p></div><div class="divide-y divide-slate-100">{% for payment in recent_payments %}<div class="p-4 hover:bg-slate-50"><div class="flex justify-between gap-3"><div><p class="font-black text-slate-900">{{ payment.invoice.student }}</p><p class="text-xs text-slate-500">{{ payment.get_method_display }} · {{ payment.created_at|date:'M j, Y' }}</p></div><span class="font-black text-green-700">{{ payment.amount }}</span></div></div>{% empty %}<div class="p-8 text-center text-slate-500">No payments yet.</div>{% endfor %}</div></div></section>
+  <section class="edu-dashboard-grid" aria-label="Finance priorities and controls">
+    <article class="edu-panel" aria-labelledby="finance-priorities-heading">
+      <header class="edu-panel__header">
+        <div>
+          <h3 id="finance-priorities-heading">Finance attention queue</h3>
+          <p>Resolve payment and communication exceptions before they affect family statements or reconciliation.</p>
+        </div>
+        <a href="{% url 'admin_finance_communication_operations' %}" class="edu-panel__link">Communication centre <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </header>
+      <div class="edu-priority-list">
+        <a href="{% url 'finance_books_payment_recon' %}" class="edu-priority-item {% if mobile_pending_count %}edu-priority-item--warning{% else %}edu-priority-item--success{% endif %}">
+          <span class="edu-priority-item__icon"><i class="ph ph-arrows-left-right" aria-hidden="true"></i></span>
+          <div><h4>Pending payment matching</h4><p>{% if mobile_pending_count %}Review mobile-money requests that are still pending or processing.{% else %}No mobile-payment requests currently need matching.{% endif %}</p></div>
+          <span class="edu-priority-item__metric">{{ mobile_pending_count }}</span>
+        </a>
+        <a href="{% url 'admin_finance_message_logs' %}" class="edu-priority-item {% if failed_message_count %}edu-priority-item--danger{% else %}edu-priority-item--success{% endif %}">
+          <span class="edu-priority-item__icon"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i></span>
+          <div><h4>Failed receipts and reminders</h4><p>{% if failed_message_count %}Retry or investigate finance messages that did not reach their destination.{% else %}No failed finance messages are waiting for review.{% endif %}</p></div>
+          <span class="edu-priority-item__metric">{{ failed_message_count }}</span>
+        </a>
+        <a href="{% url 'admin_finance_clearance_dashboard' %}" class="edu-priority-item edu-priority-item--teal">
+          <span class="edu-priority-item__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+          <div><h4>Fees clearance controls</h4><p>Review examination, result and school-service clearance rules and approved overrides.</p></div>
+          <span class="edu-priority-item__metric"><i class="ph ph-arrow-right" aria-hidden="true"></i></span>
+        </a>
+      </div>
+    </article>
+
+    <article class="edu-panel" aria-labelledby="finance-tools-heading">
+      <header class="edu-panel__header">
+        <div>
+          <h3 id="finance-tools-heading">Finance tools</h3>
+          <p>Fast access to the workflows used by bursars and administrators.</p>
+        </div>
+      </header>
+      <div class="edu-context-card">
+        <div class="edu-context-card__period">
+          <small>Fee structure</small>
+          <strong>{{ fee_item_count }} configured item{{ fee_item_count|pluralize }}</strong>
+          <span>Keep charges clear before generating or cloning invoices.</span>
+        </div>
+        <div class="edu-context-actions">
+          <a href="{% url 'admin_fee_items_list' %}" class="edu-context-action"><i class="ph ph-tag" aria-hidden="true"></i><span>Fee items</span></a>
+          <a href="{% url 'admin_invoices_list' %}" class="edu-context-action"><i class="ph ph-receipt" aria-hidden="true"></i><span>Invoices</span></a>
+          <a href="{% url 'finance_books_home' %}" class="edu-context-action"><i class="ph ph-book-open" aria-hidden="true"></i><span>Accounts</span></a>
+          <a href="{% url 'admin_finance_clearance_dashboard' %}" class="edu-context-action"><i class="ph ph-seal-check" aria-hidden="true"></i><span>Clearance</span></a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="edu-insight-grid" aria-label="Recent invoices and payments">
+    <article class="edu-panel" aria-labelledby="recent-invoices-heading">
+      <header class="edu-panel__header">
+        <div><h3 id="recent-invoices-heading">Recent invoices</h3><p>Latest learner obligations created by the finance team.</p></div>
+        <a href="{% url 'admin_invoices_list' %}" class="edu-panel__link">View all <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </header>
+      {% if recent_invoices %}
+        <div class="edu-activity-feed">
+          {% for invoice in recent_invoices %}
+            <a href="{% url 'admin_invoices_detail' invoice.pk %}" class="edu-activity-row edu-activity-row--view">
+              <span class="edu-activity-icon"><i class="ph ph-receipt" aria-hidden="true"></i></span>
+              <div><h4>{{ invoice.student }}</h4><p>{{ invoice.reference|default:'No reference' }} · {{ invoice.academic_term|default:'No term' }}</p></div>
+              <div class="text-right"><span class="edu-record-badge {% if invoice.status == 'ACTIVE' %}edu-record-badge--active{% else %}edu-record-badge--inactive{% endif %}">{{ invoice.get_status_display }}</span><time class="edu-activity-time block mt-1" datetime="{{ invoice.created_at|date:'c' }}">{{ invoice.created_at|date:'M j, Y' }}</time></div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="edu-empty-state"><i class="ph ph-receipt" aria-hidden="true"></i><strong>No invoices yet</strong><span>Create an individual or bulk invoice to begin tracking learner obligations.</span><a href="{% url 'admin_invoices_create' %}" class="edu-pill-button mt-4">New invoice</a></div>
+      {% endif %}
+    </article>
+
+    <article class="edu-panel" aria-labelledby="recent-payments-heading">
+      <header class="edu-panel__header">
+        <div><h3 id="recent-payments-heading">Recent payments</h3><p>Latest collections recorded against learner invoices.</p></div>
+        <a href="{% url 'finance_books_payment_recon' %}" class="edu-panel__link">Reconcile <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </header>
+      {% if recent_payments %}
+        <div class="edu-activity-feed">
+          {% for payment in recent_payments %}
+            <a href="{% url 'admin_payments_detail' payment.pk %}" class="edu-activity-row edu-activity-row--create">
+              <span class="edu-activity-icon"><i class="ph ph-money" aria-hidden="true"></i></span>
+              <div><h4>{{ payment.invoice.student }}</h4><p>{{ payment.get_method_display }} · Invoice {{ payment.invoice.reference|default:payment.invoice.pk }}</p></div>
+              <div class="text-right"><strong class="text-sm text-green-700">{{ payment.amount }}</strong><time class="edu-activity-time block mt-1" datetime="{{ payment.created_at|date:'c' }}">{{ payment.created_at|date:'M j, Y' }}</time></div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="edu-empty-state"><i class="ph ph-money" aria-hidden="true"></i><strong>No payments yet</strong><span>Recorded payments will appear here for quick verification and receipt access.</span></div>
+      {% endif %}
+    </article>
+  </section>
 </div>
 {% endblock %}

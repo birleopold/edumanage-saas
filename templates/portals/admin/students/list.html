@@ -1,17 +1,165 @@
 {% extends 'portals/admin/base.html' %}
+{% load registry_insights %}
 
 {% block title %}Students{% endblock %}
 {% block page_title %}Students{% endblock %}
-{% block breadcrumbs %}Student records, credentials, exports and enrollment management{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_students_bulk_import' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Bulk Import</a><a href="{% url 'admin_students_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Export CSV</a><a href="{% url 'admin_students_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-user-plus mr-1"></i> Add Student</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Student registry</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_students_bulk_import' %}" class="edu-outline-button"><i class="ph ph-upload-simple" aria-hidden="true"></i> Bulk import</a>
+<a href="{% url 'admin_students_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}" class="edu-outline-button"><i class="ph ph-file-csv" aria-hidden="true"></i> Export CSV</a>
+<a href="{% url 'admin_students_create' %}" class="edu-pill-button"><i class="ph ph-user-plus" aria-hidden="true"></i> Add student</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Student registry</p><h2 class="mt-2 text-2xl font-black">Student records</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Manage student profiles, campus filtering, credentials, bulk imports and CSV exports from one place.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_students_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Add Student</a><a href="{% url 'admin_students_bulk_import' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Bulk Import</a><a href="{% url 'admin_students_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Export</a></div></div></section>
+{% registry_summary 'student' selected_campus_id as registry %}
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-[1fr_12rem_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search by name or student ID..."></div></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_students_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i>Clear</a></div></form></section>
+<div class="edu-registry-page">
+  <section class="edu-registry-intro" aria-labelledby="student-registry-heading">
+    <div>
+      <span class="edu-registry-intro__eyebrow"><i class="ph ph-student" aria-hidden="true"></i> Student registry</span>
+      <h2 id="student-registry-heading">Every learner, clearly organised</h2>
+      <p>Find student records quickly, confirm school placement and portal readiness, and move directly into editing or account setup.</p>
+    </div>
+    <div class="edu-registry-actions">
+      <a href="{% url 'admin_students_bulk_import' %}" class="edu-outline-button"><i class="ph ph-table" aria-hidden="true"></i> Import many</a>
+      <a href="{% url 'admin_students_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> New student</a>
+    </div>
+  </section>
 
-  {% if students %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Campus</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Name</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for s in students %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-black text-slate-900">{{ s.id }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ s.campus }}</td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="rounded-full bg-primary-50 px-3 py-1 font-mono text-xs font-black text-primary-700">{{ s.student_id }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-student text-xl"></i></div><span class="font-black text-slate-900">{{ s.last_name }}, {{ s.first_name }}</span></div></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if s.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><a href="{% url 'admin_students_edit' s.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit</a></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_students_create' as create_student_url %}{% include "components/ui_empty_state.html" with icon="student" title="No students found" description="Get started by adding your first student or adjust your search filters" action_url=create_student_url action_text="Add Student" %}{% endif %}
+  <section class="edu-record-stat-grid" aria-label="Student registry summary">
+    <article class="edu-record-stat">
+      <span class="edu-record-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span>
+      <div><small>Total students</small><strong>{{ registry.total }}</strong></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--active">
+      <span class="edu-record-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
+      <div><small>Active learners</small><strong>{{ registry.active }}</strong></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--portal">
+      <span class="edu-record-stat__icon"><i class="ph ph-device-mobile" aria-hidden="true"></i></span>
+      <div><small>Portal accounts</small><strong>{{ registry.portal }}</strong></div>
+    </article>
+    <article class="edu-record-stat edu-record-stat--attention">
+      <span class="edu-record-stat__icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+      <div><small>Needs attention</small><strong>{{ registry.attention }}</strong></div>
+    </article>
+  </section>
+
+  <form method="get" class="edu-registry-toolbar" aria-label="Filter student records">
+    <div class="edu-registry-field edu-registry-field--search">
+      <label for="id_q">Search students</label>
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Name or student number">
+    </div>
+    <div class="edu-registry-field">
+      <label for="id_campus">Campus</label>
+      <select id="id_campus" name="campus">
+        <option value="">All campuses</option>
+        {% for campus in campuses %}
+          <option value="{{ campus.id }}" {% if selected_campus_id and campus.id == selected_campus_id %}selected{% endif %}>{{ campus.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="edu-registry-field">
+      <label for="id_per_page">Rows per page</label>
+      <select id="id_per_page" name="per_page">
+        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+    <div class="edu-registry-field">
+      <label>Current view</label>
+      <span class="edu-record-badge edu-record-badge--campus">{{ paginator.count|default:0 }} result{{ paginator.count|pluralize }}</span>
+    </div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_students_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section class="edu-registry-table-panel" aria-labelledby="student-records-table-heading">
+    <header class="edu-registry-table-heading">
+      <div>
+        <h3 id="student-records-table-heading">Student records</h3>
+        <p>{{ paginator.count|default:0 }} learner{{ paginator.count|pluralize }} match the current campus and search filters.</p>
+      </div>
+      <a href="{% url 'admin_students_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}" class="edu-panel__link">Export this view <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+    </header>
+
+    {% if students %}
+      <div class="overflow-x-auto">
+        <table class="edu-registry-table">
+          <caption class="sr-only">Student records with placement, portal access and status</caption>
+          <thead>
+            <tr>
+              <th scope="col">Student</th>
+              <th scope="col">Student number</th>
+              <th scope="col">Placement</th>
+              <th scope="col">Contact and portal</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+              <tr>
+                <td>
+                  <div class="edu-person-cell">
+                    <span class="edu-person-avatar" aria-hidden="true">{{ student.first_name|slice:':1'|upper }}{{ student.last_name|slice:':1'|upper }}</span>
+                    <div>
+                      <strong>{{ student.get_full_name }}</strong>
+                      <span>Record #{{ student.id }}{% if student.date_of_birth %} · Born {{ student.date_of_birth|date:'M j, Y' }}{% endif %}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if student.student_id %}<span class="edu-record-code">{{ student.student_id }}</span>{% else %}<span class="edu-record-badge edu-record-badge--missing">Number missing</span>{% endif %}
+                  {% if student.learner_id %}<div class="edu-record-meta mt-1"><strong>{{ student.learner_id }}</strong>Government learner ID</div>{% endif %}
+                </td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    {% if student.campus %}<span class="edu-record-badge edu-record-badge--campus"><i class="ph ph-buildings" aria-hidden="true"></i>{{ student.campus }}</span>{% else %}<span class="edu-record-badge edu-record-badge--missing">Campus missing</span>{% endif %}
+                    {% if student.stream %}<span class="edu-record-badge edu-record-badge--class"><i class="ph ph-chalkboard" aria-hidden="true"></i>{{ student.stream }}</span>{% else %}<span class="edu-record-badge edu-record-badge--missing">Stream not set</span>{% endif %}
+                  </div>
+                </td>
+                <td>
+                  <div class="edu-record-meta">
+                    {% if student.email %}<strong>{{ student.email }}</strong>{% else %}<strong>No email recorded</strong>{% endif %}
+                    {% if student.user_id %}<span class="edu-record-badge edu-record-badge--portal mt-1"><i class="ph ph-key" aria-hidden="true"></i> Portal linked</span>{% else %}<span class="edu-record-badge edu-record-badge--missing mt-1"><i class="ph ph-user-minus" aria-hidden="true"></i> No portal account</span>{% endif %}
+                  </div>
+                </td>
+                <td>
+                  {% if student.is_active %}<span class="edu-record-badge edu-record-badge--active"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-record-badge edu-record-badge--inactive"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>{% endif %}
+                </td>
+                <td>
+                  <div class="edu-row-actions">
+                    {% if student.user_id %}<a href="{% url 'admin_students_credentials' student.id %}" class="edu-outline-button" aria-label="View credentials for {{ student.get_full_name }}"><i class="ph ph-key" aria-hidden="true"></i> Access</a>{% endif %}
+                    <a href="{% url 'admin_students_edit' student.id %}" class="edu-pill-button" aria-label="Edit {{ student.get_full_name }}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      <div class="edu-empty-state">
+        <i class="ph ph-student" aria-hidden="true"></i>
+        <strong>No students match this view</strong>
+        <span>Clear the search filters, choose another campus, or add a new student record.</span>
+        <a href="{% url 'admin_students_create' %}" class="edu-pill-button mt-4"><i class="ph ph-plus" aria-hidden="true"></i> Add student</a>
+      </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

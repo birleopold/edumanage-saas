@@ -1,7 +1,8 @@
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 
 from apps.tenant.finance import services as finance_services
 from apps.tenant.orgsettings.models import Campus
@@ -65,6 +66,26 @@ def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
     return max(1, min(value, max_value))
 
 
+def _attendance_overview(queryset):
+    totals = queryset.aggregate(
+        total_entries=Count("entries"),
+        present=Count("entries", filter=Q(entries__status=AttendanceEntry.PRESENT)),
+        absent=Count("entries", filter=Q(entries__status=AttendanceEntry.ABSENT)),
+        late=Count("entries", filter=Q(entries__status=AttendanceEntry.LATE)),
+        excused=Count("entries", filter=Q(entries__status=AttendanceEntry.EXCUSED)),
+    )
+    total_entries = totals["total_entries"] or 0
+    present = totals["present"] or 0
+    totals.update(
+        {
+            "sessions": queryset.count(),
+            "today_sessions": queryset.filter(date=timezone.localdate()).count(),
+            "present_rate": round((present / total_entries) * 100) if total_entries else 0,
+        }
+    )
+    return totals
+
+
 @admin_portal_required
 def session_list(request):
     q = (request.GET.get("q") or "").strip()
@@ -89,6 +110,7 @@ def session_list(request):
             | Q(taken_by__last_name__icontains=q)
         )
 
+    overview = _attendance_overview(qs)
     per_page = _parse_per_page(request)
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(page_number)
@@ -107,6 +129,7 @@ def session_list(request):
             "per_page": per_page,
             "campuses": campuses,
             "selected_campus_id": campus_id,
+            "attendance_overview": overview,
         },
     )
 

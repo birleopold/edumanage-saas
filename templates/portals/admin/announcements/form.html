@@ -2,12 +2,49 @@
 
 {% block title %}{% if mode == 'edit' %}Edit Announcement{% else %}Add Announcement{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'edit' %}Edit Announcement{% else %}Add Announcement{% endif %}{% endblock %}
-{% block breadcrumbs %}School announcements, audience targeting and broadcast readiness{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_announcements_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Announcements</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_announcements_list' %}" class="hover:text-primary-700">Announcements</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}Edit message{% else %}New message{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_announcements_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Announcement register</a>
+<a href="{% url 'admin_finance_messaging_report' %}" class="edu-outline-button"><i class="ph ph-chart-line-up" aria-hidden="true"></i> Delivery report</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-amber-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-amber-100">Communication</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit announcement{% else %}Add announcement{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-amber-100">Prepare school notices, choose audience and mark urgent messages where necessary.</p></section>
-  {% include 'components/ui_form.html' %}
+<div class="edu-ops-page max-w-6xl mx-auto">
+  <section class="edu-ops-hero" aria-labelledby="announcement-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-megaphone" aria-hidden="true"></i> Message composer</span>
+      <h2 id="announcement-form-heading">{% if mode == 'edit' %}Refine a clear, appropriately targeted announcement{% else %}Create a message people can understand and act on{% endif %}</h2>
+      <p>The guided composer separates message content, audience selection and delivery controls so urgent status is never chosen casually.</p>
+    </div>
+  </section>
+
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Urgent broadcast explanation">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span>
+    <div><strong>Marking an announcement urgent does not send it automatically</strong><span>Save and review the message first. An authorised administrator must then confirm the broadcast from the announcement register, and only eligible parent audiences can receive external alerts.</span></div>
+    <a href="{% url 'admin_finance_communication_operations' %}" class="edu-ops-button">Delivery operations</a>
+  </section>
+
+  <section class="edu-ops-split">
+    <div>{% include 'components/ui_form.html' with guided_form='announcement' form_submit_text='Save announcement' form_submit_icon='ph-megaphone' %}</div>
+    <aside class="edu-ops-panel h-fit" aria-labelledby="announcement-checklist-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="announcement-checklist-heading">Publishing checklist</h3><p>Use this before making a school message active.</p></div></header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item"><i class="ph ph-text-aa" aria-hidden="true"></i><div><strong>Use a specific title</strong><span>Readers should understand the subject before opening the full message.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-clock" aria-hidden="true"></i><div><strong>Include dates and action</strong><span>State what happened, what the reader must do and the deadline where applicable.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-users-three" aria-hidden="true"></i><div><strong>Select the smallest audience</strong><span>A targeted message is more useful and protects families from unnecessary notification noise.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-shield-warning" aria-hidden="true"></i><div><strong>Reserve urgent status</strong><span>Use urgent only for time-sensitive information that justifies immediate parent-channel attention.</span></div></div>
+      </div>
+    </aside>
+  </section>
 </div>
 {% endblock %}

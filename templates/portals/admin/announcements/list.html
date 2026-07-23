@@ -1,182 +1,85 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
 {% block title %}Announcements{% endblock %}
+{% block page_title %}Announcements{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Announcements</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_finance_messaging_report' %}" class="edu-outline-button"><i class="ph ph-chart-line-up" aria-hidden="true"></i> Delivery report</a>
+<a href="{% url 'admin_announcements_create' %}" class="edu-pill-button"><i class="ph ph-megaphone" aria-hidden="true"></i> New announcement</a>
+{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Announcements</h1>
-  <p class="text-gray-600">Broadcast important messages to students, parents, and staff</p>
-</div>
-
-<!-- Toast Notifications -->
 {% include "components/ui_toast.html" %}
-
-<!-- Search and Filters -->
-<div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-  <form method="get" class="space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-end">
-      <!-- Search Bar -->
-      <div class="flex-1 w-full md:max-w-md">
-        <label for="id_q" class="block text-sm font-bold text-gray-700 mb-2">Search</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="ph ph-magnifying-glass text-gray-400"></i>
-          </div>
-          <input id="id_q" 
-                 type="text" 
-                 name="q" 
-                 value="{{ q }}" 
-                 class="block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900 placeholder-gray-400"
-                 placeholder="Search by title or content..." />
-        </div>
-      </div>
-
-      <!-- Per Page -->
-      <div class="w-full md:w-32">
-        <label for="id_per_page" class="block text-sm font-bold text-gray-700 mb-2">Per Page</label>
-        <input id="id_per_page" 
-               type="number" 
-               name="per_page" 
-               value="{{ per_page }}" 
-               min="1" 
-               max="200"
-               class="block w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium text-gray-900" />
-      </div>
-
-      <!-- Apply Button -->
-      <button type="submit" 
-              class="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold border-2 border-gray-300">
-        <i class="ph ph-funnel"></i>
-        <span>Apply Filters</span>
-      </button>
+{% announcement_workspace_summary as announcement_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="announcement-workspace-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-broadcast" aria-hidden="true"></i> School communication</span>
+      <h2 id="announcement-workspace-heading">Publish clear messages to the right school audience</h2>
+      <p>Create ordinary notices for portal visibility and reserve urgent broadcasts for time-sensitive parent communication that needs immediate attention.</p>
     </div>
-
-    <!-- Add Announcement Button -->
-    <div class="flex justify-end gap-3 pt-2 border-t border-gray-200">
-      <a href="{% url 'admin_finance_messaging_report' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-800 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold">
-        <i class="ph ph-chart-line-up"></i>
-        <span>Messaging Report</span>
-      </a>
-      <a href="{% url 'admin_announcements_create' %}" 
-         class="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold shadow-sm hover:shadow-md">
-        <i class="ph ph-megaphone"></i>
-        <span>Add Announcement</span>
-      </a>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_communication_center' %}"><i class="ph ph-chats-circle" aria-hidden="true"></i> Communication centre</a>
+      <a href="{% url 'admin_finance_communication_operations' %}"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> Delivery operations</a>
+      <a href="{% url 'admin_announcements_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> New announcement</a>
     </div>
+  </section>
+
+  <section class="edu-ops-stat-grid" aria-label="Announcement summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-megaphone" aria-hidden="true"></i></span><div><small>Total announcements</small><strong>{{ announcement_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-eye" aria-hidden="true"></i></span><div><small>Active notices</small><strong>{{ announcement_summary.active }}</strong></div></article>
+    <article class="edu-ops-stat {% if announcement_summary.urgent %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span><div><small>Urgent notices</small><strong>{{ announcement_summary.urgent }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--violet"><span class="edu-ops-stat__icon"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i></span><div><small>Broadcast-ready</small><strong>{{ announcement_summary.parent_ready }}</strong></div></article>
+  </section>
+
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter announcements">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search messages</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Search by title or message content"></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_announcements_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
   </form>
-</div>
 
-<!-- Announcements Table or Empty State -->
-{% if announcements %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Title</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Audience</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Created</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Urgent</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for a in announcements %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ a.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary-600">{{ a.title }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if a.audience == 'all' or a.audience == 'ALL' %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                  <i class="ph ph-users-three"></i>
-                  All
-                </span>
-              {% elif a.audience == 'students' or a.audience == 'STUDENTS' %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                  <i class="ph ph-student"></i>
-                  Students
-                </span>
-              {% elif a.audience == 'parents' or a.audience == 'PARENTS' %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
-                  <i class="ph ph-users"></i>
-                  Parents
-                </span>
-              {% elif a.audience == 'teachers' or a.audience == 'TEACHERS' or a.audience == 'staff' or a.audience == 'STAFF' %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
-                  <i class="ph ph-chalkboard-teacher"></i>
-                  Staff
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                  {{ a.audience }}
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              <div class="flex items-center gap-2">
-                <i class="ph ph-clock text-gray-400"></i>
-                <span class="text-gray-900">{{ a.created_at|date:"M d, Y" }}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if a.is_urgent %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-warning-octagon"></i>
-                  Urgent
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                  Normal
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              {% if a.is_active %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  <i class="ph ph-check-circle"></i>
-                  Active
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                  <i class="ph ph-x-circle"></i>
-                  Inactive
-                </span>
-              {% endif %}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              {% if a.is_urgent %}
-                <form method="post" action="{% url 'admin_announcements_broadcast' a.id %}" class="inline-block mr-3">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="inline-flex items-center gap-1 text-red-700 hover:text-red-900 font-semibold transition-colors"
-                          onclick="return confirm('Broadcast this urgent announcement now to opted-in parents?');">
-                    <i class="ph ph-paper-plane-tilt"></i>
-                    <span>Broadcast</span>
-                  </button>
-                </form>
-              {% endif %}
-              <a href="{% url 'admin_announcements_edit' a.id %}" 
-                 class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold transition-colors">
-                <i class="ph ph-pencil-simple"></i>
-                <span>Edit</span>
-              </a>
-            </td>
+  <section class="edu-ops-note {% if announcement_summary.urgent %}edu-ops-note--warning{% else %}edu-ops-note--success{% endif %}" aria-label="Broadcast guidance">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>Urgent broadcasts are deliberately restricted</strong><span>Only active urgent announcements aimed at everyone or parents can be sent through parent SMS and WhatsApp channels. Use a dry-run in communication operations before sensitive broadcasts.</span></div>
+    <a href="{% url 'admin_finance_messaging_report' %}" class="edu-ops-button">View delivery evidence</a>
+  </section>
+
+  <section class="edu-ops-table-shell" aria-labelledby="announcement-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="announcement-register-heading">Announcement register</h3><p>{{ page_obj.paginator.count|default:announcement_summary.total }} message{{ page_obj.paginator.count|default:announcement_summary.total|pluralize }} match the current search.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-users-three" aria-hidden="true"></i> Audience-controlled</span></header>
+    {% if announcements %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">School announcements with audience, urgency, visibility and broadcast actions</caption>
+        <thead><tr><th scope="col">Message</th><th scope="col">Audience</th><th scope="col">Priority</th><th scope="col">Visibility</th><th scope="col">Created</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for a in announcements %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-megaphone" aria-hidden="true"></i></span><div><strong>{{ a.title }}</strong><span>{{ a.body|striptags|truncatechars:95 }}</span></div></div></td>
+            <td>{% if a.audience == 'ALL' %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-users-three" aria-hidden="true"></i> Everyone</span>{% elif a.audience == 'STUDENTS' %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-student" aria-hidden="true"></i> Students</span>{% elif a.audience == 'PARENTS' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-users" aria-hidden="true"></i> Parents</span>{% elif a.audience == 'TEACHERS' %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Teachers</span>{% else %}<span class="edu-ops-badge">{{ a.get_audience_display|default:a.audience }}</span>{% endif %}</td>
+            <td>{% if a.is_urgent %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-warning-octagon" aria-hidden="true"></i> Urgent</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-info" aria-hidden="true"></i> Standard</span>{% endif %}</td>
+            <td>{% if a.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-eye" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-eye-slash" aria-hidden="true"></i> Inactive</span>{% endif %}</td>
+            <td><div class="edu-table-meta"><strong>{{ a.created_at|date:'M j, Y' }}</strong>{{ a.created_at|date:'g:i A' }}</div></td>
+            <td><div class="edu-ops-actions">{% if a.is_urgent %}<form method="post" action="{% url 'admin_announcements_broadcast' a.id %}">{% csrf_token %}<button type="submit" class="edu-ops-button edu-ops-button--danger" onclick="return confirm('Broadcast this urgent announcement now to eligible opted-in parents?');"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> Broadcast</button></form>{% endif %}<a href="{% url 'admin_announcements_edit' a.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a></div></td>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  <!-- Empty State -->
-  {% url 'admin_announcements_create' as create_announcement_url %}
-  {% include "components/ui_empty_state.html" with icon="megaphone" title="No announcements found" description="Get started by creating your first announcement or adjust your search filters" action_url=create_announcement_url action_text="Add Announcement" %}
-{% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_announcements_create' as create_announcement_url %}
+      {% include "components/ui_empty_state.html" with icon="megaphone" title="No announcements match this view" description="Create a new school message or clear the current search." action_url=create_announcement_url action_text="Add Announcement" %}
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

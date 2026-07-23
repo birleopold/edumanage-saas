@@ -1,9 +1,44 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}{% if mode == 'edit' %}Edit Vehicle{% else %}Add Vehicle{% endif %}{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Manage Transport Vehicle{% else %}Register Transport Vehicle{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_transport_vehicles_list' %}" class="hover:text-primary-700">Transport fleet</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}Edit vehicle{% else %}Register vehicle{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}<a href="{% url 'admin_transport_vehicles_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Fleet register</a>{% endblock %}
 
 {% block content %}
-  <h1>{% if mode == 'edit' %}Edit Vehicle{% else %}Add Vehicle{% endif %}</h1>
+<div class="edu-ops-page max-w-6xl">
+  <section class="edu-ops-hero" aria-labelledby="vehicle-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-bus" aria-hidden="true"></i> Fleet record</span>
+      <h2 id="vehicle-form-heading">{% if mode == 'edit' %}Keep roadworthiness and capacity information current{% else %}Register a vehicle with complete operating information{% endif %}</h2>
+      <p>Record the vehicle identity, legal plate, capacity, service dates, operational status and GPS identifier before assigning it to a route.</p>
+    </div>
+  </section>
 
-  {% include 'components/ui_form.html' %}
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.42fr] gap-6 items-start">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {% include 'components/ui_form.html' %}
+    </div>
+    <aside class="edu-ops-table-shell p-5 lg:sticky lg:top-24">
+      <h3 class="text-base font-black text-slate-900">Fleet-readiness checklist</h3>
+      <div class="mt-4 space-y-4 text-sm text-slate-600">
+        <p class="flex gap-3"><i class="ph ph-identification-card mt-0.5 text-blue-600" aria-hidden="true"></i><span><strong class="text-slate-900">Identity and plate.</strong><br>Use the official registration plate and a recognisable school fleet name.</span></p>
+        <p class="flex gap-3"><i class="ph ph-users-three mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Capacity is a safety limit.</strong><br>Enter the approved passenger capacity, not an estimated maximum.</span></p>
+        <p class="flex gap-3"><i class="ph ph-wrench mt-0.5 text-amber-600" aria-hidden="true"></i><span><strong class="text-slate-900">Keep service dates current.</strong><br>Vehicles due for maintenance should not remain operational without review.</span></p>
+        <p class="flex gap-3"><i class="ph ph-shield-check mt-0.5 text-primary-600" aria-hidden="true"></i><span><strong class="text-slate-900">Check insurance and status.</strong><br>Out-of-service vehicles should be removed from route planning immediately.</span></p>
+        <p class="flex gap-3"><i class="ph ph-map-pin mt-0.5 text-violet-600" aria-hidden="true"></i><span><strong class="text-slate-900">Tracking is optional but explicit.</strong><br>Add the correct GPS device identifier only after installation is verified.</span></p>
+      </div>
+    </aside>
+  </section>
+</div>
 {% endblock %}

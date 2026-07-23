@@ -1,16 +1,90 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
 {% block title %}Documents{% endblock %}
-{% block page_title %}Document Center{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_documents_upload' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-upload-simple mr-1"></i> Upload Document</a>{% endblock %}
+{% block page_title %}Document Control{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Documents</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_documents_upload' %}" class="edu-pill-button"><i class="ph ph-upload-simple" aria-hidden="true"></i> Upload document</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-blue-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-blue-100">Shared resources</p><h2 class="mt-2 text-2xl font-black">Document center</h2><p class="mt-2 max-w-2xl text-sm text-blue-100">Upload, manage and share official documents with students, parents, teachers or everyone.</p></div><a href="{% url 'admin_documents_upload' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-blue-50">Upload Document</a></div></section>
+{% document_workspace_summary as document_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="document-control-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-files" aria-hidden="true"></i> Shared resources</span>
+      <h2 id="document-control-heading">Publish the right file to the right audience</h2>
+      <p>Manage official school documents, audience visibility, active status, upload ownership and secure downloads from one controlled register.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_documents_upload' %}" class="edu-ops-primary"><i class="ph ph-upload-simple" aria-hidden="true"></i> Upload document</a>
+      <a href="{% url 'admin_announcements_list' %}"><i class="ph ph-megaphone" aria-hidden="true"></i> Announcements</a>
+      <a href="{% url 'admin_communication_center' %}"><i class="ph ph-chats-circle" aria-hidden="true"></i> Communication centre</a>
+    </div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="space-y-4"><div class="flex flex-col md:flex-row gap-4 items-start md:items-end"><div class="flex-1 w-full md:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="ph ph-magnifying-glass text-slate-400"></i></div><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 placeholder-slate-400" placeholder="Search by title or description..."></div></div><div class="w-full md:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button></div></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Document summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>All documents</small><strong>{{ document_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-eye" aria-hidden="true"></i></span><div><small>Active</small><strong>{{ document_summary.active }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><small>All audiences</small><strong>{{ document_summary.all }}</strong></div></article>
+    <article class="edu-ops-stat {% if document_summary.inactive %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-eye-slash" aria-hidden="true"></i></span><div><small>Inactive</small><strong>{{ document_summary.inactive }}</strong></div></article>
+  </section>
 
-  {% if documents %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Title</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Audience</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Uploaded By</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Date</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for d in documents %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">#{{ d.id }}</td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-700"><i class="ph ph-file-text text-xl"></i></div><div><p class="font-black text-slate-900">{{ d.title }}</p><p class="text-xs text-slate-500">{{ d.description|default:'No description'|truncatechars:70 }}</p></div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black {% if d.audience == 'STUDENT' %}bg-blue-100 text-blue-700{% elif d.audience == 'PARENT' %}bg-purple-100 text-purple-700{% elif d.audience == 'TEACHER' %}bg-green-100 text-green-700{% else %}bg-slate-100 text-slate-700{% endif %}"><i class="ph ph-users-three"></i>{{ d.get_audience_display|default:d.audience }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if d.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ d.uploaded_by }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ d.created_at|date:"M d, Y" }}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_documents_download' d.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-blue-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-download-simple mr-1"></i>Download</a><a href="{% url 'admin_documents_edit' d.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_documents_upload' as upload_document_url %}{% include "components/ui_empty_state.html" with icon="files" title="No documents found" description="No documents have been uploaded yet or match your search criteria" action_url=upload_document_url action_text="Upload Document" %}{% endif %}
+  <section class="edu-ops-card-grid" aria-label="Document audiences">
+    <article class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i><div><strong>{{ document_summary.teachers }} teacher document{{ document_summary.teachers|pluralize }}</strong><span>Resources visible to teaching staff through their portal.</span></div></article>
+    <article class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-student" aria-hidden="true"></i><div><strong>{{ document_summary.students }} student document{{ document_summary.students|pluralize }}</strong><span>Learning, policy or administrative resources for learners.</span></div></article>
+    <article class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-users" aria-hidden="true"></i><div><strong>{{ document_summary.parents }} parent document{{ document_summary.parents|pluralize }}</strong><span>Guidance and official resources intended for guardians.</span></div></article>
+  </section>
+
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Document publication reminder">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>Audience and active status control publication</strong><span>Verify the file, title and intended audience before activation. Editing a record changes its metadata and visibility; replacing the actual file requires a new upload.</span></div>
+    <a href="{% url 'admin_documents_upload' %}" class="edu-ops-button">Upload verified file</a>
+  </section>
+
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter documents">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search documents</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Document title or description"></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_documents_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section class="edu-ops-table-shell" aria-labelledby="document-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="document-register-heading">Document register</h3><p>{{ page_obj.paginator.count|default:document_summary.total }} document{{ page_obj.paginator.count|default:document_summary.total|pluralize }} match the current search.</p></div><span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-eye" aria-hidden="true"></i> {{ document_summary.active }} active</span></header>
+    {% if documents %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Documents with audience, visibility, upload ownership and download actions</caption>
+        <thead><tr><th scope="col">Document</th><th scope="col">Audience</th><th scope="col">Visibility</th><th scope="col">Uploaded by</th><th scope="col">Created</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for document in documents %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-file-text" aria-hidden="true"></i></span><div><strong>{{ document.title }}</strong><span>{{ document.description|default:'No description provided'|truncatechars:90 }}{% if document.file %} · {{ document.file.name|truncatechars:42 }}{% endif %}</span></div></div></td>
+            <td>{% if document.audience == 'ALL' %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-users-three" aria-hidden="true"></i> Everyone</span>{% elif document.audience == 'TEACHERS' %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Teachers</span>{% elif document.audience == 'STUDENTS' %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-student" aria-hidden="true"></i> Students</span>{% elif document.audience == 'PARENTS' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-users" aria-hidden="true"></i> Parents</span>{% else %}<span class="edu-ops-badge">{{ document.get_audience_display|default:document.audience }}</span>{% endif %}</td>
+            <td>{% if document.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-eye" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-eye-slash" aria-hidden="true"></i> Hidden</span>{% endif %}</td>
+            <td><div class="edu-table-meta"><strong>{{ document.uploaded_by|default:'User not recorded' }}</strong>Uploader of record</div></td>
+            <td><div class="edu-table-meta"><strong>{{ document.created_at|date:'M j, Y' }}</strong>{{ document.created_at|date:'H:i' }}</div></td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_documents_download' document.id %}" class="edu-ops-button"><i class="ph ph-download-simple" aria-hidden="true"></i> Download</a><a href="{% url 'admin_documents_edit' document.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_documents_upload' as upload_document_url %}
+      {% include "components/ui_empty_state.html" with icon="files" title="No documents match this view" description="Upload an official file or search using a different title or description." action_url=upload_document_url action_text="Upload Document" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
