@@ -1,17 +1,92 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
-{% block title %}Discipline Incidents{% endblock %}
-{% block page_title %}Discipline Incidents{% endblock %}
-{% block breadcrumbs %}Student behavior incident tracking and follow-up management{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_incidents_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Report Incident</a>{% endblock %}
+{% block title %}Discipline Cases{% endblock %}
+{% block page_title %}Student Welfare & Discipline{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Discipline cases</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_incidents_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Report incident</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-red-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-red-100">Student discipline</p><h2 class="mt-2 text-2xl font-black">Discipline incidents</h2><p class="mt-2 max-w-2xl text-sm text-red-100">Track reported incidents, severity, status, reporting staff and follow-up actions.</p></div><a href="{% url 'admin_incidents_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-red-50">Report Incident</a></div></section>
+{% discipline_workspace_summary as discipline_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="discipline-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-scales" aria-hidden="true"></i> Student welfare</span>
+      <h2 id="discipline-heading">Respond consistently, fairly and with complete evidence</h2>
+      <p>Record incidents, assess severity, document follow-up and preserve a clear history of every action taken for the learner.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_incidents_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Report incident</a>
+      <a href="{% url 'admin_students_list' %}"><i class="ph ph-student" aria-hidden="true"></i> Student records</a>
+      <a href="{% url 'admin_parents_list' %}"><i class="ph ph-users" aria-hidden="true"></i> Guardians</a>
+    </div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search by student, title or category..."></div></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_incidents_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i>Clear</a></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Discipline case summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-folder-open" aria-hidden="true"></i></span><div><small>All cases</small><strong>{{ discipline_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--amber"><span class="edu-ops-stat__icon"><i class="ph ph-clock" aria-hidden="true"></i></span><div><small>Open cases</small><strong>{{ discipline_summary.open }}</strong></div></article>
+    <article class="edu-ops-stat {% if discipline_summary.high %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span><div><small>High-severity open</small><strong>{{ discipline_summary.high }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span><div><small>Resolved</small><strong>{{ discipline_summary.resolved }}</strong></div></article>
+  </section>
 
-  {% if incidents %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Title</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Category</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Severity</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Reported</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for i in incidents %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm font-black text-slate-900">{{ i.id }}</td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-black text-slate-900">{{ i.student }}</div><div class="text-xs font-mono text-primary-700">{{ i.student.student_id }}</div></td><td class="px-6 py-4 text-sm font-bold text-slate-900">{{ i.title }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{{ i.category }}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if i.severity == 'MINOR' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-black"><i class="ph ph-warning"></i>Minor</span>{% elif i.severity == 'MODERATE' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-black"><i class="ph ph-warning-circle"></i>Moderate</span>{% elif i.severity == 'MAJOR' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black"><i class="ph ph-warning-octagon"></i>Major</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-black">{{ i.severity }}</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if i.status == 'OPEN' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black"><i class="ph ph-circle"></i>Open</span>{% elif i.status == 'RESOLVED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Resolved</span>{% elif i.status == 'CLOSED' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Closed</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-black">{{ i.status }}</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div>{{ i.reported_by }}</div><div class="text-xs text-slate-500">{{ i.created_at|date:"M d, Y" }}</div></td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_incidents_detail' i.id %}" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-black text-blue-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-eye"></i>View</a><a href="{% url 'admin_incidents_edit' i.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_incidents_create' as create_incident_url %}{% include "components/ui_empty_state.html" with icon="gavel" title="No incidents found" description="No discipline incidents have been reported yet or match your search criteria" action_url=create_incident_url action_text="Report Incident" %}{% endif %}
+  {% if discipline_summary.high %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="High severity discipline attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>{{ discipline_summary.high }} high-severity open case{{ discipline_summary.high|pluralize }} require attention</strong><span>Confirm immediate safeguarding, guardian communication, staff ownership and documented next steps before closing the case.</span></div>
+    <a href="?q=&per_page={{ per_page }}" class="edu-ops-button">Review register</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Discipline attention status">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>No high-severity open case is currently flagged</strong><span>Continue documenting incidents promptly and use consistent, proportionate follow-up.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Safeguarding clear</span>
+  </section>
+  {% endif %}
+
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter discipline cases">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search cases</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Learner, student ID, title or category"></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_incidents_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section class="edu-ops-table-shell" aria-labelledby="discipline-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="discipline-register-heading">Discipline case register</h3><p>{{ page_obj.paginator.count|default:discipline_summary.total }} case{{ page_obj.paginator.count|default:discipline_summary.total|pluralize }} match the current view.</p></div><span class="edu-ops-badge"><i class="ph ph-archive" aria-hidden="true"></i> {{ discipline_summary.dismissed }} dismissed</span></header>
+    {% if incidents %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Discipline cases with learner, severity, status, date and available actions</caption>
+        <thead><tr><th scope="col">Learner</th><th scope="col">Incident</th><th scope="col">Severity</th><th scope="col">Status</th><th scope="col">Reported</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for incident in incidents %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><strong>{{ incident.student }}</strong><span>{{ incident.student.student_id|default:'Student ID not recorded' }} · {{ incident.student.campus|default:'Campus not recorded' }}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ incident.title }}</strong>{{ incident.category|default:'Uncategorised incident' }}</div></td>
+            <td>{% if incident.severity == 'HIGH' %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-warning-octagon" aria-hidden="true"></i> High</span>{% elif incident.severity == 'MEDIUM' %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-warning-circle" aria-hidden="true"></i> Medium</span>{% else %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-info" aria-hidden="true"></i> Low</span>{% endif %}</td>
+            <td>{% if incident.status == 'OPEN' %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-clock" aria-hidden="true"></i> Open</span>{% elif incident.status == 'RESOLVED' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Resolved</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-minus-circle" aria-hidden="true"></i> Dismissed</span>{% endif %}</td>
+            <td><div class="edu-table-meta"><strong>{% if incident.incident_date %}{{ incident.incident_date|date:'M j, Y' }}{% else %}Date not recorded{% endif %}</strong>Created {{ incident.created_at|date:'M j, Y' }}{% if incident.reported_by %} · {{ incident.reported_by }}{% endif %}</div></td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_incidents_detail' incident.id %}" class="edu-ops-button"><i class="ph ph-eye" aria-hidden="true"></i> Review</a><a href="{% url 'admin_incidents_edit' incident.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_incidents_create' as create_incident_url %}
+      {% include "components/ui_empty_state.html" with icon="scales" title="No discipline cases match this view" description="Report an incident or search using a different learner, title or category." action_url=create_incident_url action_text="Report Incident" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
