@@ -37,7 +37,7 @@
     <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>All documents</small><strong>{{ document_summary.total }}</strong></div></article>
     <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-eye" aria-hidden="true"></i></span><div><small>Active</small><strong>{{ document_summary.active }}</strong></div></article>
     <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><small>All audiences</small><strong>{{ document_summary.all }}</strong></div></article>
-    <article class="edu-ops-stat {% if document_summary.total > document_summary.active %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-eye-slash" aria-hidden="true"></i></span><div><small>Inactive</small><strong>{{ document_summary.total|add:'-'|add:document_summary.active }}</strong></div></article>
+    <article class="edu-ops-stat {% if document_summary.inactive %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-eye-slash" aria-hidden="true"></i></span><div><small>Inactive</small><strong>{{ document_summary.inactive }}</strong></div></article>
   </section>
 
   <section class="edu-ops-card-grid" aria-label="Document audiences">
