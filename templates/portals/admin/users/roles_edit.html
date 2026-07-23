@@ -1,34 +1,118 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Edit Roles{% endblock %}
+{% block title %}Manage Access{% endblock %}
+{% block page_title %}Manage Access{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_users_list' %}" class="hover:text-primary-700">System users</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{{ user_obj.username }}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_users_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Back to users</a>
+{% endblock %}
 
 {% block content %}
-  <h1>Edit roles</h1>
+<div class="space-y-4">
+  <section class="edu-dashboard__intro" aria-labelledby="access-heading">
+    <div>
+      <span class="edu-dashboard__eyebrow"><i class="ph ph-lock-key-open" aria-hidden="true"></i> Account permissions</span>
+      <h2 id="access-heading">Assign only the access this person needs</h2>
+      <p>Roles control which portal, records and school actions are available after sign-in.</p>
+    </div>
+  </section>
 
-  <div>
-    <div><strong>User:</strong> {{ user_obj.username }}</div>
-    <div><strong>Name:</strong> {{ user_obj.last_name }} {{ user_obj.first_name }}</div>
-    <div><strong>Email:</strong> {{ user_obj.email }}</div>
+  <div class="edu-account-summary">
+    <span class="edu-account-summary__avatar" aria-hidden="true">{{ user_obj.first_name|default:user_obj.username|slice:':1'|upper }}{{ user_obj.last_name|slice:':1'|upper }}</span>
+    <div>
+      <h2>{{ user_obj.get_full_name|default:user_obj.username }}</h2>
+      <p>@{{ user_obj.username }}{% if user_obj.email %} · {{ user_obj.email }}{% endif %}</p>
+      <div class="mt-2 flex flex-wrap gap-1">
+        {% if user_obj.is_active %}<span class="edu-status-badge edu-status-badge--active"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-status-badge edu-status-badge--inactive"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>{% endif %}
+        {% if user_obj.must_change_password %}<span class="edu-status-badge edu-status-badge--setup"><i class="ph ph-hourglass" aria-hidden="true"></i> First login pending</span>{% endif %}
+        {% if user_obj.is_staff %}<span class="edu-status-badge edu-status-badge--staff"><i class="ph ph-shield-check" aria-hidden="true"></i> Staff-enabled</span>{% endif %}
+      </div>
+    </div>
   </div>
 
-  <form method="post" style="margin-top: 12px;">
+  <form method="post" class="edu-access-layout">
     {% csrf_token %}
-
-    <fieldset>
-      <legend>Roles</legend>
-      {% for r in roles %}
+    <section class="edu-panel" aria-labelledby="role-options-heading">
+      <header class="edu-panel__header">
         <div>
-          <label>
-            <input type="checkbox" name="role_ids" value="{{ r.id }}" {% if r.id in selected_role_ids %}checked{% endif %} />
-            {{ r.code }} ({{ r.name }})
-          </label>
+          <h3 id="role-options-heading">Available roles</h3>
+          <p>Select every role that accurately reflects this person’s official responsibilities.</p>
         </div>
-      {% endfor %}
-    </fieldset>
+      </header>
+      <fieldset class="p-4">
+        <legend class="sr-only">Roles for {{ user_obj.username }}</legend>
+        <div class="edu-role-option-grid">
+          {% for role in roles %}
+            <label class="edu-role-option">
+              <input type="checkbox" name="role_ids" value="{{ role.id }}" {% if role.id in selected_role_ids %}checked{% endif %}>
+              <span class="edu-role-option__card">
+                <span class="edu-role-option__check"><i class="ph ph-check" aria-hidden="true"></i></span>
+                <span>
+                  <strong>{{ role.name|default:role.code }}</strong>
+                  <span>
+                    {% if role.code == 'ADMIN' %}Full school administration, settings and operational control.
+                    {% elif role.code == 'CAMPUS_ADMIN' %}Administration limited to an assigned campus and its records.
+                    {% elif role.code == 'PRINCIPAL' %}School leadership oversight, reports and authorised administration.
+                    {% elif role.code == 'TEACHER' %}Classes, attendance, coursework, assessments and teaching tools.
+                    {% elif role.code == 'STUDENT' %}Personal timetable, coursework, results and learner information.
+                    {% elif role.code == 'PARENT' %}Linked learner progress, attendance, invoices and school notices.
+                    {% else %}Access defined by the school’s role and permission rules.{% endif %}
+                  </span>
+                </span>
+              </span>
+            </label>
+          {% empty %}
+            <div class="edu-empty-state">
+              <i class="ph ph-shield-warning" aria-hidden="true"></i>
+              <strong>No roles are configured</strong>
+              <span>Create the school’s core roles before assigning account access.</span>
+            </div>
+          {% endfor %}
+        </div>
 
-    <p style="margin-top: 10px;">
-      <button type="submit">Save</button>
-      <a href="{% url 'admin_users_list' %}">Back</a>
-    </p>
+        <div class="mt-5 flex flex-wrap gap-3 border-t border-slate-200 pt-4">
+          <button type="submit" class="edu-pill-button"><i class="ph ph-floppy-disk" aria-hidden="true"></i> Save access roles</button>
+          <a href="{% url 'admin_users_list' %}" class="edu-outline-button">Cancel</a>
+        </div>
+      </fieldset>
+    </section>
+
+    <aside class="edu-panel" aria-labelledby="access-checklist-heading">
+      <header class="edu-panel__header">
+        <div>
+          <h3 id="access-checklist-heading">Access checklist</h3>
+          <p>Use these checks before saving sensitive permissions.</p>
+        </div>
+      </header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item">
+          <i class="ph ph-user-check" aria-hidden="true"></i>
+          <div><strong>Confirm identity</strong><span>Verify the account belongs to the correct learner, guardian or staff member.</span></div>
+        </div>
+        <div class="edu-access-checklist__item">
+          <i class="ph ph-shield-chevron" aria-hidden="true"></i>
+          <div><strong>Use least privilege</strong><span>Start with the smallest role that supports the person’s real work.</span></div>
+        </div>
+        <div class="edu-access-checklist__item">
+          <i class="ph ph-buildings" aria-hidden="true"></i>
+          <div><strong>Review campus scope</strong><span>Campus administrator access must remain limited to the assigned campus.</span></div>
+        </div>
+        <div class="edu-access-checklist__item">
+          <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+          <div><strong>Review when duties change</strong><span>Remove roles promptly when a staff assignment or school relationship ends.</span></div>
+        </div>
+      </div>
+    </aside>
   </form>
+</div>
 {% endblock %}
