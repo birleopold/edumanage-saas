@@ -117,23 +117,36 @@ class FusedOperationsWorkspaceTests(TestCase):
             "Build each paper from setup through scores",
         )
 
-    def test_welfare_health_and_transport_workspaces_render(self):
+    def test_welfare_health_transport_and_boarding_workspaces_render(self):
         expectations = {
             "admin_incidents_list": "Respond consistently, fairly and with complete evidence",
             "admin_sickbay_dashboard": "Record care clearly and never lose a follow-up",
             "admin_sickbay_visit_list": "Find every visit, outcome and follow-up quickly",
             "admin_transport_vehicles_list": "Keep every route staffed, roadworthy and within capacity",
+            "admin_boarding_welfare_dashboard": "Know where every boarder is and who needs support",
         }
 
         for route_name, marker in expectations.items():
             with self.subTest(route_name=route_name):
                 self.assert_workspace(route_name, marker)
 
-    def test_welfare_health_and_transport_forms_render_supporting_guidance(self):
+    def test_document_control_and_hr_workspaces_render(self):
+        expectations = {
+            "admin_documents_list": "Publish the right file to the right audience",
+            "admin_hr_staff_list": "Keep every staff record complete, accountable and ready for work",
+        }
+
+        for route_name, marker in expectations.items():
+            with self.subTest(route_name=route_name):
+                self.assert_workspace(route_name, marker)
+
+    def test_welfare_health_transport_and_hr_forms_render_supporting_guidance(self):
         expectations = {
             "admin_incidents_create": "Case-quality checklist",
             "admin_sickbay_visit_create": "Care-record checklist",
             "admin_transport_vehicle_create": "Fleet-readiness checklist",
+            "admin_documents_upload": "Publishing checklist",
+            "admin_hr_staff_create": "Staff-record checklist",
         }
 
         for route_name, marker in expectations.items():
