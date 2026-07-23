@@ -1,16 +1,102 @@
 {% extends "portals/admin/base.html" %}
+{% load operations_insights %}
 
-{% block title %}Vehicles{% endblock %}
-{% block page_title %}Transport Vehicles{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Routes</a><a href="{% url 'admin_transport_drivers_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Drivers</a><a href="{% url 'admin_transport_vehicle_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus mr-1"></i> Add Vehicle</a>{% endblock %}
+{% block title %}Transport Fleet{% endblock %}
+{% block page_title %}Transport Operations{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Transport fleet</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_transport_routes_list' %}" class="edu-outline-button"><i class="ph ph-map-trifold" aria-hidden="true"></i> Routes</a>
+<a href="{% url 'admin_transport_vehicle_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add vehicle</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-emerald-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Fleet management</p><h2 class="mt-2 text-2xl font-black">Transport vehicles</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage fleet capacity, plates, operational status and GPS tracking readiness.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_transport_routes_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Routes</a><a href="{% url 'admin_transport_vehicle_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">Add Vehicle</a></div></div></section>
+{% transport_workspace_summary as transport_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="transport-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-bus" aria-hidden="true"></i> School transport</span>
+      <h2 id="transport-heading">Keep every route staffed, roadworthy and within capacity</h2>
+      <p>Monitor vehicles, drivers, routes, schedules, learner assignments, maintenance and tracking readiness from one operational workspace.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_transport_vehicle_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Add vehicle</a>
+      <a href="{% url 'admin_transport_routes_list' %}"><i class="ph ph-map-trifold" aria-hidden="true"></i> Routes</a>
+      <a href="{% url 'admin_transport_drivers_list' %}"><i class="ph ph-steering-wheel" aria-hidden="true"></i> Drivers</a>
+      <a href="{% url 'admin_transport_assignments_list' %}"><i class="ph ph-student" aria-hidden="true"></i> Learner assignments</a>
+    </div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5"><form method="get" class="space-y-4"><div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end"><div class="flex-1 w-full lg:max-w-md"><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="ph ph-magnifying-glass text-slate-400"></i></div><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 placeholder-slate-400" placeholder="Name, plate, or model..."></div></div><div class="w-full lg:w-56"><label for="id_status" class="block text-sm font-black text-slate-700 mb-2">Fleet status</label><select id="id_status" name="status" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900 bg-white"><option value="" {% if not status_filter %}selected{% endif %}>All statuses</option><option value="OPERATIONAL" {% if status_filter == 'OPERATIONAL' %}selected{% endif %}>Operational</option><option value="MAINTENANCE" {% if status_filter == 'MAINTENANCE' %}selected{% endif %}>Under maintenance</option><option value="OUT_OF_SERVICE" {% if status_filter == 'OUT_OF_SERVICE' %}selected{% endif %}>Out of service</option></select></div><div class="w-full lg:w-32"><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><div class="flex flex-wrap gap-2 w-full lg:w-auto"><button type="submit" class="rounded-xl bg-slate-100 px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_transport_vehicles_list' %}" class="rounded-xl bg-white px-6 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i> Clear</a></div></div></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Transport summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-bus" aria-hidden="true"></i></span><div><small>Registered vehicles</small><strong>{{ transport_summary.vehicles }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span><div><small>Operational</small><strong>{{ transport_summary.operational }}</strong></div></article>
+    <article class="edu-ops-stat {% if transport_summary.maintenance_due or transport_summary.maintenance %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-wrench" aria-hidden="true"></i></span><div><small>Maintenance attention</small><strong>{{ transport_summary.maintenance_due }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><small>Active assignments</small><strong>{{ transport_summary.assignments }}</strong></div></article>
+  </section>
 
-  {% if vehicles %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Vehicle</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Plate</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Capacity</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Fleet status</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Listed</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for v in vehicles %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 text-sm min-w-0"><div class="flex items-center gap-3"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700"><i class="ph ph-bus text-xl"></i></div><div class="min-w-0"><div class="font-black text-slate-900 truncate">{{ v.name }}</div><div class="text-slate-500 text-xs">{{ v.get_vehicle_type_display }}{% if v.model %} · {{ v.model }}{% endif %}</div></div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-black text-slate-800">{{ v.plate_number }}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right font-black">{{ v.capacity }}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if v.status == 'OPERATIONAL' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Operational</span>{% elif v.status == 'MAINTENANCE' %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-black"><i class="ph ph-wrench"></i>Maintenance</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-black"><i class="ph ph-prohibit"></i>Out of service</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if v.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-black"><i class="ph ph-eye"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-eye-slash"></i>Hidden</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2 flex-wrap"><a href="{% url 'admin_transport_vehicle_tracking' v.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-map-pin mr-1"></i>Track</a><a href="{% url 'admin_transport_vehicle_edit' v.id %}" class="rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple mr-1"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_transport_vehicle_create' as add_vehicle_url %}{% include "components/ui_empty_state.html" with icon="bus" title="No vehicles found" description="Register a vehicle or adjust your search and fleet status filters." action_url=add_vehicle_url action_text="Add vehicle" %}{% endif %}
+  <section class="edu-ops-card-grid" aria-label="Transport work areas">
+    <a href="{% url 'admin_transport_routes_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-map-trifold" aria-hidden="true"></i><div><strong>{{ transport_summary.routes }} active routes</strong><span>Manage route ownership, vehicle, driver, shift, time, distance and fare.</span></div></a>
+    <a href="{% url 'admin_transport_drivers_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-steering-wheel" aria-hidden="true"></i><div><strong>{{ transport_summary.drivers }} active drivers</strong><span>Review licence details, availability and emergency contact readiness.</span></div></a>
+    <a href="{% url 'admin_transport_schedules_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-calendar-dots" aria-hidden="true"></i><div><strong>Route schedules</strong><span>Coordinate operating days, start times and service notes.</span></div></a>
+    <a href="{% url 'admin_transport_notices_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fce7f3;--ops-card-text:#9d174d;"><i class="ph ph-megaphone" aria-hidden="true"></i><div><strong>Parent notices</strong><span>Prepare delay, pickup, drop-off and service communication.</span></div></a>
+  </section>
+
+  {% if transport_summary.maintenance_due or transport_summary.out_of_service %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Fleet readiness attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>Fleet-readiness attention is required</strong><span>{{ transport_summary.maintenance_due }} vehicle{{ transport_summary.maintenance_due|pluralize }} have reached the next maintenance date and {{ transport_summary.out_of_service }} are out of service. Reassign routes before publishing transport commitments.</span></div>
+    <a href="{% url 'admin_transport_vehicles_list' %}?status=MAINTENANCE" class="edu-ops-button">Review fleet</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Fleet readiness status">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>No due maintenance or out-of-service vehicle is currently flagged</strong><span>Continue recording service dates, insurance expiry and tracking identifiers before issues arise.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Fleet ready</span>
+  </section>
+  {% endif %}
+
+  <form method="get" class="edu-ops-filter" aria-label="Filter transport vehicles">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search vehicles</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Vehicle name, plate number or model"></div>
+    <div class="edu-ops-field"><label for="id_status">Fleet status</label><select id="id_status" name="status"><option value="">All statuses</option><option value="OPERATIONAL" {% if status_filter == 'OPERATIONAL' %}selected{% endif %}>Operational</option><option value="MAINTENANCE" {% if status_filter == 'MAINTENANCE' %}selected{% endif %}>Under maintenance</option><option value="OUT_OF_SERVICE" {% if status_filter == 'OUT_OF_SERVICE' %}selected{% endif %}>Out of service</option></select></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_transport_vehicles_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section class="edu-ops-table-shell" aria-labelledby="fleet-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="fleet-register-heading">Fleet register</h3><p>{{ page_obj.paginator.count|default:transport_summary.vehicles }} vehicle{{ page_obj.paginator.count|default:transport_summary.vehicles|pluralize }} match the current view. Active seat capacity: {{ transport_summary.capacity }}.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-map-pin" aria-hidden="true"></i> {{ transport_summary.gps_ready }} GPS-ready</span></header>
+    {% if vehicles %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Transport vehicles with capacity, maintenance, tracking and operational status</caption>
+        <thead><tr><th scope="col">Vehicle</th><th scope="col">Capacity</th><th scope="col">Maintenance</th><th scope="col">Tracking</th><th scope="col">Status</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for vehicle in vehicles %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-bus" aria-hidden="true"></i></span><div><strong>{{ vehicle.name }}</strong><span>{{ vehicle.plate_number }} · {{ vehicle.get_vehicle_type_display }}{% if vehicle.model %} · {{ vehicle.model }}{% endif %}{% if vehicle.manufacture_year %} · {{ vehicle.manufacture_year }}{% endif %}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ vehicle.capacity }} seats</strong>{{ vehicle.available_capacity }} currently available</div></td>
+            <td>{% if vehicle.is_maintenance_due %}<div class="edu-table-meta"><strong class="text-amber-700">Maintenance due</strong>{{ vehicle.next_maintenance|date:'M j, Y' }}</div>{% elif vehicle.next_maintenance %}<div class="edu-table-meta"><strong>Next service</strong>{{ vehicle.next_maintenance|date:'M j, Y' }}</div>{% else %}<span class="edu-ops-badge"><i class="ph ph-calendar-x" aria-hidden="true"></i> Date not set</span>{% endif %}</td>
+            <td>{% if vehicle.gps_device_id %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-map-pin" aria-hidden="true"></i> GPS configured</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-map-pin-slash" aria-hidden="true"></i> Not configured</span>{% endif %}</td>
+            <td><div class="edu-ops-badges">{% if vehicle.status == 'OPERATIONAL' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Operational</span>{% elif vehicle.status == 'MAINTENANCE' %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-wrench" aria-hidden="true"></i> Maintenance</span>{% else %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-prohibit" aria-hidden="true"></i> Out of service</span>{% endif %}{% if not vehicle.is_active %}<span class="edu-ops-badge"><i class="ph ph-eye-slash" aria-hidden="true"></i> Hidden</span>{% endif %}</div></td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_transport_vehicle_tracking' vehicle.id %}" class="edu-ops-button"><i class="ph ph-map-pin" aria-hidden="true"></i> Tracking</a><a href="{% url 'admin_transport_vehicle_edit' vehicle.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_transport_vehicle_create' as add_vehicle_url %}
+      {% include "components/ui_empty_state.html" with icon="bus" title="No vehicles match this view" description="Register a vehicle or adjust the search and fleet-status filters." action_url=add_vehicle_url action_text="Add Vehicle" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
