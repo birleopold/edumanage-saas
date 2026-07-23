@@ -96,10 +96,13 @@ def exam_workspace_summary(context):
     else:
         exams = Exam.objects.all()
 
+    paper_count = papers.count()
+    published_count = papers.filter(results_published=True).count()
     return {
         "periods": exams.count(),
         "active": exams.filter(is_active=True).count(),
         "digital": exams.filter(exam_mode__in=[Exam.ONLINE, Exam.HYBRID]).count(),
-        "papers": papers.count(),
-        "published": papers.filter(results_published=True).count(),
+        "papers": paper_count,
+        "published": published_count,
+        "unpublished": max(0, paper_count - published_count),
     }
