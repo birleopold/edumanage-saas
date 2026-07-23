@@ -28,6 +28,11 @@
   }
 
   function setAccessibleNavigationState(sidebar) {
+    sidebar.querySelectorAll("nav div[id*='submenu'] a.text-white").forEach((link) => {
+      link.classList.add("nav-active");
+      link.style.setProperty("color", "#ffffff", "important");
+    });
+
     sidebar.querySelectorAll("a.nav-active, a.bg-primary-50").forEach((link) => {
       link.setAttribute("aria-current", "page");
     });
@@ -50,7 +55,7 @@
     button.type = "button";
     button.className = "edu-sidebar-collapse";
     button.setAttribute("aria-controls", "sidebar");
-    button.innerHTML = '<i class="ph ph-sidebar-simple" aria-hidden="true"></i><span class="sr-only">Collapse navigation</span>';
+    button.innerHTML = '<i class="ph ph-caret-double-left" aria-hidden="true"></i><span class="sr-only">Collapse navigation</span>';
     header.appendChild(button);
     return button;
   }
@@ -73,8 +78,8 @@
       const icon = button.querySelector("i");
       if (icon) {
         icon.className = effectiveCollapsed
-          ? "ph ph-sidebar-simple"
-          : "ph ph-sidebar-simple-slash";
+          ? "ph ph-caret-double-right"
+          : "ph ph-caret-double-left";
       }
 
       if (persist) storePreference(preferredCollapsed);
