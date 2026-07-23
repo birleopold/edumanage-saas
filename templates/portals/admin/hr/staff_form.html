@@ -16,6 +16,7 @@
 {% block header_actions %}<a href="{% url 'admin_hr_staff_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Staff register</a>{% endblock %}
 
 {% block content %}
+{% url 'admin_hr_staff_list' as staff_list_url %}
 <div class="edu-ops-page max-w-6xl">
   <section class="edu-ops-hero" aria-labelledby="staff-form-heading">
     <div class="edu-ops-hero__content">
@@ -27,7 +28,7 @@
 
   <section class="grid grid-cols-1 lg:grid-cols-[1fr_.42fr] gap-6 items-start">
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      {% include 'components/ui_form.html' with form_cancel_url='/admin/hr/' form_submit_text='Save Staff Record' form_submit_icon='ph-floppy-disk' %}
+      {% include 'components/ui_form.html' with form_cancel_url=staff_list_url form_submit_text='Save Staff Record' form_submit_icon='ph-floppy-disk' %}
     </div>
     <aside class="edu-ops-table-shell p-5 lg:sticky lg:top-24">
       <h3 class="text-base font-black text-slate-900">Staff-record checklist</h3>
