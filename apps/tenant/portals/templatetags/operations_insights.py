@@ -6,7 +6,9 @@ from django.utils import timezone
 
 from apps.tenant.announcements.models import Announcement
 from apps.tenant.discipline.models import Incident
+from apps.tenant.documents.models import Document
 from apps.tenant.exams.models import Exam, ExamPaper
+from apps.tenant.hr.models import Department, Position, StaffProfile
 from apps.tenant.library.models import Book, BookCopy, BookLoan, Fine, Reservation
 from apps.tenant.parents.models import ParentProfile
 from apps.tenant.portals.campus_permissions import get_user_campus_scope
@@ -182,4 +184,50 @@ def transport_workspace_summary(context):
         "routes": TransportRoute.objects.filter(is_active=True).count(),
         "drivers": Driver.objects.filter(is_active=True, status=Driver.ACTIVE).count(),
         "assignments": assignments.count(),
+    }
+
+
+@register.simple_tag
+def document_workspace_summary():
+    documents = Document.objects.all()
+    return {
+        "total": documents.count(),
+        "active": documents.filter(is_active=True).count(),
+        "all": documents.filter(audience=Document.ALL).count(),
+        "teachers": documents.filter(audience=Document.TEACHERS).count(),
+        "students": documents.filter(audience=Document.STUDENTS).count(),
+        "parents": documents.filter(audience=Document.PARENTS).count(),
+    }
+
+
+@register.simple_tag(takes_context=True)
+def hr_workspace_summary(context):
+    request = context.get("request")
+    campus = _campus_scope(request)
+    staff = StaffProfile.objects.all()
+    departments = Department.objects.all()
+    positions = Position.objects.all()
+    if campus is not None:
+        staff = staff.filter(campus=campus)
+        departments = departments.filter(Q(campus=campus) | Q(campus__isnull=True))
+        positions = positions.filter(
+            Q(department__campus=campus)
+            | Q(department__campus__isnull=True)
+            | Q(department__isnull=True)
+        )
+
+    return {
+        "total": staff.count(),
+        "active": staff.filter(is_active=True).count(),
+        "teaching": staff.filter(staff_category=StaffProfile.TEACHING).count(),
+        "non_teaching": staff.filter(staff_category=StaffProfile.NON_TEACHING).count(),
+        "portal": staff.filter(user__isnull=False).count(),
+        "departments": departments.filter(is_active=True).count(),
+        "positions": positions.filter(is_active=True).count(),
+        "attention": staff.filter(
+            Q(department__isnull=True)
+            | Q(position__isnull=True)
+            | Q(email="")
+            | Q(phone="")
+        ).distinct().count(),
     }
