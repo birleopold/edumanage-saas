@@ -10,6 +10,8 @@ from .models import Role, User
 @role_required(Role.ADMIN)
 def user_list(request):
     q = (request.GET.get("q") or "").strip()
+    selected_role = (request.GET.get("role") or "").strip().upper()
+    selected_status = (request.GET.get("status") or "").strip().lower()
     per_page_raw = request.GET.get("per_page")
     page_number = request.GET.get("page") or 1
 
@@ -20,7 +22,20 @@ def user_list(request):
             | Q(email__icontains=q)
             | Q(first_name__icontains=q)
             | Q(last_name__icontains=q)
+            | Q(phone__icontains=q)
         )
+
+    if selected_role:
+        users_qs = users_qs.filter(roles__code=selected_role)
+
+    if selected_status == "active":
+        users_qs = users_qs.filter(is_active=True)
+    elif selected_status == "inactive":
+        users_qs = users_qs.filter(is_active=False)
+    elif selected_status == "staff":
+        users_qs = users_qs.filter(is_staff=True)
+    elif selected_status == "setup":
+        users_qs = users_qs.filter(must_change_password=True)
 
     per_page = 25
     if per_page_raw:
@@ -30,8 +45,14 @@ def user_list(request):
             per_page = 25
     per_page = max(1, min(per_page, 200))
 
-    paginator = Paginator(users_qs.order_by("username"), per_page)
+    users_qs = users_qs.distinct().order_by("username")
+    paginator = Paginator(users_qs, per_page)
     page_obj = paginator.get_page(page_number)
+
+    all_users = User.objects.all()
+    needs_attention_count = all_users.filter(
+        Q(is_active=False) | Q(must_change_password=True)
+    ).distinct().count()
 
     return render(
         request,
@@ -41,6 +62,14 @@ def user_list(request):
             "page_obj": page_obj,
             "q": q,
             "per_page": per_page,
+            "roles": Role.objects.all().order_by("name", "code"),
+            "selected_role": selected_role,
+            "selected_status": selected_status,
+            "total_users_count": all_users.count(),
+            "active_users_count": all_users.filter(is_active=True).count(),
+            "staff_users_count": all_users.filter(is_staff=True).count(),
+            "needs_attention_count": needs_attention_count,
+            "filtered_users_count": paginator.count,
         },
     )
 
