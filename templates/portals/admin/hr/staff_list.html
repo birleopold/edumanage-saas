@@ -1,17 +1,104 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
 {% block title %}Staff{% endblock %}
-{% block page_title %}HR Staff{% endblock %}
-{% block breadcrumbs %}Staff members, departments, positions and employee records{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_hr_departments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Departments</a><a href="{% url 'admin_hr_positions_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Positions</a><a href="{% url 'admin_hr_staff_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-user-plus mr-1"></i> Add Staff</a>{% endblock %}
+{% block page_title %}Human Resources{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Human resources</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_hr_payroll_approval_dashboard' %}" class="edu-outline-button"><i class="ph ph-seal-check" aria-hidden="true"></i> Payroll approvals</a>
+<a href="{% url 'admin_hr_staff_create' %}" class="edu-pill-button"><i class="ph ph-user-plus" aria-hidden="true"></i> Add staff member</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Human resources</p><h2 class="mt-2 text-2xl font-black">Staff records</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Manage employee profiles, departments, positions, contact details and staff status.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_hr_staff_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-indigo-50">Add Staff</a><a href="{% url 'admin_hr_departments_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Departments</a><a href="{% url 'admin_hr_positions_list' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Positions</a></div></div></section>
+{% hr_workspace_summary as hr_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="hr-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-identification-badge" aria-hidden="true"></i> People operations</span>
+      <h2 id="hr-heading">Keep every staff record complete, accountable and ready for work</h2>
+      <p>Manage employee identity, campus placement, reporting lines, department, position, portal access and payroll readiness from one staff register.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_hr_staff_create' %}" class="edu-ops-primary"><i class="ph ph-user-plus" aria-hidden="true"></i> Add staff member</a>
+      <a href="{% url 'admin_hr_departments_list' %}"><i class="ph ph-buildings" aria-hidden="true"></i> Departments</a>
+      <a href="{% url 'admin_hr_positions_list' %}"><i class="ph ph-briefcase" aria-hidden="true"></i> Positions</a>
+      <a href="{% url 'admin_hr_payroll_payslips_list' %}"><i class="ph ph-receipt" aria-hidden="true"></i> Payslips</a>
+    </div>
+  </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="grid grid-cols-1 md:grid-cols-[1fr_12rem_8rem_auto_auto] gap-4 items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><div class="relative"><i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input id="id_q" type="text" name="q" value="{{ q }}" class="w-full pl-10 pr-3 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900" placeholder="Search by name, email or staff ID..."></div></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl font-bold text-slate-900"></div><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i>Apply</button><a href="{% url 'admin_hr_staff_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i>Clear</a></form></section>
+  <section class="edu-ops-stat-grid" aria-label="Human-resource summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><small>All staff</small><strong>{{ hr_summary.total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span><div><small>Active staff</small><strong>{{ hr_summary.active }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i></span><div><small>Teaching staff</small><strong>{{ hr_summary.teaching }}</strong></div></article>
+    <article class="edu-ops-stat {% if hr_summary.attention %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span><div><small>Records needing attention</small><strong>{{ hr_summary.attention }}</strong></div></article>
+  </section>
 
-  {% if staff %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Staff ID</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Employee</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Contact</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Role</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for s in staff %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-mono text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-700 font-black">{{ s.staff_id }}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="flex items-center gap-3"><div class="h-10 w-10 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center"><i class="ph ph-user-list text-xl"></i></div><div><span class="font-black text-slate-900">{{ s.last_name }}, {{ s.first_name }}</span><div class="text-xs text-slate-500">{{ s.campus }}</div></div></div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div class="flex flex-col"><span class="font-bold text-slate-900">{{ s.email }}</span><span class="text-xs text-slate-500">{{ s.phone|default:"-" }}</span></div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black w-fit"><i class="ph ph-briefcase"></i>{{ s.position|default:"No position" }}</span><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black w-fit"><i class="ph ph-building-office"></i>{{ s.department|default:"No dept." }}</span></div></td><td class="px-6 py-4 whitespace-nowrap text-sm">{% if s.is_active %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black"><i class="ph ph-check-circle"></i>Active</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-black"><i class="ph ph-x-circle"></i>Inactive</span>{% endif %}</td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_hr_staff_detail' s.id %}" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50"><i class="ph ph-eye"></i>View</a><a href="{% url 'admin_hr_staff_edit' s.id %}" class="inline-flex items-center gap-1 rounded-xl bg-primary-600 px-3 py-1.5 font-black text-white hover:bg-primary-700"><i class="ph ph-pencil-simple"></i>Edit</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_hr_staff_create' as create_staff_url %}{% include "components/ui_empty_state.html" with icon="user-list" title="No staff found" description="Get started by adding your first staff member or adjust your search filters" action_url=create_staff_url action_text="Add Staff" %}{% endif %}
+  <section class="edu-ops-card-grid" aria-label="Human-resource work areas">
+    <a href="{% url 'admin_hr_departments_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-buildings" aria-hidden="true"></i><div><strong>{{ hr_summary.departments }} active departments</strong><span>Maintain campus ownership and organisational structure.</span></div></a>
+    <a href="{% url 'admin_hr_positions_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-briefcase" aria-hidden="true"></i><div><strong>{{ hr_summary.positions }} active positions</strong><span>Keep job titles aligned with the correct department.</span></div></a>
+    <a href="{% url 'admin_hr_department_heads_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-crown" aria-hidden="true"></i><div><strong>Department leadership</strong><span>Assign accountable heads with clear start and end dates.</span></div></a>
+    <a href="{% url 'admin_hr_payroll_salary_structures_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-coins" aria-hidden="true"></i><div><strong>Salary structures</strong><span>Connect staff records to controlled payroll configuration.</span></div></a>
+    <a href="{% url 'admin_hr_payroll_approval_dashboard' %}" class="edu-ops-module-card" style="--ops-card-bg:#fce7f3;--ops-card-text:#9d174d;"><i class="ph ph-seal-check" aria-hidden="true"></i><div><strong>Payroll approvals</strong><span>Review submitted payroll evidence before approval or payment.</span></div></a>
+    <a href="{% url 'admin_hr_payroll_payslips_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#f1f5f9;--ops-card-text:#475569;"><i class="ph ph-receipt" aria-hidden="true"></i><div><strong>Payslip register</strong><span>Generate, submit, approve and mark staff payments with evidence.</span></div></a>
+  </section>
+
+  {% if hr_summary.attention %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Staff-record attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>{{ hr_summary.attention }} staff record{{ hr_summary.attention|pluralize }} need completion</strong><span>At least one department, position, email address or phone number is missing. Complete these records before relying on communication, reporting lines or payroll preparation.</span></div>
+    <a href="#staff-register" class="edu-ops-button">Review staff</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Staff-record completeness">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>No incomplete core staff record is currently flagged</strong><span>Continue keeping campus, department, position and contact information current.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Core records complete</span>
+  </section>
+  {% endif %}
+
+  <form method="get" class="edu-ops-filter" aria-label="Filter staff records">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search staff</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Name, staff ID, email or phone"></div>
+    <div class="edu-ops-field"><label for="id_campus">Campus</label><select id="id_campus" name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select></div>
+    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_hr_staff_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  <section id="staff-register" class="edu-ops-table-shell" aria-labelledby="staff-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="staff-register-heading">Staff register</h3><p>{{ page_obj.paginator.count|default:hr_summary.total }} staff record{{ page_obj.paginator.count|default:hr_summary.total|pluralize }} match the current filters.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-user-circle" aria-hidden="true"></i> {{ hr_summary.portal }} portal-linked</span></header>
+    {% if staff %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Staff records with campus, employment category, organisation placement, contact readiness and account status</caption>
+        <thead><tr><th scope="col">Staff member</th><th scope="col">Organisation</th><th scope="col">Category</th><th scope="col">Contact</th><th scope="col">Account and status</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for member in staff %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-identification-badge" aria-hidden="true"></i></span><div><strong>{{ member.first_name }} {{ member.last_name }}</strong><span>{{ member.staff_id|default:'Staff ID not recorded' }} · {{ member.campus|default:'Campus not assigned' }}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ member.position|default:'Position not assigned' }}</strong>{{ member.department|default:'Department not assigned' }}{% if member.reports_to %} · reports to {{ member.reports_to }}{% endif %}</div></td>
+            <td>{% if member.staff_category == 'TEACHING' %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Teaching</span>{% else %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-briefcase" aria-hidden="true"></i> Non-teaching</span>{% endif %}</td>
+            <td><div class="edu-table-meta"><strong>{% if member.email %}{{ member.email }}{% else %}<span class="text-amber-700">Email missing</span>{% endif %}</strong>{% if member.phone %}{{ member.phone }}{% else %}<span class="text-amber-700">Phone missing</span>{% endif %}</div></td>
+            <td><div class="edu-ops-badges">{% if member.user_id %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-user-circle" aria-hidden="true"></i> Portal linked</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-user-minus" aria-hidden="true"></i> No portal account</span>{% endif %}{% if member.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>{% endif %}</div></td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_hr_staff_detail' member.id %}" class="edu-ops-button"><i class="ph ph-eye" aria-hidden="true"></i> Review</a><a href="{% url 'admin_hr_staff_edit' member.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Manage</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_hr_staff_create' as create_staff_url %}
+      {% include "components/ui_empty_state.html" with icon="identification-badge" title="No staff records match this view" description="Add a staff member or search using a different name, staff ID, email, phone or campus." action_url=create_staff_url action_text="Add Staff Member" %}
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
