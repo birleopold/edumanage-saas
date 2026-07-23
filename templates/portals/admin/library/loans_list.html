@@ -1,65 +1,96 @@
 {% extends 'portals/admin/base.html' %}
+{% load operations_insights %}
 
-{% block title %}Library loans{% endblock %}
+{% block title %}Library Loans{% endblock %}
+{% block page_title %}Library Circulation{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_library_books_list' %}" class="hover:text-primary-700">Library</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Loans and returns</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_library_checkin' %}" class="edu-outline-button"><i class="ph ph-barcode" aria-hidden="true"></i> Quick check-in</a>
+<a href="{% url 'admin_library_books_list' %}" class="edu-outline-button"><i class="ph ph-books" aria-hidden="true"></i> Catalogue</a>
+<a href="{% url 'admin_library_loan_create' %}" class="edu-pill-button"><i class="ph ph-arrow-square-out" aria-hidden="true"></i> New loan</a>
+{% endblock %}
 
 {% block content %}
-{% url 'admin_library_loans_list' as clear_url %}
-{% url 'admin_library_loan_create' as create_url %}
-{% include "components/ui_admin_list_toolbar_get.html" with title="Library loans" description="Check-outs, due dates, and returns." clear_url=clear_url create_url=create_url add_label="New loan" search_placeholder="Student, copy, or status…" %}
+{% include "components/ui_toast.html" %}
+{% library_workspace_summary as library_summary %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="circulation-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> Library circulation</span>
+      <h2 id="circulation-heading">Track every checkout, due date and confirmed return</h2>
+      <p>See the borrower, physical copy, current status and overdue position before editing a loan or marking the item returned.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_library_reservations_list' %}"><i class="ph ph-bookmark-simple" aria-hidden="true"></i> Reservations</a>
+      <a href="{% url 'admin_library_fines_list' %}"><i class="ph ph-receipt" aria-hidden="true"></i> Fines</a>
+      <a href="{% url 'admin_library_loan_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Check out copy</a>
+    </div>
+  </section>
 
-{% if loans %}
-  <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Copy</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Borrowed</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Due</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Returned</th>
-          <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for l in loans %}
-          <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ l.id }}</td>
-            <td class="px-6 py-4 text-sm text-gray-900">{{ l.student }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{{ l.student.student_id }}</td>
-            <td class="px-6 py-4 text-sm text-gray-800">{{ l.copy }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ l.borrowed_at|date:"M j, Y" }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ l.due_date|date:"M j, Y" }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ l.status }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{% if l.returned_at %}{{ l.returned_at|date:"M j, Y" }}{% else %}—{% endif %}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-              <div class="flex items-center justify-end gap-3 flex-wrap">
-                <a href="{% url 'admin_library_loan_edit' l.id %}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-900 font-semibold">
-                  <i class="ph ph-pencil-simple text-lg" aria-hidden="true"></i><span>Edit</span>
-                </a>
-                {% if l.status != 'RETURNED' %}
-                  <form method="post" action="{% url 'admin_library_loan_mark_returned' l.id %}" class="inline-flex">
-                    {% csrf_token %}
-                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800 hover:bg-green-200 border border-green-200 transition-colors">
-                      <i class="ph ph-check" aria-hidden="true"></i>
-                      Mark returned
-                    </button>
-                  </form>
-                {% endif %}
+  <section class="edu-ops-stat-grid" aria-label="Library circulation summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-arrows-left-right" aria-hidden="true"></i></span><div><small>Open loans</small><strong>{{ library_summary.open_loans }}</strong></div></article>
+    <article class="edu-ops-stat {% if library_summary.overdue %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-clock-countdown" aria-hidden="true"></i></span><div><small>Overdue</small><strong>{{ library_summary.overdue }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--violet"><span class="edu-ops-stat__icon"><i class="ph ph-bookmark-simple" aria-hidden="true"></i></span><div><small>Pending reservations</small><strong>{{ library_summary.reservations }}</strong></div></article>
+    <article class="edu-ops-stat {% if library_summary.unpaid_fines %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span><div><small>Unpaid fines</small><strong>{{ library_summary.unpaid_fines }}</strong></div></article>
+  </section>
+
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter library loans">
+    <div class="edu-ops-field edu-ops-field--search"><label for="loan_q">Search loans</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="loan_q" type="search" name="q" value="{{ q }}" placeholder="Borrower, student number, copy code or book title"></div>
+    <div class="edu-ops-field"><label for="loan_per_page">Per page</label><select id="loan_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option></select></div>
+    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+    <a href="{% url 'admin_library_loans_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
+  </form>
+
+  {% if library_summary.overdue %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Overdue circulation guidance">
+    <span class="edu-ops-note__icon"><i class="ph ph-clock-countdown" aria-hidden="true"></i></span>
+    <div><strong>{{ library_summary.overdue }} loan{{ library_summary.overdue|pluralize }} are past the due date</strong><span>Confirm whether the book is physically returned before using Mark returned. The return process restores copy availability and may create an overdue fine.</span></div>
+    <a href="{% url 'admin_library_fines_list' %}" class="edu-ops-button">Review fines</a>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-table-shell" aria-labelledby="loan-register-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="loan-register-heading">Loan register</h3><p>{{ page_obj.paginator.count|default:0 }} loan record{{ page_obj.paginator.count|default:0|pluralize }} match the current search.</p></div><span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> {{ library_summary.available }} copies available</span></header>
+    {% if loans %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Library loans with borrowers, books, physical copies, due dates and return actions</caption>
+        <thead><tr><th scope="col">Borrower</th><th scope="col">Book and copy</th><th scope="col">Borrowed</th><th scope="col">Due date</th><th scope="col">Status</th><th scope="col">Return evidence</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for l in loans %}
+          <tr>
+            <td>
+              <div class="edu-ops-person">
+                <span class="edu-ops-avatar" aria-hidden="true">{% if l.student %}{{ l.student.first_name|slice:':1'|upper }}{{ l.student.last_name|slice:':1'|upper }}{% elif l.staff %}{{ l.staff.first_name|slice:':1'|upper }}{{ l.staff.last_name|slice:':1'|upper }}{% else %}?{% endif %}</span>
+                <div><strong>{% if l.student %}{{ l.student }}{% elif l.staff %}{{ l.staff }}{% else %}Borrower not recorded{% endif %}</strong><span>{{ l.get_borrower_type_display }}{% if l.student %} · {{ l.student.student_id|default:'No student number' }}{% endif %}</span></div>
               </div>
             </td>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-book-open" aria-hidden="true"></i></span><div><strong>{{ l.copy.book }}</strong><span>{{ l.copy.copy_code }}{% if l.copy.barcode %} · {{ l.copy.barcode }}{% endif %}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ l.borrowed_at|date:'M j, Y' }}</strong>Loan #{{ l.id }}</div></td>
+            <td><div class="edu-table-meta"><strong>{{ l.due_date|date:'M j, Y' }}</strong>{% if l.is_overdue %}{{ l.days_overdue }} day{{ l.days_overdue|pluralize }} overdue{% else %}Due as scheduled{% endif %}</div></td>
+            <td>{% if l.status == 'RETURNED' %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Returned</span>{% elif l.is_overdue %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-clock-countdown" aria-hidden="true"></i> Overdue</span>{% else %}<span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-book-open" aria-hidden="true"></i> Open</span>{% endif %}</td>
+            <td>{% if l.returned_at %}<div class="edu-table-meta"><strong>{{ l.returned_at|date:'M j, Y' }}</strong>{% if l.checked_in_by %}Checked in by {{ l.checked_in_by.get_full_name|default:l.checked_in_by.username }}{% else %}Check-in user not recorded{% endif %}</div>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">Not returned</span>{% endif %}</td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_library_loan_edit' l.id %}" class="edu-ops-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a>{% if l.status != 'RETURNED' %}<form method="post" action="{% url 'admin_library_loan_mark_returned' l.id %}">{% csrf_token %}<button type="submit" class="edu-ops-button edu-ops-button--primary" onclick="return confirm('Confirm that this physical copy has been returned to the library?');"><i class="ph ph-check" aria-hidden="true"></i> Mark returned</button></form>{% endif %}</div></td>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if page_obj %}
-    {% include "components/ui_pagination.html" with page_obj=page_obj %}
-  {% endif %}
-{% else %}
-  {% url 'admin_library_loan_create' as add_url %}
-  {% include "components/ui_empty_state.html" with icon="book-bookmark" title="No loans found" description="Check out a copy or adjust your search." action_url=add_url action_text="New loan" %}
-{% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+      {% url 'admin_library_loan_create' as add_url %}
+      {% include "components/ui_empty_state.html" with icon="book-bookmark" title="No loans match this view" description="Check out an available copy or search using a different borrower, book or copy code." action_url=add_url action_text="New Loan" %}
+    {% endif %}
+  </section>
+</div>
 {% endblock %}
