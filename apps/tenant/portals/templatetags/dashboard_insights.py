@@ -78,13 +78,13 @@ def admin_dashboard_insights(context):
         )
 
     since = timezone.now() - timedelta(days=7)
+    weekly_queryset = queryset.filter(created_at__gte=since)
     grouped = list(
-        queryset.filter(created_at__gte=since)
-        .values("action")
+        weekly_queryset.values("action")
         .annotate(total=Count("id"))
         .order_by("-total", "action")[:5]
     )
-    activity_total = sum(row["total"] for row in grouped)
+    activity_total = weekly_queryset.count()
     maximum = max((row["total"] for row in grouped), default=0)
     activity_bars = []
     for row in grouped:
