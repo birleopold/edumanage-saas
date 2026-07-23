@@ -40,7 +40,7 @@
     <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-calendar-blank" aria-hidden="true"></i></span><div><small>Exam periods</small><strong>{{ exam_summary.periods }}</strong></div></article>
     <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span><div><small>Active periods</small><strong>{{ exam_summary.active }}</strong></div></article>
     <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>Exam papers</small><strong>{{ exam_summary.papers }}</strong></div></article>
-    <article class="edu-ops-stat {% if exam_summary.papers > exam_summary.published %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-broadcast" aria-hidden="true"></i></span><div><small>Results published</small><strong>{{ exam_summary.published }}</strong></div></article>
+    <article class="edu-ops-stat {% if exam_summary.unpublished %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-broadcast" aria-hidden="true"></i></span><div><small>Results published</small><strong>{{ exam_summary.published }}</strong></div></article>
   </section>
 
   <section class="edu-ops-card-grid" aria-label="Examination work areas">
@@ -59,10 +59,10 @@
     <a href="{% url 'admin_exams_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
   </form>
 
-  {% if exam_summary.papers and exam_summary.published < exam_summary.papers %}
+  {% if exam_summary.unpublished %}
   <section class="edu-ops-note edu-ops-note--warning" aria-label="Results publication attention">
     <span class="edu-ops-note__icon"><i class="ph ph-lock-key" aria-hidden="true"></i></span>
-    <div><strong>{{ exam_summary.papers|add:'-'|add:exam_summary.published }} paper result set{{ exam_summary.papers|add:'-'|add:exam_summary.published|pluralize }} remain unpublished</strong><span>Verify score completeness, grading, ranking, clearance rules and review evidence before making results visible to learners and guardians.</span></div>
+    <div><strong>{{ exam_summary.unpublished }} paper result set{{ exam_summary.unpublished|pluralize }} remain unpublished</strong><span>Verify score completeness, grading, ranking, clearance rules and review evidence before making results visible to learners and guardians.</span></div>
     <a href="{% url 'admin_exam_papers_list' %}" class="edu-ops-button">Review papers</a>
   </section>
   {% else %}
