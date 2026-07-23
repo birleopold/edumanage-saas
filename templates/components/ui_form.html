@@ -1,11 +1,11 @@
 {% load widget_tweaks %}
 
-<div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8">
-    <form method="{% block form_method %}post{% endblock %}" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} {% block form_attributes %}{% endblock %} class="space-y-6">
+<div class="bg-white shadow-md rounded-xl border border-gray-300 p-6 sm:p-8 {% if guided_form %}edu-guided-form-shell{% endif %}"{% if guided_form %} data-guided-form="{{ guided_form }}" data-form-mode="{{ mode|default:'edit' }}"{% endif %}>
+    <form method="{% block form_method %}post{% endblock %}" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} {% block form_attributes %}{% endblock %} class="space-y-6" novalidate>
         {% csrf_token %}
         
         {% if form.non_field_errors %}
-        <div class="rounded-lg bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div class="rounded-lg bg-red-50 border-l-4 border-red-500 p-4 mb-6" role="alert">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <i class="ph ph-warning-circle text-red-500 text-xl" aria-hidden="true"></i>
@@ -26,7 +26,7 @@
 
         <div class="grid grid-cols-1 gap-y-6 gap-x-6 {% block grid_cols %}sm:grid-cols-2{% endblock %}">
             {% for field in form %}
-            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'file' or 'textarea' in field.field.widget.template_name %}sm:col-span-2{% endif %} group relative">
+            <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'file' or 'textarea' in field.field.widget.template_name %}sm:col-span-2{% endif %} group relative" data-field-name="{{ field.name }}" data-field-error="{% if field.errors %}true{% else %}false{% endif %}" data-field-type="{% if field.field.widget.input_type %}{{ field.field.widget.input_type }}{% elif 'textarea' in field.field.widget.template_name %}textarea{% else %}text{% endif %}">
                 {% if field.field.widget.input_type == 'checkbox' %}
                     <div class="relative flex items-start py-2 border border-transparent rounded-lg hover:border-gray-200 transition-colors p-2 -ml-2">
                         <div class="flex items-center h-5">
@@ -37,16 +37,22 @@
                             {% if field.help_text %}
                             <p class="text-gray-500 mt-1 font-medium">{{ field.help_text|safe }}</p>
                             {% endif %}
+                            {% if field.errors %}
+                            <p class="mt-2 text-sm font-bold text-red-600 flex items-center">
+                                <i class="ph ph-warning-circle mr-1" aria-hidden="true"></i>
+                                {% for error in field.errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </p>
+                            {% endif %}
                         </div>
                     </div>
                 {% else %}
                     <label for="{{ field.id_for_label }}" class="block text-sm font-bold text-gray-800 mb-1.5 transition-colors group-focus-within:text-primary-600">
                         {{ field.label }}
-                        {% if field.field.required %}<span class="text-red-500 font-bold ml-1">*</span>{% endif %}
+                        {% if field.field.required %}<span class="text-red-500 font-bold ml-1" aria-hidden="true">*</span><span class="sr-only"> required</span>{% endif %}
                     </label>
                     <div class="mt-1 relative rounded-md shadow-sm">
                         {% if field.errors %}
-                            {% render_field field class="block w-full border-2 border-red-300 rounded-lg text-gray-900 focus:ring-0 focus:border-red-500 sm:text-sm px-4 py-2.5 bg-red-50 transition-all shadow-sm placeholder-gray-400" %}
+                            {% render_field field class="block w-full border-2 border-red-300 rounded-lg text-gray-900 focus:ring-0 focus:border-red-500 sm:text-sm px-4 py-2.5 bg-red-50 transition-all shadow-sm placeholder-gray-400" aria-invalid="true" %}
                         {% else %}
                             {% render_field field class="block w-full border-2 border-gray-300 rounded-lg text-gray-900 focus:ring-0 focus:border-primary-500 sm:text-sm px-4 py-2.5 bg-white hover:bg-gray-50 transition-all shadow-sm placeholder-gray-400 font-medium" %}
                         {% endif %}
@@ -55,7 +61,7 @@
                     <p class="mt-2 text-sm text-gray-500 font-medium">{{ field.help_text|safe }}</p>
                     {% endif %}
                     {% if field.errors %}
-                    <p class="mt-2 text-sm font-bold text-red-600 flex items-center">
+                    <p class="mt-2 text-sm font-bold text-red-600 flex items-center" role="alert">
                         <i class="ph ph-warning-circle mr-1" aria-hidden="true"></i>
                         {% for error in field.errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
                     </p>
@@ -65,18 +71,18 @@
             {% endfor %}
         </div>
 
-        <div class="pt-6 mt-2 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        <div class="edu-form-actions pt-6 mt-2 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
             {% block form_actions %}
             {% if form_cancel_url %}
-            <a href="{{ form_cancel_url }}" class="inline-flex justify-center items-center bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+            <a href="{{ form_cancel_url }}" class="edu-form-cancel inline-flex justify-center items-center bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
                 Cancel
             </a>
             {% else %}
-            <button type="button" onclick="window.history.back();" class="bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
+            <button type="button" onclick="window.history.back();" class="edu-form-cancel bg-white py-2.5 px-5 border-2 border-gray-300 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all">
                 Cancel
             </button>
             {% endif %}
-            <button type="submit" class="inline-flex justify-center items-center py-2.5 px-6 border-2 border-transparent shadow-md text-sm font-bold rounded-lg text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5">
+            <button type="submit" class="edu-form-submit inline-flex justify-center items-center py-2.5 px-6 border-2 border-transparent shadow-md text-sm font-bold rounded-lg text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5">
                 {% if form_submit_icon %}
                 <i class="ph {{ form_submit_icon }} mr-2 text-lg" aria-hidden="true"></i>
                 {% else %}
