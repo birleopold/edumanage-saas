@@ -2,12 +2,52 @@
 
 {% block title %}{% if mode == 'edit' %}Edit Book{% else %}Add Book{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'edit' %}Edit Book{% else %}Add Book{% endif %}{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_library_books_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Back to Catalog</a>{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_library_books_list' %}" class="hover:text-primary-700">Library</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}{{ book.title }}{% else %}New title{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_library_books_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Catalogue</a>
+{% if mode == 'edit' %}<a href="{% url 'admin_library_copy_create' %}" class="edu-pill-button"><i class="ph ph-barcode" aria-hidden="true"></i> Add physical copy</a>{% endif %}
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7 max-w-5xl">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><a href="{% url 'admin_library_books_list' %}" class="inline-flex items-center gap-2 text-sm font-black text-indigo-100 hover:text-white mb-3"><i class="ph ph-arrow-left"></i> Library Catalog</a><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Catalog record</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit book details{% else %}Add a new book{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Maintain title, authors, category, ISBN, publisher and catalog visibility.</p></section>
-  <section class="grid grid-cols-1 lg:grid-cols-[1fr_.55fr] gap-6"><div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">{% include 'components/ui_form.html' %}</div><aside class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-fit"><h3 class="font-black text-slate-900 mb-3">Catalog checklist</h3><div class="space-y-3 text-sm text-slate-600"><p class="flex gap-2"><i class="ph ph-check-circle text-green-600 mt-0.5"></i> Select author(s) and category where possible.</p><p class="flex gap-2"><i class="ph ph-check-circle text-green-600 mt-0.5"></i> Add ISBN and year for easier searching.</p><p class="flex gap-2"><i class="ph ph-check-circle text-green-600 mt-0.5"></i> Add copies after saving the book record.</p></div></aside></section>
+<div class="edu-ops-page max-w-6xl mx-auto">
+  <section class="edu-ops-hero" aria-labelledby="book-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-book-bookmark" aria-hidden="true"></i> Catalogue record</span>
+      <h2 id="book-form-heading">{% if mode == 'edit' %}Maintain a searchable, dependable title record{% else %}Add a title that librarians and borrowers can find easily{% endif %}</h2>
+      <p>The guided catalogue separates title identity, publication details and presentation so ISBNs, editions and authors stay consistent.</p>
+    </div>
+  </section>
+
+  <section class="edu-ops-split">
+    <div>{% include 'components/ui_form.html' with guided_form='book' form_submit_text='Save book record' form_submit_icon='ph-book-bookmark' %}</div>
+    <aside class="edu-ops-panel h-fit" aria-labelledby="catalogue-checklist-heading">
+      <header class="edu-ops-panel__header"><div><h3 id="catalogue-checklist-heading">Catalogue quality checklist</h3><p>Use the title page or publisher information wherever possible.</p></div></header>
+      <div class="p-4 edu-access-checklist">
+        <div class="edu-access-checklist__item"><i class="ph ph-text-aa" aria-hidden="true"></i><div><strong>Use the official title</strong><span>Avoid informal abbreviations that make the same book appear as separate records.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-pen-nib" aria-hidden="true"></i><div><strong>Link authors and category</strong><span>Accurate creators and classification improve searching and reporting.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-barcode" aria-hidden="true"></i><div><strong>Confirm ISBN and edition</strong><span>Different editions may require separate catalogue records even when titles are similar.</span></div></div>
+        <div class="edu-access-checklist__item"><i class="ph ph-stack" aria-hidden="true"></i><div><strong>Add copies after the title</strong><span>The catalogue record describes the publication; physical-copy records track barcodes, shelves and availability.</span></div></div>
+      </div>
+    </aside>
+  </section>
+
+  {% if mode == 'create' %}
+  <section class="edu-ops-note" aria-label="Library next step">
+    <span class="edu-ops-note__icon"><i class="ph ph-arrow-right" aria-hidden="true"></i></span>
+    <div><strong>Next step after saving</strong><span>Create one physical-copy record for each barcode or copy code so checkout, reservation and return workflows can track the actual book.</span></div>
+    <a href="{% url 'admin_library_copies_list' %}" class="edu-ops-button">View copy register</a>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
