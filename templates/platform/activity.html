@@ -6,8 +6,22 @@
 
 {% block content %}
 <div class="space-y-5">
-  <section class="platform-summary-grid" aria-label="Activity summary">
-    {% for card in summary_cards %}<article class="platform-stat"><span class="platform-stat__label">{{ card.label }}</span><strong class="platform-stat__value">{{ card.count }}</strong><span class="platform-stat__detail">Recorded platform events</span></article>{% endfor %}
+  <section class="platform-summary-grid platform-summary-grid--4" aria-label="Activity summary">
+    {% for card in summary_cards %}
+    <article class="platform-stat {% if forloop.counter == 1 %}platform-stat--blue{% elif forloop.counter == 2 %}platform-stat--violet{% elif forloop.counter == 3 %}platform-stat--teal{% else %}platform-stat--red{% endif %}">
+      <span class="platform-stat__icon">
+        {% if forloop.counter == 1 %}<i class="ph ph-buildings" aria-hidden="true"></i>
+        {% elif forloop.counter == 2 %}<i class="ph ph-globe" aria-hidden="true"></i>
+        {% elif forloop.counter == 3 %}<i class="ph ph-credit-card" aria-hidden="true"></i>
+        {% else %}<i class="ph ph-pause-circle" aria-hidden="true"></i>{% endif %}
+      </span>
+      <div class="platform-stat__body">
+        <span class="platform-stat__label">{{ card.label }}</span>
+        <strong class="platform-stat__value">{{ card.count }}</strong>
+        <span class="platform-stat__detail">Recorded platform events</span>
+      </div>
+    </article>
+    {% endfor %}
   </section>
 
   <form method="get" class="platform-filter" aria-label="Filter platform activity">
