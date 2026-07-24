@@ -7,13 +7,15 @@ from .subscription_services import create_subscription_for_tenant
 
 
 class PlatformConsoleUiTests(TestCase):
+    PLATFORM_PASSWORD = "StrongPlatformPass123!"
+
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()
         cls.platform_admin = User.objects.create_superuser(
             username="platform_ui_admin",
             email="platform-ui@example.test",
-            password="StrongPlatformPass123!",
+            password=cls.PLATFORM_PASSWORD,
         )
         cls.tenant = Tenant.objects.create(
             name="Platform UI School",
@@ -55,6 +57,58 @@ class PlatformConsoleUiTests(TestCase):
         for route_name, marker, kwargs in expectations:
             with self.subTest(route_name=route_name):
                 self.assert_platform_workspace(route_name, marker, kwargs=kwargs)
+
+    def test_onboarding_and_maintenance_forms_render(self):
+        expectations = [
+            ("platform_tenant_create", "Activation creates", None),
+            ("platform_tenant_create_classic", "Tenant identity", None),
+            ("platform_domain_create", "Domain configuration", {"tenant_id": self.tenant.pk}),
+        ]
+
+        for route_name, marker, kwargs in expectations:
+            with self.subTest(route_name=route_name):
+                response = self.assert_platform_workspace(route_name, marker, kwargs=kwargs)
+                self.assertContains(response, "platform-onboarding.css")
+                self.assertContains(response, "platform-onboarding.js")
+
+    def test_wizard_navigation_controls_bypass_required_field_validation(self):
+        session = self.client.session
+        session["platform_create_school_wizard"] = {
+            "school": {
+                "name": "Saved School",
+                "schema_name": "saved_school",
+                "status": "active",
+                "organization_email": "",
+                "organization_phone": "",
+                "organization_address": "",
+            }
+        }
+        session.save()
+
+        response = self.client.get(reverse("platform_tenant_create"), {"step": "domain"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="action" value="back" formnovalidate', html=False)
+        self.assertContains(response, 'name="action" value="reset" formnovalidate', html=False)
+
+    def test_login_preserves_safe_destination_through_post(self):
+        self.client.logout()
+        destination = reverse("platform_tenant_list")
+
+        login_page = self.client.get(reverse("platform_admin_login"), {"next": destination})
+        self.assertEqual(login_page.status_code, 200)
+        self.assertContains(login_page, f'name="next" value="{destination}"', html=False)
+        self.assertContains(login_page, "platform-onboarding.css")
+
+        response = self.client.post(
+            reverse("platform_admin_login"),
+            {
+                "username": self.platform_admin.username,
+                "password": self.PLATFORM_PASSWORD,
+                "next": destination,
+            },
+        )
+        self.assertRedirects(response, destination)
 
     def test_tenant_list_honours_page_size_and_status_filters(self):
         response = self.client.get(
