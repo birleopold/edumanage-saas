@@ -4,8 +4,8 @@
   <thead>
     <tr>
       <th style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:left;background:#f3f4f6;">Student</th>
-      {% for a in assessments %}
-      <th style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:left;background:#f3f4f6;white-space:nowrap;">{{ a.name }}</th>
+      {% for assessment in assessments %}
+      <th style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:left;background:#f3f4f6;white-space:nowrap;">{{ assessment.name }}</th>
       {% endfor %}
     </tr>
   </thead>
@@ -14,35 +14,52 @@
     <tr style="{% if forloop.counter0|divisibleby:2 %}background:#fff;{% else %}background:#f9fafb;{% endif %}">
       <td style="border:1px solid #ccc;padding:0.35rem 0.5rem;font-weight:600;">{{ row.student.last_name }}, {{ row.student.first_name }}</td>
       {% for cell in row.cells %}
-      <td style="border:1px solid #ccc;padding:0.35rem 0.5rem;">{% if cell == None %}—{% else %}{{ cell }}{% endif %}</td>
+      <td style="border:1px solid #ccc;padding:0.35rem 0.5rem;text-align:center;">{% if cell == None %}—{% else %}{{ cell }}{% endif %}</td>
       {% endfor %}
     </tr>
     {% empty %}
-    <tr><td colspan="99" style="border:1px solid #ccc;padding:1rem;text-align:center;color:#6b7280;">No students in this offering.</td></tr>
+    <tr><td colspan="99" style="border:1px solid #ccc;padding:1rem;text-align:center;color:#6b7280;">No learners are available for this offering.</td></tr>
     {% endfor %}
   </tbody>
 </table>
 {% else %}
-<table class="min-w-full divide-y divide-gray-200 text-sm">
-  <thead class="bg-gray-50">
+<table class="min-w-full border-separate border-spacing-0 text-sm">
+  <caption class="sr-only">Learner marks by assessment</caption>
+  <thead>
     <tr>
-      <th scope="col" class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider sticky left-0 z-10 bg-gray-50 border-r border-gray-200">Student</th>
-      {% for a in assessments %}
-      <th scope="col" class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{{ a.name }}</th>
+      <th scope="col" class="sticky left-0 top-0 z-30 min-w-64 border-b border-r border-slate-200 bg-slate-100 px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-slate-600">Learner</th>
+      {% for assessment in assessments %}
+      <th scope="col" class="sticky top-0 z-20 min-w-32 border-b border-slate-200 bg-slate-100 px-4 py-3 text-center text-xs font-black uppercase tracking-wide text-slate-600">
+        <span class="block max-w-40 truncate" title="{{ assessment.name }}">{{ assessment.name }}</span>
+        <span class="mt-1 block text-[10px] font-bold normal-case tracking-normal text-slate-400">Out of {{ assessment.max_score }}</span>
+      </th>
       {% endfor %}
     </tr>
   </thead>
-  <tbody class="bg-white divide-y divide-gray-200">
+  <tbody>
     {% for row in rows %}
-    <tr class="hover:bg-gray-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-gray-50/80{% endif %}">
-      <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 z-10 border-r border-gray-100 {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-gray-50/80{% endif %} shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">{{ row.student.last_name }}, {{ row.student.first_name }}</td>
+    <tr class="group">
+      <th scope="row" class="sticky left-0 z-10 border-b border-r border-slate-100 px-5 py-3 text-left {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-slate-50{% endif %} group-hover:bg-blue-50">
+        <span class="block font-black text-slate-900">{{ row.student.last_name }}, {{ row.student.first_name }}</span>
+        <span class="mt-0.5 block font-mono text-xs font-medium text-slate-500">{{ row.student.student_id|default:'No student ID' }}</span>
+      </th>
       {% for cell in row.cells %}
-      <td class="px-4 py-3 text-gray-800 whitespace-nowrap">{% if cell == None %}<span class="text-gray-400">—</span>{% else %}{{ cell }}{% endif %}</td>
+      <td class="border-b border-slate-100 px-4 py-3 text-center {% if forloop.parentloop.counter0|divisibleby:2 %}bg-white{% else %}bg-slate-50{% endif %} group-hover:bg-blue-50">
+        {% if cell == None %}
+        <span class="inline-flex h-8 min-w-10 items-center justify-center rounded-lg bg-slate-100 px-2 font-bold text-slate-400">—</span>
+        {% else %}
+        <span class="inline-flex h-8 min-w-10 items-center justify-center rounded-lg bg-emerald-50 px-2 font-black text-emerald-700">{{ cell }}</span>
+        {% endif %}
+      </td>
       {% endfor %}
     </tr>
     {% empty %}
     <tr>
-      <td colspan="99" class="px-6 py-12 text-center text-gray-500">No students in this offering.</td>
+      <td colspan="99" class="px-6 py-14 text-center">
+        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-student text-xl" aria-hidden="true"></i></span>
+        <p class="mt-3 font-black text-slate-900">No learners in this offering</p>
+        <p class="mt-1 text-sm text-slate-500">Add active enrolments before using the marks matrix.</p>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
