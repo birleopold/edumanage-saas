@@ -1,0 +1,58 @@
+/* Compact shell treatment for redesigned administrator workspaces. */
+
+body.role-admin .edu-content-shell--flush {
+  min-height: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.role-admin .edu-content-shell--flush > .edu-content-shell__inner {
+  padding: 0 !important;
+}
+
+/* Campus is already visible in the fixed top bar; do not repeat it under every page title. */
+body.role-admin #main-content > .mb-6 > div:first-child > p.text-xs {
+  display: none;
+}
+
+/* Keep the footer present but quiet. Support details remain available through account/support flows. */
+body.role-admin #main-content > footer {
+  margin-top: 1.25rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: rgb(148 163 184);
+}
+
+body.role-admin #main-content > footer p:not(:last-child) {
+  display: none;
+}
+
+/* Protect against an older cached script injecting the retired full-width scope banner. */
+body.role-admin #edu-role-scope-banner {
+  display: none !important;
+}
+
+body.role-admin .edu-role-scope-mini {
+  max-width: 100%;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  body.role-admin #main-content {
+    padding: 1rem;
+  }
+
+  body.role-admin #main-content > .mb-6 {
+    margin-bottom: 1rem;
+  }
+
+  body.role-admin .edu-content-shell--flush > .edu-content-shell__inner {
+    padding: 0 !important;
+  }
+}
