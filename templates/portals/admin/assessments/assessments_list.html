@@ -1,83 +1,84 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}Assessments{% endblock %}
-{% block page_title %}Assessment Management{% endblock %}
+{% block page_title %}Assessments{% endblock %}
 
 {% block breadcrumbs %}
-<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
-  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
-  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
-  <span aria-current="page">Assessments</span>
-</nav>
+<p class="text-sm text-slate-500">Create assessments, enter marks and control result publication.</p>
 {% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'admin_assessment_framework_dashboard' %}" class="edu-outline-button"><i class="ph ph-tree-structure" aria-hidden="true"></i> Framework</a>
-<a href="{% url 'admin_assessments_tabulation' %}" class="edu-outline-button"><i class="ph ph-table" aria-hidden="true"></i> Tabulation</a>
 <a href="{% url 'admin_assessments_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add assessment</a>
 {% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
 <div class="edu-ops-page">
-  <section class="edu-ops-hero" aria-labelledby="assessment-workspace-heading">
-    <div class="edu-ops-hero__content">
-      <span class="edu-ops-hero__eyebrow"><i class="ph ph-exam" aria-hidden="true"></i> Academic assessment</span>
-      <h2 id="assessment-workspace-heading">Move from assessment setup to published results with confidence</h2>
-      <p>Create course assessments, connect them to the school framework, enter marks, review result policies and publish only when score coverage is complete.</p>
+  <nav class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2" aria-label="Assessment tools">
+    <a href="{% url 'admin_assessments_list' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"><i class="ph ph-list-bullets" aria-hidden="true"></i> Assessments</a>
+    <a href="{% url 'admin_assessment_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-tree-structure" aria-hidden="true"></i> Framework</a>
+    <a href="{% url 'admin_grading_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading</a>
+    <a href="{% url 'admin_assessments_tabulation' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-table" aria-hidden="true"></i> Tabulation</a>
+    <a href="{% url 'admin_exams_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-notebook" aria-hidden="true"></i> Exams</a>
+  </nav>
+
+  <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
+    <form method="get" class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end" aria-label="Filter assessments">
+      <div class="edu-ops-field edu-ops-field--search flex-1">
+        <label for="id_q">Search</label>
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Assessment, course, term or year">
+      </div>
+      <div class="edu-ops-field sm:w-32">
+        <label for="id_per_page">Show</label>
+        <select id="id_per_page" name="per_page">
+          <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+          <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+          <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+        </select>
+      </div>
+      <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
+      {% if q %}<a href="{% url 'admin_assessments_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>{% endif %}
+    </form>
+    <div class="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
+      <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-primary-700 shadow-sm"><i class="ph ph-files text-xl" aria-hidden="true"></i></span>
+      <div><p class="text-xs font-black uppercase tracking-wide text-slate-500">Total assessments</p><p class="text-xl font-black text-slate-950">{{ page_obj.paginator.count|default:0 }}</p></div>
     </div>
-    <div class="edu-ops-hero__actions">
-      <a href="{% url 'admin_assessments_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Add assessment</a>
-      <a href="{% url 'admin_assessment_framework_dashboard' %}"><i class="ph ph-tree-structure" aria-hidden="true"></i> Assessment framework</a>
-      <a href="{% url 'admin_grading_framework_dashboard' %}"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading framework</a>
-      <a href="{% url 'admin_assessments_tabulation' %}"><i class="ph ph-table" aria-hidden="true"></i> Marks tabulation</a>
-    </div>
   </section>
-
-  <section class="edu-ops-stat-grid" aria-label="Assessment register summary">
-    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-files" aria-hidden="true"></i></span><div><small>Assessments in view</small><strong>{{ page_obj.paginator.count|default:0 }}</strong></div></article>
-    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-table" aria-hidden="true"></i></span><div><small>Score workflow</small><strong>Ready</strong><span>Open any assessment to enter marks</span></div></article>
-    <article class="edu-ops-stat edu-ops-stat--amber"><span class="edu-ops-stat__icon"><i class="ph ph-lock-key" aria-hidden="true"></i></span><div><small>Publication control</small><strong>Manual</strong><span>Results remain hidden until approved</span></div></article>
-    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span><div><small>Validation</small><strong>Enforced</strong><span>Maximum score and enrolment checks apply</span></div></article>
-  </section>
-
-  <section class="edu-ops-card-grid" aria-label="Assessment work areas">
-    <a href="{% url 'admin_assessment_framework_dashboard' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-tree-structure" aria-hidden="true"></i><div><strong>Assessment framework</strong><span>Manage assessment types, weighting schemes, components and classification readiness.</span></div></a>
-    <a href="{% url 'admin_grading_framework_dashboard' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-graduation-cap" aria-hidden="true"></i><div><strong>Grading framework</strong><span>Control grade boundaries, remarks and report-card interpretation.</span></div></a>
-    <a href="{% url 'admin_assessments_tabulation' %}" class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-table" aria-hidden="true"></i><div><strong>Marks tabulation</strong><span>Review learner marks across all assessments for one course offering.</span></div></a>
-    <a href="{% url 'admin_exams_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-notebook" aria-hidden="true"></i><div><strong>Examinations</strong><span>Coordinate formal exam periods, papers, schedules and result publication.</span></div></a>
-  </section>
-
-  <section class="edu-ops-note edu-ops-note--warning" aria-label="Assessment publication guidance">
-    <span class="edu-ops-note__icon"><i class="ph ph-megaphone" aria-hidden="true"></i></span>
-    <div><strong>Creating an assessment does not publish learner results</strong><span>Enter and verify scores, review absence and makeup policies, then use the assessment score workspace to publish or withdraw results deliberately.</span></div>
-    <a href="{% url 'admin_assessment_framework_dashboard' %}" class="edu-ops-button">Review framework</a>
-  </section>
-
-  <form method="get" class="edu-ops-filter edu-ops-filter--compact" aria-label="Filter assessments">
-    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Search assessments</label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Assessment, course, term or academic year"></div>
-    <div class="edu-ops-field"><label for="id_per_page">Per page</label><select id="id_per_page" name="per_page"><option value="10" {% if per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if per_page == 100 %}selected{% endif %}>100</option><option value="200" {% if per_page == 200 %}selected{% endif %}>200</option></select></div>
-    <button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>
-    <a href="{% url 'admin_assessments_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i> Clear</a>
-  </form>
 
   <section class="edu-ops-table-shell" aria-labelledby="assessment-register-heading">
-    <header class="edu-ops-table-heading"><div><h3 id="assessment-register-heading">Assessment register</h3><p>{{ page_obj.paginator.count|default:0 }} assessment{{ page_obj.paginator.count|default:0|pluralize }} match the current search.</p></div><span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-book-open" aria-hidden="true"></i> Course-based records</span></header>
+    <header class="edu-ops-table-heading">
+      <div><h2 id="assessment-register-heading">Assessment register</h2><p>{% if q %}Results matching “{{ q }}”.{% else %}Course assessments across the permitted school scope.{% endif %}</p></div>
+      <a href="{% url 'admin_assessments_create' %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> New</a>
+    </header>
+
     {% if assessments %}
     <div class="overflow-x-auto">
       <table class="edu-ops-table">
-        <caption class="sr-only">Assessments with course placement, framework classification, scoring, date, publication and actions</caption>
-        <thead><tr><th scope="col">Assessment</th><th scope="col">Course placement</th><th scope="col">Framework</th><th scope="col">Scoring</th><th scope="col">Date</th><th scope="col">Publication</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <caption class="sr-only">Assessments with course, classification, scoring, date, publication and actions</caption>
+        <thead>
+          <tr>
+            <th scope="col">Assessment</th>
+            <th scope="col">Course and term</th>
+            <th scope="col">Type</th>
+            <th scope="col">Marks</th>
+            <th scope="col">Date</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-right">Actions</th>
+          </tr>
+        </thead>
         <tbody>
           {% for assessment in assessments %}
           <tr>
-            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-exam" aria-hidden="true"></i></span><div><strong>{{ assessment.name }}</strong><span>Assessment #{{ assessment.id }}</span></div></div></td>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-exam" aria-hidden="true"></i></span><div><strong>{{ assessment.name }}</strong><span>#{{ assessment.id }}</span></div></div></td>
             <td><div class="edu-table-meta"><strong>{{ assessment.offering.course.name|default:assessment.offering }}</strong>{% if assessment.offering.course.code %}{{ assessment.offering.course.code }} · {% endif %}{{ assessment.offering.term }}{% if assessment.offering.class_group %} · {{ assessment.offering.class_group }}{% endif %}</div></td>
-            <td><div class="edu-ops-badges">{% if assessment.assessment_type %}<span class="edu-ops-badge edu-ops-badge--violet"><i class="ph ph-tag" aria-hidden="true"></i> {{ assessment.assessment_type }}</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-warning-circle" aria-hidden="true"></i> Type missing</span>{% endif %}{% if assessment.weighting_component %}<span class="edu-ops-badge edu-ops-badge--blue">{{ assessment.weighting_component.scheme.code }}</span>{% else %}<span class="edu-ops-badge">Legacy weight</span>{% endif %}</div></td>
-            <td><div class="edu-table-meta"><strong>{{ assessment.max_score }} maximum marks</strong>{{ assessment.weight }}% contribution</div></td>
-            <td><div class="edu-table-meta"><strong>{% if assessment.date %}{{ assessment.date|date:'M j, Y' }}{% else %}Date not set{% endif %}</strong>{% if assessment.offering.term %}{{ assessment.offering.term }}{% endif %}</div></td>
-            <td>{% if assessment.is_published %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Published</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-lock-key" aria-hidden="true"></i> Draft</span>{% endif %}</td>
-            <td><div class="edu-ops-actions"><a href="{% url 'admin_assessments_scores' assessment.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-line" aria-hidden="true"></i> Scores</a><a href="{% url 'admin_assessment_result_policies' assessment.id %}" class="edu-ops-button"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Policies</a><a href="{% url 'admin_assessments_edit' assessment.id %}" class="edu-ops-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a></div></td>
+            <td>{% if assessment.assessment_type %}<span class="edu-ops-badge edu-ops-badge--violet">{{ assessment.assessment_type }}</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">Not classified</span>{% endif %}</td>
+            <td><div class="edu-table-meta"><strong>{{ assessment.max_score }} marks</strong>{% if assessment.weight != None %}{{ assessment.weight }}% weight{% else %}Weight not set{% endif %}</div></td>
+            <td>{% if assessment.date %}{{ assessment.date|date:'M j, Y' }}{% else %}<span class="text-slate-400">Not set</span>{% endif %}</td>
+            <td>{% if assessment.is_published %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Published</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-lock-key" aria-hidden="true"></i> Draft</span>{% endif %}</td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_assessments_scores' assessment.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-pencil-line" aria-hidden="true"></i> Marks</a><a href="{% url 'admin_assessments_edit' assessment.id %}" class="edu-ops-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a><a href="{% url 'admin_assessment_result_policies' assessment.id %}" class="edu-ops-button" aria-label="Result policies for {{ assessment.name }}"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i></a></div></td>
           </tr>
           {% endfor %}
         </tbody>
@@ -85,8 +86,12 @@
     </div>
     {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
     {% else %}
-      {% url 'admin_assessments_create' as create_assessment_url %}
-      {% include "components/ui_empty_state.html" with icon="exam" title="No assessments match this view" description="Create an assessment or adjust the course, term or assessment search." action_url=create_assessment_url action_text="Add Assessment" %}
+      <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
+        <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-exam text-2xl" aria-hidden="true"></i></span>
+        <h3 class="mt-4 text-lg font-black text-slate-950">{% if q %}No matching assessments{% else %}No assessments yet{% endif %}</h3>
+        <p class="mt-1 max-w-md text-sm text-slate-500">{% if q %}Try a different assessment, course or term search.{% else %}Create the first assessment, then enter learner marks from this register.{% endif %}</p>
+        <div class="mt-5 flex flex-wrap justify-center gap-2">{% if q %}<a href="{% url 'admin_assessments_list' %}" class="edu-outline-button">Clear search</a>{% endif %}<a href="{% url 'admin_assessments_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add assessment</a></div>
+      </div>
     {% endif %}
   </section>
 </div>
