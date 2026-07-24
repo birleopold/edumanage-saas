@@ -9,14 +9,32 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-5">
+<div class="platform-dashboard space-y-5">
   <section class="platform-summary-grid" aria-label="Platform summary">
-    <article class="platform-stat"><span class="platform-stat__label">Schools</span><strong class="platform-stat__value">{{ tenant_count }}</strong><span class="platform-stat__detail">All tenant records</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Active</span><strong class="platform-stat__value text-emerald-700">{{ active_count }}</strong><span class="platform-stat__detail">Schools allowed to operate</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Pending</span><strong class="platform-stat__value text-amber-700">{{ pending_count }}</strong><span class="platform-stat__detail">Still completing setup</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Suspended</span><strong class="platform-stat__value text-red-700">{{ suspended_count }}</strong><span class="platform-stat__detail">Access currently paused</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Verified domains</span><strong class="platform-stat__value text-blue-700">{{ verified_domain_count }}/{{ domain_count }}</strong><span class="platform-stat__detail">DNS-confirmed addresses</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">SSL active</span><strong class="platform-stat__value text-emerald-700">{{ ssl_active_domain_count }}</strong><span class="platform-stat__detail">Secure school addresses</span></article>
+    <article class="platform-stat platform-stat--blue">
+      <span class="platform-stat__icon"><i class="ph ph-buildings" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Schools</span><strong class="platform-stat__value">{{ tenant_count }}</strong><span class="platform-stat__detail">All tenant records</span></div>
+    </article>
+    <article class="platform-stat platform-stat--green">
+      <span class="platform-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Active</span><strong class="platform-stat__value">{{ active_count }}</strong><span class="platform-stat__detail">Allowed to operate</span></div>
+    </article>
+    <article class="platform-stat platform-stat--amber">
+      <span class="platform-stat__icon"><i class="ph ph-hourglass" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Pending</span><strong class="platform-stat__value">{{ pending_count }}</strong><span class="platform-stat__detail">Completing setup</span></div>
+    </article>
+    <article class="platform-stat platform-stat--red">
+      <span class="platform-stat__icon"><i class="ph ph-pause-circle" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Suspended</span><strong class="platform-stat__value">{{ suspended_count }}</strong><span class="platform-stat__detail">Access paused</span></div>
+    </article>
+    <article class="platform-stat platform-stat--violet">
+      <span class="platform-stat__icon"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Verified domains</span><strong class="platform-stat__value">{{ verified_domain_count }}/{{ domain_count }}</strong><span class="platform-stat__detail">DNS confirmed</span></div>
+    </article>
+    <article class="platform-stat platform-stat--teal">
+      <span class="platform-stat__icon"><i class="ph ph-lock-key" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">SSL active</span><strong class="platform-stat__value">{{ ssl_active_domain_count }}</strong><span class="platform-stat__detail">Secure addresses</span></div>
+    </article>
   </section>
 
   {% if pending_count or suspended_count or unverified_domain_count %}
@@ -28,7 +46,7 @@
   </section>
   {% endif %}
 
-  <section class="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+  <section class="platform-dashboard-columns">
     <div class="platform-panel">
       <header class="platform-panel__header"><div><h2>Recent schools</h2><p>Newest tenant records and their operational state.</p></div><a href="{% url 'platform_tenant_list' %}" class="platform-button">View all</a></header>
       {% if tenants %}
