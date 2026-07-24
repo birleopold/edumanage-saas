@@ -5,7 +5,8 @@ from django.shortcuts import render
 
 from apps.public.tenants.models import Domain, Tenant
 
-from .platform_views import PLATFORM_A_RECORD_TARGET, PLATFORM_CNAME_TARGET, platform_admin_required
+from .dns_targets import get_dns_targets
+from .platform_views import platform_admin_required
 
 
 PRIORITY_SECTIONS = [
@@ -217,6 +218,7 @@ def deployment_readiness(request):
     ]
     database_status = _database_status()
     domains_ready = Domain.objects.filter(is_primary=True).exists()
+    dns_targets = get_dns_targets()
     context = {
         "priority_sections": PRIORITY_SECTIONS,
         "database_status": database_status,
@@ -227,7 +229,6 @@ def deployment_readiness(request):
         "domain_count": Domain.objects.count(),
         "verified_domain_count": Domain.objects.filter(verified_at__isnull=False).count(),
         "domains_ready": domains_ready,
-        "cname_target": PLATFORM_CNAME_TARGET,
-        "a_record_target": PLATFORM_A_RECORD_TARGET,
+        **dns_targets,
     }
     return render(request, "platform/deployment_readiness.html", context)
