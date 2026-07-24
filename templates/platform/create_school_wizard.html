@@ -1,144 +1,149 @@
 {% extends 'platform/base.html' %}
 
-{% block title %}Create School Wizard{% endblock %}
-{% block page_title %}Create School Wizard{% endblock %}
-{% block breadcrumbs %}Step {{ step_index }} of {{ step_count }} · Professional SaaS tenant onboarding{% endblock %}
+{% block title %}Create School{% endblock %}
+{% block page_title %}Create School{% endblock %}
+{% block breadcrumbs %}Step {{ step_index }} of {{ step_count }} · guided tenant onboarding{% endblock %}
 {% block header_actions %}
-  <a href="{% url 'platform_tenant_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back to tenants</a>
+  <a href="{% url 'platform_tenant_list' %}" class="platform-button"><i class="ph ph-arrow-left" aria-hidden="true"></i><span class="hidden sm:inline">Schools</span></a>
 {% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-6xl space-y-6">
-  <section class="rounded-[2rem] bg-gradient-to-br from-blue-950 to-slate-900 p-6 text-white shadow-xl">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">SaaS onboarding</p>
-        <h2 class="mt-3 text-2xl font-black">Create a complete school tenant in one guided flow.</h2>
-        <p class="mt-3 max-w-3xl text-sm font-semibold leading-6 text-blue-100">The wizard collects the school profile, login domain, owner/admin account, package features, then activates the tenant with all default records.</p>
-      </div>
-      <div class="rounded-3xl bg-white/10 p-4 text-center backdrop-blur">
-        <p class="text-3xl font-black">{{ step_index }}/{{ step_count }}</p>
-        <p class="mt-1 text-xs font-black uppercase tracking-widest text-blue-100">Progress</p>
-      </div>
+<div class="platform-onboarding">
+  <div class="platform-progress-header">
+    <div class="platform-progress-header__meta">
+      <strong>{{ step_index }} of {{ step_count }} · {% for item in steps %}{% if item.key == step %}{{ item.title }}{% endif %}{% endfor %}</strong>
+      <span>{% if step_index == step_count %}Ready for review{% else %}Your progress is saved in this session{% endif %}</span>
     </div>
-  </section>
+    <div class="platform-progress" aria-label="Onboarding progress"><span style="width:{% if step_index == 1 %}20{% elif step_index == 2 %}40{% elif step_index == 3 %}60{% elif step_index == 4 %}80{% else %}100{% endif %}%"></span></div>
+  </div>
 
-  <section class="grid gap-3 lg:grid-cols-5">
+  <nav class="platform-stepper" aria-label="School onboarding steps">
     {% for item in steps %}
-      <div class="rounded-3xl border p-4 {% if item.key == step %}border-blue-200 bg-blue-50 text-blue-950 shadow-sm{% elif forloop.counter < step_index %}border-green-100 bg-green-50 text-green-900{% else %}border-slate-200 bg-white text-slate-600{% endif %}">
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl {% if item.key == step %}bg-blue-700 text-white{% elif forloop.counter < step_index %}bg-green-600 text-white{% else %}bg-slate-100 text-slate-500{% endif %}">
-            <i class="ph {{ item.icon }} text-xl"></i>
+      {% if forloop.counter < step_index %}
+        <a href="{% url 'platform_tenant_create' %}?step={{ item.key }}" class="platform-step is-complete">
+      {% else %}
+        <div class="platform-step {% if item.key == step %}is-current{% endif %}">
+      {% endif %}
+          <div class="platform-step__top">
+            <span class="platform-step__icon"><i class="ph {% if forloop.counter < step_index %}ph-check{% else %}{{ item.icon }}{% endif %}" aria-hidden="true"></i></span>
+            <span class="min-w-0"><small>Step {{ forloop.counter }}</small><strong>{{ item.title }}</strong></span>
           </div>
-          <div>
-            <p class="text-xs font-black uppercase tracking-wider">Step {{ forloop.counter }}</p>
-            <p class="text-sm font-black">{{ item.title }}</p>
-          </div>
-        </div>
-      </div>
+      {% if forloop.counter < step_index %}</a>{% else %}</div>{% endif %}
     {% endfor %}
-  </section>
+  </nav>
 
-  <div class="grid gap-6 lg:grid-cols-3">
-    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-      <div class="mb-6 border-b border-slate-100 pb-4">
+  <div class="platform-onboarding__layout">
+    <section class="platform-onboarding__main">
+      <header class="platform-form-section__header">
         {% if step == 'school' %}
-          <h3 class="text-xl font-black text-slate-950">Step 1: School details</h3>
-          <p class="mt-1 text-sm font-semibold text-slate-500">Capture the school identity and contact profile that will become the organization profile.</p>
+          <h2>School identity</h2><p class="platform-form-section__description">Create the tenant identity and official school contact profile.</p>
         {% elif step == 'domain' %}
-          <h3 class="text-xl font-black text-slate-950">Step 2: Domain details</h3>
-          <p class="mt-1 text-sm font-semibold text-slate-500">Set the domain the school will use to access its tenant.</p>
+          <h2>Primary login address</h2><p class="platform-form-section__description">Choose the web address the school owner will use for first login.</p>
         {% elif step == 'owner' %}
-          <h3 class="text-xl font-black text-slate-950">Step 3: Owner/admin account</h3>
-          <p class="mt-1 text-sm font-semibold text-slate-500">Create the first school admin account inside the tenant.</p>
+          <h2>First school administrator</h2><p class="platform-form-section__description">Create the owner account that will complete setup inside the school tenant.</p>
         {% elif step == 'features' %}
-          <h3 class="text-xl font-black text-slate-950">Step 4: Package/features</h3>
-          <p class="mt-1 text-sm font-semibold text-slate-500">Choose the package and modules to enable for this school.</p>
+          <h2>Package and modules</h2><p class="platform-form-section__description">Choose a package preset or select a custom group of modules.</p>
         {% else %}
-          <h3 class="text-xl font-black text-slate-950">Step 5: Confirm and activate</h3>
-          <p class="mt-1 text-sm font-semibold text-slate-500">Review everything before EduManage creates the tenant and default records.</p>
+          <h2>Review and activate</h2><p class="platform-form-section__description">Confirm the tenant, domain, owner and package before provisioning begins.</p>
         {% endif %}
-      </div>
+      </header>
 
       {% if is_confirm_step %}
-        <div class="mb-6 grid gap-4 md:grid-cols-2">
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="text-xs font-black uppercase tracking-wider text-slate-500">School</p>
-            <p class="mt-1 font-black text-slate-950">{{ summary.school.name|default:'Not provided' }}</p>
-            <p class="mt-1 text-sm font-semibold text-slate-500">Schema: {{ summary.school.schema_name|default:'-' }}</p>
-            <p class="text-sm font-semibold text-slate-500">Status: {{ summary.school.status|default:'active'|title }}</p>
-          </div>
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="text-xs font-black uppercase tracking-wider text-slate-500">Domain</p>
-            <p class="mt-1 font-black text-slate-950">{{ summary.domain.domain|default:'Not provided' }}</p>
-            <p class="mt-1 text-sm font-semibold text-slate-500">Type: {{ summary.domain.domain_type|default:'CUSTOM' }}</p>
-          </div>
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="text-xs font-black uppercase tracking-wider text-slate-500">Owner/admin</p>
-            <p class="mt-1 font-black text-slate-950">{{ summary.owner.owner_username|default:'Auto-generated' }}</p>
-            <p class="mt-1 text-sm font-semibold text-slate-500">{{ summary.owner.owner_email|default:'No email' }}</p>
-            <p class="text-sm font-semibold text-slate-500">{{ summary.owner.owner_phone|default:'No phone' }}</p>
-          </div>
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="text-xs font-black uppercase tracking-wider text-slate-500">Package</p>
-            <p class="mt-1 font-black text-slate-950">{{ summary.package_label }}</p>
-            <p class="mt-1 text-sm font-semibold text-slate-500">{{ summary.selected_features|length }} features selected</p>
-          </div>
+        <div class="platform-form-grid platform-form-grid--two mb-4">
+          <article class="platform-summary-item"><span>School</span><strong>{{ summary.school.name|default:'Not provided' }}</strong><p class="platform-form-help">{{ summary.school.schema_name|default:'No schema' }} · {{ summary.school.status|default:'active'|title }}</p></article>
+          <article class="platform-summary-item"><span>Primary domain</span><strong>{{ summary.domain.domain|default:'Not provided' }}</strong><p class="platform-form-help">{{ summary.domain.domain_type|default:'CUSTOM'|title }}</p></article>
+          <article class="platform-summary-item"><span>Owner account</span><strong>{{ summary.owner.owner_username|default:'Auto-generated' }}</strong><p class="platform-form-help">{{ summary.owner.owner_email|default:'No email' }}</p></article>
+          <article class="platform-summary-item"><span>Package</span><strong>{{ summary.package_label }}</strong><p class="platform-form-help">{{ summary.selected_features|length }} enabled module{{ summary.selected_features|length|pluralize }}</p></article>
         </div>
-        <div class="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <p class="font-black text-blue-950">Enabled features</p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            {% for code, label in summary.selected_features %}
-              <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-blue-800 shadow-sm">{{ label }}</span>
-            {% empty %}
-              <span class="text-sm font-semibold text-blue-700">No features selected yet.</span>
-            {% endfor %}
+        <details class="platform-details mb-4">
+          <summary>Review enabled modules</summary>
+          <div class="platform-details__body flex flex-wrap gap-2">
+            {% for code, label in summary.selected_features %}<span class="platform-badge platform-badge--blue">{{ label }}</span>{% empty %}<span class="text-sm font-semibold text-slate-500">No modules selected.</span>{% endfor %}
           </div>
-        </div>
+        </details>
       {% endif %}
 
-      <form method="post" class="space-y-5">
+      <form method="post" novalidate>
         {% csrf_token %}
         <input type="hidden" name="step" value="{{ step }}">
-        {% for field in form %}
-          <div>
-            <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<p class="mt-2 text-xs font-semibold text-slate-500">{{ field.help_text }}</p>{% endif %}
-            {% for error in field.errors %}<p class="mt-2 text-xs font-black text-red-600">{{ error }}</p>{% endfor %}
+
+        {% if step == 'school' %}
+          <div class="platform-form-section">
+            <div class="platform-form-grid platform-form-grid--two">
+              {% for field in form %}
+                <div class="platform-form-field {% if field.name == 'organization_address' %}sm:col-span-2{% endif %}">
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+                  {% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}
+                  {% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
+                </div>
+              {% endfor %}
+            </div>
           </div>
-        {% endfor %}
-        {% if form.non_field_errors %}
-          <div class="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>
+        {% elif step == 'domain' %}
+          <div class="platform-form-section">
+            <div class="platform-form-grid platform-form-grid--two">
+              {% for field in form %}<div class="platform-form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+            </div>
+            <div class="platform-domain-preview" data-domain-preview><strong>portal.school.ac.ug</strong><span>Use the school's own domain and point its DNS records to EduManage.</span></div>
+          </div>
+        {% elif step == 'owner' %}
+          <div class="platform-form-section">
+            <div class="platform-form-grid platform-form-grid--two">
+              {% for field in form %}
+                <div class="platform-form-field {% if field.name == 'owner_email' or field.name == 'owner_username' %}sm:col-span-2{% endif %}">
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {% if field.name == 'owner_temporary_password' or field.name == 'owner_temporary_password_confirm' %}<div class="platform-password-wrap">{{ field }}<button type="button" class="platform-password-toggle" data-password-toggle="{{ field.id_for_label }}" aria-label="Show password" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button></div>{% else %}{{ field }}{% endif %}
+                  {% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}
+                  {% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% elif step == 'features' %}
+          <div class="platform-form-section">
+            {% for field in form %}
+              {% if field.name == 'package' %}<div class="platform-form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div><div class="platform-package-note" data-package-note>Standard preset modules will be enabled automatically.</div>{% else %}<div class="platform-form-field platform-feature-grid mt-4"><label>{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>{% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          {% for field in form %}
+            <div class="platform-form-checkbox">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label><p class="platform-form-help">Activation creates tenant records immediately. Confirm DNS ownership and owner details before proceeding.</p>{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
+          {% endfor %}
         {% endif %}
-        <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-          {% if previous_step %}
-            <button type="submit" name="action" value="back" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back</button>
-          {% endif %}
-          <button type="submit" name="action" value="next" class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800">
-            {% if is_confirm_step %}<i class="ph ph-rocket-launch mr-1"></i> Confirm and activate{% else %}Continue <i class="ph ph-arrow-right ml-1"></i>{% endif %}
-          </button>
-          <button type="submit" name="action" value="reset" class="rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-black text-red-700 hover:bg-red-50">Reset wizard</button>
+
+        {% if form.non_field_errors %}<div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="platform-form-actions">
+          {% if previous_step %}<button type="submit" name="action" value="back" formnovalidate class="platform-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Back</button>{% endif %}
+          <button type="submit" name="action" value="next" class="platform-button platform-button--primary">{% if is_confirm_step %}<i class="ph ph-rocket-launch" aria-hidden="true"></i> Activate school{% else %}Continue <i class="ph ph-arrow-right" aria-hidden="true"></i>{% endif %}</button>
+          <button type="submit" name="action" value="reset" formnovalidate class="platform-button platform-button--danger platform-form-actions__danger" onclick="return confirm('Clear all saved wizard information and start again?');">Reset</button>
         </div>
       </form>
     </section>
 
-    <aside class="space-y-4">
-      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 class="font-black text-slate-950">What happens on activation?</h3>
-        <ul class="mt-4 space-y-3 text-sm font-semibold text-slate-600">
-          <li class="flex gap-2"><i class="ph ph-check-circle mt-0.5 text-blue-700"></i> Tenant and primary domain are created.</li>
-          <li class="flex gap-2"><i class="ph ph-check-circle mt-0.5 text-blue-700"></i> Organization profile and Main Campus are created.</li>
-          <li class="flex gap-2"><i class="ph ph-check-circle mt-0.5 text-blue-700"></i> First school admin account is created.</li>
-          <li class="flex gap-2"><i class="ph ph-check-circle mt-0.5 text-blue-700"></i> Selected feature flags are applied.</li>
-          <li class="flex gap-2"><i class="ph ph-check-circle mt-0.5 text-blue-700"></i> Current academic year and Term 1 are created.</li>
+    <aside class="platform-onboarding__aside">
+      <div class="platform-onboarding__aside-section">
+        <h3>Activation creates</h3>
+        <ul class="platform-check-list">
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Tenant schema and primary domain</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Organisation profile and Main Campus</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>First school administrator account</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Package, feature flags and subscription</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Initial academic year and Term 1</span></li>
         </ul>
       </div>
-      <div class="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
-        <h3 class="font-black">Professional SaaS flow</h3>
-        <p class="mt-2 font-semibold leading-6">The Platform owner now adds a client through a guided process instead of jumping between separate forms.</p>
+      <div class="platform-onboarding__aside-section">
+        <h3>Current selection</h3>
+        <div class="platform-summary-list mt-3">
+          <div class="platform-summary-item"><span>School</span><strong>{{ summary.school.name|default:'Not entered' }}</strong></div>
+          <div class="platform-summary-item"><span>Domain</span><strong>{{ summary.domain.domain|default:'Not entered' }}</strong></div>
+          <div class="platform-summary-item"><span>Owner</span><strong>{{ summary.owner.owner_email|default:'Not entered' }}</strong></div>
+          <div class="platform-summary-item"><span>Package</span><strong>{{ summary.package_label|default:'Standard' }}</strong></div>
+        </div>
       </div>
     </aside>
   </div>
 </div>
+
+<script id="platform-package-presets" type="application/json">{"starter":{"label":"Starter","features":["academics","students","teachers","parents","attendance","announcements","documents"]},"standard":{"label":"Standard","features":["academics","admissions","attendance","assessments","announcements","coursework","students","teachers","parents","finance","documents","timetable","exams","reports"]},"enterprise":{"label":"Enterprise","features":["academics","admissions","attendance","assessments","announcements","coursework","students","teachers","parents","finance","library","transport","hostels","inventory","documents","timetable","exams","reports","messaging","hr","analytics","audit"]},"custom":{"label":"Custom","features":[]}}</script>
 {% endblock %}
