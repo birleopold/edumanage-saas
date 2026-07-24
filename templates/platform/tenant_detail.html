@@ -2,217 +2,73 @@
 
 {% block title %}{{ tenant.name }}{% endblock %}
 {% block page_title %}{{ tenant.name }}{% endblock %}
-{% block breadcrumbs %}Tenant detail, schema readiness, subscription controls, status controls and domain management{% endblock %}
+{% block breadcrumbs %}{{ tenant.schema_name }} · tenant operations and onboarding readiness{% endblock %}
 {% block header_actions %}
-  <a href="{% url 'platform_tenant_subscription' tenant.pk %}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700"><i class="ph ph-credit-card mr-1"></i> Subscription</a>
-  <a href="{% url 'platform_domain_create' tenant.pk %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-globe mr-1"></i> Add Domain</a>
-  <a href="{% url 'platform_tenant_edit' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-pencil-simple mr-1"></i> Edit</a>
+  <a href="{% url 'platform_tenant_subscription' tenant.pk %}" class="platform-button"><i class="ph ph-credit-card" aria-hidden="true"></i><span class="hidden sm:inline">Subscription</span></a>
+  <a href="{% url 'platform_domain_create' tenant.pk %}" class="platform-button"><i class="ph ph-globe" aria-hidden="true"></i> Add domain</a>
+  <a href="{% url 'platform_tenant_edit' tenant.pk %}" class="platform-button platform-button--primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-7">
-  <section class="grid gap-4 lg:grid-cols-4">
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenant identity</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-950">{{ tenant.name }}</h2>
-      <div class="mt-4 grid gap-3 sm:grid-cols-2">
-        <div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Schema</p><p class="mt-1 font-mono text-sm font-black text-slate-900">{{ tenant.schema_name }}</p></div>
-        <div class="rounded-2xl bg-slate-50 p-4"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Created</p><p class="mt-1 text-sm font-black text-slate-900">{{ tenant.created_at|date:'M d, Y H:i' }}</p></div>
+<div class="space-y-5">
+  <section class="platform-summary-grid" aria-label="Tenant summary">
+    <article class="platform-stat"><span class="platform-stat__label">Status</span><strong class="platform-stat__value {% if tenant.status == 'active' %}text-emerald-700{% elif tenant.status == 'suspended' %}text-red-700{% else %}text-amber-700{% endif %}">{{ tenant.status|title }}</strong><span class="platform-stat__detail">Tenant access state</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Schema</span><button type="button" class="mt-2 block max-w-full truncate font-mono text-sm font-black text-blue-700" data-copy-value="{{ tenant.schema_name }}" title="Copy schema name">{{ tenant.schema_name }}</button><span class="platform-stat__detail">PostgreSQL tenant namespace</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Schema readiness</span><strong class="platform-stat__value {% if schema_status.exists == True %}text-emerald-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">{{ schema_status.label }}</strong><span class="platform-stat__detail">{{ schema_status.detail }}</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Subscription</span><strong class="platform-stat__value text-indigo-700">{{ subscription.plan.name }}</strong><span class="platform-stat__detail">{{ subscription.get_status_display }} · {{ subscription.get_payment_status_display }}</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Onboarding</span><strong class="platform-stat__value {% if onboarding_handoff.ready %}text-emerald-700{% else %}text-amber-700{% endif %}">{{ onboarding_handoff.percent }}%</strong><span class="platform-stat__detail">{{ onboarding_handoff.done_count }}/{{ onboarding_handoff.total }} checks ready</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Created</span><strong class="platform-stat__value text-lg">{{ tenant.created_at|date:'M j, Y' }}</strong><span class="platform-stat__detail">{{ tenant.created_at|date:'H:i' }}</span></article>
+  </section>
+
+  <section class="grid gap-5 xl:grid-cols-[1fr_340px]">
+    <div class="platform-panel">
+      <header class="platform-panel__header"><div><h2>Owner handoff</h2><p>First-login identity, secure access address and school setup path.</p></div><span class="platform-badge {% if onboarding_handoff.ready %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{% if onboarding_handoff.ready %}Ready{% else %}Needs attention{% endif %}</span></header>
+      <div class="p-4">
+        <div class="platform-progress"><span style="width: {{ onboarding_handoff.percent }}%"></span></div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {% for step in onboarding_handoff.steps %}
+          <article class="rounded-xl border p-3 {% if step.done %}border-emerald-200 bg-emerald-50{% else %}border-amber-200 bg-amber-50{% endif %}"><div class="flex gap-2"><i class="ph {% if step.done %}ph-check-circle text-emerald-700{% else %}ph-warning-circle text-amber-700{% endif %} mt-0.5 text-lg" aria-hidden="true"></i><div><strong class="text-sm text-slate-900">{{ step.title }}</strong><p class="mt-1 text-xs font-semibold leading-5 text-slate-600">{{ step.detail }}</p></div></div></article>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenant status</p>
-      <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black {% if tenant.status == 'active' %}bg-green-100 text-green-700{% elif tenant.status == 'suspended' %}bg-red-100 text-red-700{% elif tenant.status == 'pending' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-700{% endif %}">{{ tenant.status|title }}</span>
-      <form method="post" action="{% url 'platform_tenant_status_update' tenant.pk %}" class="mt-4 space-y-3">
+    <aside class="platform-panel">
+      <header class="platform-panel__header"><div><h2>Tenant status</h2><p>Changing status is recorded in the audit log.</p></div></header>
+      <form method="post" action="{% url 'platform_tenant_status_update' tenant.pk %}" class="space-y-3 p-4" onsubmit="return confirm('Update this tenant status? This can affect school access.');">
         {% csrf_token %}
-        {{ status_form.status }}
-        <button class="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Update status</button>
+        <div class="platform-field"><label for="{{ status_form.status.id_for_label }}">Access state</label>{{ status_form.status }}</div>
+        <button class="platform-button platform-button--primary w-full" type="submit">Update status</button>
       </form>
-    </div>
-
-    <div class="rounded-3xl border {% if schema_status.exists == True %}border-green-100 bg-green-50{% elif schema_status.exists == False %}border-red-100 bg-red-50{% else %}border-blue-100 bg-blue-50{% endif %} p-5 shadow-sm">
-      <p class="text-xs font-black uppercase tracking-wider {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">Schema status</p>
-      <p class="mt-3 text-2xl font-black {% if schema_status.exists == True %}text-green-800{% elif schema_status.exists == False %}text-red-800{% else %}text-blue-800{% endif %}">{{ schema_status.label }}</p>
-      <p class="mt-2 text-xs font-bold leading-5 {% if schema_status.exists == True %}text-green-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">{{ schema_status.detail }}</p>
-    </div>
+      <div class="border-t border-slate-100 p-4 text-xs font-semibold leading-5 text-slate-500">Suspension pauses access while preserving tenant data. Subscription status can also affect usability.</div>
+    </aside>
   </section>
 
-  <section class="rounded-3xl border border-indigo-100 bg-indigo-50 p-5 shadow-sm">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-wider text-indigo-700">Package / subscription</p>
-        <h3 class="mt-1 text-xl font-black text-indigo-950">{{ subscription.plan.name }} · {{ subscription.get_status_display }}</h3>
-        <p class="mt-2 text-sm font-semibold text-indigo-900">{{ subscription.currency }} {{ subscription.amount }} · {{ subscription.billing_cycle }} · Payment: {{ subscription.get_payment_status_display }} · Next bill: {{ subscription.next_billing_date|default:'-' }}</p>
-      </div>
-      <a href="{% url 'platform_tenant_subscription' tenant.pk %}" class="rounded-xl bg-indigo-700 px-5 py-2.5 text-sm font-black text-white hover:bg-indigo-800"><i class="ph ph-credit-card mr-1"></i> Manage subscription</a>
+  <details class="platform-details" {% if not onboarding_handoff.ready %}open{% endif %}>
+    <summary class="flex items-center justify-between"><span><i class="ph ph-key mr-2" aria-hidden="true"></i>Owner login pack</span><span class="platform-badge {% if onboarding_handoff.login_url %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{% if onboarding_handoff.login_url %}Available{% else %}Incomplete{% endif %}</span></summary>
+    <div class="platform-details__body grid gap-4 lg:grid-cols-3">
+      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Username</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-sm font-black text-slate-900">{{ onboarding_handoff.admin_username|default:'Not recorded' }}</code>{% if onboarding_handoff.admin_username %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.admin_username }}">Copy</button>{% endif %}</div></div>
+      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Login URL</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-xs font-black text-slate-900">{{ onboarding_handoff.login_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.login_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.login_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.login_url %}<a href="{{ onboarding_handoff.login_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open login</a>{% endif %}</div>
+      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Setup checklist</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-xs font-black text-slate-900">{{ onboarding_handoff.setup_guide_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.setup_guide_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.setup_guide_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.setup_guide_url %}<a href="{{ onboarding_handoff.setup_guide_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open checklist</a>{% endif %}</div>
     </div>
-  </section>
+  </details>
 
-  <section class="rounded-3xl border border-emerald-100 bg-white shadow-sm">
-    <div class="flex flex-col gap-4 border-b border-emerald-100 bg-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-wider text-emerald-700">School owner handoff</p>
-        <h3 class="mt-1 text-xl font-black text-emerald-950">{{ onboarding_handoff.done_count }} of {{ onboarding_handoff.total }} onboarding checks ready</h3>
-        <p class="mt-2 text-sm font-semibold text-emerald-900">Use this panel to send the school owner from tenant creation into first login and the in-tenant setup checklist.</p>
-      </div>
-      <div class="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
-        <p class="text-3xl font-black {% if onboarding_handoff.ready %}text-green-700{% else %}text-amber-700{% endif %}">{{ onboarding_handoff.percent }}%</p>
-        <p class="mt-1 text-xs font-black uppercase tracking-wider text-slate-500">{% if onboarding_handoff.ready %}Ready to hand off{% else %}Needs attention{% endif %}</p>
-      </div>
-    </div>
-    <div class="grid gap-5 p-5 lg:grid-cols-[1fr_.75fr]">
-      <div class="grid gap-3 sm:grid-cols-2">
-        {% for step in onboarding_handoff.steps %}
-          <article class="rounded-2xl border {% if step.done %}border-green-100 bg-green-50{% else %}border-amber-100 bg-amber-50{% endif %} p-4">
-            <div class="flex gap-3">
-              <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {% if step.done %}bg-green-600 text-white{% else %}bg-amber-500 text-white{% endif %}">
-                <i class="ph {% if step.done %}ph-check-bold{% else %}ph-warning{% endif %}"></i>
-              </span>
-              <div class="min-w-0">
-                <h4 class="font-black text-slate-950">{{ step.title }}</h4>
-                <p class="mt-1 text-sm font-semibold leading-5 text-slate-600">{{ step.description }}</p>
-                <p class="mt-2 break-all text-xs font-black uppercase tracking-wider {% if step.done %}text-green-700{% else %}text-amber-800{% endif %}">{{ step.detail }}</p>
-              </div>
-            </div>
-          </article>
-        {% endfor %}
-      </div>
-      <aside class="space-y-4">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <p class="text-xs font-black uppercase tracking-wider text-slate-500">Owner login pack</p>
-          <dl class="mt-4 space-y-3 text-sm">
-            <div>
-              <dt class="font-black text-slate-700">Username</dt>
-              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.admin_username|default:"Not recorded" }}</dd>
-            </div>
-            <div>
-              <dt class="font-black text-slate-700">Login URL</dt>
-              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.login_url|default:"Add a primary domain first" }}</dd>
-            </div>
-            <div>
-              <dt class="font-black text-slate-700">First-login checklist</dt>
-              <dd class="mt-1 break-all font-mono text-xs font-bold text-slate-950">{{ onboarding_handoff.setup_guide_url|default:"Add a primary domain first" }}</dd>
-            </div>
-          </dl>
-          <div class="mt-5 flex flex-wrap gap-2">
-            {% if onboarding_handoff.login_url %}
-              <a href="{{ onboarding_handoff.login_url }}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">Open login</a>
-            {% endif %}
-            {% if onboarding_handoff.setup_guide_url %}
-              <a href="{{ onboarding_handoff.setup_guide_url }}" target="_blank" rel="noopener" class="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-800 hover:bg-emerald-50">Open setup guide</a>
-            {% endif %}
-          </div>
-        </div>
-        <div class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
-          <h4 class="font-black">Handoff script</h4>
-          <p class="mt-2 font-semibold leading-6">Confirm DNS and SSL, share the login URL and owner username, then ask the owner to open the setup checklist after their first sign-in.</p>
-        </div>
-      </aside>
-    </div>
-  </section>
-
-  <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h3 class="text-lg font-black">Domain Management</h3>
-        <p class="text-sm font-semibold text-slate-500">Track domain names, primary routing, DNS setup, verification, SSL and last check date.</p>
-      </div>
-      <a href="{% url 'platform_domain_create' tenant.pk %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-plus mr-1"></i> Add Domain</a>
-    </div>
-
+  <section class="platform-panel" aria-labelledby="tenant-domains-heading">
+    <header class="platform-panel__header"><div><h2 id="tenant-domains-heading">Domains</h2><p>Routing, DNS verification and SSL state for this school.</p></div><a href="{% url 'platform_domain_create' tenant.pk %}" class="platform-button platform-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> Add domain</a></header>
     {% if domain_management %}
-      <div class="grid gap-4 p-5">
-        {% for row in domain_management %}
-          {% with domain=row.domain %}
-          <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h4 class="break-all text-xl font-black text-slate-950">{{ domain.domain }}</h4>
-                  {% if domain.is_primary %}
-                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">Primary domain</span>
-                  {% endif %}
-                  <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700">{{ domain.get_type_display }}</span>
-                </div>
-                <p class="mt-2 text-sm font-semibold text-slate-500">Example format: {% if domain.type == 'SUBDOMAIN' %}schoolname.edumanage.com{% else %}schoolname.ac.ug{% endif %}</p>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                {% if not domain.is_primary %}
-                  <form method="post" action="{% url 'platform_domain_mark_primary' domain.pk %}">{% csrf_token %}<button class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-50">Make primary</button></form>
-                {% endif %}
-                <a href="{% url 'platform_domain_edit' domain.pk %}" class="rounded-xl bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">Edit</a>
-                <form method="post" action="{% url 'platform_domain_delete' domain.pk %}" onsubmit="return confirm('Remove this domain from the tenant?');">{% csrf_token %}<button class="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-700 hover:bg-red-50">Delete</button></form>
-              </div>
-            </div>
-
-            <div class="mt-5 grid gap-3 md:grid-cols-4">
-              <div class="rounded-2xl bg-white p-4">
-                <p class="text-xs font-black uppercase tracking-wider text-slate-500">Verification status</p>
-                {% if domain.is_verified %}
-                  <p class="mt-2 text-sm font-black text-green-700">Verified</p>
-                  <p class="mt-1 text-xs font-semibold text-slate-500">{{ domain.verified_at|date:'M d, Y H:i'|default:'Verified by DNS status' }}</p>
-                {% else %}
-                  <p class="mt-2 text-sm font-black text-amber-700">Pending</p>
-                {% endif %}
-              </div>
-              <div class="rounded-2xl bg-white p-4">
-                <p class="text-xs font-black uppercase tracking-wider text-slate-500">DNS status</p>
-                <p class="mt-2 text-sm font-black {% if domain.dns_status == 'VERIFIED' %}text-green-700{% elif domain.dns_status == 'FAILED' %}text-red-700{% else %}text-amber-700{% endif %}">{{ row.dns_label }}</p>
-              </div>
-              <div class="rounded-2xl bg-white p-4">
-                <p class="text-xs font-black uppercase tracking-wider text-slate-500">SSL status</p>
-                <p class="mt-2 text-sm font-black {% if domain.ssl_status == 'ACTIVE' %}text-green-700{% elif domain.ssl_status == 'FAILED' or domain.ssl_status == 'EXPIRED' %}text-red-700{% else %}text-amber-700{% endif %}">{{ row.ssl_label }}</p>
-              </div>
-              <div class="rounded-2xl bg-white p-4">
-                <p class="text-xs font-black uppercase tracking-wider text-slate-500">Last checked date</p>
-                <p class="mt-2 text-sm font-black text-slate-900">{{ domain.last_checked_at|date:'M d, Y H:i'|default:'Not checked yet' }}</p>
-              </div>
-            </div>
-
-            <div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p class="text-xs font-black uppercase tracking-wider text-blue-700">DNS instructions</p>
-                  <p class="mt-1 text-sm font-semibold text-blue-950">{{ row.dns.summary }}</p>
-                </div>
-                <div class="text-xs font-black uppercase tracking-wider text-blue-700">Example: {{ row.dns.example }}</div>
-              </div>
-              <div class="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
-                <table class="min-w-full divide-y divide-blue-100 text-sm">
-                  <thead class="bg-blue-50 text-left text-xs font-black uppercase tracking-wider text-blue-700">
-                    <tr><th class="px-4 py-3">Record</th><th class="px-4 py-3">Host / Name</th><th class="px-4 py-3">Value / Target</th></tr>
-                  </thead>
-                  <tbody class="divide-y divide-blue-50">
-                    {% for record in row.dns.records %}
-                      <tr><td class="px-4 py-3 font-black text-slate-900">{{ record.type }}</td><td class="px-4 py-3 font-mono text-xs font-bold text-slate-700">{{ record.host }}</td><td class="px-4 py-3 font-mono text-xs font-bold text-slate-700">{{ record.value }}</td></tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              {% if domain.dns_notes %}
-                <p class="mt-3 text-sm font-semibold text-blue-900"><span class="font-black">Internal DNS note:</span> {{ domain.dns_notes }}</p>
-              {% endif %}
-            </div>
-
-            <div class="mt-5 flex flex-wrap gap-2">
-              <form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_verified"><button class="rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700">Mark DNS verified</button></form>
-              <form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_failed"><button class="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-black text-red-700 hover:bg-red-50">Mark DNS failed</button></form>
-              <form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_active"><button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-slate-800">Mark SSL active</button></form>
-              <form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_failed"><button class="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-50">Mark SSL failed</button></form>
-            </div>
-          </article>
-          {% endwith %}
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="p-10 text-center"><div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700"><i class="ph ph-globe text-3xl"></i></div><h3 class="text-lg font-black">No domains yet</h3><p class="mt-1 text-sm font-semibold text-slate-500">Add a primary domain so this school can be accessed through the tenant router.</p><a href="{% url 'platform_domain_create' tenant.pk %}" class="mt-5 inline-flex rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800">Add domain</a></div>
-    {% endif %}
-  </section>
-
-  <section class="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm text-red-900">
-    <h3 class="font-black">Suspension guidance</h3>
-    <p class="mt-2 font-semibold leading-6">Changing a tenant to suspended or archived is recorded on the tenant status field. Subscription suspension can also pause school access while keeping school data protected.</p>
+    <div class="space-y-3 p-4">
+      {% for row in domain_management %}{% with domain=row.domain %}
+      <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="break-all font-black text-slate-950">{{ domain.domain }}</h3>{% if domain.is_primary %}<span class="platform-badge platform-badge--blue">Primary</span>{% endif %}<span class="platform-badge">{{ domain.get_type_display }}</span></div><p class="mt-1 text-xs font-semibold text-slate-500">Last checked {{ domain.last_checked_at|date:'M j, Y H:i'|default:'never' }}</p></div>
+          <div class="flex flex-wrap gap-2">{% if not domain.is_primary %}<form method="post" action="{% url 'platform_domain_mark_primary' domain.pk %}">{% csrf_token %}<button class="platform-button" type="submit">Make primary</button></form>{% endif %}<a href="{% url 'platform_domain_edit' domain.pk %}" class="platform-button">Edit</a><form method="post" action="{% url 'platform_domain_delete' domain.pk %}" onsubmit="return confirm('Remove this domain from the tenant?');">{% csrf_token %}<button class="platform-button platform-button--danger" type="submit">Delete</button></form></div>
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-3"><div><span class="platform-stat__label">DNS</span><p class="mt-1"><span class="platform-badge {% if domain.dns_status == 'VERIFIED' %}platform-badge--success{% elif domain.dns_status == 'FAILED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.dns_label }}</span></p></div><div><span class="platform-stat__label">SSL</span><p class="mt-1"><span class="platform-badge {% if domain.ssl_status == 'ACTIVE' %}platform-badge--success{% elif domain.ssl_status == 'FAILED' or domain.ssl_status == 'EXPIRED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.ssl_label }}</span></p></div><div><span class="platform-stat__label">Verified</span><p class="mt-1 text-sm font-black text-slate-800">{{ domain.verified_at|date:'M j, Y H:i'|default:'Not yet' }}</p></div></div>
+        <details class="platform-details mt-4"><summary class="flex items-center justify-between"><span><i class="ph ph-globe-hemisphere-west mr-2" aria-hidden="true"></i>DNS instructions and verification controls</span><i class="ph ph-caret-down text-slate-400" aria-hidden="true"></i></summary><div class="platform-details__body"><p class="text-sm font-semibold text-slate-600">{{ row.dns.summary }}</p><div class="platform-table-wrap mt-3"><table class="platform-table"><thead><tr><th>Record</th><th>Host</th><th>Target</th><th></th></tr></thead><tbody>{% for record in row.dns.records %}<tr><td><strong>{{ record.type }}</strong></td><td><code>{{ record.host }}</code></td><td><code class="break-all">{{ record.value }}</code></td><td><button type="button" class="platform-button" data-copy-value="{{ record.value }}">Copy</button></td></tr>{% endfor %}</tbody></table></div><div class="mt-4 flex flex-wrap gap-2"><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_verified"><button class="platform-button platform-button--primary" type="submit">DNS verified</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_failed"><button class="platform-button platform-button--danger" type="submit">DNS failed</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_active"><button class="platform-button" type="submit">SSL active</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_failed"><button class="platform-button platform-button--danger" type="submit">SSL failed</button></form></div></div></details>
+      </article>
+      {% endwith %}{% endfor %}
+    </div>
+    {% else %}<div class="platform-empty"><i class="ph ph-globe" aria-hidden="true"></i><strong>No domains configured</strong><p class="mt-1 text-sm">Add a primary domain before handing login details to the school owner.</p><a href="{% url 'platform_domain_create' tenant.pk %}" class="platform-button platform-button--primary mt-4">Add domain</a></div>{% endif %}
   </section>
 </div>
 {% endblock %}
