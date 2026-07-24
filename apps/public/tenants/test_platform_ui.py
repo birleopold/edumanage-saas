@@ -43,6 +43,7 @@ class PlatformConsoleUiTests(TestCase):
         self.assertContains(response, "platform-layout.css")
         self.assertContains(response, "platform-metrics.css")
         self.assertContains(response, "platform-readiness.css")
+        self.assertContains(response, "platform-records.css")
         self.assertContains(response, "platform-console.js")
         self.assertNotContains(response, "admin-module-actions.js")
         self.assertNotContains(response, "admin-module-actions.css")
@@ -101,6 +102,42 @@ class PlatformConsoleUiTests(TestCase):
         self.assertContains(response, "platform-readiness-dns-grid")
         self.assertNotContains(response, "lg:grid-cols-[220px_1fr]")
 
+    def test_tenant_detail_uses_explicit_record_layouts(self):
+        response = self.client.get(reverse("platform_tenant_detail", kwargs={"pk": self.tenant.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "platform-summary-grid--6")
+        self.assertContains(response, "platform-record-layout--tenant")
+        self.assertContains(response, "platform-owner-steps")
+        self.assertContains(response, "platform-login-pack-grid")
+        self.assertContains(response, "platform-domain-health-grid")
+        self.assertNotContains(response, "xl:grid-cols-[1fr_340px]")
+
+    def test_subscription_detail_uses_explicit_record_layouts(self):
+        response = self.client.get(
+            reverse("platform_tenant_subscription", kwargs={"tenant_id": self.tenant.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "platform-summary-grid--5")
+        self.assertContains(response, "platform-record-layout--subscription")
+        self.assertContains(response, "platform-record-form")
+        self.assertContains(response, "platform-usage-grid")
+        self.assertContains(response, "platform-stat__value--compact")
+        self.assertNotContains(response, "xl:grid-cols-[1fr_380px]")
+
+    def test_subscription_plans_and_tenant_domains_use_contained_grids(self):
+        subscriptions = self.client.get(reverse("platform_subscription_dashboard"))
+        tenants = self.client.get(reverse("platform_tenant_list"))
+
+        self.assertEqual(subscriptions.status_code, 200)
+        self.assertContains(subscriptions, "platform-plan-grid")
+        self.assertContains(subscriptions, "platform-plan-facts")
+        self.assertNotContains(subscriptions, "md:grid-cols-2 xl:grid-cols-3")
+
+        self.assertEqual(tenants.status_code, 200)
+        self.assertContains(tenants, "platform-domain-badge-list")
+
     def test_onboarding_and_maintenance_forms_render(self):
         expectations = [
             ("platform_tenant_create", "Activation creates", None),
@@ -113,6 +150,24 @@ class PlatformConsoleUiTests(TestCase):
                 response = self.assert_platform_workspace(route_name, marker, kwargs=kwargs)
                 self.assertContains(response, "platform-onboarding.css")
                 self.assertContains(response, "platform-onboarding.js")
+
+    def test_platform_forms_use_explicit_full_width_fields(self):
+        classic = self.client.get(reverse("platform_tenant_create_classic"))
+        domain = self.client.get(reverse("platform_domain_create", kwargs={"tenant_id": self.tenant.pk}))
+        wizard = self.client.get(reverse("platform_tenant_create"), {"step": "school"})
+
+        self.assertEqual(classic.status_code, 200)
+        self.assertContains(classic, "platform-form-field--full")
+        self.assertNotContains(classic, "sm:col-span-2")
+
+        self.assertEqual(domain.status_code, 200)
+        self.assertContains(domain, "platform-form-checkbox--full")
+        self.assertContains(domain, "platform-form-field--full")
+        self.assertNotContains(domain, "sm:col-span-2")
+
+        self.assertEqual(wizard.status_code, 200)
+        self.assertContains(wizard, "platform-form-field--full")
+        self.assertNotContains(wizard, "sm:col-span-2")
 
     def test_wizard_navigation_controls_bypass_required_field_validation(self):
         session = self.client.session
