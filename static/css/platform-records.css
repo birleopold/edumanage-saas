@@ -1,0 +1,241 @@
+:root {
+  --platform-record-aside: 22rem;
+}
+
+.platform-record-layout {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.platform-record-layout > * {
+  min-width: 0;
+}
+
+.platform-record-aside {
+  min-width: 0;
+}
+
+.platform-record-form {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.platform-record-form .platform-field {
+  min-width: 0;
+}
+
+.platform-record-form .platform-field textarea {
+  min-height: 5.25rem;
+}
+
+.platform-record-form__submit {
+  width: 100%;
+  min-height: 2.75rem;
+}
+
+.platform-usage-grid,
+.platform-owner-steps,
+.platform-login-pack-grid,
+.platform-domain-health-grid,
+.platform-plan-grid,
+.platform-plan-facts {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.platform-usage-grid,
+.platform-owner-steps,
+.platform-login-pack-grid,
+.platform-domain-health-grid,
+.platform-plan-grid {
+  padding: 1rem;
+}
+
+.platform-usage-card,
+.platform-owner-step,
+.platform-login-pack-card,
+.platform-plan-card {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  padding: 0.9rem;
+}
+
+.platform-usage-card__top,
+.platform-plan-card__top,
+.platform-domain-card__top,
+.platform-domain-card__identity,
+.platform-domain-card__actions,
+.platform-login-pack-row {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.platform-usage-card__top,
+.platform-plan-card__top,
+.platform-domain-card__top,
+.platform-login-pack-row {
+  justify-content: space-between;
+}
+
+.platform-usage-card__value {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 0.4rem;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.platform-login-pack-row {
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.platform-login-pack-row code {
+  min-width: 0;
+  flex: 1 1 12rem;
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.platform-domain-card {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.platform-domain-card__top {
+  flex-wrap: wrap;
+}
+
+.platform-domain-card__identity {
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.platform-domain-card__identity h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.platform-domain-card__actions {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.platform-domain-health-grid {
+  padding: 0;
+  margin-top: 0.9rem;
+}
+
+.platform-domain-health-item {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.platform-plan-grid {
+  padding: 0;
+}
+
+.platform-plan-card {
+  background: #f8fafc;
+}
+
+.platform-plan-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.85rem;
+  gap: 0.5rem;
+}
+
+.platform-plan-fact {
+  min-width: 0;
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.7rem;
+}
+
+.platform-form-field--full,
+.platform-form-checkbox--full {
+  grid-column: 1 / -1;
+}
+
+.platform-stat__value--compact {
+  max-width: 100%;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: right;
+}
+
+.platform-stat__value--date {
+  font-size: 0.95rem;
+}
+
+@media (min-width: 700px) {
+  .platform-usage-grid,
+  .platform-owner-steps,
+  .platform-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platform-domain-health-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .platform-login-pack-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .platform-record-layout {
+    grid-template-columns: minmax(0, 1fr) var(--platform-record-aside);
+  }
+
+  .platform-record-aside {
+    position: sticky;
+    top: 5.5rem;
+  }
+
+  .platform-owner-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .platform-plan-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .platform-plan-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .platform-domain-card__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
