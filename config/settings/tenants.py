@@ -68,6 +68,7 @@ MIDDLEWARE = [
     "apps.tenant.portals.error_middleware.ProfessionalErrorMiddleware",
     "django_tenants.middleware.main.TenantMainMiddleware",
     "apps.public.tenants.middleware.TenantStatusMiddleware",
+    "apps.public.tenants.platform_security.PlatformFormSecurityMiddleware",
     *MIDDLEWARE,
     "apps.tenant.orgsettings.feature_gate.FeatureGateMiddleware",
 ]
