@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -80,6 +82,25 @@ class PlatformConsoleUiTests(TestCase):
                 self.assertContains(response, grid_class)
                 self.assertContains(response, "platform-stat__icon")
                 self.assertContains(response, "platform-stat__body")
+
+    def test_metric_styles_stack_content_and_delay_six_column_layout(self):
+        tenant = self.client.get(reverse("platform_tenant_detail", kwargs={"pk": self.tenant.pk}))
+        subscription = self.client.get(
+            reverse("platform_tenant_subscription", kwargs={"tenant_id": self.tenant.pk})
+        )
+
+        self.assertEqual(tenant.status_code, 200)
+        self.assertEqual(subscription.status_code, 200)
+        self.assertContains(tenant, "platform-metrics.css")
+        self.assertContains(tenant, "20260724-9")
+        self.assertContains(subscription, "20260724-9")
+
+        metrics_css = (
+            Path(__file__).resolve().parents[3] / "static" / "css" / "platform-metrics.css"
+        ).read_text(encoding="utf-8")
+        self.assertIn("flex-direction: column;", metrics_css)
+        self.assertIn("@media (min-width: 1760px)", metrics_css)
+        self.assertNotIn('"label value"', metrics_css)
 
     def test_dashboard_uses_compact_metrics_and_explicit_panel_grid(self):
         response = self.client.get(reverse("platform_dashboard"))
