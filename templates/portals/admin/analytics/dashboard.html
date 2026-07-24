@@ -133,11 +133,11 @@
   <section class="edu-ops-note edu-ops-note--warning" aria-label="Academic term configuration required">
     <span class="edu-ops-note__icon"><i class="ph ph-calendar-x" aria-hidden="true"></i></span>
     <div><strong>No current academic term is configured</strong><span>Set a current term before generating snapshots, comparing performance or opening risk analytics.</span></div>
-    <a href="{% url 'admin_academic_terms_list' %}" class="edu-ops-button">Configure academic terms</a>
+    <a href="{% url 'admin_academic_term_list' %}" class="edu-ops-button">Configure academic terms</a>
   </section>
 
   <section class="edu-ops-card-grid" aria-label="Analytics setup actions">
-    <a href="{% url 'admin_academic_terms_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-calendar" aria-hidden="true"></i><div><strong>Academic terms</strong><span>Choose the term that should drive current analytics and reporting.</span></div></a>
+    <a href="{% url 'admin_academic_term_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-calendar" aria-hidden="true"></i><div><strong>Academic terms</strong><span>Choose the term that should drive current analytics and reporting.</span></div></a>
     <a href="{% url 'admin_analytics_records_setup' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-database" aria-hidden="true"></i><div><strong>Analytics records</strong><span>Review supporting record configuration while term setup is completed.</span></div></a>
     <a href="{% url 'admin_reports_overview' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-file-chart" aria-hidden="true"></i><div><strong>Operational reports</strong><span>Use date-range reports that do not require a current analytics snapshot.</span></div></a>
   </section>
