@@ -1,13 +1,50 @@
 {% extends 'portals/admin/base.html' %}
 
 {% block title %}{% if mode == 'edit' %}Edit Assessment{% else %}Add Assessment{% endif %}{% endblock %}
-{% block page_title %}{% if mode == 'edit' %}Edit Assessment{% else %}Add Assessment{% endif %}{% endblock %}
-{% block breadcrumbs %}Assessment setup, score limits, weight and publication controls{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_assessments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assessments</a><a href="{% url 'admin_assessments_tabulation' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Tabulation</a>{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Manage Assessment{% else %}Create Assessment{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_assessments_list' %}" class="hover:text-primary-700">Assessments</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">{% if mode == 'edit' %}Edit{% else %}Create{% endif %}</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_assessment_framework_dashboard' %}" class="edu-outline-button"><i class="ph ph-tree-structure" aria-hidden="true"></i> Framework</a>
+<a href="{% url 'admin_assessments_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Assessment register</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-purple-100">Assessment setup</p><h2 class="mt-2 text-2xl font-black">{% if mode == 'edit' %}Edit assessment{% else %}Add assessment{% endif %}</h2><p class="mt-2 max-w-2xl text-sm text-purple-100">Configure the course assessment, its reusable type and optional weighting component. Legacy weights remain available when no scheme applies.</p></section>
-  {% include 'components/ui_form.html' %}
+{% url 'admin_assessments_list' as assessment_list_url %}
+<div class="edu-ops-page max-w-6xl">
+  <section class="edu-ops-hero" aria-labelledby="assessment-form-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-exam" aria-hidden="true"></i> Assessment setup</span>
+      <h2 id="assessment-form-heading">{% if mode == 'edit' %}Keep scoring, framework and publication settings accurate{% else %}Create a course assessment with clear scoring rules{% endif %}</h2>
+      <p>Choose the correct course offering, assessment type and optional weighting component, then confirm maximum marks, contribution and assessment date.</p>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_.42fr] lg:items-start">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {% include 'components/ui_form.html' with form_cancel_url=assessment_list_url form_submit_text='Save Assessment' form_submit_icon='ph-floppy-disk' %}
+    </div>
+
+    <aside class="edu-ops-table-shell p-5 lg:sticky lg:top-24">
+      <h3 class="text-base font-black text-slate-900">Assessment-quality checklist</h3>
+      <div class="mt-4 space-y-4 text-sm text-slate-600">
+        <p class="flex gap-3"><i class="ph ph-book-open mt-0.5 text-blue-600" aria-hidden="true"></i><span><strong class="text-slate-900">Confirm course placement.</strong><br>The offering determines the term, class, campus and enrolled learner list.</span></p>
+        <p class="flex gap-3"><i class="ph ph-tag mt-0.5 text-violet-600" aria-hidden="true"></i><span><strong class="text-slate-900">Use the assessment framework.</strong><br>Select a reusable assessment type and weighting component where a valid scheme applies.</span></p>
+        <p class="flex gap-3"><i class="ph ph-gauge mt-0.5 text-emerald-600" aria-hidden="true"></i><span><strong class="text-slate-900">Set a realistic maximum score.</strong><br>Score validation uses this value and will reject marks above it.</span></p>
+        <p class="flex gap-3"><i class="ph ph-percent mt-0.5 text-amber-600" aria-hidden="true"></i><span><strong class="text-slate-900">Check contribution weight.</strong><br>Legacy weight remains available when no formal component is linked.</span></p>
+        <p class="flex gap-3"><i class="ph ph-megaphone mt-0.5 text-primary-600" aria-hidden="true"></i><span><strong class="text-slate-900">Publication is separate.</strong><br>Saving the assessment does not expose results; publication happens in score entry.</span></p>
+      </div>
+      {% if mode == 'edit' and assessment %}<div class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900"><strong>Editing assessment #{{ assessment.id }}</strong><p class="mt-1">Changes to maximum marks or framework classification may affect how existing scores are interpreted. Review score entry after saving.</p></div>{% endif %}
+    </aside>
+  </section>
 </div>
 {% endblock %}
