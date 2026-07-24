@@ -2,49 +2,54 @@
 
 {% block title %}{% if mode == 'create' %}Add Domain{% else %}Edit Domain{% endif %}{% endblock %}
 {% block page_title %}{% if mode == 'create' %}Add Domain{% else %}Edit Domain{% endif %}{% endblock %}
-{% block breadcrumbs %}{{ tenant.name }} · domain routing, DNS guidance and verification{% endblock %}
+{% block breadcrumbs %}{{ tenant.name }} · routing and primary access address{% endblock %}
 {% block header_actions %}
-  <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-arrow-left mr-1"></i> Back to Tenant</a>
+  <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="platform-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> School</a>
 {% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-3xl space-y-6">
-  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div class="mb-6 rounded-2xl bg-slate-50 p-4">
-      <p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenant</p>
-      <p class="mt-1 text-lg font-black text-slate-950">{{ tenant.name }}</p>
-      <p class="text-xs font-bold text-slate-500">Schema: {{ tenant.schema_name }}</p>
-    </div>
+<div class="platform-onboarding max-w-3xl">
+  <div class="platform-onboarding__layout">
+    <section class="platform-onboarding__main">
+      <header class="platform-form-section__header"><h2>Domain configuration</h2><p class="platform-form-section__description">Save the hostname and decide whether it is the school’s main login address.</p></header>
 
-    <form method="post" class="space-y-6">
-      {% csrf_token %}
-      {% for field in form %}
-        <div class="{% if field.field.widget.input_type == 'checkbox' %}flex items-start gap-3 rounded-2xl bg-slate-50 p-4{% endif %}">
-          {% if field.field.widget.input_type == 'checkbox' %}
-            {{ field }}
-            <div>
-              <label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-700">{{ field.label }}</label>
-              {% if field.help_text %}<p class="mt-1 text-xs font-semibold text-slate-500">{{ field.help_text }}</p>{% endif %}
-            </div>
-          {% else %}
-            <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-black text-slate-700">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<p class="mt-2 text-xs font-semibold text-slate-500">{{ field.help_text }}</p>{% endif %}
-          {% endif %}
-          {% for error in field.errors %}<p class="mt-2 text-xs font-black text-red-600">{{ error }}</p>{% endfor %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="platform-form-grid platform-form-grid--two">
+          {% for field in form %}
+            {% if field.field.widget.input_type == 'checkbox' %}
+              <div class="platform-form-checkbox sm:col-span-2">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label>{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
+            {% else %}
+              <div class="platform-form-field {% if field.name == 'domain' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>
+            {% endif %}
+          {% endfor %}
         </div>
-      {% endfor %}
-      {% if form.non_field_errors %}<div class="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>{% endif %}
-      <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-        <button type="submit" class="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-check-circle mr-1"></i> Save Domain</button>
-        <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">Cancel</a>
-      </div>
-    </form>
-  </section>
 
-  <section class="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-900">
-    <h3 class="font-black">DNS and SSL note</h3>
-    <p class="mt-2 font-semibold leading-6">After saving the domain, open the tenant detail page to view DNS instructions, mark DNS verification, record SSL status and see the latest check date.</p>
-  </section>
+        <div class="platform-domain-preview" data-domain-preview><strong>portal.school.ac.ug</strong><span>Use the school's own domain and point its DNS records to EduManage.</span></div>
+        {% if form.non_field_errors %}<div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="platform-form-actions">
+          <button type="submit" class="platform-button platform-button--primary"><i class="ph ph-check-circle" aria-hidden="true"></i> Save domain</button>
+          <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="platform-button">Cancel</a>
+        </div>
+      </form>
+    </section>
+
+    <aside class="platform-onboarding__aside">
+      <div class="platform-onboarding__aside-section">
+        <h3>{{ tenant.name }}</h3>
+        <p>Schema: <code class="font-mono font-bold text-slate-800">{{ tenant.schema_name }}</code></p>
+      </div>
+      <div class="platform-onboarding__aside-section">
+        <h3>After saving</h3>
+        <ul class="platform-check-list">
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Review the generated DNS records.</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Confirm DNS only after records resolve correctly.</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Record SSL as active after HTTPS is available.</span></li>
+          <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Only one domain should be marked primary.</span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
 </div>
 {% endblock %}
