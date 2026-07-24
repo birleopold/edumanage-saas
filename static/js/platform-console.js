@@ -17,11 +17,12 @@
     if (!sidebar || !backdrop || !openButton) return;
 
     function setOpen(open) {
-      sidebar.classList.toggle("is-open", open);
-      backdrop.classList.toggle("is-open", open);
-      sidebar.setAttribute("aria-hidden", open ? "false" : window.innerWidth < 1024 ? "true" : "false");
-      openButton.setAttribute("aria-expanded", open ? "true" : "false");
-      document.body.style.overflow = open && window.innerWidth < 1024 ? "hidden" : "";
+      var mobile = window.innerWidth < 1024;
+      sidebar.classList.toggle("is-open", open && mobile);
+      backdrop.classList.toggle("is-open", open && mobile);
+      sidebar.setAttribute("aria-hidden", mobile && !open ? "true" : "false");
+      openButton.setAttribute("aria-expanded", open && mobile ? "true" : "false");
+      document.body.style.overflow = open && mobile ? "hidden" : "";
     }
 
     openButton.addEventListener("click", function () { setOpen(true); });
@@ -32,9 +33,8 @@
       if (event.key === "Escape") setOpen(false);
     });
 
-    window.addEventListener("resize", function () {
-      if (window.innerWidth >= 1024) setOpen(false);
-    });
+    window.addEventListener("resize", function () { setOpen(false); });
+    setOpen(false);
   }
 
   function initCopyButtons() {
