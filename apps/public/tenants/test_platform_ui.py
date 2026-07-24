@@ -40,7 +40,9 @@ class PlatformConsoleUiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, marker)
         self.assertContains(response, "platform-console.css")
+        self.assertContains(response, "platform-layout.css")
         self.assertContains(response, "platform-console.js")
+        self.assertContains(response, 'class="platform-workspace"', html=False)
         return response
 
     def test_primary_platform_workspaces_render(self):
@@ -57,6 +59,14 @@ class PlatformConsoleUiTests(TestCase):
         for route_name, marker, kwargs in expectations:
             with self.subTest(route_name=route_name):
                 self.assert_platform_workspace(route_name, marker, kwargs=kwargs)
+
+    def test_dashboard_uses_compact_metrics_and_explicit_panel_grid(self):
+        response = self.client.get(reverse("platform_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "platform-stat__icon")
+        self.assertContains(response, "platform-dashboard-columns")
+        self.assertContains(response, "platform-stat--teal")
 
     def test_onboarding_and_maintenance_forms_render(self):
         expectations = [
