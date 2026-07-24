@@ -42,6 +42,7 @@ class PlatformConsoleUiTests(TestCase):
         self.assertContains(response, "platform-console.css")
         self.assertContains(response, "platform-layout.css")
         self.assertContains(response, "platform-metrics.css")
+        self.assertContains(response, "platform-readiness.css")
         self.assertContains(response, "platform-console.js")
         self.assertNotContains(response, "admin-module-actions.js")
         self.assertNotContains(response, "admin-module-actions.css")
@@ -86,6 +87,19 @@ class PlatformConsoleUiTests(TestCase):
         self.assertContains(response, "platform-stat__icon")
         self.assertContains(response, "platform-dashboard-columns")
         self.assertContains(response, "platform-stat--teal")
+
+    def test_deployment_readiness_uses_explicit_contained_layouts(self):
+        response = self.client.get(reverse("platform_deployment_readiness"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "platform-readiness-overview")
+        self.assertContains(response, "platform-readiness-score__heading")
+        self.assertContains(response, "platform-summary-grid--4")
+        self.assertContains(response, "platform-stat__body")
+        self.assertContains(response, "platform-readiness-env-grid")
+        self.assertContains(response, "platform-readiness-priorities")
+        self.assertContains(response, "platform-readiness-dns-grid")
+        self.assertNotContains(response, "lg:grid-cols-[220px_1fr]")
 
     def test_onboarding_and_maintenance_forms_render(self):
         expectations = [
