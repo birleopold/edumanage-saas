@@ -1,13 +1,58 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Assessment Tabulation{% endblock %}
-{% block page_title %}Assessment Tabulation{% endblock %}
-{% block breadcrumbs %}Select a course offering and view a student-by-assessment marks matrix{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_assessments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Assessments</a><a href="{% url 'admin_offering_list' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Course Offerings</a>{% endblock %}
+{% block title %}Marks Tabulation{% endblock %}
+{% block page_title %}Marks Tabulation{% endblock %}
+
+{% block breadcrumbs %}
+<p class="text-sm text-slate-500">Choose one course offering to view its learner-by-assessment marks matrix.</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_assessments_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Assessments</a>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-indigo-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Marks matrix</p><h2 class="mt-2 text-2xl font-black">Assessment tabulation</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Choose a course offering to view students against all assessments in one clean matrix.</p></section>
-  {% if offerings %}<section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><form method="get" action="{% url 'admin_assessments_tabulation' %}" class="space-y-5"><div><label for="id_offering" class="block text-sm font-black text-slate-700 mb-2">Course offering</label><select id="id_offering" name="offering" required class="block w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-slate-900 bg-white"><option value="">— Select —</option>{% for o in offerings %}<option value="{{ o.pk }}">{{ o.term.year.name }} {{ o.term.name }} — {{ o.course.name }}{% if o.class_group %} ({{ o.class_group.name }}){% endif %}</option>{% endfor %}</select></div><div class="flex flex-wrap gap-3 pt-3 border-t border-slate-100"><button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-black hover:bg-primary-700"><i class="ph ph-table"></i>View tabulation</button></div></form></section>{% else %}{% url 'admin_offering_list' as offerings_url %}{% include "components/ui_empty_state.html" with icon="table" title="No course offerings available" description="Create an active course offering first, then return here to build the marks matrix." action_url=offerings_url action_text="Go to offerings" %}{% endif %}
+<div class="edu-ops-page max-w-5xl">
+  <nav class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2" aria-label="Assessment tools">
+    <a href="{% url 'admin_assessments_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-list-bullets" aria-hidden="true"></i> Assessments</a>
+    <a href="{% url 'admin_assessment_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-tree-structure" aria-hidden="true"></i> Framework</a>
+    <a href="{% url 'admin_grading_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading</a>
+    <a href="{% url 'admin_assessments_tabulation' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"><i class="ph ph-table" aria-hidden="true"></i> Tabulation</a>
+  </nav>
+
+  {% if offerings %}
+  <section class="grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[1fr_.42fr]">
+    <form method="get" action="{% url 'admin_assessments_tabulation' %}" class="space-y-5">
+      <div>
+        <label for="id_offering" class="mb-2 block text-sm font-black text-slate-700">Course offering</label>
+        <select id="id_offering" name="offering" required class="block w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 font-bold text-slate-900 focus:border-primary-500">
+          <option value="">Select a course offering</option>
+          {% for offering in offerings %}
+          <option value="{{ offering.pk }}">{{ offering.term.year.name }} {{ offering.term.name }} — {{ offering.course.name }}{% if offering.class_group %} · {{ offering.class_group.name }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        <p class="mt-2 text-sm text-slate-500">Only active offerings within your permitted campus scope are shown.</p>
+      </div>
+      <button type="submit" class="edu-pill-button"><i class="ph ph-table" aria-hidden="true"></i> Open marks matrix</button>
+    </form>
+
+    <aside class="rounded-2xl bg-slate-50 p-5">
+      <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-700 shadow-sm"><i class="ph ph-info text-xl" aria-hidden="true"></i></span>
+      <h2 class="mt-4 text-base font-black text-slate-950">What the matrix shows</h2>
+      <ul class="mt-3 space-y-2 text-sm text-slate-600">
+        <li class="flex gap-2"><i class="ph ph-check text-emerald-600" aria-hidden="true"></i><span>One row for each enrolled learner.</span></li>
+        <li class="flex gap-2"><i class="ph ph-check text-emerald-600" aria-hidden="true"></i><span>One column for each assessment in the offering.</span></li>
+        <li class="flex gap-2"><i class="ph ph-check text-emerald-600" aria-hidden="true"></i><span>A print view for review or filing.</span></li>
+      </ul>
+    </aside>
+  </section>
+  {% else %}
+  <section class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-books text-2xl" aria-hidden="true"></i></span>
+    <h2 class="mt-4 text-lg font-black text-slate-950">No active course offerings</h2>
+    <p class="mt-1 max-w-md text-sm text-slate-500">Create or activate a course offering before opening the marks matrix.</p>
+    <a href="{% url 'admin_offering_list' %}" class="edu-pill-button mt-5"><i class="ph ph-books" aria-hidden="true"></i> Course offerings</a>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
