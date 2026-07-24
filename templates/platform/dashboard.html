@@ -2,93 +2,79 @@
 
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Platform Dashboard{% endblock %}
-{% block breadcrumbs %}Overview of SaaS tenants, domains, verification status and platform activity{% endblock %}
+{% block breadcrumbs %}Tenant health, domains, subscriptions and recent SaaS operations{% endblock %}
 {% block header_actions %}
-  <a href="{% url 'platform_activity' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"><i class="ph ph-clock-counter-clockwise mr-1"></i> Activity</a>
-  <a href="{% url 'platform_tenant_create' %}" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"><i class="ph ph-plus mr-1"></i> New Tenant</a>
+  <a href="{% url 'platform_activity' %}" class="platform-button"><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i><span class="hidden sm:inline">Activity</span></a>
+  <a href="{% url 'platform_tenant_create' %}" class="platform-button platform-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> New school</a>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-7">
-  <section class="rounded-[2rem] bg-gradient-to-br from-blue-950 via-slate-950 to-blue-800 p-7 text-white shadow-xl">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Public schema command center</p>
-        <h2 class="mt-3 text-3xl font-black">Manage every school tenant from one secure place.</h2>
-        <p class="mt-3 max-w-2xl text-sm font-semibold leading-6 text-blue-100">Create schools, review schema readiness, manage domains, verify hostnames and suspend or reactivate tenants with visible platform activity tracking.</p>
-      </div>
-      <a href="{% url 'platform_tenant_list' %}" class="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-950 hover:bg-blue-50">Open tenants <i class="ph ph-arrow-right ml-2"></i></a>
-    </div>
+<div class="space-y-5">
+  <section class="platform-summary-grid" aria-label="Platform summary">
+    <article class="platform-stat"><span class="platform-stat__label">Schools</span><strong class="platform-stat__value">{{ tenant_count }}</strong><span class="platform-stat__detail">All tenant records</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Active</span><strong class="platform-stat__value text-emerald-700">{{ active_count }}</strong><span class="platform-stat__detail">Schools allowed to operate</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Pending</span><strong class="platform-stat__value text-amber-700">{{ pending_count }}</strong><span class="platform-stat__detail">Still completing setup</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Suspended</span><strong class="platform-stat__value text-red-700">{{ suspended_count }}</strong><span class="platform-stat__detail">Access currently paused</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">Verified domains</span><strong class="platform-stat__value text-blue-700">{{ verified_domain_count }}/{{ domain_count }}</strong><span class="platform-stat__detail">DNS-confirmed addresses</span></article>
+    <article class="platform-stat"><span class="platform-stat__label">SSL active</span><strong class="platform-stat__value text-emerald-700">{{ ssl_active_domain_count }}</strong><span class="platform-stat__detail">Secure school addresses</span></article>
   </section>
 
-  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Tenants</p><p class="mt-3 text-3xl font-black">{{ tenant_count }}</p></div>
-    <div class="rounded-3xl border border-green-100 bg-green-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-green-700">Active</p><p class="mt-3 text-3xl font-black text-green-800">{{ active_count }}</p></div>
-    <div class="rounded-3xl border border-red-100 bg-red-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-red-700">Suspended</p><p class="mt-3 text-3xl font-black text-red-800">{{ suspended_count }}</p></div>
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-slate-500">Domains</p><p class="mt-3 text-3xl font-black">{{ domain_count }}</p></div>
-    <div class="rounded-3xl border border-blue-100 bg-blue-50 p-5 shadow-sm"><p class="text-xs font-black uppercase tracking-wider text-blue-700">Verified</p><p class="mt-3 text-3xl font-black text-blue-800">{{ verified_domain_count|default:0 }}</p></div>
+  {% if pending_count or suspended_count or verified_domain_count < domain_count %}
+  <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" aria-label="Platform attention">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex gap-3"><i class="ph ph-warning-circle mt-0.5 text-xl text-amber-700" aria-hidden="true"></i><div><strong class="font-black">Platform attention is required</strong><p class="mt-0.5 font-semibold text-amber-800">{{ pending_count }} pending school{{ pending_count|pluralize }}, {{ suspended_count }} suspended and {{ domain_count|add:'-'|add:verified_domain_count }} domain{{ domain_count|add:'-'|add:verified_domain_count|pluralize }} awaiting verification.</p></div></div>
+      <a href="{% url 'platform_tenant_list' %}" class="platform-button">Review schools</a>
+    </div>
   </section>
+  {% endif %}
 
-  <section class="grid gap-6 xl:grid-cols-3">
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-black">Recent tenants</h3><a href="{% url 'platform_tenant_list' %}" class="text-sm font-black text-blue-700 hover:text-blue-900">View all</a></div>
-      <div class="space-y-3">
-        {% for tenant in tenants %}
-          <a href="{% url 'platform_tenant_detail' tenant.pk %}" class="flex items-center justify-between rounded-2xl border border-slate-100 p-4 hover:border-blue-200 hover:bg-blue-50">
-            <span><span class="block font-black text-slate-950">{{ tenant.name }}</span><span class="text-xs font-bold text-slate-500">{{ tenant.schema_name }}</span></span>
-            <span class="rounded-full px-3 py-1 text-xs font-black {% if tenant.status == 'active' %}bg-green-100 text-green-700{% elif tenant.status == 'suspended' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-700{% endif %}">{{ tenant.status|title }}</span>
-          </a>
-        {% empty %}
-          <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500">No tenants created yet.</div>
-        {% endfor %}
+  <section class="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+    <div class="platform-panel">
+      <header class="platform-panel__header"><div><h2>Recent schools</h2><p>Newest tenant records and their operational state.</p></div><a href="{% url 'platform_tenant_list' %}" class="platform-button">View all</a></header>
+      {% if tenants %}
+      <div class="platform-table-wrap">
+        <table class="platform-table">
+          <thead><tr><th>School</th><th>Domains</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for tenant in tenants %}
+            <tr>
+              <td><div class="platform-record"><strong>{{ tenant.name }}</strong><span>{{ tenant.schema_name }} · created {{ tenant.created_at|date:'M j, Y' }}</span></div></td>
+              <td>{{ tenant.domain_count }}</td>
+              <td><span class="platform-badge {% if tenant.status == 'active' %}platform-badge--success{% elif tenant.status == 'suspended' %}platform-badge--danger{% elif tenant.status == 'pending' %}platform-badge--warning{% endif %}">{{ tenant.status|title }}</span></td>
+              <td class="text-right"><a href="{% url 'platform_tenant_detail' tenant.pk %}" class="platform-button">Manage</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+      {% else %}
+      <div class="platform-empty"><i class="ph ph-buildings" aria-hidden="true"></i><strong>No schools yet</strong><p class="mt-1 text-sm">Create the first tenant to begin onboarding.</p><a href="{% url 'platform_tenant_create' %}" class="platform-button platform-button--primary mt-4">Create school</a></div>
+      {% endif %}
     </div>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 class="mb-4 text-lg font-black">Domain snapshot</h3>
-      <div class="space-y-3">
-        {% for domain in domains %}
-          <a href="{% url 'platform_tenant_detail' domain.tenant.pk %}" class="flex items-center justify-between rounded-2xl border border-slate-100 p-4 hover:border-blue-200 hover:bg-blue-50">
-            <span><span class="block font-black text-slate-950">{{ domain.domain }}</span><span class="text-xs font-bold text-slate-500">{{ domain.tenant.name }}</span></span>
-            <span class="flex gap-2">
-              {% if domain.is_primary %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">Primary</span>{% endif %}
-              {% if domain.verified_at %}<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">Verified</span>{% else %}<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">Pending</span>{% endif %}
-            </span>
-          </a>
-        {% empty %}
-          <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500">No domains attached yet.</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-black">Recent platform activity</h3><a href="{% url 'platform_activity' %}" class="text-sm font-black text-blue-700 hover:text-blue-900">View all</a></div>
-      <div class="space-y-3">
+    <div class="platform-panel">
+      <header class="platform-panel__header"><div><h2>Recent activity</h2><p>Latest public-schema changes.</p></div><a href="{% url 'platform_activity' %}" class="platform-button">Open log</a></header>
+      <div class="divide-y divide-slate-100">
         {% for event in recent_platform_events %}
-          <a href="{% url 'platform_activity' %}?tenant={{ event.tenant_id|default:'' }}" class="block rounded-2xl border border-slate-100 p-4 hover:border-blue-200 hover:bg-blue-50">
-            <div class="flex items-start justify-between gap-3"><p class="font-black text-slate-950">{{ event.get_action_display }}</p><span class="text-xs font-bold text-slate-500">{{ event.created_at|date:'M d, H:i' }}</span></div>
-            <p class="mt-1 text-sm font-semibold text-slate-600">
-              {% if event.actor %}
-                {% with actor_name=event.actor.get_full_name %}{{ actor_name|default:event.actor.username|default:'Unknown user' }}{% endwith %}
-              {% else %}
-                System
-              {% endif %}
-            </p>
-            <p class="mt-1 text-xs font-bold text-slate-500">
-              {% if event.object_label %}
-                {{ event.object_label }}
-              {% elif event.tenant %}
-                {{ event.tenant.name }}
-              {% else %}
-                Platform item
-              {% endif %}
-            </p>
-          </a>
-        {% empty %}
-          <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm font-bold text-slate-500">No platform activity yet.</div>
-        {% endfor %}
+        <a href="{% url 'platform_activity' %}?tenant={{ event.tenant_id|default:'' }}" class="block px-4 py-3 hover:bg-slate-50">
+          <div class="flex items-start justify-between gap-3"><strong class="text-sm text-slate-900">{{ event.get_action_display }}</strong><span class="whitespace-nowrap text-[11px] font-bold text-slate-400">{{ event.created_at|date:'M j, H:i' }}</span></div>
+          <p class="mt-1 text-xs font-semibold text-slate-500">{% if event.object_label %}{{ event.object_label }}{% elif event.tenant %}{{ event.tenant.name }}{% else %}Platform item{% endif %} · {% if event.actor %}{{ event.actor.get_full_name|default:event.actor.username }}{% else %}System{% endif %}</p>
+        </a>
+        {% empty %}<div class="platform-empty"><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>No platform activity yet.</div>{% endfor %}
       </div>
     </div>
+  </section>
+
+  <section class="platform-panel">
+    <header class="platform-panel__header"><div><h2>Domain readiness</h2><p>Primary routing, DNS verification and SSL state for recently configured addresses.</p></div><a href="{% url 'platform_tenant_list' %}" class="platform-button">Manage domains</a></header>
+    {% if domains %}
+    <div class="platform-table-wrap">
+      <table class="platform-table">
+        <thead><tr><th>Domain</th><th>School</th><th>Routing</th><th>DNS</th><th>SSL</th></tr></thead>
+        <tbody>{% for domain in domains %}<tr><td><div class="platform-record"><strong>{{ domain.domain }}</strong><span>{{ domain.get_type_display }}</span></div></td><td>{{ domain.tenant.name }}</td><td>{% if domain.is_primary %}<span class="platform-badge platform-badge--blue">Primary</span>{% else %}<span class="platform-badge">Secondary</span>{% endif %}</td><td>{% if domain.is_verified %}<span class="platform-badge platform-badge--success">Verified</span>{% else %}<span class="platform-badge platform-badge--warning">{{ domain.get_dns_status_display }}</span>{% endif %}</td><td><span class="platform-badge {% if domain.ssl_status == 'ACTIVE' %}platform-badge--success{% elif domain.ssl_status == 'FAILED' or domain.ssl_status == 'EXPIRED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ domain.get_ssl_status_display }}</span></td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}<div class="platform-empty"><i class="ph ph-globe" aria-hidden="true"></i>No domains are configured.</div>{% endif %}
   </section>
 </div>
 {% endblock %}
