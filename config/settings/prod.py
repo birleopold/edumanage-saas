@@ -20,6 +20,42 @@ CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 
 
+def _csv(value):
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _https_origin_for_host(host):
+    host = (host or "").strip()
+    if not host or host == "*":
+        return None
+    if host.startswith("."):
+        return f"https://*{host}"
+    return f"https://{host}"
+
+
+_configured_csrf_origins = config(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=_csv,
+)
+_derived_csrf_origins = [
+    origin
+    for origin in (_https_origin_for_host(host) for host in ALLOWED_HOSTS)
+    if origin
+]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys([*_configured_csrf_origins, *_derived_csrf_origins])
+)
+
+# Keep the exact Django rejection reason in the service log while the public
+# error page continues to hide security internals from users.
+LOGGING["loggers"]["django.security.csrf"] = {
+    "handlers": ["console"],
+    "level": "WARNING",
+    "propagate": False,
+}
+
+
 def _require(condition, message):
     if not condition:
         raise ImproperlyConfigured(message)
@@ -27,6 +63,7 @@ def _require(condition, message):
 
 _require(bool(SECRET_KEY) and SECRET_KEY != "unsafe-dev-key" and len(SECRET_KEY) >= 50, "DJANGO_SECRET_KEY must be a unique production secret of at least 50 characters.")
 _require(ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS, "DJANGO_ALLOWED_HOSTS must list explicit production hosts.")
+_require(CSRF_TRUSTED_ORIGINS, "At least one trusted HTTPS origin is required for production forms.")
 _require(bool(DATABASES["default"].get("PASSWORD")), "POSTGRES_PASSWORD is required in production.")
 _require(MOBILE_MONEY_DRY_RUN_ENABLED is False, "MOBILE_MONEY_DRY_RUN_ENABLED must be false in production.")
 _require(WEBHOOK_ALLOW_PRIVATE_TARGETS is False, "WEBHOOK_ALLOW_PRIVATE_TARGETS must be false in production.")
