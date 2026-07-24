@@ -1,41 +1,95 @@
 {% extends 'portals/admin/base.html' %}
-{% block title %}Assessment Setup{% endblock %}
-{% block page_title %}Assessment Setup{% endblock %}
-{% block breadcrumbs %}Set assessment types and how marks are combined.{% endblock %}
-{% block header_actions %}
-<a href="{% url 'admin_assessments_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">Assessments</a>
-<a href="{% url 'admin_grading_framework_dashboard' %}" class="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-800">Grading</a>
-<a href="{% url 'admin_weighting_scheme_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white">Add Marking Scheme</a>
+
+{% block title %}Assessment Framework{% endblock %}
+{% block page_title %}Assessment Framework{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <a href="{% url 'admin_assessments_list' %}" class="hover:text-primary-700">Assessments</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Framework</span>
+</nav>
 {% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_assessments_list' %}" class="edu-outline-button"><i class="ph ph-arrow-left" aria-hidden="true"></i> Assessments</a>
+<a href="{% url 'admin_grading_framework_dashboard' %}" class="edu-outline-button"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading</a>
+<a href="{% url 'admin_weighting_scheme_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add weighting scheme</a>
+{% endblock %}
+
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="space-y-7">
-  <section class="rounded-3xl bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-800 p-6 text-white shadow-xl">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-      <div><p class="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Assessment setup</p><h2 class="mt-2 text-3xl font-black">Assessment types and weighting</h2><p class="mt-3 max-w-3xl text-sm text-blue-100">Create assessment types and decide how classwork and exam marks are combined.</p></div>
-      <div class="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15"><p class="text-xs font-bold uppercase text-blue-100">Status</p><p class="mt-1 text-3xl font-black">{% if readiness.ready %}Ready{% else %}Needs attention{% endif %}</p></div>
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="assessment-framework-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-tree-structure" aria-hidden="true"></i> Assessment governance</span>
+      <h2 id="assessment-framework-heading">Define how school assessments are classified and combined</h2>
+      <p>Create reusable assessment types, connect them to weighting schemes and validate that each scheme totals correctly before relying on calculated results.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_weighting_scheme_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Add weighting scheme</a>
+      <a href="{% url 'admin_assessment_type_create' %}"><i class="ph ph-tag" aria-hidden="true"></i> Add assessment type</a>
+      <a href="{% url 'admin_grading_framework_dashboard' %}"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading framework</a>
     </div>
   </section>
 
-  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Assessment types</p><p class="mt-2 text-3xl font-black text-slate-950">{{ types|length }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Marking schemes</p><p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.scheme_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Not organised</p><p class="mt-2 text-3xl font-black text-slate-950">{{ readiness.unclassified_assessment_count }}</p></div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5"><p class="text-xs font-black uppercase text-slate-500">Schemes needing attention</p><p class="mt-2 text-3xl font-black {% if readiness.invalid_scheme_count %}text-red-600{% else %}text-emerald-600{% endif %}">{{ readiness.invalid_scheme_count }}</p></div>
+  <section class="edu-ops-stat-grid" aria-label="Assessment-framework readiness">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-tag" aria-hidden="true"></i></span><div><small>Assessment types</small><strong>{{ types|length }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-scales" aria-hidden="true"></i></span><div><small>Weighting schemes</small><strong>{{ readiness.scheme_count }}</strong></div></article>
+    <article class="edu-ops-stat {% if readiness.unclassified_assessment_count %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-folder-dashed" aria-hidden="true"></i></span><div><small>Unclassified records</small><strong>{{ readiness.unclassified_assessment_count }}</strong></div></article>
+    <article class="edu-ops-stat {% if readiness.invalid_scheme_count %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span><div><small>Schemes with issues</small><strong>{{ readiness.invalid_scheme_count }}</strong></div></article>
   </section>
 
-  <section class="rounded-2xl border border-slate-200 bg-white p-5">
-    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><h3 class="text-lg font-black text-slate-950">Organise current assessments</h3><p class="mt-1 text-sm text-slate-500">Group existing assessments and exam papers under the right assessment type.</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="classify"><button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white">Organise Records</button></form></div>
+  {% if readiness.invalid_scheme_count %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Invalid weighting schemes">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span>
+    <div><strong>{{ readiness.invalid_scheme_count }} weighting scheme{{ readiness.invalid_scheme_count|pluralize }} need correction</strong><span>Open each affected scheme and resolve missing components, duplicate types or total-weight errors before relying on calculated assessment contributions.</span></div>
+    <a href="#weighting-schemes" class="edu-ops-button">Review schemes</a>
+  </section>
+  {% elif readiness.unclassified_assessment_count %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Unclassified assessment records">
+    <span class="edu-ops-note__icon"><i class="ph ph-folder-dashed" aria-hidden="true"></i></span>
+    <div><strong>{{ readiness.unclassified_assessment_count }} assessment record{{ readiness.unclassified_assessment_count|pluralize }} are not organised</strong><span>Use classification only after assessment types and weighting components have been reviewed. Existing scores and exam-paper records remain unchanged.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--warning">Classification needed</span>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Assessment-framework readiness status">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>The assessment framework is ready</strong><span>Assessment records are classified and no weighting-scheme validation issue is currently flagged.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Ready</span>
+  </section>
+  {% endif %}
+
+  <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_.44fr] xl:items-start">
+    <div class="edu-ops-table-shell p-5">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div><h3 class="text-lg font-black text-slate-900">Organise existing assessment records</h3><p class="mt-1 text-sm text-slate-600">Classify compatible assessments and exam papers under the available assessment types and weighting components.</p></div>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="classify"><button class="edu-pill-button" type="submit" onclick="return confirm('Classify existing assessments and exam papers using the current framework? Existing scores will not be deleted.');"><i class="ph ph-magic-wand" aria-hidden="true"></i> Organise records</button></form>
+      </div>
+    </div>
+    <aside class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-900"><strong>Safe classification</strong><p class="mt-1">This action adds compatible type and component links. It does not replace marks, publish results or change learner enrolment.</p></aside>
   </section>
 
-  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-slate-200 p-5"><div><h3 class="text-lg font-black text-slate-950">Assessment types</h3><p class="text-sm text-slate-500">Examples include tests, coursework, practicals and final exams.</p></div><a href="{% url 'admin_assessment_type_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white">Add Type</a></div>
-    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Code</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Name</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Kind</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Status</th><th class="px-5 py-3"></th></tr></thead><tbody class="divide-y divide-slate-100">{% for item in types %}<tr><td class="px-5 py-3 font-black text-slate-900">{{ item.code }}</td><td class="px-5 py-3"><span class="font-bold text-slate-900">{{ item.local_display_name }}</span>{% if item.local_display_name != item.name %}<span class="block text-xs text-slate-500">{{ item.name }}</span>{% endif %}</td><td class="px-5 py-3 text-sm text-slate-600">{{ item.get_kind_display }}</td><td class="px-5 py-3 text-sm">{% if item.is_active %}<span class="text-emerald-700">Active</span>{% else %}<span class="text-slate-500">Inactive</span>{% endif %}</td><td class="px-5 py-3 text-right"><a class="text-sm font-black text-primary-700" href="{% url 'admin_assessment_type_edit' item.pk %}">Edit</a></td></tr>{% empty %}<tr><td colspan="5" class="p-8 text-center text-slate-500">No assessment types found.</td></tr>{% endfor %}</tbody></table></div>
+  <section class="edu-ops-table-shell" aria-labelledby="assessment-types-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="assessment-types-heading">Assessment types</h3><p>Reusable categories such as tests, coursework, practicals and final examinations.</p></div><a href="{% url 'admin_assessment_type_create' %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> Add type</a></header>
+    {% if types %}
+    <div class="overflow-x-auto"><table class="edu-ops-table"><caption class="sr-only">Assessment types with code, local display name, kind, status and edit action</caption><thead><tr><th scope="col">Type</th><th scope="col">Display name</th><th scope="col">Kind</th><th scope="col">Status</th><th scope="col" class="text-right">Action</th></tr></thead><tbody>{% for item in types %}<tr><td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-tag" aria-hidden="true"></i></span><div><strong>{{ item.code }}</strong><span>Assessment type</span></div></div></td><td><div class="edu-table-meta"><strong>{{ item.local_display_name }}</strong>{% if item.local_display_name != item.name %}Default: {{ item.name }}{% else %}Configured display name{% endif %}</div></td><td><span class="edu-ops-badge edu-ops-badge--violet">{{ item.get_kind_display }}</span></td><td>{% if item.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-eye-slash" aria-hidden="true"></i> Inactive</span>{% endif %}</td><td><div class="edu-ops-actions"><a class="edu-ops-button" href="{% url 'admin_assessment_type_edit' item.pk %}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a></div></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}
+      {% url 'admin_assessment_type_create' as assessment_type_url %}
+      {% include "components/ui_empty_state.html" with icon="tag" title="No assessment types are configured" description="Create reusable types before organising assessments and weighting schemes." action_url=assessment_type_url action_text="Add Assessment Type" %}
+    {% endif %}
   </section>
 
-  <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-slate-200 p-5"><div><h3 class="text-lg font-black text-slate-950">Marking schemes</h3><p class="text-sm text-slate-500">Set the percentage each assessment type contributes.</p></div><a href="{% url 'admin_weighting_scheme_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-black text-white">Add Scheme</a></div>
-    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Scheme</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Applies to</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Total weight</th><th class="px-5 py-3 text-left text-xs font-black uppercase text-slate-500">Status</th><th class="px-5 py-3"></th></tr></thead><tbody class="divide-y divide-slate-100">{% for row in scheme_rows %}<tr><td class="px-5 py-4"><div class="font-black text-slate-950">{{ row.scheme.name }}</div><div class="text-xs text-slate-500">{{ row.scheme.code }} · priority {{ row.scheme.priority }}</div></td><td class="px-5 py-4 text-sm text-slate-600">{{ row.scheme.scope_label }}</td><td class="px-5 py-4 text-sm font-bold text-slate-900">{{ row.scheme.total_weight }}</td><td class="px-5 py-4 text-sm">{% if row.errors %}<span class="font-bold text-red-600">{{ row.errors|length }} issue{{ row.errors|length|pluralize }}</span>{% else %}<span class="font-bold text-emerald-700">Ready</span>{% endif %}</td><td class="px-5 py-4 text-right"><a class="text-sm font-black text-primary-700" href="{% url 'admin_weighting_scheme_detail' row.scheme.pk %}">Manage</a></td></tr>{% empty %}<tr><td colspan="5" class="p-8 text-center text-slate-500">No marking schemes added yet.</td></tr>{% endfor %}</tbody></table></div>
+  <section id="weighting-schemes" class="edu-ops-table-shell" aria-labelledby="weighting-schemes-heading">
+    <header class="edu-ops-table-heading"><div><h3 id="weighting-schemes-heading">Weighting schemes</h3><p>Rules controlling how assessment components contribute to the final academic result.</p></div><a href="{% url 'admin_weighting_scheme_create' %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> Add scheme</a></header>
+    {% if scheme_rows %}
+    <div class="overflow-x-auto"><table class="edu-ops-table"><caption class="sr-only">Weighting schemes with scope, total weight, validation status and management action</caption><thead><tr><th scope="col">Scheme</th><th scope="col">Scope</th><th scope="col">Total weight</th><th scope="col">Validation</th><th scope="col" class="text-right">Action</th></tr></thead><tbody>{% for row in scheme_rows %}<tr><td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-scales" aria-hidden="true"></i></span><div><strong>{{ row.scheme.name }}</strong><span>{{ row.scheme.code }} · priority {{ row.scheme.priority }}</span></div></div></td><td><div class="edu-table-meta"><strong>{{ row.scheme.scope_label }}</strong>{% if row.scheme.academic_term %}{{ row.scheme.academic_term }}{% else %}General applicability{% endif %}</div></td><td><span class="edu-ops-badge {% if row.scheme.total_weight == 100 %}edu-ops-badge--success{% else %}edu-ops-badge--warning{% endif %}">{{ row.scheme.total_weight }}%</span></td><td>{% if row.errors %}<div class="edu-table-meta"><strong class="text-rose-700">{{ row.errors|length }} issue{{ row.errors|length|pluralize }}</strong>{{ row.errors|join:'; '|truncatechars:120 }}</div>{% else %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Ready</span>{% endif %}</td><td><div class="edu-ops-actions"><a class="edu-ops-button edu-ops-button--primary" href="{% url 'admin_weighting_scheme_detail' row.scheme.pk %}"><i class="ph ph-gear" aria-hidden="true"></i> Manage</a></div></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}
+      {% url 'admin_weighting_scheme_create' as weighting_scheme_url %}
+      {% include "components/ui_empty_state.html" with icon="scales" title="No weighting schemes are configured" description="Create a scheme and add components that total the intended academic contribution." action_url=weighting_scheme_url action_text="Add Weighting Scheme" %}
+    {% endif %}
   </section>
 </div>
 {% endblock %}
