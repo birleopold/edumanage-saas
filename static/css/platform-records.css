@@ -200,7 +200,7 @@
   font-size: 1.05rem;
   overflow-wrap: anywhere;
   white-space: normal;
-  text-align: right;
+  text-align: left;
 }
 
 .platform-stat__value--date {
