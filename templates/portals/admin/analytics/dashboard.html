@@ -1,19 +1,146 @@
 {% extends "portals/admin/base.html" %}
 {% load static %}
 
-{% block title %}Analytics Dashboard{% endblock %}
-{% block page_title %}Analytics Dashboard{% endblock %}
-{% block breadcrumbs %}Performance analytics, risk alerts, class trends and snapshot generation{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_analytics_records_setup' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Analytics Records</a><a href="{% url 'admin_analytics_charts' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Charts</a><a href="{% url 'admin_analytics_alerts_list' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Risk Queue</a><a href="{% url 'admin_analytics_generate_snapshots' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-arrows-clockwise mr-1"></i> Generate Reports</a>{% endblock %}
+{% block title %}Performance Analytics{% endblock %}
+{% block page_title %}Performance Analytics{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs">
+  <a href="{% url 'admin_home' %}" class="hover:text-primary-700">Dashboard</a>
+  <i class="ph ph-caret-right text-[10px]" aria-hidden="true"></i>
+  <span aria-current="page">Analytics</span>
+</nav>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_analytics_records_setup' %}" class="edu-outline-button"><i class="ph ph-database" aria-hidden="true"></i> Analytics records</a>
+<a href="{% url 'admin_analytics_alerts_list' %}" class="edu-outline-button"><i class="ph ph-warning" aria-hidden="true"></i> Risk queue</a>
+<a href="{% url 'admin_analytics_generate_snapshots' %}" class="edu-pill-button"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Generate snapshots</a>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-900 p-6 text-white shadow-lg"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Performance intelligence</p><h2 class="mt-2 text-2xl font-black">Performance analytics</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">Review student performance, GPA distribution, risk alerts and class trends for the selected term.</p></div><div class="flex flex-wrap gap-2"><select onchange="window.location.href='?term=' + this.value" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900">{% for term in terms %}<option value="{{ term.id }}" {% if term == current_term %}selected{% endif %}>{{ term }}</option>{% endfor %}</select><a href="{% url 'admin_analytics_records_setup' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Analytics Records</a><a href="{% url 'admin_analytics_generate_snapshots' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Generate Reports</a></div></div></section>
-  <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-blue-900"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><p class="text-sm"><span class="font-black">Recommended review sequence:</span> analytics records → critical risk → class trends → teacher metrics → snapshot generation.</p><a href="{% url 'admin_analytics_records_setup' %}" class="text-sm font-black text-blue-700 hover:text-blue-900">Open Analytics Records</a></div></section>
-  <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4"><div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><p class="text-xs uppercase font-black text-slate-500">Total Students</p><p class="mt-1 text-3xl font-black text-primary-700">{{ stats.total_students }}</p></div><div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><p class="text-xs uppercase font-black text-slate-500">Average GPA</p><p class="mt-1 text-3xl font-black text-green-700">{{ stats.average_gpa|floatformat:2|default:"N/A" }}</p></div><div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><p class="text-xs uppercase font-black text-slate-500">Excellent</p><p class="mt-1 text-3xl font-black text-yellow-700">{{ stats.excellent_students }}</p><p class="text-xs text-slate-500">GPA ≥ 3.5</p></div><div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><p class="text-xs uppercase font-black text-slate-500">At Risk</p><p class="mt-1 text-3xl font-black text-orange-700">{{ stats.at_risk_count }}</p></div><div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><p class="text-xs uppercase font-black text-slate-500">Critical Risk</p><p class="mt-1 text-3xl font-black text-red-700">{{ stats.critical_risk_count }}</p></div></section>
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200"><h3 class="text-lg font-black text-slate-900 mb-4">Performance Distribution</h3><canvas id="performanceDistributionChart"></canvas></div><div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200"><h3 class="text-lg font-black text-slate-900 mb-4">GPA Distribution</h3><canvas id="gpaDistributionChart"></canvas></div></section>
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100 flex items-center justify-between"><h3 class="text-lg font-black text-slate-900">Recent At-Risk Alerts</h3><a href="{% url 'admin_analytics_alerts_list' %}" class="text-sm font-black text-primary-700">View All →</a></div><div class="divide-y divide-slate-100">{% for alert in recent_alerts %}<a href="{% url 'admin_analytics_alert_detail' alert.id %}" class="block p-4 hover:bg-slate-50"><div class="flex items-start justify-between gap-4"><div><div class="flex items-center gap-2 mb-1"><span class="px-2 py-1 text-xs rounded-full font-black {% if alert.severity == 'CRITICAL' %}bg-red-100 text-red-700{% elif alert.severity == 'HIGH' %}bg-orange-100 text-orange-700{% elif alert.severity == 'MEDIUM' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">{{ alert.get_severity_display }}</span><span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700 font-black">{{ alert.get_status_display }}</span></div><p class="font-black text-slate-900">{{ alert.student }}</p><p class="text-sm text-slate-600 mt-1">{{ alert.title }}</p></div><span class="text-xs text-slate-500">{{ alert.created_at|timesince }} ago</span></div></a>{% empty %}<div class="p-8 text-center text-slate-500"><i class="ph ph-check-circle text-4xl mb-2"></i><p>No active alerts</p></div>{% endfor %}</div></div><div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-5 border-b border-slate-100"><h3 class="text-lg font-black text-slate-900">Top Performing Classes</h3></div><div class="divide-y divide-slate-100">{% for report in class_reports %}<a href="{% url 'admin_analytics_class_report' report.stream.id %}{% if current_term %}?term={{ current_term.id }}{% endif %}" class="block p-4 hover:bg-slate-50"><div class="flex items-center justify-between"><div><p class="font-black text-slate-900">{{ report.stream }}</p><p class="text-sm text-slate-600 mt-1">{{ report.total_students }} students</p></div><div class="text-right"><p class="text-lg font-black text-green-700">{{ report.average_gpa|floatformat:2 }}</p><p class="text-xs text-slate-500">Avg GPA</p></div></div></a>{% empty %}<div class="p-8 text-center text-slate-500"><i class="ph ph-chart-bar text-4xl mb-2"></i><p>No class reports available</p></div>{% endfor %}</div></div></section>
-  <section class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200"><h3 class="text-lg font-black text-slate-900 mb-4">Quick Actions</h3><div class="grid grid-cols-1 md:grid-cols-5 gap-4"><a href="{% url 'admin_analytics_records_setup' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50"><i class="ph-fill ph-database text-2xl text-primary-600"></i><div><p class="font-black text-slate-900">Analytics Records</p><p class="text-xs text-slate-600">Add or manage records</p></div></a><a href="{% url 'admin_analytics_student_list' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50"><i class="ph-fill ph-users text-2xl text-primary-600"></i><div><p class="font-black text-slate-900">Student Performance</p><p class="text-xs text-slate-600">View all students</p></div></a><a href="{% url 'admin_analytics_alerts_list' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50"><i class="ph-fill ph-warning text-2xl text-orange-600"></i><div><p class="font-black text-slate-900">At-Risk Alerts</p><p class="text-xs text-slate-600">Manage alerts</p></div></a><a href="{% url 'admin_analytics_teacher_metrics' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50"><i class="ph-fill ph-chalkboard-teacher text-2xl text-green-600"></i><div><p class="font-black text-slate-900">Teacher Metrics</p><p class="text-xs text-slate-600">Performance data</p></div></a><a href="{% url 'admin_analytics_generate_snapshots' %}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50"><i class="ph-fill ph-arrows-clockwise text-2xl text-purple-600"></i><div><p class="font-black text-slate-900">Generate Reports</p><p class="text-xs text-slate-600">Bulk operations</p></div></a></div></section>
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  <section class="edu-ops-hero" aria-labelledby="analytics-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-brain" aria-hidden="true"></i> Performance intelligence</span>
+      <h2 id="analytics-heading">See achievement, coverage and learner risk before intervention is late</h2>
+      <p>Use performance snapshots to compare GPA distribution, identify active risk alerts, review leading classes and move into learner or teacher-level evidence.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_analytics_generate_snapshots' %}" class="edu-ops-primary"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Generate snapshots</a>
+      <a href="{% url 'admin_analytics_risk_radar' %}"><i class="ph ph-radar" aria-hidden="true"></i> Risk radar</a>
+      <a href="{% url 'admin_analytics_student_list' %}"><i class="ph ph-student" aria-hidden="true"></i> Student performance</a>
+      <a href="{% url 'admin_analytics_charts' %}"><i class="ph ph-chart-bar" aria-hidden="true"></i> Charts</a>
+    </div>
+  </section>
+
+  {% if current_term %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Current analytics term">
+    <span class="edu-ops-note__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span>
+    <div><strong>Current analytics term: {{ current_term }}</strong><span>All summary indicators below use the current term’s generated student snapshots and permitted campus scope.</span></div>
+    {% if terms %}<label class="edu-ops-field min-w-56"><span class="sr-only">Review another term</span><select onchange="if(this.value){window.location.href='?term=' + this.value;}">{% for term in terms %}<option value="{{ term.id }}" {% if term == current_term %}selected{% endif %}>{{ term }}</option>{% endfor %}</select></label>{% endif %}
+  </section>
+
+  <section class="edu-ops-stat-grid" aria-label="Performance analytics summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><small>Active students</small><strong>{{ stats.total_students }}</strong><span>Within permitted campus scope</span></div></article>
+    <article class="edu-ops-stat {% if stats.average_gpa and stats.average_gpa >= 3.0 %}edu-ops-stat--sage{% elif stats.average_gpa %}edu-ops-stat--amber{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-gauge" aria-hidden="true"></i></span><div><small>Average GPA</small><strong>{{ stats.average_gpa|floatformat:2|default:'—' }}</strong><span>Generated snapshots</span></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-star" aria-hidden="true"></i></span><div><small>Excellent students</small><strong>{{ stats.excellent_students }}</strong><span>GPA 3.5 or above</span></div></article>
+    <article class="edu-ops-stat {% if stats.at_risk_count %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span><div><small>At risk</small><strong>{{ stats.at_risk_count }}</strong><span>All active risk levels</span></div></article>
+    <article class="edu-ops-stat {% if stats.critical_risk_count %}edu-ops-stat--rose{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-warning-octagon" aria-hidden="true"></i></span><div><small>Critical risk</small><strong>{{ stats.critical_risk_count }}</strong><span>Immediate review priority</span></div></article>
+  </section>
+
+  {% if stats.critical_risk_count %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Critical learner risk attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-bell-ringing" aria-hidden="true"></i></span>
+    <div><strong>{{ stats.critical_risk_count }} learner{{ stats.critical_risk_count|pluralize }} are at critical risk</strong><span>Review attendance, fees, assessment, discipline and coursework evidence before assigning or closing an intervention.</span></div>
+    <a href="{% url 'admin_analytics_risk_radar' %}" class="edu-ops-button">Open risk radar</a>
+  </section>
+  {% elif stats.at_risk_count %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Learner risk attention">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>{{ stats.at_risk_count }} learner{{ stats.at_risk_count|pluralize }} need performance review</strong><span>Use the risk queue and student performance records to document proportionate intervention.</span></div>
+    <a href="{% url 'admin_analytics_alerts_list' %}" class="edu-ops-button">Review alerts</a>
+  </section>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--success" aria-label="Learner risk status">
+    <span class="edu-ops-note__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span>
+    <div><strong>No at-risk snapshot is currently flagged for this term</strong><span>Regenerate snapshots after meaningful attendance, fee, assessment or discipline changes.</span></div>
+    <span class="edu-ops-badge edu-ops-badge--success">Risk queue clear</span>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-card-grid" aria-label="Analytics work areas">
+    <a href="{% url 'admin_analytics_risk_radar' %}" class="edu-ops-module-card" style="--ops-card-bg:#fee2e2;--ops-card-text:#991b1b;"><i class="ph ph-radar" aria-hidden="true"></i><div><strong>Student risk radar</strong><span>Combine attendance, fees, assessments, discipline and coursework signals.</span></div></a>
+    <a href="{% url 'admin_analytics_student_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-student" aria-hidden="true"></i><div><strong>Student performance</strong><span>Search snapshots, compare GPA and filter by stream or risk level.</span></div></a>
+    <a href="{% url 'admin_analytics_teacher_metrics' %}" class="edu-ops-module-card" style="--ops-card-bg:#dcfce7;--ops-card-text:#166534;"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i><div><strong>Teacher metrics</strong><span>Review available teaching and learner-performance indicators.</span></div></a>
+    <a href="{% url 'admin_analytics_records_setup' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-database" aria-hidden="true"></i><div><strong>Analytics records</strong><span>Manage the supporting records used by intelligence workflows.</span></div></a>
+    <a href="{% url 'admin_analytics_charts' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-chart-bar" aria-hidden="true"></i><div><strong>Visual charts</strong><span>Explore student headcount and invoice-status composition.</span></div></a>
+    <a href="{% url 'admin_reports_overview' %}" class="edu-ops-module-card" style="--ops-card-bg:#f1f5f9;--ops-card-text:#475569;"><i class="ph ph-file-chart" aria-hidden="true"></i><div><strong>School reports</strong><span>Move into finance, attendance, academic and advanced exports.</span></div></a>
+  </section>
+
+  <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <article class="edu-ops-table-shell p-5" aria-labelledby="performance-distribution-heading"><header class="edu-ops-table-heading"><div><h3 id="performance-distribution-heading">Performance distribution</h3><p>Student snapshots grouped into five GPA performance bands.</p></div></header><div class="mx-auto max-w-xl"><canvas id="performanceDistributionChart" aria-label="Performance distribution chart" role="img"></canvas></div></article>
+    <article class="edu-ops-table-shell p-5" aria-labelledby="gpa-distribution-heading"><header class="edu-ops-table-heading"><div><h3 id="gpa-distribution-heading">GPA distribution</h3><p>Count of generated student snapshots within each performance band.</p></div></header><div class="mx-auto max-w-xl"><canvas id="gpaDistributionChart" aria-label="GPA distribution bar chart" role="img"></canvas></div></article>
+  </section>
+
+  <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <article class="edu-ops-table-shell" aria-labelledby="recent-risk-alerts-heading">
+      <header class="edu-ops-table-heading"><div><h3 id="recent-risk-alerts-heading">Recent active risk alerts</h3><p>Open or acknowledged alerts requiring documented review.</p></div><a href="{% url 'admin_analytics_alerts_list' %}" class="edu-ops-button">View all</a></header>
+      <div class="divide-y divide-slate-100">{% for alert in recent_alerts %}<a href="{% url 'admin_analytics_alert_detail' alert.id %}" class="block p-4 transition hover:bg-slate-50"><div class="flex items-start justify-between gap-4"><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-warning" aria-hidden="true"></i></span><div><strong>{{ alert.student }}</strong><span>{{ alert.title }}</span></div></div><div class="edu-ops-badges"><span class="edu-ops-badge {% if alert.severity == 'CRITICAL' %}edu-ops-badge--danger{% elif alert.severity == 'HIGH' or alert.severity == 'MEDIUM' %}edu-ops-badge--warning{% else %}edu-ops-badge--blue{% endif %}">{{ alert.get_severity_display }}</span><span class="edu-ops-badge">{{ alert.get_status_display }}</span></div></div><p class="mt-2 text-right text-xs text-slate-500">{{ alert.created_at|timesince }} ago</p></a>{% empty %}<div class="p-10 text-center text-sm text-slate-500"><i class="ph ph-check-circle mb-2 text-4xl text-emerald-600" aria-hidden="true"></i><p>No active alert is available for this term.</p></div>{% endfor %}</div>
+    </article>
+
+    <article class="edu-ops-table-shell" aria-labelledby="top-classes-heading">
+      <header class="edu-ops-table-heading"><div><h3 id="top-classes-heading">Leading class performance</h3><p>Highest available class-report GPA values for the current term.</p></div></header>
+      <div class="divide-y divide-slate-100">{% for report in class_reports %}<a href="{% url 'admin_analytics_class_report' report.stream.id %}?term={{ current_term.id }}" class="flex items-center justify-between gap-4 p-4 transition hover:bg-slate-50"><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><div><strong>{{ report.stream }}</strong><span>{{ report.total_students }} student{{ report.total_students|pluralize }}</span></div></div><div class="text-right"><strong class="text-xl text-emerald-700">{{ report.average_gpa|floatformat:2 }}</strong><span class="block text-xs text-slate-500">Average GPA</span></div></a>{% empty %}<div class="p-10 text-center text-sm text-slate-500"><i class="ph ph-chart-bar mb-2 text-4xl" aria-hidden="true"></i><p>No class report is available. Generate current snapshots and class reports.</p></div>{% endfor %}</div>
+    </article>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const distributionCtx = document.getElementById('performanceDistributionChart').getContext('2d');
+    new Chart(distributionCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Excellent', 'Good', 'Average', 'Below Average', 'Failing'],
+        datasets: [{
+          data: [{{ distribution.excellent }}, {{ distribution.good }}, {{ distribution.average }}, {{ distribution.below_average }}, {{ distribution.failing }}],
+          backgroundColor: ['rgba(34,197,94,.8)', 'rgba(59,130,246,.8)', 'rgba(234,179,8,.8)', 'rgba(249,115,22,.8)', 'rgba(239,68,68,.8)'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    const gpaCtx = document.getElementById('gpaDistributionChart').getContext('2d');
+    new Chart(gpaCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Excellent', 'Good', 'Average', 'Below Average', 'Failing'],
+        datasets: [{
+          label: 'Number of Students',
+          data: [{{ distribution.excellent }}, {{ distribution.good }}, {{ distribution.average }}, {{ distribution.below_average }}, {{ distribution.failing }}],
+          backgroundColor: ['rgba(34,197,94,.8)', 'rgba(59,130,246,.8)', 'rgba(234,179,8,.8)', 'rgba(249,115,22,.8)', 'rgba(239,68,68,.8)'],
+          borderRadius: 8,
+          barThickness: 40
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  </script>
+  {% else %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="Academic term configuration required">
+    <span class="edu-ops-note__icon"><i class="ph ph-calendar-x" aria-hidden="true"></i></span>
+    <div><strong>No current academic term is configured</strong><span>Set a current term before generating snapshots, comparing performance or opening risk analytics.</span></div>
+    <a href="{% url 'admin_academic_terms_list' %}" class="edu-ops-button">Configure academic terms</a>
+  </section>
+
+  <section class="edu-ops-card-grid" aria-label="Analytics setup actions">
+    <a href="{% url 'admin_academic_terms_list' %}" class="edu-ops-module-card" style="--ops-card-bg:#fef3c7;--ops-card-text:#92400e;"><i class="ph ph-calendar" aria-hidden="true"></i><div><strong>Academic terms</strong><span>Choose the term that should drive current analytics and reporting.</span></div></a>
+    <a href="{% url 'admin_analytics_records_setup' %}" class="edu-ops-module-card" style="--ops-card-bg:#ede9fe;--ops-card-text:#6d28d9;"><i class="ph ph-database" aria-hidden="true"></i><div><strong>Analytics records</strong><span>Review supporting record configuration while term setup is completed.</span></div></a>
+    <a href="{% url 'admin_reports_overview' %}" class="edu-ops-module-card" style="--ops-card-bg:#e0f2fe;--ops-card-text:#0369a1;"><i class="ph ph-file-chart" aria-hidden="true"></i><div><strong>Operational reports</strong><span>Use date-range reports that do not require a current analytics snapshot.</span></div></a>
+  </section>
+  {% endif %}
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script>const distributionCtx=document.getElementById('performanceDistributionChart').getContext('2d');new Chart(distributionCtx,{type:'doughnut',data:{labels:['Excellent','Good','Average','Below Average','Failing'],datasets:[{data:[{{ distribution.excellent }},{{ distribution.good }},{{ distribution.average }},{{ distribution.below_average }},{{ distribution.failing }}],backgroundColor:['rgba(34,197,94,.8)','rgba(59,130,246,.8)','rgba(234,179,8,.8)','rgba(249,115,22,.8)','rgba(239,68,68,.8)'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'}}}});const gpaCtx=document.getElementById('gpaDistributionChart').getContext('2d');new Chart(gpaCtx,{type:'bar',data:{labels:['Excellent','Good','Average','Below Avg','Failing'],datasets:[{label:'Number of Students',data:[{{ distribution.excellent }},{{ distribution.good }},{{ distribution.average }},{{ distribution.below_average }},{{ distribution.failing }}],backgroundColor:['rgba(34,197,94,.8)','rgba(59,130,246,.8)','rgba(234,179,8,.8)','rgba(249,115,22,.8)','rgba(239,68,68,.8)'],borderRadius:8,barThickness:40}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});</script>
 {% endblock %}
