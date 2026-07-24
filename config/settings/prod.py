@@ -11,9 +11,14 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = config("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
 SECURE_HSTS_PRELOAD = config("DJANGO_SECURE_HSTS_PRELOAD", default=False, cast=bool)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
+
+# Use application-specific cookie names so browser cookies created by another
+# Django service on leosoftug.com cannot be mistaken for EduManage cookies.
+SESSION_COOKIE_NAME = config("DJANGO_SESSION_COOKIE_NAME", default="edumanage_sessionid")
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_NAME = config("DJANGO_CSRF_COOKIE_NAME", default="edumanage_csrftoken")
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
