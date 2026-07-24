@@ -4,43 +4,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% include "components/pwa_meta.html" %}
   <title>Platform Login | EduManage</title>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="{% static 'css/public-tailwind.css' %}">
+  <link rel="stylesheet" href="{% static 'css/platform-console.css' %}">
+  <link rel="stylesheet" href="{% static 'css/platform-onboarding.css' %}">
+  <script defer src="{% static 'js/platform-onboarding.js' %}"></script>
 </head>
-<body class="min-h-full bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-  <main class="flex min-h-screen items-center justify-center px-5 py-10">
-    <section class="w-full max-w-md rounded-[2rem] border border-white/10 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
-      <div class="mb-7 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-800 shadow-xl">
-          <i class="ph-fill ph-shield-checkered text-3xl"></i>
+<body class="platform-auth-page">
+  <main class="w-full" id="platform-login-main">
+    <section class="platform-auth-card mx-auto" aria-labelledby="platform-login-title">
+      <header class="platform-auth-card__header">
+        <div class="platform-auth-card__brand">
+          <span class="platform-auth-card__icon"><i class="ph-fill ph-shield-checkered" aria-hidden="true"></i></span>
+          <div><h1 id="platform-login-title">Platform Console</h1><p>Superuser access for SaaS-wide operations</p></div>
         </div>
-        <h1 class="mt-5 text-2xl font-black">Platform Admin Console</h1>
-        <p class="mt-2 text-sm font-semibold text-blue-100">Superuser access only for SaaS tenant and domain operations.</p>
+      </header>
+
+      <div class="platform-auth-card__body">
+        {% if messages %}
+          <div class="mb-4 space-y-2" aria-label="Sign-in messages">
+            {% for message in messages %}<div class="rounded-xl border px-3 py-2.5 text-sm font-bold {% if 'error' in message.tags %}border-red-200 bg-red-50 text-red-800{% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}" role="alert">{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% if form.non_field_errors %}<div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-800" role="alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+          <div class="platform-auth-field">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" required autofocus autocomplete="username" spellcheck="false">
+            {% for error in form.username.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
+          </div>
+
+          <div class="platform-auth-field">
+            <label for="{{ form.password.id_for_label }}">Password</label>
+            <div class="platform-password-wrap">
+              <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" required autocomplete="current-password">
+              <button type="button" class="platform-password-toggle" data-password-toggle="{{ form.password.id_for_label }}" aria-label="Show password" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
+            </div>
+            {% for error in form.password.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
+          </div>
+
+          <button type="submit" class="platform-button platform-button--primary platform-auth-submit"><i class="ph ph-lock-key-open" aria-hidden="true"></i> Sign in securely</button>
+        </form>
+
+        <p class="platform-auth-note"><i class="ph ph-shield-check mr-1" aria-hidden="true"></i> School administrators should sign in through their school domain, not this platform console.</p>
       </div>
-
-      {% if messages %}
-        <div class="mb-5 space-y-2">
-          {% for message in messages %}
-            <div class="rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/15">{{ message }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <form method="post" class="space-y-5">
-        {% csrf_token %}
-        <div>
-          <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-black text-blue-100">Username</label>
-          <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" required autofocus class="block w-full rounded-2xl border-2 border-white/10 bg-white px-4 py-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-400/30">
-        </div>
-        <div>
-          <label for="{{ form.password.id_for_label }}" class="mb-2 block text-sm font-black text-blue-100">Password</label>
-          <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" required class="block w-full rounded-2xl border-2 border-white/10 bg-white px-4 py-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-400/30">
-        </div>
-        <button type="submit" class="w-full rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-900 shadow-xl hover:bg-blue-50">
-          <i class="ph ph-lock-key-open mr-1"></i> Sign in securely
-        </button>
-      </form>
     </section>
   </main>
 </body>
