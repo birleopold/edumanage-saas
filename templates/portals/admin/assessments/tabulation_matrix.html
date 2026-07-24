@@ -2,12 +2,45 @@
 
 {% block title %}Tabulation — {{ offering.course.name }}{% endblock %}
 {% block page_title %}Marks Tabulation{% endblock %}
-{% block breadcrumbs %}{{ offering.term.year.name }} {{ offering.term.name }} — {{ offering.course.name }}{% if offering.class_group %} · {{ offering.class_group.name }}{% endif %}{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_assessments_tabulation' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Change Offering</a><a href="{% url 'admin_assessments_tabulation' %}?offering={{ offering.pk }}&print=1" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">Print View</a>{% endblock %}
+
+{% block breadcrumbs %}
+<p class="text-sm text-slate-500">{{ offering.term.year.name }} {{ offering.term.name }} · {{ offering.course.name }}{% if offering.class_group %} · {{ offering.class_group.name }}{% endif %}</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_assessments_tabulation' %}" class="edu-outline-button"><i class="ph ph-arrows-left-right" aria-hidden="true"></i> Change offering</a>
+<a href="{% url 'admin_assessments_tabulation' %}?offering={{ offering.pk }}&print=1" target="_blank" rel="noopener noreferrer" class="edu-pill-button"><i class="ph ph-printer" aria-hidden="true"></i> Print</a>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 via-primary-900 to-indigo-900 p-6 text-white shadow-lg"><p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Marks matrix</p><h2 class="mt-2 text-2xl font-black">Marks tabulation</h2><p class="mt-2 max-w-2xl text-sm text-indigo-100">{{ offering.term.year.name }} {{ offering.term.name }} — {{ offering.course.name }}{% if offering.class_group %} · {{ offering.class_group.name }}{% endif %}</p></section>
-  <section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">{% include "components/assessment_tabulation_table.html" %}</section>
+<div class="edu-ops-page">
+  <nav class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2" aria-label="Assessment tools">
+    <a href="{% url 'admin_assessments_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-list-bullets" aria-hidden="true"></i> Assessments</a>
+    <a href="{% url 'admin_assessment_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-tree-structure" aria-hidden="true"></i> Framework</a>
+    <a href="{% url 'admin_grading_framework_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-graduation-cap" aria-hidden="true"></i> Grading</a>
+    <a href="{% url 'admin_assessments_tabulation' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"><i class="ph ph-table" aria-hidden="true"></i> Tabulation</a>
+  </nav>
+
+  <section class="grid grid-cols-1 gap-4 md:grid-cols-3" aria-label="Marks matrix summary">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-student" aria-hidden="true"></i></span><div><small>Learners</small><strong>{{ rows|length }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--blue"><span class="edu-ops-stat__icon"><i class="ph ph-exam" aria-hidden="true"></i></span><div><small>Assessments</small><strong>{{ assessments|length }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-book-open" aria-hidden="true"></i></span><div><small>Offering</small><strong class="text-lg">{{ offering.course.name }}</strong><span>{{ offering.term }}</span></div></article>
+  </section>
+
+  {% if not assessments %}
+  <section class="edu-ops-note edu-ops-note--warning" aria-label="No assessments warning">
+    <span class="edu-ops-note__icon"><i class="ph ph-warning" aria-hidden="true"></i></span>
+    <div><strong>No assessment columns are available</strong><span>Create assessments for this course offering before using the marks matrix.</span></div>
+    <a href="{% url 'admin_assessments_create' %}" class="edu-ops-button">Add assessment</a>
+  </section>
+  {% endif %}
+
+  <section class="edu-ops-table-shell" aria-labelledby="marks-matrix-heading">
+    <header class="edu-ops-table-heading">
+      <div><h2 id="marks-matrix-heading">{{ offering.course.name }} marks matrix</h2><p>Scroll horizontally to review all assessment columns. Missing scores are shown as a dash.</p></div>
+      <a href="{% url 'admin_assessments_tabulation' %}?offering={{ offering.pk }}&print=1" target="_blank" rel="noopener noreferrer" class="edu-ops-button"><i class="ph ph-printer" aria-hidden="true"></i> Print view</a>
+    </header>
+    <div class="overflow-x-auto">{% include "components/assessment_tabulation_table.html" %}</div>
+  </section>
 </div>
 {% endblock %}
