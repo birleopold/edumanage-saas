@@ -6,26 +6,77 @@
 
 {% block content %}
 <div class="space-y-5">
-  <section class="grid gap-4 lg:grid-cols-[220px_1fr]">
-    <article class="platform-panel p-5 text-center"><p class="platform-stat__label">Readiness score</p><strong class="mt-3 block text-5xl font-black {% if readiness_score >= 80 %}text-emerald-700{% elif readiness_score >= 50 %}text-amber-700{% else %}text-red-700{% endif %}">{{ readiness_score }}%</strong><div class="platform-progress mt-4"><span style="width: {{ readiness_score }}%"></span></div><p class="mt-3 text-xs font-semibold text-slate-500">Database, environment, domains and operating safeguards</p></article>
-    <section class="platform-summary-grid" aria-label="Deployment readiness summary">
-      <article class="platform-stat"><span class="platform-stat__label">Database</span><strong class="platform-stat__value {% if database_status.ready %}text-emerald-700{% else %}text-red-700{% endif %}">{{ database_status.label }}</strong><span class="platform-stat__detail">{{ database_status.detail }}</span></article>
-      <article class="platform-stat"><span class="platform-stat__label">Active schools</span><strong class="platform-stat__value">{{ active_tenant_count }}/{{ tenant_count }}</strong><span class="platform-stat__detail">Operational / total tenants</span></article>
-      <article class="platform-stat"><span class="platform-stat__label">Verified domains</span><strong class="platform-stat__value text-blue-700">{{ verified_domain_count }}/{{ domain_count }}</strong><span class="platform-stat__detail">DNS-confirmed addresses</span></article>
-      <article class="platform-stat"><span class="platform-stat__label">Primary routing</span><strong class="platform-stat__value {% if domains_ready %}text-emerald-700{% else %}text-amber-700{% endif %}">{% if domains_ready %}Ready{% else %}Needed{% endif %}</strong><span class="platform-stat__detail">At least one primary domain</span></article>
+  <section class="platform-readiness-overview" aria-label="Deployment readiness overview">
+    <article class="platform-panel platform-readiness-score">
+      <div class="platform-readiness-score__heading">
+        <div class="platform-readiness-score__identity">
+          <span class="platform-readiness-score__icon"><i class="ph ph-gauge" aria-hidden="true"></i></span>
+          <span class="platform-readiness-score__label">Readiness score</span>
+        </div>
+        <strong class="platform-readiness-score__value {% if readiness_score >= 80 %}text-emerald-700{% elif readiness_score >= 50 %}text-amber-700{% else %}text-red-700{% endif %}">{{ readiness_score }}%</strong>
+      </div>
+      <div class="platform-progress" aria-label="Readiness progress"><span style="width: {{ readiness_score }}%"></span></div>
+      <p class="platform-readiness-score__detail">Database, environment, domains and operating safeguards.</p>
+    </article>
+
+    <section class="platform-summary-grid platform-summary-grid--4" aria-label="Deployment readiness summary">
+      <article class="platform-stat {% if database_status.ready %}platform-stat--green{% else %}platform-stat--red{% endif %}">
+        <span class="platform-stat__icon"><i class="ph ph-database" aria-hidden="true"></i></span>
+        <div class="platform-stat__body">
+          <span class="platform-stat__label">Database</span>
+          <strong class="platform-stat__value">{{ database_status.label }}</strong>
+          <span class="platform-stat__detail">{{ database_status.detail }}</span>
+        </div>
+      </article>
+
+      <article class="platform-stat platform-stat--blue">
+        <span class="platform-stat__icon"><i class="ph ph-buildings" aria-hidden="true"></i></span>
+        <div class="platform-stat__body">
+          <span class="platform-stat__label">Active schools</span>
+          <strong class="platform-stat__value">{{ active_tenant_count }}/{{ tenant_count }}</strong>
+          <span class="platform-stat__detail">Operational / total tenants</span>
+        </div>
+      </article>
+
+      <article class="platform-stat platform-stat--violet">
+        <span class="platform-stat__icon"><i class="ph ph-globe" aria-hidden="true"></i></span>
+        <div class="platform-stat__body">
+          <span class="platform-stat__label">Verified domains</span>
+          <strong class="platform-stat__value">{{ verified_domain_count }}/{{ domain_count }}</strong>
+          <span class="platform-stat__detail">DNS-confirmed addresses</span>
+        </div>
+      </article>
+
+      <article class="platform-stat {% if domains_ready %}platform-stat--teal{% else %}platform-stat--amber{% endif %}">
+        <span class="platform-stat__icon"><i class="ph ph-signpost" aria-hidden="true"></i></span>
+        <div class="platform-stat__body">
+          <span class="platform-stat__label">Primary routing</span>
+          <strong class="platform-stat__value">{% if domains_ready %}Ready{% else %}Needed{% endif %}</strong>
+          <span class="platform-stat__detail">At least one primary domain</span>
+        </div>
+      </article>
     </section>
   </section>
 
   <section class="platform-panel">
-    <header class="platform-panel__header"><div><h2>Environment configuration</h2><p>Required and recommended production variables. Secret values are never displayed.</p></div><span class="platform-badge platform-badge--blue"><i class="ph ph-lock-key" aria-hidden="true"></i> Secrets stay outside Git</span></header>
-    <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+    <header class="platform-panel__header">
+      <div><h2>Environment configuration</h2><p>Required and recommended production variables. Secret values are never displayed.</p></div>
+      <span class="platform-badge platform-badge--blue"><i class="ph ph-lock-key" aria-hidden="true"></i> Secrets stay outside Git</span>
+    </header>
+    <div class="platform-readiness-env-grid">
       {% for item in env_checks %}
-      <article class="rounded-xl border p-4 {% if item.configured %}border-emerald-200 bg-emerald-50{% elif item.required %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %}"><div class="flex items-start justify-between gap-3"><strong class="text-sm text-slate-900">{{ item.name }}</strong><span class="platform-badge {% if item.configured %}platform-badge--success{% elif item.required %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ item.value }}</span></div><p class="mt-2 text-xs font-bold text-slate-500">{% if item.required %}Required{% else %}Recommended{% endif %}</p></article>
+      <article class="platform-readiness-env-card {% if item.configured %}border-emerald-200 bg-emerald-50{% elif item.required %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %}">
+        <div class="platform-readiness-env-card__top">
+          <strong class="platform-readiness-env-card__name">{{ item.name }}</strong>
+          <span class="platform-badge {% if item.configured %}platform-badge--success{% elif item.required %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ item.value }}</span>
+        </div>
+        <p class="mt-2 text-xs font-bold text-slate-500">{% if item.required %}Required{% else %}Recommended{% endif %}</p>
+      </article>
       {% endfor %}
     </div>
   </section>
 
-  <section class="grid gap-4 xl:grid-cols-2" aria-label="Deployment priorities">
+  <section class="platform-readiness-priorities" aria-label="Deployment priorities">
     {% for section in priority_sections %}
     <details id="{{ section.key }}" class="platform-details" {% if section.priority <= 2 %}open{% endif %}>
       <summary class="flex items-center justify-between gap-3"><span class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><i class="ph {{ section.icon }} text-lg" aria-hidden="true"></i></span><span><span class="block text-[10px] uppercase tracking-[0.14em] text-blue-700">Priority {{ section.priority }}</span>{{ section.title }}</span></span><i class="ph ph-caret-down text-slate-400" aria-hidden="true"></i></summary>
@@ -35,8 +86,20 @@
   </section>
 
   <section class="platform-panel">
-    <header class="platform-panel__header"><div><h2>DNS targets</h2><p>Values currently shown during school-domain configuration.</p></div>{% if 'YOUR_' in a_record_target %}<span class="platform-badge platform-badge--danger">Placeholder detected</span>{% else %}<span class="platform-badge platform-badge--success">Configured</span>{% endif %}</header>
-    <div class="grid gap-4 p-4 md:grid-cols-2"><div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">CNAME target</p><div class="mt-2 flex items-center justify-between gap-3"><code class="break-all text-sm font-black text-slate-900">{{ cname_target }}</code><button type="button" class="platform-button" data-copy-value="{{ cname_target }}">Copy</button></div></div><div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">A-record target</p><div class="mt-2 flex items-center justify-between gap-3"><code class="break-all text-sm font-black text-slate-900">{{ a_record_target }}</code><button type="button" class="platform-button" data-copy-value="{{ a_record_target }}">Copy</button></div></div></div>
+    <header class="platform-panel__header">
+      <div><h2>DNS targets</h2><p>Values currently shown during school-domain configuration.</p></div>
+      {% if 'YOUR_' in a_record_target %}<span class="platform-badge platform-badge--danger">Placeholder detected</span>{% else %}<span class="platform-badge platform-badge--success">Configured</span>{% endif %}
+    </header>
+    <div class="platform-readiness-dns-grid">
+      <div class="platform-readiness-dns-card">
+        <p class="platform-stat__label">CNAME target</p>
+        <div class="platform-readiness-dns-row"><code>{{ cname_target }}</code><button type="button" class="platform-button" data-copy-value="{{ cname_target }}">Copy</button></div>
+      </div>
+      <div class="platform-readiness-dns-card">
+        <p class="platform-stat__label">A-record target</p>
+        <div class="platform-readiness-dns-row"><code>{{ a_record_target }}</code><button type="button" class="platform-button" data-copy-value="{{ a_record_target }}">Copy</button></div>
+      </div>
+    </div>
     {% if 'YOUR_' in a_record_target %}<p class="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">Replace the placeholder A-record target before onboarding production schools.</p>{% endif %}
   </section>
 </div>
