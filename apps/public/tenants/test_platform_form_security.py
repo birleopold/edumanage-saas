@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
@@ -7,7 +8,9 @@ class PlatformFormSecurityTests(TestCase):
         response = self.client.get(reverse("platform_admin_login"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("csrftoken", response.cookies)
+        self.assertEqual(settings.CSRF_COOKIE_NAME, "edumanage_csrftoken")
+        self.assertEqual(settings.SESSION_COOKIE_NAME, "edumanage_sessionid")
+        self.assertIn(settings.CSRF_COOKIE_NAME, response.cookies)
 
         cache_control = response.headers.get("Cache-Control", "")
         self.assertIn("private", cache_control)
