@@ -6,12 +6,27 @@
 
 {% block content %}
 <div class="space-y-5">
-  <section class="platform-summary-grid" aria-label="Subscription summary">
-    <article class="platform-stat"><span class="platform-stat__label">Trialing</span><strong class="platform-stat__value text-blue-700">{{ trialing_count }}</strong><span class="platform-stat__detail">Schools in trial period</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Active</span><strong class="platform-stat__value text-emerald-700">{{ active_count }}</strong><span class="platform-stat__detail">Operational subscriptions</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Past due</span><strong class="platform-stat__value text-amber-700">{{ past_due_count }}</strong><span class="platform-stat__detail">Billing attention needed</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Suspended</span><strong class="platform-stat__value text-red-700">{{ suspended_count }}</strong><span class="platform-stat__detail">Access paused by billing</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Unpaid / partial</span><strong class="platform-stat__value text-red-700">{{ unpaid_count }}</strong><span class="platform-stat__detail">Payment not fully cleared</span></article>
+  <section class="platform-summary-grid platform-summary-grid--5" aria-label="Subscription summary">
+    <article class="platform-stat platform-stat--blue">
+      <span class="platform-stat__icon"><i class="ph ph-timer" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Trialing</span><strong class="platform-stat__value">{{ trialing_count }}</strong><span class="platform-stat__detail">Schools in trial period</span></div>
+    </article>
+    <article class="platform-stat platform-stat--green">
+      <span class="platform-stat__icon"><i class="ph ph-check-circle" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Active</span><strong class="platform-stat__value">{{ active_count }}</strong><span class="platform-stat__detail">Operational subscriptions</span></div>
+    </article>
+    <article class="platform-stat platform-stat--amber">
+      <span class="platform-stat__icon"><i class="ph ph-warning-circle" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Past due</span><strong class="platform-stat__value">{{ past_due_count }}</strong><span class="platform-stat__detail">Billing attention needed</span></div>
+    </article>
+    <article class="platform-stat platform-stat--red">
+      <span class="platform-stat__icon"><i class="ph ph-pause-circle" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Suspended</span><strong class="platform-stat__value">{{ suspended_count }}</strong><span class="platform-stat__detail">Access paused by billing</span></div>
+    </article>
+    <article class="platform-stat platform-stat--violet">
+      <span class="platform-stat__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Unpaid / partial</span><strong class="platform-stat__value">{{ unpaid_count }}</strong><span class="platform-stat__detail">Payment not fully cleared</span></div>
+    </article>
   </section>
 
   {% if past_due_count or suspended_count or unpaid_count %}
