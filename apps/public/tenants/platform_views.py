@@ -125,42 +125,12 @@ def _tenant_onboarding_handoff(tenant, domains, subscription):
     login_url = metadata.get("login_url") or (_tenant_absolute_url(domain_name, TENANT_LOGIN_PATH) if domain_name else "")
     setup_guide_url = metadata.get("setup_guide_url") or (_tenant_absolute_url(domain_name, TENANT_SETUP_GUIDE_PATH) if domain_name else "")
     steps = [
-        {
-            "title": "Tenant activated",
-            "description": "School status allows users into the tenant portal.",
-            "done": tenant.status == "active",
-            "detail": tenant.status.title(),
-        },
-        {
-            "title": "Primary login domain assigned",
-            "description": "The school has a primary web address for first login.",
-            "done": primary_domain is not None,
-            "detail": getattr(primary_domain, "domain", "No domain"),
-        },
-        {
-            "title": "DNS verified",
-            "description": "DNS has been checked before the school is sent live credentials.",
-            "done": bool(primary_domain and primary_domain.is_verified),
-            "detail": primary_domain.get_dns_status_display() if primary_domain else "Pending",
-        },
-        {
-            "title": "SSL active",
-            "description": "The login address is ready for secure browser access.",
-            "done": bool(primary_domain and primary_domain.is_ssl_active),
-            "detail": primary_domain.get_ssl_status_display() if primary_domain else "Pending",
-        },
-        {
-            "title": "Subscription usable",
-            "description": "Billing state permits the school to operate.",
-            "done": bool(subscription and subscription.is_usable),
-            "detail": subscription.get_status_display() if subscription else "Missing",
-        },
-        {
-            "title": "Owner first-login path ready",
-            "description": "Platform staff can hand the owner their username, login URL and setup checklist.",
-            "done": bool(metadata.get("admin_username") and login_url and setup_guide_url),
-            "detail": metadata.get("admin_username") or "Not recorded",
-        },
+        {"title": "Tenant activated", "description": "School status allows users into the tenant portal.", "done": tenant.status == "active", "detail": tenant.status.title()},
+        {"title": "Primary login domain assigned", "description": "The school has a primary web address for first login.", "done": primary_domain is not None, "detail": getattr(primary_domain, "domain", "No domain")},
+        {"title": "DNS verified", "description": "DNS has been checked before the school is sent live credentials.", "done": bool(primary_domain and primary_domain.is_verified), "detail": primary_domain.get_dns_status_display() if primary_domain else "Pending"},
+        {"title": "SSL active", "description": "The login address is ready for secure browser access.", "done": bool(primary_domain and primary_domain.is_ssl_active), "detail": primary_domain.get_ssl_status_display() if primary_domain else "Pending"},
+        {"title": "Subscription usable", "description": "Billing state permits the school to operate.", "done": bool(subscription and subscription.is_usable), "detail": subscription.get_status_display() if subscription else "Missing"},
+        {"title": "Owner first-login path ready", "description": "Platform staff can hand the owner their username, login URL and setup checklist.", "done": bool(metadata.get("admin_username") and login_url and setup_guide_url), "detail": metadata.get("admin_username") or "Not recorded"},
     ]
     done_count = sum(1 for step in steps if step["done"])
     return {
@@ -179,33 +149,16 @@ def _tenant_onboarding_handoff(tenant, domains, subscription):
 
 def _domain_dns_instructions(domain):
     if domain.type == Domain.SUBDOMAIN:
-        return {
-            "summary": "Point this EduManage subdomain to the platform host.",
-            "records": [{"type": "CNAME", "host": domain.domain, "value": PLATFORM_CNAME_TARGET}],
-            "example": "schoolname.edumanage.com",
-        }
+        return {"summary": "Point this EduManage subdomain to the platform host.", "records": [{"type": "CNAME", "host": domain.domain, "value": PLATFORM_CNAME_TARGET}], "example": "schoolname.edumanage.com"}
     return {
         "summary": "Point the custom school domain to EduManage using A/CNAME records.",
-        "records": [
-            {"type": "A", "host": "@", "value": PLATFORM_A_RECORD_TARGET},
-            {"type": "CNAME", "host": "www", "value": PLATFORM_CNAME_TARGET},
-        ],
+        "records": [{"type": "A", "host": "@", "value": PLATFORM_A_RECORD_TARGET}, {"type": "CNAME", "host": "www", "value": PLATFORM_CNAME_TARGET}],
         "example": "schoolname.ac.ug",
     }
 
 
 def _domain_management_rows(domains):
-    rows = []
-    for domain in domains:
-        rows.append(
-            {
-                "domain": domain,
-                "dns": _domain_dns_instructions(domain),
-                "dns_label": domain.get_dns_status_display(),
-                "ssl_label": domain.get_ssl_status_display(),
-            }
-        )
-    return rows
+    return [{"domain": domain, "dns": _domain_dns_instructions(domain), "dns_label": domain.get_dns_status_display(), "ssl_label": domain.get_ssl_status_display()} for domain in domains]
 
 
 def _platform_activity_queryset(request):
@@ -267,8 +220,8 @@ def dashboard(request):
     tenants = Tenant.objects.annotate(domain_count=Count("domains", distinct=True)).order_by("-created_at")[:8]
     domains = Domain.objects.select_related("tenant").order_by("-is_primary", "domain")[:10]
     recent_platform_events = PlatformAuditEvent.objects.select_related("actor", "tenant", "domain")[:8]
-    verified_domains = Domain.objects.filter(Q(verified_at__isnull=False) | Q(dns_status=Domain.DNS_VERIFIED)).distinct()
-    ssl_active_domains = Domain.objects.filter(ssl_status=Domain.SSL_ACTIVE)
+    verified_domain_count = Domain.objects.filter(Q(verified_at__isnull=False) | Q(dns_status=Domain.DNS_VERIFIED)).distinct().count()
+    domain_count = Domain.objects.count()
     return render(
         request,
         "platform/dashboard.html",
@@ -277,9 +230,10 @@ def dashboard(request):
             "active_count": Tenant.objects.filter(status="active").count(),
             "pending_count": Tenant.objects.filter(status="pending").count(),
             "suspended_count": Tenant.objects.filter(status="suspended").count(),
-            "domain_count": Domain.objects.count(),
-            "verified_domain_count": verified_domains.count(),
-            "ssl_active_domain_count": ssl_active_domains.count(),
+            "domain_count": domain_count,
+            "verified_domain_count": verified_domain_count,
+            "unverified_domain_count": max(0, domain_count - verified_domain_count),
+            "ssl_active_domain_count": Domain.objects.filter(ssl_status=Domain.SSL_ACTIVE).count(),
             "tenants": tenants,
             "domains": domains,
             "recent_platform_events": recent_platform_events,
@@ -330,14 +284,7 @@ def tenant_list(request):
     return render(
         request,
         "platform/tenant_list.html",
-        {
-            "page_obj": page_obj,
-            "tenants": page_obj.object_list,
-            "status": status,
-            "q": q,
-            "per_page": per_page,
-            "statuses": ["active", "pending", "suspended", "archived"],
-        },
+        {"page_obj": page_obj, "tenants": page_obj.object_list, "status": status, "q": q, "per_page": per_page, "statuses": ["active", "pending", "suspended", "archived"]},
     )
 
 
@@ -348,9 +295,7 @@ def tenant_create(request):
         if form.is_valid():
             tenant = form.save()
             onboarding = getattr(form, "onboarding_result", None)
-            subscription = getattr(form, "subscription_result", None)
             primary_domain = tenant.domains.filter(is_primary=True).first()
-            onboarding_metadata = _onboarding_event_metadata(onboarding) if onboarding else {}
             _record_platform_event(
                 request,
                 PlatformAuditEvent.TENANT_CREATED,
@@ -358,7 +303,7 @@ def tenant_create(request):
                 domain=primary_domain,
                 object_label=tenant.name,
                 after={"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status},
-                metadata=onboarding_metadata,
+                metadata=_onboarding_event_metadata(onboarding) if onboarding else {},
             )
             messages.success(request, f"Tenant {tenant.name} created successfully.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
@@ -372,19 +317,7 @@ def tenant_detail(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     domains = list(tenant.domains.order_by("-is_primary", "domain"))
     subscription = getattr(tenant, "subscription", None) or create_subscription_for_tenant(tenant)
-    return render(
-        request,
-        "platform/tenant_detail.html",
-        {
-            "tenant": tenant,
-            "domains": domains,
-            "domain_management": _domain_management_rows(domains),
-            "status_form": TenantStatusForm(initial={"status": tenant.status}),
-            "schema_status": _schema_status(tenant.schema_name),
-            "subscription": subscription,
-            "onboarding_handoff": _tenant_onboarding_handoff(tenant, domains, subscription),
-        },
-    )
+    return render(request, "platform/tenant_detail.html", {"tenant": tenant, "domains": domains, "domain_management": _domain_management_rows(domains), "status_form": TenantStatusForm(initial={"status": tenant.status}), "schema_status": _schema_status(tenant.schema_name), "subscription": subscription, "onboarding_handoff": _tenant_onboarding_handoff(tenant, domains, subscription)})
 
 
 @platform_admin_required
@@ -395,14 +328,7 @@ def tenant_edit(request, pk):
         if form.is_valid():
             before = {"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status}
             tenant = form.save()
-            _record_platform_event(
-                request,
-                PlatformAuditEvent.TENANT_STATUS_CHANGED,
-                tenant=tenant,
-                object_label=tenant.name,
-                before=before,
-                after={"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status},
-            )
+            _record_platform_event(request, PlatformAuditEvent.TENANT_STATUS_CHANGED, tenant=tenant, object_label=tenant.name, before=before, after={"name": tenant.name, "schema_name": tenant.schema_name, "status": tenant.status})
             messages.success(request, "Tenant details updated.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
@@ -424,14 +350,7 @@ def tenant_status_update(request, pk):
             action = PlatformAuditEvent.TENANT_SUSPENDED
         elif before_status == "suspended" and tenant.status == "active":
             action = PlatformAuditEvent.TENANT_REACTIVATED
-        _record_platform_event(
-            request,
-            action,
-            tenant=tenant,
-            object_label=tenant.name,
-            before={"status": before_status},
-            after={"status": tenant.status},
-        )
+        _record_platform_event(request, action, tenant=tenant, object_label=tenant.name, before={"status": before_status}, after={"status": tenant.status})
         messages.success(request, f"Tenant status updated to {tenant.status}.")
     else:
         messages.error(request, "Choose a valid tenant status.")
@@ -449,14 +368,7 @@ def domain_create(request, tenant_id):
             domain.save()
             if domain.is_primary:
                 Domain.objects.filter(tenant=tenant).exclude(pk=domain.pk).update(is_primary=False)
-            _record_platform_event(
-                request,
-                PlatformAuditEvent.DOMAIN_CREATED,
-                tenant=tenant,
-                domain=domain,
-                object_label=domain.domain,
-                after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary},
-            )
+            _record_platform_event(request, PlatformAuditEvent.DOMAIN_CREATED, tenant=tenant, domain=domain, object_label=domain.domain, after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary})
             messages.success(request, "Domain added.")
             return redirect("platform_tenant_detail", pk=tenant.pk)
     else:
@@ -474,15 +386,7 @@ def domain_edit(request, pk):
             domain = form.save()
             if domain.is_primary:
                 Domain.objects.filter(tenant=domain.tenant).exclude(pk=domain.pk).update(is_primary=False)
-            _record_platform_event(
-                request,
-                PlatformAuditEvent.DOMAIN_UPDATED,
-                tenant=domain.tenant,
-                domain=domain,
-                object_label=domain.domain,
-                before=before,
-                after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary, "dns_status": domain.dns_status, "ssl_status": domain.ssl_status},
-            )
+            _record_platform_event(request, PlatformAuditEvent.DOMAIN_UPDATED, tenant=domain.tenant, domain=domain, object_label=domain.domain, before=before, after={"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary, "dns_status": domain.dns_status, "ssl_status": domain.ssl_status})
             messages.success(request, "Domain updated.")
             return redirect("platform_tenant_detail", pk=domain.tenant.pk)
     else:
@@ -497,14 +401,7 @@ def domain_mark_primary(request, pk):
     Domain.objects.filter(tenant=domain.tenant).update(is_primary=False)
     domain.is_primary = True
     domain.save(update_fields=["is_primary"])
-    _record_platform_event(
-        request,
-        PlatformAuditEvent.DOMAIN_UPDATED,
-        tenant=domain.tenant,
-        domain=domain,
-        object_label=domain.domain,
-        after={"is_primary": True},
-    )
+    _record_platform_event(request, PlatformAuditEvent.DOMAIN_UPDATED, tenant=domain.tenant, domain=domain, object_label=domain.domain, after={"is_primary": True})
     messages.success(request, f"{domain.domain} is now the primary domain.")
     return redirect("platform_tenant_detail", pk=domain.tenant.pk)
 
@@ -534,15 +431,7 @@ def domain_verify(request, pk):
         return redirect("platform_tenant_detail", pk=domain.tenant.pk)
     domain.last_checked_at = now
     domain.save(update_fields=["dns_status", "ssl_status", "verified_at", "last_checked_at"])
-    _record_platform_event(
-        request,
-        audit_action,
-        tenant=domain.tenant,
-        domain=domain,
-        object_label=domain.domain,
-        before=before,
-        after={"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")},
-    )
+    _record_platform_event(request, audit_action, tenant=domain.tenant, domain=domain, object_label=domain.domain, before=before, after={"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")})
     messages.success(request, "Domain verification status updated.")
     return redirect("platform_tenant_detail", pk=domain.tenant.pk)
 
@@ -553,15 +442,7 @@ def domain_delete(request, pk):
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     tenant = domain.tenant
     before = {"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary}
-    _record_platform_event(
-        request,
-        PlatformAuditEvent.DOMAIN_UPDATED,
-        tenant=tenant,
-        domain=domain,
-        object_label=domain.domain,
-        before=before,
-        after={"deleted": True},
-    )
+    _record_platform_event(request, PlatformAuditEvent.DOMAIN_UPDATED, tenant=tenant, domain=domain, object_label=domain.domain, before=before, after={"deleted": True})
     domain.delete()
     messages.success(request, "Domain removed.")
     return redirect("platform_tenant_detail", pk=tenant.pk)
