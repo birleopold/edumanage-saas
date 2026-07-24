@@ -11,34 +11,50 @@
 
 {% block content %}
 <div class="space-y-5">
-  <section class="platform-summary-grid" aria-label="Tenant summary">
-    <article class="platform-stat"><span class="platform-stat__label">Status</span><strong class="platform-stat__value {% if tenant.status == 'active' %}text-emerald-700{% elif tenant.status == 'suspended' %}text-red-700{% else %}text-amber-700{% endif %}">{{ tenant.status|title }}</strong><span class="platform-stat__detail">Tenant access state</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Schema</span><button type="button" class="mt-2 block max-w-full truncate font-mono text-sm font-black text-blue-700" data-copy-value="{{ tenant.schema_name }}" title="Copy schema name">{{ tenant.schema_name }}</button><span class="platform-stat__detail">PostgreSQL tenant namespace</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Schema readiness</span><strong class="platform-stat__value {% if schema_status.exists == True %}text-emerald-700{% elif schema_status.exists == False %}text-red-700{% else %}text-blue-700{% endif %}">{{ schema_status.label }}</strong><span class="platform-stat__detail">{{ schema_status.detail }}</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Subscription</span><strong class="platform-stat__value text-indigo-700">{{ subscription.plan.name }}</strong><span class="platform-stat__detail">{{ subscription.get_status_display }} · {{ subscription.get_payment_status_display }}</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Onboarding</span><strong class="platform-stat__value {% if onboarding_handoff.ready %}text-emerald-700{% else %}text-amber-700{% endif %}">{{ onboarding_handoff.percent }}%</strong><span class="platform-stat__detail">{{ onboarding_handoff.done_count }}/{{ onboarding_handoff.total }} checks ready</span></article>
-    <article class="platform-stat"><span class="platform-stat__label">Created</span><strong class="platform-stat__value text-lg">{{ tenant.created_at|date:'M j, Y' }}</strong><span class="platform-stat__detail">{{ tenant.created_at|date:'H:i' }}</span></article>
+  <section class="platform-summary-grid platform-summary-grid--6" aria-label="Tenant summary">
+    <article class="platform-stat {% if tenant.status == 'active' %}platform-stat--green{% elif tenant.status == 'suspended' %}platform-stat--red{% else %}platform-stat--amber{% endif %}">
+      <span class="platform-stat__icon"><i class="ph ph-pulse" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Status</span><strong class="platform-stat__value platform-stat__value--compact">{{ tenant.status|title }}</strong><span class="platform-stat__detail">Tenant access state</span></div>
+    </article>
+    <article class="platform-stat platform-stat--blue">
+      <span class="platform-stat__icon"><i class="ph ph-database" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Schema</span><button type="button" class="platform-stat__value platform-stat__value--compact font-mono text-blue-700" data-copy-value="{{ tenant.schema_name }}" title="Copy schema name">{{ tenant.schema_name }}</button><span class="platform-stat__detail">PostgreSQL namespace</span></div>
+    </article>
+    <article class="platform-stat {% if schema_status.exists == True %}platform-stat--green{% elif schema_status.exists == False %}platform-stat--red{% else %}platform-stat--blue{% endif %}">
+      <span class="platform-stat__icon"><i class="ph ph-hard-drives" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Schema readiness</span><strong class="platform-stat__value platform-stat__value--compact">{{ schema_status.label }}</strong><span class="platform-stat__detail">{{ schema_status.detail }}</span></div>
+    </article>
+    <article class="platform-stat platform-stat--violet">
+      <span class="platform-stat__icon"><i class="ph ph-package" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Subscription</span><strong class="platform-stat__value platform-stat__value--compact">{{ subscription.plan.name }}</strong><span class="platform-stat__detail">{{ subscription.get_status_display }} · {{ subscription.get_payment_status_display }}</span></div>
+    </article>
+    <article class="platform-stat {% if onboarding_handoff.ready %}platform-stat--green{% else %}platform-stat--amber{% endif %}">
+      <span class="platform-stat__icon"><i class="ph ph-rocket-launch" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Onboarding</span><strong class="platform-stat__value">{{ onboarding_handoff.percent }}%</strong><span class="platform-stat__detail">{{ onboarding_handoff.done_count }}/{{ onboarding_handoff.total }} checks ready</span></div>
+    </article>
+    <article class="platform-stat platform-stat--teal">
+      <span class="platform-stat__icon"><i class="ph ph-calendar" aria-hidden="true"></i></span>
+      <div class="platform-stat__body"><span class="platform-stat__label">Created</span><strong class="platform-stat__value platform-stat__value--compact platform-stat__value--date">{{ tenant.created_at|date:'M j, Y' }}</strong><span class="platform-stat__detail">{{ tenant.created_at|date:'H:i' }}</span></div>
+    </article>
   </section>
 
-  <section class="grid gap-5 xl:grid-cols-[1fr_340px]">
+  <section class="platform-record-layout platform-record-layout--tenant">
     <div class="platform-panel">
       <header class="platform-panel__header"><div><h2>Owner handoff</h2><p>First-login identity, secure access address and school setup path.</p></div><span class="platform-badge {% if onboarding_handoff.ready %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{% if onboarding_handoff.ready %}Ready{% else %}Needs attention{% endif %}</span></header>
-      <div class="p-4">
-        <div class="platform-progress"><span style="width: {{ onboarding_handoff.percent }}%"></span></div>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {% for step in onboarding_handoff.steps %}
-          <article class="rounded-xl border p-3 {% if step.done %}border-emerald-200 bg-emerald-50{% else %}border-amber-200 bg-amber-50{% endif %}"><div class="flex gap-2"><i class="ph {% if step.done %}ph-check-circle text-emerald-700{% else %}ph-warning-circle text-amber-700{% endif %} mt-0.5 text-lg" aria-hidden="true"></i><div><strong class="text-sm text-slate-900">{{ step.title }}</strong><p class="mt-1 text-xs font-semibold leading-5 text-slate-600">{{ step.detail }}</p></div></div></article>
-          {% endfor %}
-        </div>
+      <div class="p-4"><div class="platform-progress"><span style="width: {{ onboarding_handoff.percent }}%"></span></div></div>
+      <div class="platform-owner-steps">
+        {% for step in onboarding_handoff.steps %}
+        <article class="platform-owner-step {% if step.done %}border-emerald-200 bg-emerald-50{% else %}border-amber-200 bg-amber-50{% endif %}"><div class="flex gap-2"><i class="ph {% if step.done %}ph-check-circle text-emerald-700{% else %}ph-warning-circle text-amber-700{% endif %} mt-0.5 text-lg" aria-hidden="true"></i><div class="min-w-0"><strong class="text-sm text-slate-900">{{ step.title }}</strong><p class="mt-1 text-xs font-semibold leading-5 text-slate-600">{{ step.detail }}</p></div></div></article>
+        {% endfor %}
       </div>
     </div>
 
-    <aside class="platform-panel">
+    <aside class="platform-panel platform-record-aside">
       <header class="platform-panel__header"><div><h2>Tenant status</h2><p>Changing status is recorded in the audit log.</p></div></header>
-      <form method="post" action="{% url 'platform_tenant_status_update' tenant.pk %}" class="space-y-3 p-4" onsubmit="return confirm('Update this tenant status? This can affect school access.');">
+      <form method="post" action="{% url 'platform_tenant_status_update' tenant.pk %}" class="platform-record-form" onsubmit="return confirm('Update this tenant status? This can affect school access.');">
         {% csrf_token %}
         <div class="platform-field"><label for="{{ status_form.status.id_for_label }}">Access state</label>{{ status_form.status }}</div>
-        <button class="platform-button platform-button--primary w-full" type="submit">Update status</button>
+        <button class="platform-button platform-button--primary platform-record-form__submit" type="submit">Update status</button>
       </form>
       <div class="border-t border-slate-100 p-4 text-xs font-semibold leading-5 text-slate-500">Suspension pauses access while preserving tenant data. Subscription status can also affect usability.</div>
     </aside>
@@ -46,10 +62,10 @@
 
   <details class="platform-details" {% if not onboarding_handoff.ready %}open{% endif %}>
     <summary class="flex items-center justify-between"><span><i class="ph ph-key mr-2" aria-hidden="true"></i>Owner login pack</span><span class="platform-badge {% if onboarding_handoff.login_url %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{% if onboarding_handoff.login_url %}Available{% else %}Incomplete{% endif %}</span></summary>
-    <div class="platform-details__body grid gap-4 lg:grid-cols-3">
-      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Username</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-sm font-black text-slate-900">{{ onboarding_handoff.admin_username|default:'Not recorded' }}</code>{% if onboarding_handoff.admin_username %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.admin_username }}">Copy</button>{% endif %}</div></div>
-      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Login URL</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-xs font-black text-slate-900">{{ onboarding_handoff.login_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.login_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.login_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.login_url %}<a href="{{ onboarding_handoff.login_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open login</a>{% endif %}</div>
-      <div class="rounded-xl bg-slate-50 p-4"><p class="platform-stat__label">Setup checklist</p><div class="mt-2 flex items-center justify-between gap-2"><code class="break-all text-xs font-black text-slate-900">{{ onboarding_handoff.setup_guide_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.setup_guide_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.setup_guide_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.setup_guide_url %}<a href="{{ onboarding_handoff.setup_guide_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open checklist</a>{% endif %}</div>
+    <div class="platform-login-pack-grid">
+      <div class="platform-login-pack-card"><p class="platform-stat__label">Username</p><div class="platform-login-pack-row"><code>{{ onboarding_handoff.admin_username|default:'Not recorded' }}</code>{% if onboarding_handoff.admin_username %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.admin_username }}">Copy</button>{% endif %}</div></div>
+      <div class="platform-login-pack-card"><p class="platform-stat__label">Login URL</p><div class="platform-login-pack-row"><code>{{ onboarding_handoff.login_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.login_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.login_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.login_url %}<a href="{{ onboarding_handoff.login_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open login</a>{% endif %}</div>
+      <div class="platform-login-pack-card"><p class="platform-stat__label">Setup checklist</p><div class="platform-login-pack-row"><code>{{ onboarding_handoff.setup_guide_url|default:'Add a primary domain first' }}</code>{% if onboarding_handoff.setup_guide_url %}<button type="button" class="platform-button" data-copy-value="{{ onboarding_handoff.setup_guide_url }}">Copy</button>{% endif %}</div>{% if onboarding_handoff.setup_guide_url %}<a href="{{ onboarding_handoff.setup_guide_url }}" target="_blank" rel="noopener" class="platform-button mt-3">Open checklist</a>{% endif %}</div>
     </div>
   </details>
 
@@ -58,12 +74,12 @@
     {% if domain_management %}
     <div class="space-y-3 p-4">
       {% for row in domain_management %}{% with domain=row.domain %}
-      <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="break-all font-black text-slate-950">{{ domain.domain }}</h3>{% if domain.is_primary %}<span class="platform-badge platform-badge--blue">Primary</span>{% endif %}<span class="platform-badge">{{ domain.get_type_display }}</span></div><p class="mt-1 text-xs font-semibold text-slate-500">Last checked {{ domain.last_checked_at|date:'M j, Y H:i'|default:'never' }}</p></div>
-          <div class="flex flex-wrap gap-2">{% if not domain.is_primary %}<form method="post" action="{% url 'platform_domain_mark_primary' domain.pk %}">{% csrf_token %}<button class="platform-button" type="submit">Make primary</button></form>{% endif %}<a href="{% url 'platform_domain_edit' domain.pk %}" class="platform-button">Edit</a><form method="post" action="{% url 'platform_domain_delete' domain.pk %}" onsubmit="return confirm('Remove this domain from the tenant?');">{% csrf_token %}<button class="platform-button platform-button--danger" type="submit">Delete</button></form></div>
+      <article class="platform-domain-card">
+        <div class="platform-domain-card__top">
+          <div class="platform-domain-card__identity"><h3 class="font-black text-slate-950">{{ domain.domain }}</h3>{% if domain.is_primary %}<span class="platform-badge platform-badge--blue">Primary</span>{% endif %}<span class="platform-badge">{{ domain.get_type_display }}</span><span class="text-xs font-semibold text-slate-500">Last checked {{ domain.last_checked_at|date:'M j, Y H:i'|default:'never' }}</span></div>
+          <div class="platform-domain-card__actions">{% if not domain.is_primary %}<form method="post" action="{% url 'platform_domain_mark_primary' domain.pk %}">{% csrf_token %}<button class="platform-button" type="submit">Make primary</button></form>{% endif %}<a href="{% url 'platform_domain_edit' domain.pk %}" class="platform-button">Edit</a><form method="post" action="{% url 'platform_domain_delete' domain.pk %}" onsubmit="return confirm('Remove this domain from the tenant?');">{% csrf_token %}<button class="platform-button platform-button--danger" type="submit">Delete</button></form></div>
         </div>
-        <div class="mt-4 grid gap-3 sm:grid-cols-3"><div><span class="platform-stat__label">DNS</span><p class="mt-1"><span class="platform-badge {% if domain.dns_status == 'VERIFIED' %}platform-badge--success{% elif domain.dns_status == 'FAILED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.dns_label }}</span></p></div><div><span class="platform-stat__label">SSL</span><p class="mt-1"><span class="platform-badge {% if domain.ssl_status == 'ACTIVE' %}platform-badge--success{% elif domain.ssl_status == 'FAILED' or domain.ssl_status == 'EXPIRED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.ssl_label }}</span></p></div><div><span class="platform-stat__label">Verified</span><p class="mt-1 text-sm font-black text-slate-800">{{ domain.verified_at|date:'M j, Y H:i'|default:'Not yet' }}</p></div></div>
+        <div class="platform-domain-health-grid"><div class="platform-domain-health-item"><span class="platform-stat__label">DNS</span><p class="mt-1"><span class="platform-badge {% if domain.dns_status == 'VERIFIED' %}platform-badge--success{% elif domain.dns_status == 'FAILED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.dns_label }}</span></p></div><div class="platform-domain-health-item"><span class="platform-stat__label">SSL</span><p class="mt-1"><span class="platform-badge {% if domain.ssl_status == 'ACTIVE' %}platform-badge--success{% elif domain.ssl_status == 'FAILED' or domain.ssl_status == 'EXPIRED' %}platform-badge--danger{% else %}platform-badge--warning{% endif %}">{{ row.ssl_label }}</span></p></div><div class="platform-domain-health-item"><span class="platform-stat__label">Verified</span><p class="mt-1 text-sm font-black text-slate-800">{{ domain.verified_at|date:'M j, Y H:i'|default:'Not yet' }}</p></div></div>
         <details class="platform-details mt-4"><summary class="flex items-center justify-between"><span><i class="ph ph-globe-hemisphere-west mr-2" aria-hidden="true"></i>DNS instructions and verification controls</span><i class="ph ph-caret-down text-slate-400" aria-hidden="true"></i></summary><div class="platform-details__body"><p class="text-sm font-semibold text-slate-600">{{ row.dns.summary }}</p><div class="platform-table-wrap mt-3"><table class="platform-table"><thead><tr><th>Record</th><th>Host</th><th>Target</th><th></th></tr></thead><tbody>{% for record in row.dns.records %}<tr><td><strong>{{ record.type }}</strong></td><td><code>{{ record.host }}</code></td><td><code class="break-all">{{ record.value }}</code></td><td><button type="button" class="platform-button" data-copy-value="{{ record.value }}">Copy</button></td></tr>{% endfor %}</tbody></table></div><div class="mt-4 flex flex-wrap gap-2"><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_verified"><button class="platform-button platform-button--primary" type="submit">DNS verified</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="dns_failed"><button class="platform-button platform-button--danger" type="submit">DNS failed</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_active"><button class="platform-button" type="submit">SSL active</button></form><form method="post" action="{% url 'platform_domain_verify' domain.pk %}">{% csrf_token %}<input type="hidden" name="action" value="ssl_failed"><button class="platform-button platform-button--danger" type="submit">SSL failed</button></form></div></div></details>
       </article>
       {% endwith %}{% endfor %}
