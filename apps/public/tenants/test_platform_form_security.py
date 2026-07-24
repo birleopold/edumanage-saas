@@ -1,8 +1,8 @@
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.urls import reverse
 
 
-class PlatformFormSecurityTests(SimpleTestCase):
+class PlatformFormSecurityTests(TestCase):
     def test_platform_login_is_private_uncached_and_sets_csrf_cookie(self):
         response = self.client.get(reverse("platform_admin_login"))
 
