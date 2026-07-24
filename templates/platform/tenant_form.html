@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="platform-onboarding max-w-4xl">
+<div class="platform-onboarding">
   <section class="platform-form-card">
     <form method="post" novalidate>
       {% csrf_token %}
@@ -31,7 +31,7 @@
         <div class="platform-form-grid platform-form-grid--two">
           {% for field in form %}
             {% if field.name == 'primary_domain' or field.name == 'organization_email' or field.name == 'organization_phone' or field.name == 'organization_address' %}
-              <div class="platform-form-field {% if field.name == 'primary_domain' or field.name == 'organization_address' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>
+              <div class="platform-form-field {% if field.name == 'primary_domain' or field.name == 'organization_address' %}platform-form-field--full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>
             {% endif %}
           {% endfor %}
         </div>
@@ -42,7 +42,7 @@
         <div class="platform-form-grid platform-form-grid--two">
           {% for field in form %}
             {% if field.name|slice:':6' == 'owner_' %}
-              <div class="platform-form-field {% if field.name == 'owner_email' or field.name == 'owner_username' %}sm:col-span-2{% endif %}">
+              <div class="platform-form-field {% if field.name == 'owner_email' or field.name == 'owner_username' %}platform-form-field--full{% endif %}">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {% if field.name == 'owner_temporary_password' or field.name == 'owner_temporary_password_confirm' %}<div class="platform-password-wrap">{{ field }}<button type="button" class="platform-password-toggle" data-password-toggle="{{ field.id_for_label }}" aria-label="Show password" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button></div>{% else %}{{ field }}{% endif %}
                 {% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
