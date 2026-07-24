@@ -2,20 +2,96 @@
 {% load orgsettings_extras %}
 
 {% block title %}Invoices{% endblock %}
-{% block page_title %}Billing Center{% endblock %}
-{% block header_actions %}<a href="{% url 'admin_invoices_bulk_create' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300">Bulk Create</a><a href="{% url 'admin_invoices_create' %}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><i class="ph ph-plus-circle mr-1"></i> Create Invoice</a>{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+
+{% block breadcrumbs %}
+<p class="text-sm text-slate-500">Review learner bills, balances, payments and due accounts.</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_invoices_bulk_create' %}" class="edu-outline-button"><i class="ph ph-stack" aria-hidden="true"></i> Bulk create</a>
+<a href="{% url 'admin_invoices_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> New invoice</a>
+{% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
-<div class="motion-fast space-y-7">
-  <section class="rounded-3xl border border-slate-200 bg-gradient-to-br from-emerald-950 via-slate-950 to-primary-900 p-6 text-white shadow-lg">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5"><div><p class="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Student finance</p><h2 class="mt-2 text-2xl font-black">Invoices and payments</h2><p class="mt-2 max-w-2xl text-sm text-emerald-100">Manage student billing, bulk fee invoices, payment records, receipts and reminders.</p></div><div class="flex flex-wrap gap-2"><a href="{% url 'admin_finance_messaging_report' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Messaging Report</a><a href="{% url 'admin_finance_message_logs' %}" class="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/15 hover:bg-white/15">Message Logs</a><a href="{% url 'admin_invoices_create' %}" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-900 hover:bg-emerald-50">Create Invoice</a></div></div>
+<div class="edu-ops-page">
+  <nav class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2" aria-label="Finance tools">
+    <a href="{% url 'admin_finance_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-squares-four" aria-hidden="true"></i> Overview</a>
+    <a href="{% url 'admin_invoices_list' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"><i class="ph ph-receipt" aria-hidden="true"></i> Invoices</a>
+    <a href="{% url 'admin_fee_items_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-list-checks" aria-hidden="true"></i> Fee items</a>
+    <a href="{% url 'admin_finance_clearance_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-seal-check" aria-hidden="true"></i> Clearance</a>
+    <a href="{% url 'admin_finance_communication_operations' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-chats-circle" aria-hidden="true"></i> Communication</a>
+  </nav>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form method="get" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[1fr_13rem_8rem_auto_auto] xl:items-end" aria-label="Filter invoices">
+      <div class="edu-ops-field edu-ops-field--search">
+        <label for="id_q">Search</label>
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <input id="id_q" type="search" name="q" value="{{ q }}" placeholder="Learner, student ID or invoice reference">
+      </div>
+      <div class="edu-ops-field">
+        <label for="id_campus">Campus</label>
+        <select id="id_campus" name="campus">
+          <option value="">All campuses</option>
+          {% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus_id and campus.id == selected_campus_id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="edu-ops-field">
+        <label for="id_per_page">Show</label>
+        <select id="id_per_page" name="per_page">
+          <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+          <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+          <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+        </select>
+      </div>
+      <label class="flex min-h-[46px] cursor-pointer items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700"><input type="checkbox" name="overdue" value="1" class="rounded border-rose-300 text-rose-600" {% if overdue_only %}checked{% endif %}> Overdue only</label>
+      <div class="flex gap-2"><button type="submit" class="edu-pill-button"><i class="ph ph-funnel" aria-hidden="true"></i> Apply</button>{% if q or overdue_only %}<a href="{% url 'admin_invoices_list' %}" class="edu-outline-button"><i class="ph ph-x" aria-hidden="true"></i></a>{% endif %}</div>
+    </form>
+
+    <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-primary-700"><i class="ph ph-receipt text-xl" aria-hidden="true"></i></span><div><p class="text-xs font-black uppercase tracking-wide text-slate-500">Invoices in view</p><p class="text-xl font-black text-slate-950">{{ page_obj.paginator.count|default:0 }}</p></div></div>
+      <div class="flex flex-wrap gap-2"><a href="{% url 'admin_invoices_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}{% if overdue_only %}&amp;overdue=1{% endif %}" class="edu-outline-button"><i class="ph ph-download-simple" aria-hidden="true"></i> Export CSV</a><a href="{% url 'admin_invoices_bulk_create' %}" class="edu-outline-button"><i class="ph ph-stack" aria-hidden="true"></i> Bulk create</a></div>
+    </div>
   </section>
 
-  <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200"><form method="get" class="space-y-4"><div class="grid grid-cols-1 xl:grid-cols-[1fr_auto_auto_auto_auto] gap-3 xl:items-end"><div><label for="id_q" class="block text-sm font-black text-slate-700 mb-2">Search</label><input id="id_q" type="text" name="q" value="{{ q }}" class="block w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900" placeholder="Search by student or reference"></div><div><label for="id_campus" class="block text-sm font-black text-slate-700 mb-2">Campus</label><select id="id_campus" name="campus" class="block w-52 rounded-xl border-2 border-slate-200 px-4 py-2.5 font-bold text-slate-900"><option value="">All Campuses</option>{% for c in campuses %}<option value="{{ c.id }}" {% if selected_campus_id and c.id == selected_campus_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div><div><label for="id_per_page" class="block text-sm font-black text-slate-700 mb-2">Per Page</label><input id="id_per_page" type="number" name="per_page" value="{{ per_page }}" min="1" max="200" class="block w-28 rounded-xl border-2 border-slate-200 px-3 py-2.5 font-bold text-slate-900"></div><label class="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-black text-red-700 cursor-pointer"><input type="checkbox" name="overdue" value="1" class="rounded border-red-300 text-red-600" {% if overdue_only %}checked{% endif %}> Overdue only</label><div class="flex gap-2"><button type="submit" class="rounded-xl bg-slate-100 px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-200"><i class="ph ph-funnel mr-1"></i> Apply</button><a href="{% url 'admin_invoices_list' %}" class="rounded-xl bg-white px-5 py-2.5 font-black text-slate-700 border-2 border-slate-200 hover:bg-slate-50"><i class="ph ph-x mr-1"></i> Reset</a></div></div><div class="flex flex-wrap justify-end gap-3 pt-3 border-t border-slate-100"><a href="{% url 'admin_invoices_export_csv' %}?q={{ q|urlencode }}{% if selected_campus_id %}&amp;campus={{ selected_campus_id }}{% endif %}{% if overdue_only %}&amp;overdue=1{% endif %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-primary-300"><i class="ph ph-download-simple mr-1"></i> Export CSV</a><a href="{% url 'admin_invoices_bulk_create' %}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700"><i class="ph ph-files mr-1"></i> Bulk Create</a></div></form></section>
+  <section class="edu-ops-table-shell" aria-labelledby="invoice-register-heading">
+    <header class="edu-ops-table-heading">
+      <div><h2 id="invoice-register-heading">Invoice register</h2><p>{% if overdue_only %}Showing overdue invoices only.{% elif q %}Results matching “{{ q }}”.{% else %}All invoices in the selected campus scope.{% endif %}</p></div>
+      <a href="{% url 'admin_invoices_create' %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-plus" aria-hidden="true"></i> New</a>
+    </header>
 
-  <section class="rounded-2xl border border-amber-100 bg-amber-50 p-4"><p class="text-sm text-amber-900"><span class="font-black">Billing workflow:</span> bulk-create invoices → review line items → record payments → download receipts → send reminders where balances remain.</p></section>
-
-  {% if invoices %}<section class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200"><table class="min-w-full divide-y divide-slate-200"><thead class="bg-slate-50"><tr><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Reference</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Student</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Academic Period</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Amounts</th><th class="px-6 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wider">Status</th><th class="px-6 py-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">Actions</th></tr></thead><tbody class="bg-white divide-y divide-slate-100">{% for inv in invoices %}<tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-black text-primary-700">{{ inv.reference }}</span><div class="text-xs text-slate-500">ID: {{ inv.id }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-bold text-slate-900">{{ inv.student }}</div><div class="text-xs text-slate-500">{{ inv.student.student_id }} • {{ inv.student.campus }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><div class="font-bold">{{ inv.academic_year }}</div><div class="text-xs text-slate-500">{{ inv.academic_term }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><div class="font-bold text-slate-900">Total: {{ inv.total_amount|floatformat:2 }}</div><div class="text-xs text-green-600">Paid: {{ inv.total_paid|floatformat:2 }}</div><div class="text-xs font-black {% if inv.balance > 0 %}text-red-600{% else %}text-slate-500{% endif %}">Balance: {{ inv.balance|floatformat:2 }}</div></td><td class="px-6 py-4 whitespace-nowrap text-sm"><span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{{ inv.status }}</span></td><td class="px-6 py-4 whitespace-nowrap text-right text-sm"><div class="flex items-center justify-end gap-2"><a href="{% url 'admin_invoices_detail' inv.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-primary-700 hover:border-primary-300 hover:bg-primary-50">View</a><a href="{% url 'admin_invoices_edit' inv.id %}" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-indigo-700 hover:border-primary-300 hover:bg-primary-50">Edit</a><a href="{% url 'admin_invoices_print' inv.id %}" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-slate-200 px-3 py-1.5 font-black text-slate-700 hover:border-primary-300 hover:bg-primary-50">Print</a></div></td></tr>{% endfor %}</tbody></table></section>{% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}{% else %}{% url 'admin_invoices_create' as create_invoice_url %}{% include "components/ui_empty_state.html" with icon="wallet" title="No invoices found" description="Get started by creating your first invoice or use bulk create for a full class" action_url=create_invoice_url action_text="Create Invoice" %}{% endif %}
+    {% if invoices %}
+    <div class="overflow-x-auto">
+      <table class="edu-ops-table">
+        <caption class="sr-only">Invoices with learner, academic period, amounts, status and actions</caption>
+        <thead><tr><th scope="col">Invoice</th><th scope="col">Learner</th><th scope="col">Period</th><th scope="col">Amounts</th><th scope="col">Status</th><th scope="col" class="text-right">Actions</th></tr></thead>
+        <tbody>
+          {% for invoice in invoices %}
+          <tr>
+            <td><div class="edu-ops-record"><span class="edu-ops-record__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span><div><strong>{{ invoice.reference|default:'No reference' }}</strong><span>Invoice #{{ invoice.id }}{% if invoice.due_date %} · due {{ invoice.due_date|date:'M j, Y' }}{% endif %}</span></div></div></td>
+            <td><div class="edu-table-meta"><strong>{{ invoice.student }}</strong>{{ invoice.student.student_id|default:'No student ID' }} · {{ invoice.student.campus|default:'Campus not assigned' }}</div></td>
+            <td><div class="edu-table-meta"><strong>{{ invoice.academic_year|default:'Year not set' }}</strong>{{ invoice.academic_term|default:'Term not set' }}</div></td>
+            <td><div class="edu-table-meta"><strong>{{ invoice.total_amount|format_money_amount:org_profile.default_currency }}</strong><span class="text-emerald-700">Paid {{ invoice.total_paid|format_money_amount:org_profile.default_currency }}</span><span class="{% if invoice.balance > 0 %}font-black text-rose-700{% else %}text-slate-500{% endif %}">Balance {{ invoice.balance|format_money_amount:org_profile.default_currency }}</span></div></td>
+            <td>{% if invoice.balance <= 0 %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Cleared</span>{% elif invoice.status == 'OVERDUE' %}<span class="edu-ops-badge edu-ops-badge--danger"><i class="ph ph-warning" aria-hidden="true"></i> Overdue</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">{{ invoice.status|default:'Outstanding' }}</span>{% endif %}</td>
+            <td><div class="edu-ops-actions"><a href="{% url 'admin_invoices_detail' invoice.id %}" class="edu-ops-button edu-ops-button--primary"><i class="ph ph-eye" aria-hidden="true"></i> Open</a><a href="{% url 'admin_invoices_edit' invoice.id %}" class="edu-ops-button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> Edit</a><a href="{% url 'admin_invoices_print' invoice.id %}" target="_blank" rel="noopener noreferrer" class="edu-ops-button" aria-label="Print invoice {{ invoice.reference }}"><i class="ph ph-printer" aria-hidden="true"></i></a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj %}{% include "components/ui_pagination.html" with page_obj=page_obj %}{% endif %}
+    {% else %}
+    <div class="flex flex-col items-center justify-center px-6 py-14 text-center">
+      <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"><i class="ph ph-receipt text-2xl" aria-hidden="true"></i></span>
+      <h3 class="mt-4 text-lg font-black text-slate-950">{% if q or overdue_only %}No matching invoices{% else %}No invoices yet{% endif %}</h3>
+      <p class="mt-1 max-w-md text-sm text-slate-500">{% if q or overdue_only %}Change the search, campus or overdue filter.{% else %}Create one invoice or use bulk create for a class or group.{% endif %}</p>
+      <div class="mt-5 flex flex-wrap justify-center gap-2">{% if q or overdue_only %}<a href="{% url 'admin_invoices_list' %}" class="edu-outline-button">Clear filters</a>{% endif %}<a href="{% url 'admin_invoices_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> New invoice</a></div>
+    </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}
