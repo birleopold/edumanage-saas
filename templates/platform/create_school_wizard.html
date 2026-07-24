@@ -72,7 +72,7 @@
           <div class="platform-form-section">
             <div class="platform-form-grid platform-form-grid--two">
               {% for field in form %}
-                <div class="platform-form-field {% if field.name == 'organization_address' %}sm:col-span-2{% endif %}">
+                <div class="platform-form-field {% if field.name == 'organization_address' %}platform-form-field--full{% endif %}">
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
                   {% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}
                   {% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}
@@ -91,7 +91,7 @@
           <div class="platform-form-section">
             <div class="platform-form-grid platform-form-grid--two">
               {% for field in form %}
-                <div class="platform-form-field {% if field.name == 'owner_email' or field.name == 'owner_username' %}sm:col-span-2{% endif %}">
+                <div class="platform-form-field {% if field.name == 'owner_email' or field.name == 'owner_username' %}platform-form-field--full{% endif %}">
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                   {% if field.name == 'owner_temporary_password' or field.name == 'owner_temporary_password_confirm' %}<div class="platform-password-wrap">{{ field }}<button type="button" class="platform-password-toggle" data-password-toggle="{{ field.id_for_label }}" aria-label="Show password" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button></div>{% else %}{{ field }}{% endif %}
                   {% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}
@@ -108,7 +108,7 @@
           </div>
         {% else %}
           {% for field in form %}
-            <div class="platform-form-checkbox">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label><p class="platform-form-help">Activation creates tenant records immediately. Confirm DNS ownership and owner details before proceeding.</p>{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
+            <div class="platform-form-checkbox platform-form-checkbox--full">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label><p class="platform-form-help">Activation creates tenant records immediately. Confirm DNS ownership and owner details before proceeding.</p>{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
           {% endfor %}
         {% endif %}
 
