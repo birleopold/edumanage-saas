@@ -41,7 +41,11 @@ class PlatformConsoleUiTests(TestCase):
         self.assertContains(response, marker)
         self.assertContains(response, "platform-console.css")
         self.assertContains(response, "platform-layout.css")
+        self.assertContains(response, "platform-metrics.css")
         self.assertContains(response, "platform-console.js")
+        self.assertNotContains(response, "admin-module-actions.js")
+        self.assertNotContains(response, "admin-module-actions.css")
+        self.assertNotContains(response, "Module shortcuts")
         self.assertContains(response, 'class="platform-workspace"', html=False)
         return response
 
@@ -59,6 +63,21 @@ class PlatformConsoleUiTests(TestCase):
         for route_name, marker, kwargs in expectations:
             with self.subTest(route_name=route_name):
                 self.assert_platform_workspace(route_name, marker, kwargs=kwargs)
+
+    def test_summary_pages_use_explicit_metric_grids(self):
+        expectations = [
+            ("platform_dashboard", "platform-summary-grid--6"),
+            ("platform_activity", "platform-summary-grid--4"),
+            ("platform_subscription_dashboard", "platform-summary-grid--5"),
+        ]
+
+        for route_name, grid_class in expectations:
+            with self.subTest(route_name=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, grid_class)
+                self.assertContains(response, "platform-stat__icon")
+                self.assertContains(response, "platform-stat__body")
 
     def test_dashboard_uses_compact_metrics_and_explicit_panel_grid(self):
         response = self.client.get(reverse("platform_dashboard"))
