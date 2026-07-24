@@ -10,87 +10,103 @@
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="{% static 'css/public-tailwind.css' %}">
   <link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
-  <link rel="stylesheet" href="{% static 'css/role-scope-clarity.css' %}">
   <link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
+  <link rel="stylesheet" href="{% static 'css/platform-console.css' %}">
   <script defer src="{% static 'js/admin-module-actions.js' %}"></script>
-  <script defer src="{% static 'js/role-scope-clarity.js' %}"></script>
   <script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
   <script defer src="{% static 'js/pwa-lite.js' %}"></script>
+  <script defer src="{% static 'js/platform-console.js' %}"></script>
+  {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-full bg-slate-50 text-slate-900 role-platform">
-  <div class="min-h-screen lg:flex">
-    <aside class="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-80 lg:border-b-0 lg:border-r">
-      <div class="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
-        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-slate-950 text-white shadow-lg">
-          <i class="ph-fill ph-buildings text-2xl"></i>
+<body class="min-h-full role-platform">
+  <a href="#platform-main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-bold focus:text-slate-900">Skip to content</a>
+  <div id="platform-sidebar-backdrop" class="platform-sidebar-backdrop" aria-hidden="true"></div>
+
+  <div class="platform-shell lg:flex">
+    <aside id="platform-sidebar" class="platform-sidebar lg:fixed lg:inset-y-0 lg:left-0 lg:w-72" aria-label="Platform navigation" aria-hidden="false">
+      <div class="platform-sidebar__brand flex h-20 items-center gap-3 px-5">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
+          <i class="ph-fill ph-buildings text-2xl" aria-hidden="true"></i>
         </div>
-        <div>
-          <p class="text-lg font-black leading-tight">EduManage</p>
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Platform Console</p>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-base font-black text-white">EduManage</p>
+          <p class="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-blue-300">Platform Console</p>
         </div>
+        <button id="platform-sidebar-close" type="button" class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden" aria-label="Close platform navigation">
+          <i class="ph ph-x text-xl" aria-hidden="true"></i>
+        </button>
       </div>
 
-      <nav class="space-y-2 px-4 py-6">
-        <a href="{% url 'platform_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if request.resolver_match.url_name == 'platform_dashboard' %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
-          <i class="ph ph-gauge text-xl"></i> Dashboard
-        </a>
-        <a href="{% url 'platform_tenant_list' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/tenants' in request.path or '/platform/domains' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
-          <i class="ph ph-tree-structure text-xl"></i> Tenants & Domains
-        </a>
-        <a href="{% url 'platform_subscription_dashboard' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/subscriptions' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
-          <i class="ph ph-credit-card text-xl"></i> Subscriptions
-        </a>
-        <a href="{% url 'platform_activity' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/activity' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
-          <i class="ph ph-clock-counter-clockwise text-xl"></i> Platform Activity
-        </a>
-        <a href="{% url 'platform_deployment_readiness' %}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black {% if '/platform/deployment-readiness' in request.path %}bg-blue-700 text-white{% else %}text-slate-700 hover:bg-blue-50 hover:text-blue-800{% endif %}">
-          <i class="ph ph-rocket-launch text-xl"></i> Deployment Readiness
-        </a>
-        <a href="/dj-admin/" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-800">
-          <i class="ph ph-database text-xl"></i> Django Admin
-        </a>
-      </nav>
+      <div class="h-[calc(100vh-5rem)] overflow-y-auto px-3 py-4">
+        <nav class="platform-nav" aria-label="Platform operations">
+          <p class="platform-nav__label">Overview</p>
+          <a href="{% url 'platform_dashboard' %}" class="platform-nav__link {% if request.resolver_match.url_name == 'platform_dashboard' %}is-active{% endif %}">
+            <i class="ph ph-gauge" aria-hidden="true"></i><span>Dashboard</span>
+          </a>
+          <a href="{% url 'platform_tenant_list' %}" class="platform-nav__link {% if '/platform/tenants' in request.path or '/platform/domains' in request.path %}is-active{% endif %}">
+            <i class="ph ph-buildings" aria-hidden="true"></i><span>Schools & domains</span>
+          </a>
+          <a href="{% url 'platform_subscription_dashboard' %}" class="platform-nav__link {% if '/platform/subscriptions' in request.path %}is-active{% endif %}">
+            <i class="ph ph-credit-card" aria-hidden="true"></i><span>Subscriptions</span>
+          </a>
 
-      <div class="mx-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950">
-        <p class="font-black">Access safeguard</p>
-        <p class="mt-1 text-xs font-semibold leading-5 text-blue-800">Only authenticated superusers can manage SaaS tenants, domains and public-schema platform operations.</p>
+          <p class="platform-nav__label">Operations</p>
+          <a href="{% url 'platform_activity' %}" class="platform-nav__link {% if '/platform/activity' in request.path %}is-active{% endif %}">
+            <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i><span>Activity log</span>
+          </a>
+          <a href="{% url 'platform_deployment_readiness' %}" class="platform-nav__link {% if '/platform/deployment-readiness' in request.path %}is-active{% endif %}">
+            <i class="ph ph-rocket-launch" aria-hidden="true"></i><span>Deployment readiness</span>
+          </a>
+          <a href="/dj-admin/" class="platform-nav__link">
+            <i class="ph ph-database" aria-hidden="true"></i><span>Django administration</span>
+          </a>
+        </nav>
+
+        <div class="mt-6 rounded-xl border border-white/10 bg-white/[0.06] p-4 text-xs font-semibold leading-5 text-slate-300">
+          <div class="flex items-center gap-2 font-black text-white"><i class="ph ph-shield-check text-blue-300" aria-hidden="true"></i> Superuser console</div>
+          <p class="mt-2">Changes here affect tenants, domains, billing and public-schema operations across the platform.</p>
+        </div>
       </div>
     </aside>
 
-    <main class="lg:ml-80 flex-1">
-      <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div class="flex min-h-20 flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-700">{% block eyebrow %}SaaS Operations{% endblock %}</p>
-            <h1 class="mt-1 text-2xl font-black tracking-tight text-slate-950">{% block page_title %}Platform Admin{% endblock %}</h1>
-            <p class="mt-1 text-sm font-semibold text-slate-500">{% block breadcrumbs %}Public-schema management console{% endblock %}</p>
+    <div class="min-w-0 flex-1 lg:ml-72">
+      <header class="platform-topbar sticky top-0 z-30">
+        <div class="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div class="flex min-w-0 items-center gap-3">
+            <button id="platform-sidebar-open" type="button" class="platform-button px-3 lg:hidden" aria-label="Open platform navigation" aria-controls="platform-sidebar" aria-expanded="false">
+              <i class="ph ph-list text-lg" aria-hidden="true"></i>
+            </button>
+            <div class="min-w-0">
+              <p class="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">{% block eyebrow %}SaaS Operations{% endblock %}</p>
+              <h1 class="truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">{% block page_title %}Platform Admin{% endblock %}</h1>
+              <p class="hidden truncate text-xs font-semibold text-slate-500 sm:block">{% block breadcrumbs %}Public-schema management console{% endblock %}</p>
+            </div>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span data-push-readiness></span>
-            <button type="button" data-pwa-install class="edu-pwa-install-button">Install app</button>
+          <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
             {% block header_actions %}{% endblock %}
             {% if request.user.is_authenticated %}
-              <a href="{% url 'platform_admin_logout' %}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700">
-                <i class="ph ph-sign-out mr-1"></i> Sign out
-              </a>
+              <span class="hidden rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600 md:inline-flex">{{ request.user.get_full_name|default:request.user.username }}</span>
+              <a href="{% url 'platform_admin_logout' %}" class="platform-button" aria-label="Sign out of platform console"><i class="ph ph-sign-out" aria-hidden="true"></i><span class="hidden sm:inline">Sign out</span></a>
             {% endif %}
           </div>
         </div>
       </header>
 
-      <section class="px-5 py-6 lg:px-8">
-        {% if messages %}
-          <div class="mb-6 space-y-3">
-            {% for message in messages %}
-              <div class="rounded-2xl border px-4 py-3 text-sm font-bold {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-800{% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}">
-                {{ message }}
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-        {% block content %}{% endblock %}
-      </section>
-    </main>
+      <main id="platform-main" class="px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        <div class="platform-content">
+          {% if messages %}
+            <div class="mb-5 space-y-2" aria-label="Platform notifications">
+              {% for message in messages %}
+                <div class="rounded-xl border px-4 py-3 text-sm font-bold {% if 'error' in message.tags %}border-red-200 bg-red-50 text-red-800{% elif 'success' in message.tags %}border-green-200 bg-green-50 text-green-800{% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-900{% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}" role="status">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% block content %}{% endblock %}
+          <footer class="mt-8 border-t border-slate-200 py-5 text-center text-xs font-semibold text-slate-400">© {% now "Y" %} EduManage Platform Console</footer>
+        </div>
+      </main>
+    </div>
   </div>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
