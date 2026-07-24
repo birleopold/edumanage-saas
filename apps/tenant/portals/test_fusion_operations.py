@@ -117,10 +117,12 @@ class FusedOperationsWorkspaceTests(TestCase):
             "Build each paper from setup through scores",
         )
 
-    def test_assessment_reporting_and_analytics_workspaces_render(self):
+    def test_assessment_reporting_finance_and_analytics_workspaces_render(self):
         expectations = {
-            "admin_assessments_list": "Move from assessment setup to published results with confidence",
+            "admin_assessments_list": "Assessment register",
+            "admin_assessments_tabulation": "What the matrix shows",
             "admin_assessment_framework_dashboard": "Define how school assessments are classified and combined",
+            "admin_invoices_list": "Invoice register",
             "admin_reports_overview": "Turn school records into decisions and accountable exports",
             "admin_analytics_dashboard": "See achievement, coverage and learner risk before intervention is late",
         }
