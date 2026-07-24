@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="platform-onboarding max-w-3xl">
+<div class="platform-onboarding">
   <div class="platform-onboarding__layout">
     <section class="platform-onboarding__main">
       <header class="platform-form-section__header"><h2>Domain configuration</h2><p class="platform-form-section__description">Save the hostname and decide whether it is the school’s main login address.</p></header>
@@ -18,9 +18,9 @@
         <div class="platform-form-grid platform-form-grid--two">
           {% for field in form %}
             {% if field.field.widget.input_type == 'checkbox' %}
-              <div class="platform-form-checkbox sm:col-span-2">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label>{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
+              <div class="platform-form-checkbox platform-form-checkbox--full">{{ field }}<div><label for="{{ field.id_for_label }}" class="block text-sm font-black text-slate-800">{{ field.label }}</label>{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div></div>
             {% else %}
-              <div class="platform-form-field {% if field.name == 'domain' %}sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>
+              <div class="platform-form-field {% if field.name == 'domain' %}platform-form-field--full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="platform-form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="platform-form-error">{{ error }}</p>{% endfor %}</div>
             {% endif %}
           {% endfor %}
         </div>
