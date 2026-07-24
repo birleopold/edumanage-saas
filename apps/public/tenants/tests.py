@@ -206,7 +206,7 @@ class CreateSchoolWizardOnboardingTests(TestCase):
 
         response = self.client.get(reverse("platform_tenant_detail", args=[tenant.pk]))
 
-        self.assertContains(response, "School owner handoff")
+        self.assertContains(response, "Owner handoff")
         self.assertContains(response, "ready_school_admin")
         self.assertContains(response, "https://ready.school.test/login/")
         self.assertContains(response, "https://ready.school.test/admin/school-setup/")
