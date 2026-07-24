@@ -11,35 +11,35 @@
   <link rel="stylesheet" href="{% static 'css/public-tailwind.css' %}">
   <link rel="stylesheet" href="{% static 'css/admin-module-actions.css' %}">
   <link rel="stylesheet" href="{% static 'css/mobile-pwa.css' %}">
-  <link rel="stylesheet" href="{% static 'css/platform-console.css' %}?v=20260724-4">
-  <link rel="stylesheet" href="{% static 'css/platform-onboarding.css' %}?v=20260724-4">
+  <link rel="stylesheet" href="{% static 'css/platform-console.css' %}?v=20260724-5">
+  <link rel="stylesheet" href="{% static 'css/platform-onboarding.css' %}?v=20260724-5">
   <script defer src="{% static 'js/admin-module-actions.js' %}"></script>
   <script defer src="{% static 'js/mobile-bottom-nav.js' %}"></script>
   <script defer src="{% static 'js/pwa-lite.js' %}"></script>
-  <script defer src="{% static 'js/platform-console.js' %}?v=20260724-4"></script>
-  <script defer src="{% static 'js/platform-onboarding.js' %}?v=20260724-4"></script>
+  <script defer src="{% static 'js/platform-console.js' %}?v=20260724-5"></script>
+  <script defer src="{% static 'js/platform-onboarding.js' %}?v=20260724-5"></script>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-full role-platform">
   <a href="#platform-main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-bold focus:text-slate-900">Skip to content</a>
   <div id="platform-sidebar-backdrop" class="platform-sidebar-backdrop" aria-hidden="true"></div>
 
-  <div class="platform-shell lg:flex">
-    <aside id="platform-sidebar" class="platform-sidebar lg:fixed lg:inset-y-0 lg:left-0 lg:w-72" aria-label="Platform navigation" aria-hidden="false">
-      <div class="platform-sidebar__brand flex h-20 items-center gap-3 px-5">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
-          <i class="ph-fill ph-buildings text-2xl" aria-hidden="true"></i>
+  <div class="platform-shell">
+    <aside id="platform-sidebar" class="platform-sidebar" aria-label="Platform navigation" aria-hidden="false">
+      <div class="platform-sidebar__brand flex items-center gap-3 px-5">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
+          <i class="ph-fill ph-buildings text-xl" aria-hidden="true"></i>
         </div>
         <div class="min-w-0 flex-1">
           <p class="truncate text-base font-black text-white">EduManage</p>
-          <p class="truncate text-[11px] font-bold uppercase tracking-[0.16em] text-blue-300">Platform Console</p>
+          <p class="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-blue-300">Platform Console</p>
         </div>
-        <button id="platform-sidebar-close" type="button" class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden" aria-label="Close platform navigation">
+        <button id="platform-sidebar-close" type="button" class="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close platform navigation">
           <i class="ph ph-x text-xl" aria-hidden="true"></i>
         </button>
       </div>
 
-      <div class="h-[calc(100vh-5rem)] overflow-y-auto px-3 py-4">
+      <div class="platform-sidebar__scroll px-3 py-4">
         <nav class="platform-nav" aria-label="Platform operations">
           <p class="platform-nav__label">Overview</p>
           <a href="{% url 'platform_dashboard' %}" class="platform-nav__link {% if request.resolver_match.url_name == 'platform_dashboard' %}is-active{% endif %}">
@@ -64,18 +64,18 @@
           </a>
         </nav>
 
-        <div class="mt-6 rounded-xl border border-white/10 bg-white/[0.06] p-4 text-xs font-semibold leading-5 text-slate-300">
-          <div class="flex items-center gap-2 font-black text-white"><i class="ph ph-shield-check text-blue-300" aria-hidden="true"></i> Superuser console</div>
-          <p class="mt-2">Changes here affect tenants, domains, billing and public-schema operations across the platform.</p>
+        <div class="platform-sidebar-note">
+          <div class="platform-sidebar-note__title"><i class="ph ph-shield-check" aria-hidden="true"></i> Superuser console</div>
+          <p>Tenant, domain, billing and public-schema operations.</p>
         </div>
       </div>
     </aside>
 
-    <div class="min-w-0 flex-1 lg:ml-72">
+    <div class="platform-workspace">
       <header class="platform-topbar sticky top-0 z-30">
-        <div class="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div class="platform-topbar__inner">
           <div class="flex min-w-0 items-center gap-3">
-            <button id="platform-sidebar-open" type="button" class="platform-button px-3 lg:hidden" aria-label="Open platform navigation" aria-controls="platform-sidebar" aria-expanded="false">
+            <button id="platform-sidebar-open" type="button" class="platform-button px-3" aria-label="Open platform navigation" aria-controls="platform-sidebar" aria-expanded="false">
               <i class="ph ph-list text-lg" aria-hidden="true"></i>
             </button>
             <div class="min-w-0">
@@ -94,7 +94,7 @@
         </div>
       </header>
 
-      <main id="platform-main" class="px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+      <main id="platform-main">
         <div class="platform-content">
           {% if messages %}
             <div class="mb-5 space-y-2" aria-label="Platform notifications">
