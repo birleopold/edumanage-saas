@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -46,21 +48,51 @@ def _backfill_missing_subscriptions():
     return created
 
 
+def _parse_per_page(request, default=25, maximum=100):
+    try:
+        value = int(request.GET.get("per_page") or default)
+    except (TypeError, ValueError):
+        value = default
+    return max(10, min(value, maximum))
+
+
 @platform_admin_required
 def subscription_dashboard(request):
     created = _backfill_missing_subscriptions()
     if created:
         messages.info(request, f"Created default subscription records for {created} existing tenant(s).")
+
+    q = (request.GET.get("q") or "").strip()
+    status = request.GET.get("status", "")
+    payment = request.GET.get("payment", "")
+    per_page = _parse_per_page(request)
+
     subscriptions = TenantSubscription.objects.select_related("tenant", "plan").all()
-    plans = SubscriptionPlan.objects.filter(is_active=True).order_by("sort_order", "monthly_price")
+    if q:
+        subscriptions = subscriptions.filter(Q(tenant__name__icontains=q) | Q(plan__name__icontains=q) | Q(payment_reference__icontains=q))
+    if status:
+        subscriptions = subscriptions.filter(status=status)
+    if payment:
+        subscriptions = subscriptions.filter(payment_status=payment)
+
+    paginator = Paginator(subscriptions, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    all_subscriptions = TenantSubscription.objects.all()
     context = {
-        "plans": plans,
-        "subscriptions": subscriptions[:100],
-        "trialing_count": subscriptions.filter(status=TenantSubscription.TRIALING).count(),
-        "active_count": subscriptions.filter(status=TenantSubscription.ACTIVE).count(),
-        "past_due_count": subscriptions.filter(status=TenantSubscription.PAST_DUE).count(),
-        "suspended_count": subscriptions.filter(status=TenantSubscription.SUSPENDED).count(),
-        "unpaid_count": subscriptions.exclude(payment_status__in=[TenantSubscription.PAYMENT_PAID, TenantSubscription.PAYMENT_WAIVED]).count(),
+        "plans": SubscriptionPlan.objects.filter(is_active=True).order_by("sort_order", "monthly_price"),
+        "subscriptions": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "selected_status": status,
+        "selected_payment": payment,
+        "per_page": per_page,
+        "status_choices": TenantSubscription.STATUS_CHOICES,
+        "payment_choices": TenantSubscription.PAYMENT_CHOICES,
+        "trialing_count": all_subscriptions.filter(status=TenantSubscription.TRIALING).count(),
+        "active_count": all_subscriptions.filter(status=TenantSubscription.ACTIVE).count(),
+        "past_due_count": all_subscriptions.filter(status=TenantSubscription.PAST_DUE).count(),
+        "suspended_count": all_subscriptions.filter(status=TenantSubscription.SUSPENDED).count(),
+        "unpaid_count": all_subscriptions.exclude(payment_status__in=[TenantSubscription.PAYMENT_PAID, TenantSubscription.PAYMENT_WAIVED]).count(),
     }
     return render(request, "platform/subscriptions/dashboard.html", context)
 
