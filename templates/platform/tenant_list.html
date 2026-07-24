@@ -29,7 +29,7 @@
             <td><div class="platform-record"><strong>{{ tenant.name }}</strong><span>Created {{ tenant.created_at|date:'M j, Y' }}</span></div></td>
             <td><button type="button" class="platform-badge font-mono" data-copy-value="{{ tenant.schema_name }}" title="Copy schema name">{{ tenant.schema_name }}</button></td>
             <td>
-              <div class="flex flex-wrap gap-1.5">
+              <div class="platform-domain-badge-list">
                 {% for domain in tenant.domains.all %}
                   <span class="platform-badge {% if domain.is_primary %}platform-badge--blue{% elif domain.is_verified %}platform-badge--success{% else %}platform-badge--warning{% endif %}" title="{{ domain.get_dns_status_display }} · {{ domain.get_ssl_status_display }}">{{ domain.domain }}{% if domain.is_primary %} · primary{% endif %}</span>
                 {% empty %}<span class="platform-badge platform-badge--warning">No domain</span>{% endfor %}
