@@ -19,10 +19,10 @@
     <article class="platform-stat"><span class="platform-stat__label">SSL active</span><strong class="platform-stat__value text-emerald-700">{{ ssl_active_domain_count }}</strong><span class="platform-stat__detail">Secure school addresses</span></article>
   </section>
 
-  {% if pending_count or suspended_count or verified_domain_count < domain_count %}
+  {% if pending_count or suspended_count or unverified_domain_count %}
   <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" aria-label="Platform attention">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex gap-3"><i class="ph ph-warning-circle mt-0.5 text-xl text-amber-700" aria-hidden="true"></i><div><strong class="font-black">Platform attention is required</strong><p class="mt-0.5 font-semibold text-amber-800">{{ pending_count }} pending school{{ pending_count|pluralize }}, {{ suspended_count }} suspended and {{ domain_count|add:'-'|add:verified_domain_count }} domain{{ domain_count|add:'-'|add:verified_domain_count|pluralize }} awaiting verification.</p></div></div>
+      <div class="flex gap-3"><i class="ph ph-warning-circle mt-0.5 text-xl text-amber-700" aria-hidden="true"></i><div><strong class="font-black">Platform attention is required</strong><p class="mt-0.5 font-semibold text-amber-800">{{ pending_count }} pending school{{ pending_count|pluralize }}, {{ suspended_count }} suspended and {{ unverified_domain_count }} domain{{ unverified_domain_count|pluralize }} awaiting verification.</p></div></div>
       <a href="{% url 'platform_tenant_list' %}" class="platform-button">Review schools</a>
     </div>
   </section>
