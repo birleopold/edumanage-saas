@@ -88,7 +88,7 @@
   <section class="platform-panel">
     <header class="platform-panel__header">
       <div><h2>DNS targets</h2><p>Values currently shown during school-domain configuration.</p></div>
-      {% if 'YOUR_' in a_record_target %}<span class="platform-badge platform-badge--danger">Placeholder detected</span>{% else %}<span class="platform-badge platform-badge--success">Configured</span>{% endif %}
+      {% if a_record_ready %}<span class="platform-badge platform-badge--success"><i class="ph ph-radar" aria-hidden="true"></i> Public IPv4 detected</span>{% else %}<span class="platform-badge platform-badge--danger">Detection unavailable</span>{% endif %}
     </header>
     <div class="platform-readiness-dns-grid">
       <div class="platform-readiness-dns-card">
@@ -98,9 +98,10 @@
       <div class="platform-readiness-dns-card">
         <p class="platform-stat__label">A-record target</p>
         <div class="platform-readiness-dns-row"><code>{{ a_record_target }}</code><button type="button" class="platform-button" data-copy-value="{{ a_record_target }}">Copy</button></div>
+        <p class="mt-2 text-xs font-semibold text-slate-500">{{ a_record_source }}</p>
       </div>
     </div>
-    {% if 'YOUR_' in a_record_target %}<p class="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">Replace the placeholder A-record target before onboarding production schools.</p>{% endif %}
+    {% if not a_record_ready %}<p class="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">Automatic detection could not find a public IPv4 address. Set <code>EDUMANAGE_PUBLIC_IPV4</code> in the production <code>.env</code> file.</p>{% else %}<p class="border-t border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900">Confirm this address is the public origin receiving ports 80 and 443. Set <code>EDUMANAGE_PUBLIC_IPV4</code> to override it when using a load balancer, NAT gateway or CDN.</p>{% endif %}
   </section>
 </div>
 {% endblock %}
