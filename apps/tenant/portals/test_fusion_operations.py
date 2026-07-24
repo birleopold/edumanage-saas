@@ -117,6 +117,18 @@ class FusedOperationsWorkspaceTests(TestCase):
             "Build each paper from setup through scores",
         )
 
+    def test_assessment_reporting_and_analytics_workspaces_render(self):
+        expectations = {
+            "admin_assessments_list": "Move from assessment setup to published results with confidence",
+            "admin_assessment_framework_dashboard": "Define how school assessments are classified and combined",
+            "admin_reports_overview": "Turn school records into decisions and accountable exports",
+            "admin_analytics_dashboard": "See achievement, coverage and learner risk before intervention is late",
+        }
+
+        for route_name, marker in expectations.items():
+            with self.subTest(route_name=route_name):
+                self.assert_workspace(route_name, marker)
+
     def test_welfare_health_transport_and_boarding_workspaces_render(self):
         expectations = {
             "admin_incidents_list": "Respond consistently, fairly and with complete evidence",
@@ -147,6 +159,7 @@ class FusedOperationsWorkspaceTests(TestCase):
             "admin_transport_vehicle_create": "Fleet-readiness checklist",
             "admin_documents_upload": "Publishing checklist",
             "admin_hr_staff_create": "Staff-record checklist",
+            "admin_assessments_create": "Assessment-quality checklist",
         }
 
         for route_name, marker in expectations.items():
