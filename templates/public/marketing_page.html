@@ -1,0 +1,57 @@
+{% extends "public/seo_base.html" %}
+
+{% block content %}
+<section class="marketing-page-hero">
+  <div class="marketing-container">
+    <span class="marketing-eyebrow"><i class="ph ph-compass" aria-hidden="true"></i> {{ page.eyebrow }}</span>
+    <h1>{{ page.heading }}</h1>
+    <p class="marketing-lead">{{ page.intro }}</p>
+    <div class="marketing-hero__actions">
+      {% if page.route_name == 'marketing_contact' %}
+        <a class="marketing-button marketing-button--primary" href="mailto:{{ contact_email }}"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Email {{ contact_email }}</a>
+      {% elif page.route_name == 'marketing_pricing' %}
+        <a class="marketing-button marketing-button--primary" href="{% url 'marketing_contact' %}"><i class="ph ph-file-text" aria-hidden="true"></i> Request a quotation</a>
+      {% else %}
+        <a class="marketing-button marketing-button--primary" href="{% url 'marketing_contact' %}"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i> Talk to EduManage</a>
+      {% endif %}
+      <a class="marketing-button" href="{% url 'marketing_home' %}"><i class="ph ph-house" aria-hidden="true"></i> Back to home</a>
+    </div>
+  </div>
+</section>
+
+<section class="marketing-section">
+  <div class="marketing-container">
+    <div class="marketing-content-grid">
+      {% for section in page.sections %}
+      <article class="marketing-content-card">
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.text }}</p>
+        {% if section.bullets %}
+        <ul class="marketing-list">
+          {% for bullet in section.bullets %}
+          <li><i class="ph-fill ph-check-circle" aria-hidden="true"></i><span>{{ bullet }}</span></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="marketing-section marketing-section--white">
+  <div class="marketing-container">
+    <div class="marketing-cta">
+      <div>
+        <h2>{{ page.cta_title }}</h2>
+        <p>{{ page.cta_text }}</p>
+      </div>
+      {% if page.route_name == 'marketing_contact' %}
+        <a class="marketing-button" href="mailto:{{ contact_email }}"><i class="ph ph-envelope-simple" aria-hidden="true"></i> {{ contact_email }}</a>
+      {% else %}
+        <a class="marketing-button" href="{% url 'marketing_contact' %}"><i class="ph ph-arrow-right" aria-hidden="true"></i> Contact EduManage</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
