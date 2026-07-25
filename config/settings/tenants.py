@@ -69,6 +69,7 @@ MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",
     "apps.public.tenants.middleware.TenantStatusMiddleware",
     "apps.public.tenants.platform_security.PlatformFormSecurityMiddleware",
+    "apps.public.tenants.seo_middleware.SearchIndexControlMiddleware",
     *MIDDLEWARE,
     "apps.tenant.orgsettings.feature_gate.FeatureGateMiddleware",
 ]
