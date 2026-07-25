@@ -110,6 +110,29 @@ LOGIN_REDIRECT_URL = "admin_home"
 
 SUPPORT_CONTACT_EMAIL = config("SUPPORT_CONTACT_EMAIL", default="")
 
+# Public marketing and search-engine configuration. Verification and analytics
+# values remain optional so deployments can connect their own webmaster tools.
+SEO_SITE_NAME = config("SEO_SITE_NAME", default="EduManage")
+SEO_SITE_ALTERNATE_NAME = config(
+    "SEO_SITE_ALTERNATE_NAME",
+    default="EduManage School Management System",
+)
+SEO_ORGANIZATION_NAME = config("SEO_ORGANIZATION_NAME", default="EduManage")
+SEO_CANONICAL_ORIGIN = config(
+    "SEO_CANONICAL_ORIGIN",
+    default="https://edumanage.leosoftug.com",
+)
+SEO_CONTACT_EMAIL = config(
+    "SEO_CONTACT_EMAIL",
+    default=SUPPORT_CONTACT_EMAIL or "admin@leosoftug.com",
+)
+SEO_LOCALE = config("SEO_LOCALE", default="en_UG")
+SEO_DEFAULT_IMAGE_URL = config("SEO_DEFAULT_IMAGE_URL", default="")
+SEO_LOGO_URL = config("SEO_LOGO_URL", default="")
+SEO_GOOGLE_SITE_VERIFICATION = config("SEO_GOOGLE_SITE_VERIFICATION", default="")
+SEO_BING_SITE_VERIFICATION = config("SEO_BING_SITE_VERIFICATION", default="")
+SEO_GOOGLE_ANALYTICS_ID = config("SEO_GOOGLE_ANALYTICS_ID", default="")
+
 AUTHENTICATION_BACKENDS = [
     "apps.tenant.users.backends.EmailOrUsernameModelBackend",
     "django.contrib.auth.backends.ModelBackend",
