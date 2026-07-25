@@ -77,7 +77,13 @@ MIDDLEWARE = [
 CSRF_FAILURE_VIEW = "apps.tenant.portals.error_handlers.csrf_failure"
 
 TENANT_STATUS_UNAVAILABLE_STATUSES = ("suspended", "archived")
-TENANT_STATUS_EXEMPT_PATH_PREFIXES = (f"/{STATIC_URL.lstrip('/')}", f"/{MEDIA_URL.lstrip('/')}", "/health/")
+TENANT_STATUS_EXEMPT_PATH_PREFIXES = (
+    f"/{STATIC_URL.lstrip('/')}",
+    f"/{MEDIA_URL.lstrip('/')}",
+    "/health/",
+    "/robots.txt",
+    "/sitemap.xml",
+)
 
 DATABASES = {
     "default": {
