@@ -1,0 +1,100 @@
+{% extends "public/seo_base.html" %}
+
+{% block content %}
+<section class="marketing-hero">
+  <div class="marketing-container marketing-hero__grid">
+    <div>
+      <span class="marketing-eyebrow"><i class="ph ph-sparkle" aria-hidden="true"></i> Cloud school management software</span>
+      <h1>Run your entire school from one secure platform</h1>
+      <p class="marketing-lead">EduManage connects admissions, student records, attendance, fees, assessments, examinations, reports, analytics and parent communication so school teams can work from one reliable source of information.</p>
+      <div class="marketing-hero__actions">
+        <a class="marketing-button marketing-button--primary" href="{% url 'marketing_contact' %}"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i> Discuss your school</a>
+        <a class="marketing-button" href="{% url 'marketing_features' %}"><i class="ph ph-grid-four" aria-hidden="true"></i> Explore features</a>
+      </div>
+      <div class="marketing-trust-row" aria-label="Platform qualities">
+        <span><i class="ph ph-shield-check" aria-hidden="true"></i> Role-based access</span>
+        <span><i class="ph ph-cloud-check" aria-hidden="true"></i> Cloud-based</span>
+        <span><i class="ph ph-buildings" aria-hidden="true"></i> Multi-campus ready</span>
+        <span><i class="ph ph-device-mobile" aria-hidden="true"></i> Mobile-friendly</span>
+      </div>
+    </div>
+
+    <aside class="marketing-preview" aria-label="EduManage platform overview">
+      <div class="marketing-preview__top">
+        <strong>School operations overview</strong>
+        <span>Connected</span>
+      </div>
+      <div class="marketing-preview__metrics">
+        <div class="marketing-preview__metric"><span>Admissions</span><strong>Application to enrollment</strong></div>
+        <div class="marketing-preview__metric"><span>Academics</span><strong>Attendance and results</strong></div>
+        <div class="marketing-preview__metric"><span>Finance</span><strong>Invoices and payments</strong></div>
+        <div class="marketing-preview__metric"><span>Communication</span><strong>Parents and staff</strong></div>
+        <div class="marketing-preview__metric"><span>Leadership</span><strong>Reports and analytics</strong></div>
+        <div class="marketing-preview__metric"><span>Security</span><strong>Permissions and audit trails</strong></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="marketing-section marketing-section--white">
+  <div class="marketing-container">
+    <div class="marketing-section__heading">
+      <h2>A complete school management system for daily operations</h2>
+      <p>Give administrators, teachers, students and parents the tools they need while maintaining one consistent institutional record.</p>
+    </div>
+    <div class="marketing-card-grid marketing-card-grid--four">
+      <article class="marketing-card">
+        <span class="marketing-card__icon"><i class="ph ph-student" aria-hidden="true"></i></span>
+        <h3>Admissions and student information</h3>
+        <p>Manage applications, enrollments, student profiles, guardians, campuses and supporting documents.</p>
+        <a class="marketing-link" href="{% url 'marketing_features' %}">View admissions features <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="marketing-card">
+        <span class="marketing-card__icon"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i></span>
+        <h3>Teaching and academic management</h3>
+        <p>Coordinate timetables, attendance, coursework, assessments, examinations, results and academic reports.</p>
+        <a class="marketing-link" href="{% url 'marketing_school_software' %}">Explore school workflows <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="marketing-card">
+        <span class="marketing-card__icon"><i class="ph ph-wallet" aria-hidden="true"></i></span>
+        <h3>Fees and financial visibility</h3>
+        <p>Create invoices, record payment evidence, monitor balances, send reminders and prepare finance reports.</p>
+        <a class="marketing-link" href="{% url 'marketing_pricing' %}">Discuss a suitable plan <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="marketing-card">
+        <span class="marketing-card__icon"><i class="ph ph-chart-line-up" aria-hidden="true"></i></span>
+        <h3>Analytics and accountability</h3>
+        <p>Use dashboards, exports, operational alerts, audit trails and permissions to support better decisions.</p>
+        <a class="marketing-link" href="{% url 'marketing_contact' %}">Request information <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="marketing-section">
+  <div class="marketing-container">
+    <div class="marketing-section__heading">
+      <h2>One experience for every school user</h2>
+      <p>Each role receives a focused workspace instead of a crowded system that exposes irrelevant information.</p>
+    </div>
+    <div class="marketing-card-grid marketing-card-grid--four">
+      <article class="marketing-card"><span class="marketing-card__icon"><i class="ph ph-shield-check" aria-hidden="true"></i></span><h3>Administrators</h3><p>Oversee enrollment, staff, academics, finance, compliance, reporting and system configuration.</p></article>
+      <article class="marketing-card"><span class="marketing-card__icon"><i class="ph ph-presentation-chart" aria-hidden="true"></i></span><h3>Teachers</h3><p>Manage attendance, coursework, marks, examinations, timetables and communication.</p></article>
+      <article class="marketing-card"><span class="marketing-card__icon"><i class="ph ph-books" aria-hidden="true"></i></span><h3>Students</h3><p>Access learning activities, schedules, results, documents and appropriate self-service tools.</p></article>
+      <article class="marketing-card"><span class="marketing-card__icon"><i class="ph ph-users-three" aria-hidden="true"></i></span><h3>Parents</h3><p>Follow attendance, fees, results, announcements and school communication through a secure portal.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="marketing-section marketing-section--white">
+  <div class="marketing-container">
+    <div class="marketing-cta">
+      <div>
+        <h2>Move your school away from disconnected records</h2>
+        <p>Share your institution’s size, campuses and priority processes for a focused EduManage discussion.</p>
+      </div>
+      <a class="marketing-button" href="{% url 'marketing_contact' %}"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Contact EduManage</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
