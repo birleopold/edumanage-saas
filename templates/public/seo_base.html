@@ -1,0 +1,98 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ seo.title }}</title>
+  <meta name="description" content="{{ seo.description }}">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="{{ seo.canonical_url }}">
+  <link rel="alternate" hreflang="en" href="{{ seo.canonical_url }}">
+  <link rel="alternate" hreflang="x-default" href="{{ seo.canonical_url }}">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ seo.site_name }}">
+  <meta property="og:locale" content="{{ seo.locale }}">
+  <meta property="og:title" content="{{ seo.title }}">
+  <meta property="og:description" content="{{ seo.description }}">
+  <meta property="og:url" content="{{ seo.canonical_url }}">
+  <meta property="og:image" content="{{ seo.image_url }}">
+  <meta property="og:image:alt" content="EduManage school management software">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo.title }}">
+  <meta name="twitter:description" content="{{ seo.description }}">
+  <meta name="twitter:image" content="{{ seo.image_url }}">
+
+  {% if seo.google_verification %}<meta name="google-site-verification" content="{{ seo.google_verification }}">{% endif %}
+  {% if seo.bing_verification %}<meta name="msvalidate.01" content="{{ seo.bing_verification }}">{% endif %}
+
+  {% include "components/pwa_meta.html" %}
+  <link rel="icon" href="{% static 'img/pwa-icon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/marketing-seo.css' %}?v=20260725-1">
+  <script src="https://unpkg.com/@phosphor-icons/web" defer></script>
+  <script type="application/ld+json">{{ seo.structured_data|safe }}</script>
+
+  {% if seo.google_analytics_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ seo.google_analytics_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ seo.google_analytics_id|escapejs }}', { anonymize_ip: true });
+  </script>
+  {% endif %}
+</head>
+<body class="marketing-site">
+  <a class="marketing-skip-link" href="#main-content">Skip to content</a>
+
+  <header class="marketing-header">
+    <div class="marketing-container marketing-header__inner">
+      <a class="marketing-brand" href="{% url 'marketing_home' %}" aria-label="EduManage home">
+        <span class="marketing-brand__mark"><i class="ph-fill ph-graduation-cap" aria-hidden="true"></i></span>
+        <span class="marketing-brand__text"><strong>EduManage</strong><span>School management software</span></span>
+      </a>
+
+      <nav class="marketing-nav" aria-label="Main navigation">
+        <a href="{% url 'marketing_features' %}">Features</a>
+        <a href="{% url 'marketing_school_software' %}">School software</a>
+        <a href="{% url 'marketing_pricing' %}">Pricing</a>
+        <a href="{% url 'marketing_contact' %}">Contact</a>
+      </nav>
+
+      <div class="marketing-actions">
+        <a class="marketing-button" href="{% url 'marketing_contact' %}">Request information</a>
+        <a class="marketing-button marketing-button--primary" href="{% url 'platform_admin_login' %}"><i class="ph ph-sign-in" aria-hidden="true"></i> Platform login</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">{% block content %}{% endblock %}</main>
+
+  <footer class="marketing-footer">
+    <div class="marketing-container marketing-footer__grid">
+      <div>
+        <a class="marketing-brand" href="{% url 'marketing_home' %}">
+          <span class="marketing-brand__mark"><i class="ph-fill ph-graduation-cap" aria-hidden="true"></i></span>
+          <span class="marketing-brand__text"><strong>EduManage</strong><span>Secure cloud school operations</span></span>
+        </a>
+        <p>Admissions, student records, attendance, fees, assessments, reports and communication in one platform.</p>
+        <p>Contact: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a></p>
+      </div>
+      <div>
+        <nav class="marketing-footer__links" aria-label="Footer navigation">
+          <a href="{% url 'marketing_features' %}">Features</a>
+          <a href="{% url 'marketing_school_software' %}">School software</a>
+          <a href="{% url 'marketing_pricing' %}">Pricing</a>
+          <a href="{% url 'marketing_contact' %}">Contact</a>
+          <a href="{% url 'marketing_privacy' %}">Privacy</a>
+          <a href="{% url 'marketing_terms' %}">Terms</a>
+          <a href="{% url 'sitemap_xml' %}">Sitemap</a>
+        </nav>
+        <p>© {% now "Y" %} EduManage. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
