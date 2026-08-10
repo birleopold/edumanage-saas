@@ -6,6 +6,18 @@ from apps.tenant.students.models import StudentProfile
 from .models import DocumentTemplate
 
 
+def clean_design_background(upload):
+    if upload is None:
+        return None
+    if upload.size > 12 * 1024 * 1024:
+        raise forms.ValidationError("Design background artwork must be 12 MB or smaller.")
+    image = forms.ImageField().clean(upload)
+    content_type = (getattr(image, "content_type", "") or "").lower()
+    if content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise forms.ValidationError("Use a JPG, PNG or WebP image for design background artwork.")
+    return image
+
+
 class DocumentTemplateForm(forms.ModelForm):
     class Meta:
         model = DocumentTemplate
