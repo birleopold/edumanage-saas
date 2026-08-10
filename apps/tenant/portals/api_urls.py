@@ -65,6 +65,7 @@ urlpatterns = [
     path("mobile/devices/register/", UserDeviceRegister.as_view(), name="api_mobile_device_register"),
     path("mobile/devices/token/", UserDeviceTokenUpdate.as_view(), name="api_mobile_device_token_update"),
     path("mobile/devices/<int:pk>/disable/", UserDeviceDisable.as_view(), name="api_mobile_device_disable"),
+    path("attendance/devices/", include("apps.tenant.attendance.device_api_urls")),
     path("finance/provider-updates/", include("apps.tenant.finance.pay_urls")),
     path("integrations/docs/", PublicIntegrationDocs.as_view(), name="api_integrations_docs"),
     path("integrations/ready/", Ready.as_view(), name="api_integrations_ready"),
