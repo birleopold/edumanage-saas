@@ -178,7 +178,7 @@ class UniversalAttendanceDeviceTests(TestCase):
 
     def test_first_last_strategy_uses_first_and_last_accepted_punch(self):
         tz = timezone.get_current_timezone()
-        day = timezone.localdate()
+        day = timezone.localdate() - timedelta(days=1)
         first = timezone.make_aware(timezone.datetime.combine(day, timezone.datetime(2026, 1, 1, 7, 30).time()), timezone=tz)
         last = timezone.make_aware(timezone.datetime.combine(day, timezone.datetime(2026, 1, 1, 16, 15).time()), timezone=tz)
         ingest_payload(device=self.device, payload={"event_id": "day-in", "person_id": "42", "timestamp": first.isoformat()})
