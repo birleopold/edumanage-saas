@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from .privacy import scrub_edge_payload
+
 
 @dataclass(frozen=True)
 class QueuedEvent:
@@ -21,6 +23,8 @@ class DurableQueue:
 
     Payload fingerprints make source retries safe. Events are removed only after the
     EduManage API accepts the batch; transient failures retain the original payload.
+    Biometric image/template material is scrubbed before the payload is fingerprinted
+    or written to SQLite.
     """
 
     def __init__(self, path: str):
@@ -74,7 +78,10 @@ class DurableQueue:
     def enqueue(self, payload: dict[str, Any]) -> bool:
         if not isinstance(payload, dict):
             raise ValueError("Queued attendance event must be an object.")
-        encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+        cleaned = scrub_edge_payload(payload)
+        if not isinstance(cleaned, dict):
+            raise ValueError("Queued attendance event must remain an object after privacy filtering.")
+        encoded = json.dumps(cleaned, separators=(",", ":"), ensure_ascii=False)
         try:
             with self.connect() as connection:
                 connection.execute(
@@ -82,7 +89,7 @@ class DurableQueue:
                     INSERT INTO event_queue(fingerprint, payload_json, created_at)
                     VALUES (?, ?, ?)
                     """,
-                    (self.fingerprint(payload), encoded, time.time()),
+                    (self.fingerprint(cleaned), encoded, time.time()),
                 )
             return True
         except sqlite3.IntegrityError:
