@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from apps.tenant.hr.models import StaffProfile
 from apps.tenant.orgsettings.models import Campus
@@ -43,6 +44,7 @@ class AttendanceDeviceForm(forms.ModelForm):
         }
 
     def __init__(self, *args, campus_scope=None, **kwargs):
+        self.campus_scope = campus_scope
         super().__init__(*args, **kwargs)
         org = get_or_create_organization()
         campuses = Campus.objects.filter(organization=org, is_active=True).order_by("name")
@@ -55,6 +57,43 @@ class AttendanceDeviceForm(forms.ModelForm):
             field.widget.attrs["class"] = CHECK_CLASS if isinstance(field.widget, forms.CheckboxInput) else BASE_CLASS
         if self.instance and self.instance.pk:
             self.fields["code"].disabled = True
+
+    def clean(self):
+        cleaned = super().clean()
+        campus = cleaned.get("campus")
+        namespace = str(cleaned.get("identity_namespace") or "").strip()
+        if not campus or not namespace:
+            return cleaned
+
+        # Several devices inside one campus may intentionally share the same
+        # namespace/user list. A campus-bound device must not share that
+        # namespace with a different campus or with a global/unassigned device,
+        # because the same external user ID could otherwise resolve to the wrong
+        # person. Global devices remain possible by leaving this device unscoped.
+        conflicting_device = (
+            AttendanceDevice.objects.filter(identity_namespace=namespace)
+            .exclude(pk=self.instance.pk)
+            .exclude(campus=campus)
+            .first()
+        )
+        if conflicting_device:
+            scope = conflicting_device.campus.name if conflicting_device.campus_id else "a global/unassigned device"
+            self.add_error(
+                "identity_namespace",
+                f"This identity namespace is already used by {scope}. Use a campus-specific namespace to prevent user-ID collisions.",
+            )
+            return cleaned
+
+        cross_campus_identity = AttendanceIdentity.objects.filter(namespace=namespace, is_active=True).filter(
+            (Q(student__isnull=False) & ~Q(student__campus=campus))
+            | (Q(staff__isnull=False) & ~Q(staff__campus=campus))
+        )
+        if cross_campus_identity.exists():
+            self.add_error(
+                "identity_namespace",
+                "This namespace already contains an active person mapping from another campus. Choose a different namespace or review the existing mappings first.",
+            )
+        return cleaned
 
 
 class AttendanceIdentityForm(forms.ModelForm):
