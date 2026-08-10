@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block header_actions %}
-<form method="post" action="{% url 'admin_parents_digest_send_all' %}" class="inline-flex">{% csrf_token %}<input type="hidden" name="use_parent_preferences" value="on"><button type="submit" class="edu-outline-button" onclick="return confirm('Send parent digests using each guardian’s communication preferences?');"><i class="ph ph-newspaper" aria-hidden="true"></i> Send digests</button></form>
+<form method="post" action="{% url 'admin_parents_digest_send_all' %}" class="inline-flex">{% csrf_token %}<input type="hidden" name="use_parent_preferences" value="on"><button type="submit" class="edu-outline-button" onclick="return confirm('Send parent digests using each guardian’s communication preferences?');"><i class="ph ph-newspaper" aria-hidden="true"></i> Send Digests</button></form>
 <a href="{% url 'admin_parents_create' %}" class="edu-pill-button"><i class="ph ph-user-plus" aria-hidden="true"></i> Add parent</a>
 {% endblock %}
 
@@ -71,8 +71,8 @@
         <tbody>
           {% for p in parents %}
           <tr>
-            <td><div class="edu-ops-person"><span class="edu-ops-avatar" aria-hidden="true">{{ p.first_name|slice:':1'|upper }}{{ p.last_name|slice:':1'|upper }}</span><div><strong>{{ p.first_name }} {{ p.last_name }}</strong><span>{% if p.user_id %}Portal account linked{% else %}No portal account{% endif %}</span></div></div></td>
-            <td><div class="edu-ops-badges">{% for link in p.parentstudentlink_set.all %}<span class="edu-ops-badge {% if link.is_primary %}edu-ops-badge--success{% else %}edu-ops-badge--blue{% endif %}"><i class="ph ph-student" aria-hidden="true"></i> {{ link.student }}{% if link.is_primary %} · Primary{% endif %}</span>{% empty %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-link-break" aria-hidden="true"></i> No learner linked</span>{% endfor %}</div></td>
+            <td><div class="edu-ops-person"><span class="edu-ops-avatar" aria-hidden="true">{{ p.first_name|slice:':1'|upper }}{{ p.last_name|slice:':1'|upper }}</span><div><strong>{{ p.first_name }} {{ p.last_name }}</strong><span class="sr-only">Register sort name: {{ p.last_name }}, {{ p.first_name }}</span><span>{% if p.user_id %}Portal account linked{% else %}No portal account{% endif %}</span></div></div></td>
+            <td><div class="edu-ops-badges">{% for link in p.parentstudentlink_set.all %}<span class="edu-ops-badge {% if link.is_primary %}edu-ops-badge--success{% else %}edu-ops-badge--blue{% endif %}"><i class="ph ph-student" aria-hidden="true"></i> {{ link.student }}{% if link.relationship %} · {{ link.relationship }}{% endif %}{% if link.is_primary %} · Primary{% endif %}</span>{% empty %}<span class="edu-ops-badge edu-ops-badge--warning"><i class="ph ph-link-break" aria-hidden="true"></i> No learner linked</span>{% endfor %}</div></td>
             <td><div class="edu-table-meta"><strong>{{ p.phone|default:'No phone recorded' }}</strong>{{ p.email|default:'No email recorded' }}</div></td>
             <td><div class="edu-ops-badges">{% if p.allow_sms_alerts %}<span class="edu-ops-badge edu-ops-badge--blue">SMS</span>{% endif %}{% if p.allow_whatsapp_alerts %}<span class="edu-ops-badge edu-ops-badge--success">WhatsApp</span>{% endif %}{% if p.digest_enabled %}<span class="edu-ops-badge edu-ops-badge--violet">Digest</span>{% endif %}{% if not p.allow_sms_alerts and not p.allow_whatsapp_alerts and not p.digest_enabled %}<span class="edu-ops-badge">No alerts enabled</span>{% endif %}</div></td>
             <td>{% if p.is_active %}<span class="edu-ops-badge edu-ops-badge--success"><i class="ph ph-check-circle" aria-hidden="true"></i> Active</span>{% else %}<span class="edu-ops-badge"><i class="ph ph-x-circle" aria-hidden="true"></i> Inactive</span>{% endif %}</td>
