@@ -20,16 +20,17 @@ def synchronize_student_login_identity(sender, instance, **kwargs):
 def synchronize_student_identity_on_login(sender, request, user, **kwargs):
     """Repair older student accounts before the first tenant portal page renders.
 
-    Platform authentication runs in PostgreSQL's public schema, where tenant-only
-    student tables intentionally do not exist. Superusers are platform operators,
-    not student identities, so neither case should query ``StudentProfile``.
+    In PostgreSQL SaaS mode, platform authentication runs in the public schema,
+    where tenant-only student tables intentionally do not exist. Local SQLite
+    development has no tenant search path, so it should still perform the same
+    identity repair against the local student table.
     """
 
     if getattr(user, "is_superuser", False):
         return
 
-    schema_name = getattr(connection, "schema_name", get_public_schema_name())
-    if schema_name == get_public_schema_name():
+    schema_name = getattr(connection, "schema_name", None)
+    if connection.vendor == "postgresql" and schema_name == get_public_schema_name():
         return
 
     student = StudentProfile.objects.filter(user=user).first()
