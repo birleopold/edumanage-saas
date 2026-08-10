@@ -49,6 +49,8 @@ def validate_design_document(document: dict, page_width_mm: float, page_height_m
             element_id = str(element.get("id") or "").strip()
             if not element_id or element_id in seen:
                 raise ValidationError("Every design element must have a unique id.")
+            if len(element_id) > 120:
+                raise ValidationError("Design element ids must be 120 characters or fewer.")
             seen.add(element_id)
             element_type = element.get("type")
             if element_type not in ALLOWED_ELEMENT_TYPES:
@@ -67,6 +69,11 @@ def validate_design_document(document: dict, page_width_mm: float, page_height_m
             font = element.get("fontFamily", "Helvetica")
             if font not in ALLOWED_FONTS:
                 raise ValidationError(f"Unsupported font family: {font!r}.")
+            if len(str(element.get("text", ""))) > 5000:
+                raise ValidationError("Static text elements may contain at most 5000 characters.")
+            for key in ("prefix", "suffix"):
+                if len(str(element.get(key, ""))) > 250:
+                    raise ValidationError(f"Element {key} may contain at most 250 characters.")
             for key in ("color", "backgroundColor", "borderColor"):
                 color = element.get(key)
                 if color and color != "transparent" and not HEX_COLOR.match(str(color)):
