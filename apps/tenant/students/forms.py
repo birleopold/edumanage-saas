@@ -43,3 +43,9 @@ class StudentProfileForm(forms.ModelForm):
         self.fields["photo"].widget.attrs.update({"accept": "image/jpeg,image/png,image/webp"})
         if campus_queryset is not None:
             self.fields["campus"].queryset = campus_queryset
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        if photo and getattr(photo, "size", 0) > 8 * 1024 * 1024:
+            raise forms.ValidationError("Student portraits must be 8 MB or smaller.")
+        return photo
