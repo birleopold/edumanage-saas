@@ -1,5 +1,16 @@
+from pathlib import Path
+from uuid import uuid4
+
 from django.conf import settings
-from django.db import models
+from django.db import connection, models
+from django.utils.text import get_valid_filename
+
+
+def student_photo_upload_to(instance, filename: str) -> str:
+    """Keep learner portraits separated by tenant schema in shared media storage."""
+    schema = getattr(connection, "schema_name", "public") or "public"
+    safe = get_valid_filename(Path(filename).name) or "portrait"
+    return f"{schema}/students/portraits/{instance.pk or 'new'}/{uuid4().hex}-{safe}"
 
 
 class StudentProfile(models.Model):
@@ -42,6 +53,11 @@ class StudentProfile(models.Model):
         max_length=64,
         blank=True,
         help_text="Government / EMIS learner identifier when applicable.",
+    )
+    photo = models.ImageField(
+        upload_to=student_photo_upload_to,
+        blank=True,
+        help_text="Portrait used on student ID cards and official school documents.",
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
