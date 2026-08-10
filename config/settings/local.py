@@ -52,3 +52,7 @@ PUBLIC_SCHEMA_NAME = "public"
 SHARED_APPS = tuple(app for app in INSTALLED_APPS if not app.startswith("apps.tenant."))
 TENANT_APPS = tuple(app for app in INSTALLED_APPS if app.startswith("apps.tenant."))
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
+# Avoid collisions with unrelated applications hosted on the same domain.
+CSRF_COOKIE_NAME = "edumanage_csrftoken"
+SESSION_COOKIE_NAME = "edumanage_sessionid"
