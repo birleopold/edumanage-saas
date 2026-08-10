@@ -8,8 +8,50 @@ from django.urls import reverse
 from .models import AttendanceDevice
 
 
+def _primary_tenant_origin(request) -> str:
+    """Return the tenant's authoritative production origin when available.
+
+    Attendance hardware must receive a hostname covered by the school's active
+    TLS certificate. A request may arrive through an old alias, proxy host or
+    bookmarked domain, so device configuration should prefer the tenant's
+    primary verified/SSL-active domain rather than blindly echoing Host.
+    """
+
+    tenant = getattr(request, "tenant", None)
+    if tenant is None or getattr(tenant, "schema_name", "") == "public":
+        return ""
+
+    domains = getattr(tenant, "domains", None)
+    if domains is None:
+        return ""
+
+    primary = domains.filter(is_primary=True).first()
+    if primary is None:
+        return ""
+
+    domain = str(getattr(primary, "domain", "") or "").strip().rstrip(".")
+    if not domain:
+        return ""
+
+    dns_status = str(getattr(primary, "dns_status", "") or "").upper()
+    ssl_status = str(getattr(primary, "ssl_status", "") or "").upper()
+    if dns_status and dns_status != "VERIFIED":
+        return ""
+    if ssl_status and ssl_status != "ACTIVE":
+        return ""
+
+    # An SSL-active primary domain is canonical HTTPS even if an upstream proxy
+    # delivered the administrator request to Django over plain HTTP.
+    scheme = "https" if ssl_status == "ACTIVE" or request.is_secure() else request.scheme
+    return f"{scheme}://{domain}"
+
+
 def absolute_endpoint(request, route_name: str) -> str:
-    return request.build_absolute_uri(reverse(route_name))
+    path = reverse(route_name)
+    tenant_origin = _primary_tenant_origin(request)
+    if tenant_origin:
+        return f"{tenant_origin}{path}"
+    return request.build_absolute_uri(path)
 
 
 def connection_values(request, device: AttendanceDevice) -> dict:
