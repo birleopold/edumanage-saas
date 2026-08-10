@@ -14,6 +14,11 @@ urlpatterns = [
     path("devices/add/", device_admin_views.device_create, name="admin_attendance_device_create"),
     path("devices/<int:pk>/setup/", device_setup_views.device_setup, name="admin_attendance_device_setup"),
     path(
+        "devices/<int:pk>/setup/status.json",
+        device_setup_views.device_setup_status,
+        name="admin_attendance_device_setup_status",
+    ),
+    path(
         "devices/<int:pk>/setup/edge-config.json",
         device_setup_views.download_edge_config,
         name="admin_attendance_device_edge_config",
