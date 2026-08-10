@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -115,6 +115,22 @@ def device_setup(request, pk):
             "curl_example": curl_example,
             "connection_choices": AttendanceDevice.CONNECTION_CHOICES,
         },
+    )
+
+
+@admin_portal_required
+def device_setup_status(request, pk):
+    device = get_object_or_404(_devices_for(request.user), pk=pk)
+    state = _connection_state(device)
+    return JsonResponse(
+        {
+            **state,
+            "online": device.online,
+            "last_seen_at": device.last_seen_at.isoformat() if device.last_seen_at else None,
+            "last_event_at": device.last_event_at.isoformat() if device.last_event_at else None,
+            "clock_offset_seconds": device.clock_offset_seconds,
+            "last_error": device.last_error[:500],
+        }
     )
 
 
