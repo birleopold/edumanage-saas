@@ -45,6 +45,11 @@ INSTALLED_APPS += [
     "apps.tenant.audit",
 ]
 
+MIDDLEWARE = [
+    "apps.public.tenants.platform_security.PlatformFormSecurityMiddleware",
+    *MIDDLEWARE,
+]
+
 AUTH_USER_MODEL = "users.User"
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
