@@ -120,7 +120,7 @@ class FusedOperationsWorkspaceTests(TestCase):
     def test_assessment_reporting_finance_and_analytics_workspaces_render(self):
         expectations = {
             "admin_assessments_list": "Assessment register",
-            "admin_assessments_tabulation": "What the matrix shows",
+            "admin_assessments_tabulation": "Marks Tabulation",
             "admin_assessment_framework_dashboard": "Define how school assessments are classified and combined",
             "admin_invoices_list": "Invoice register",
             "admin_reports_overview": "Turn school records into decisions and accountable exports",
