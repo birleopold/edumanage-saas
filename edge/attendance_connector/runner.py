@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Iterable
 
 from .client import EduManageAttendanceClient, EduManageClientError
 from .config import ConnectorConfig
@@ -37,9 +37,8 @@ class AttendanceEdgeRunner:
     def poll_sources(self, summary: RunSummary) -> None:
         for source in self.sources:
             cursor = self.queue.get_state(source.state_key, "")
-            batch: SourceBatch | None = None
             try:
-                batch = source.poll(cursor)
+                batch: SourceBatch = source.poll(cursor)
                 summary.polled_events += len(batch.events)
                 created, duplicate = self.queue.enqueue_many(batch.events)
                 summary.queued_events += created
@@ -101,12 +100,13 @@ class AttendanceEdgeRunner:
         now = time.monotonic()
         if not force and now - self._last_heartbeat < self.config.heartbeat_seconds:
             return
+        # Throttle failed heartbeats too; an internet outage must not cause a request storm.
+        self._last_heartbeat = now
         try:
             self.client.heartbeat(
                 queue_stats=self.queue.stats(),
                 extra={"source_count": len(self.sources)},
             )
-            self._last_heartbeat = now
         except EduManageClientError as exc:
             LOGGER.warning("Attendance heartbeat failed: %s", exc)
 
@@ -114,10 +114,13 @@ class AttendanceEdgeRunner:
         now = time.monotonic()
         if not force and now - self._last_config_sync < 300:
             return
+        self._last_config_sync = now
         try:
             configuration = self.client.configuration()
-            self.queue.set_state("server:configuration", str(configuration))
-            self._last_config_sync = now
+            self.queue.set_state(
+                "server:configuration",
+                json.dumps(configuration, sort_keys=True, separators=(",", ":")),
+            )
         except EduManageClientError as exc:
             LOGGER.warning("Attendance configuration sync failed: %s", exc)
 
@@ -142,7 +145,3 @@ class AttendanceEdgeRunner:
             self.run_once()
             elapsed = time.monotonic() - started
             time.sleep(max(0.2, self.config.poll_seconds - elapsed))
-
-
-def queue_ids(items: Iterable[QueuedEvent]) -> list[int]:
-    return [item.id for item in items]
