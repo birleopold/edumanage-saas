@@ -1,0 +1,43 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}{{ device.name }}{% endblock %}
+{% block page_title %}{{ device.name }}{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_attendance_device_edit' device.pk %}" class="edu-outline-button"><i class="ph ph-pencil-simple"></i> Edit device</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+
+  {% if raw_token %}<section class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5"><div class="flex items-start gap-3"><i class="ph ph-key text-2xl text-amber-700"></i><div class="min-w-0"><strong class="text-amber-950">Copy this device key now — it is shown only in this response</strong><code class="mt-3 block overflow-x-auto rounded-xl bg-slate-950 p-4 text-sm text-white">{{ raw_token }}</code><p class="mt-2 text-sm text-amber-800">Send it as <code>X-Device-Key</code> over HTTPS. Rotating the key invalidates the previous one immediately.</p></div></div></section>{% endif %}
+
+  <section class="grid gap-6 xl:grid-cols-[1fr_.4fr] xl:items-start">
+    <div class="space-y-6">
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Device control</h3><p>Connection identity and live operating state.</p></div>{% if device.online %}<span class="edu-ops-badge edu-ops-badge--success">Online</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">Not recently seen</span>{% endif %}</header>
+        <div class="grid gap-4 p-5 md:grid-cols-3 text-sm"><div><small class="text-slate-500">Device code</small><strong class="block">{{ device.code }}</strong></div><div><small class="text-slate-500">Vendor</small><strong class="block">{{ device.get_vendor_display }}{% if device.model_name %} · {{ device.model_name }}{% endif %}</strong></div><div><small class="text-slate-500">Campus / location</small><strong class="block">{{ device.campus|default:"Unassigned" }}{% if device.location %} · {{ device.location }}{% endif %}</strong></div><div><small class="text-slate-500">Mode</small><strong class="block">{{ device.get_connection_mode_display }}</strong></div><div><small class="text-slate-500">Identity namespace</small><strong class="block"><code>{{ device.identity_namespace }}</code></strong></div><div><small class="text-slate-500">Clock offset</small><strong class="block">{{ device.clock_offset_seconds }} sec</strong></div><div><small class="text-slate-500">Last seen</small><strong class="block">{{ device.last_seen_at|date:"d M Y H:i:s"|default:"Never" }}</strong></div><div><small class="text-slate-500">Last event</small><strong class="block">{{ device.last_event_at|date:"d M Y H:i:s"|default:"None" }}</strong></div><div><small class="text-slate-500">Token prefix</small><strong class="block">{{ device.token_prefix|default:"Not generated" }}…</strong></div></div>
+        <div class="border-t border-slate-200 p-5"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="rotate_token"><button class="edu-outline-button" type="submit" onclick="return confirm('Rotate this device key? The existing machine or edge connector will stop syncing until updated.');"><i class="ph ph-arrows-clockwise"></i> Rotate device key</button></form></div>
+      </section>
+
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Identity mappings</h3><p>Map the device user number once, then every device sharing namespace <code>{{ device.identity_namespace }}</code> can resolve the same person.</p></div><span class="edu-ops-badge edu-ops-badge--blue">{{ identities|length }} shown</span></header>
+        <div class="grid gap-6 p-5 xl:grid-cols-[.42fr_1fr]">
+          <form method="post" class="rounded-2xl bg-slate-50 p-4">{% csrf_token %}<input type="hidden" name="action" value="add_identity"><h4 class="font-black text-slate-900">Map user ID</h4><div class="mt-4 space-y-3">{% for field in identity_form %}<div><label class="mb-1 block text-xs font-black text-slate-600" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="mt-1 text-xs text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}</div><button class="edu-pill-button mt-4" type="submit">Save mapping</button></form>
+          <div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Device user ID</th><th>Person</th><th>Card</th><th>Status</th><th class="text-right">Action</th></tr></thead><tbody>{% for identity in identities %}<tr><td><code>{{ identity.external_person_id }}</code></td><td>{% if identity.student_id %}Student · {{ identity.student }}{% else %}Staff · {{ identity.staff }}{% endif %}</td><td>{{ identity.card_number|default:"—" }}</td><td>{% if identity.is_active %}<span class="edu-ops-badge edu-ops-badge--success">Active</span>{% else %}<span class="edu-ops-badge">Disabled</span>{% endif %}</td><td>{% if identity.is_active %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="disable_identity"><input type="hidden" name="identity_id" value="{{ identity.id }}"><button class="edu-ops-button" type="submit">Disable</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No identity mappings in this namespace yet.</td></tr>{% endfor %}</tbody></table></div>
+        </div>
+      </section>
+
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Recent raw events</h3><p>Successful, duplicate, unmatched and ignored punches remain visible for diagnosis.</p></div><a href="{% url 'admin_attendance_device_event_list' %}?device={{ device.id }}" class="edu-ops-button">All events</a></header><div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Time</th><th>User</th><th>Person</th><th>Auth</th><th>Direction</th><th>State</th></tr></thead><tbody>{% for event in events %}<tr><td>{{ event.occurred_at|date:"d M Y H:i:s" }}</td><td>{{ event.external_person_id|default:"—" }}</td><td>{% if event.student_id %}{{ event.student }}{% elif event.staff_id %}{{ event.staff }}{% else %}<span class="text-amber-700">Unmatched</span>{% endif %}</td><td>{{ event.get_auth_method_display }}</td><td>{{ event.get_direction_display }}</td><td>{{ event.get_processing_status_display }}</td></tr>{% empty %}<tr><td colspan="6">No events received.</td></tr>{% endfor %}</tbody></table></div></section>
+    </div>
+
+    <aside class="space-y-4">
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-black text-slate-950">Canonical API</h3><p class="mt-2 text-sm text-slate-600">Headers:</p><code class="mt-2 block whitespace-pre-wrap rounded-xl bg-slate-950 p-3 text-xs text-white">X-Device-Code: {{ device.code }}
+X-Device-Key: YOUR_SECRET</code><p class="mt-3 text-xs text-slate-500">Event endpoint</p><code class="block break-all text-xs">{{ event_endpoint }}</code><p class="mt-3 text-xs text-slate-500">Heartbeat</p><code class="block break-all text-xs">{{ heartbeat_endpoint }}</code><p class="mt-3 text-xs text-slate-500">Configuration</p><code class="block break-all text-xs">{{ configuration_endpoint }}</code></section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-black text-slate-950">Example event</h3><pre class="mt-3 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-white">{
+  "person_id": "STU-0042",
+  "timestamp": "2026-08-10T07:42:18+03:00",
+  "direction": "IN",
+  "auth_method": "FACE",
+  "event_id": "923448"
+}</pre></section>
+      <section class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-sm text-emerald-950"><strong>Offline-safe</strong><p class="mt-2">If a device stores punches while internet is down, the original event timestamp is retained when it uploads later. EduManage only replaces impossible future timestamps when configured to do so.</p></section>
+    </aside>
+  </section>
+</div>
+{% endblock %}
