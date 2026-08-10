@@ -20,7 +20,7 @@ from apps.tenant.users.device_portal import base_template_for
 from apps.tenant.users.models import Role
 
 from .field_registry import FIELD_REGISTRY, SAMPLE_VALUES
-from .forms import DocumentGenerationForm, DocumentTemplateForm
+from .forms import DocumentGenerationForm, DocumentTemplateForm, clean_design_background
 from .models import DocumentTemplate, DocumentTemplateVersion, IssuedDocument
 from .services import (
     activate_version,
@@ -178,12 +178,13 @@ def editor(request, pk):
             design = json.loads(request.POST.get("design_json") or "{}")
             width = float(request.POST.get("page_width_mm") or posted_version.page_width_mm)
             height = float(request.POST.get("page_height_mm") or posted_version.page_height_mm)
+            background = clean_design_background(request.FILES.get("background")) if "background" in request.FILES else None
             save_draft(
                 posted_version,
                 design=design,
                 width=width,
                 height=height,
-                background=request.FILES.get("background") if "background" in request.FILES else None,
+                background=background,
                 background_fit=request.POST.get("background_fit") or posted_version.background_fit,
                 notes=request.POST.get("notes", ""),
             )
