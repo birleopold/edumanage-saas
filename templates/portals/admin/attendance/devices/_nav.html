@@ -1,10 +1,11 @@
 <nav class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2" aria-label="Time and attendance tools">
   <a href="{% url 'admin_attendance_device_dashboard' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-gauge" aria-hidden="true"></i> Overview</a>
   <a href="{% url 'admin_attendance_device_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-fingerprint" aria-hidden="true"></i> Devices</a>
+  {% if device %}<a href="{% url 'admin_attendance_device_setup' device.pk %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><i class="ph ph-plugs-connected" aria-hidden="true"></i> Connect machine</a>{% endif %}
   <a href="{% url 'admin_attendance_daily_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-calendar-check" aria-hidden="true"></i> Daily register</a>
   <a href="{% url 'admin_attendance_device_event_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-waveform" aria-hidden="true"></i> Raw events</a>
   <a href="{% url 'admin_attendance_policy_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> Policies</a>
   <a href="{% url 'admin_attendance_csv_import' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-upload-simple" aria-hidden="true"></i> Import</a>
-  <a href="{% url 'admin_attendance_integration_guide' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-plugs-connected" aria-hidden="true"></i> Integration guide</a>
+  <a href="{% url 'admin_attendance_integration_guide' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-book-open-text" aria-hidden="true"></i> Integration guide</a>
   <a href="{% url 'admin_attendance_sessions_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Class attendance</a>
 </nav>
