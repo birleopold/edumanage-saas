@@ -20,9 +20,8 @@ def synchronize_student_login_identity(sender, instance, **kwargs):
 def synchronize_student_identity_on_login(sender, request, user, **kwargs):
     """Repair older student accounts before the first tenant portal page renders.
 
-    In PostgreSQL SaaS mode, platform authentication runs in the public schema,
-    where tenant-only student tables intentionally do not exist. Local SQLite
-    development has no tenant search path, so it should still perform the same
+    Public-schema authentication must never query tenant-only student tables.
+    Local SQLite development has no schema_name by default, so it still performs
     identity repair against the local student table.
     """
 
@@ -30,7 +29,7 @@ def synchronize_student_identity_on_login(sender, request, user, **kwargs):
         return
 
     schema_name = getattr(connection, "schema_name", None)
-    if connection.vendor == "postgresql" and schema_name == get_public_schema_name():
+    if schema_name == get_public_schema_name():
         return
 
     student = StudentProfile.objects.filter(user=user).first()
