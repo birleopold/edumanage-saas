@@ -38,6 +38,15 @@ def connection_values(request, device: AttendanceDevice) -> dict:
     }
 
 
+def _explicit_canonical_push(device: AttendanceDevice) -> bool:
+    protocol = (device.protocol or "").strip().lower()
+    settings = device.settings or {}
+    return bool(
+        settings.get("supports_canonical_https_push")
+        or protocol in {"canonical-json", "http-json", "https-json", "webhook", "webhook-json"}
+    )
+
+
 def recommended_setup(device: AttendanceDevice) -> dict:
     if device.connection_mode == AttendanceDevice.FILE:
         return {
@@ -57,41 +66,77 @@ def recommended_setup(device: AttendanceDevice) -> dict:
             "title": "Vendor API / Edge Connector",
             "summary": "The vendor system is polled locally or through its API, then normalized events are sent to EduManage.",
         }
-    if device.vendor in {AttendanceDevice.HIKVISION, AttendanceDevice.SUPREMA}:
+    if device.vendor == AttendanceDevice.GENERIC or _explicit_canonical_push(device):
+        return {
+            "kind": "direct",
+            "title": "Direct HTTPS connection",
+            "summary": "This device/middleware is configured as canonical HTTPS capable and can send authenticated attendance JSON directly to EduManage.",
+        }
+    if device.vendor in {
+        AttendanceDevice.ZKTECO,
+        AttendanceDevice.HIKVISION,
+        AttendanceDevice.SUPREMA,
+        AttendanceDevice.OTHER,
+    }:
         return {
             "kind": "edge",
             "title": "Edge Connector recommended",
-            "summary": "This vendor commonly exposes access/event APIs rather than EduManage's canonical webhook. Use a local/vendor adapter unless this exact model supports configurable HTTP push.",
+            "summary": "Do not assume the terminal's server/ADMS/API option speaks EduManage's authenticated JSON protocol. Use the local/vendor adapter unless this exact model or middleware is explicitly configured as canonical HTTPS capable.",
         }
     return {
-        "kind": "direct",
-        "title": "Direct HTTPS connection",
-        "summary": "Configure the terminal or its vendor middleware to send attendance events directly to the calculated EduManage endpoint.",
+        "kind": "edge",
+        "title": "Edge Connector recommended",
+        "summary": "Use the local connector until this machine's network protocol has been verified.",
     }
 
 
 def vendor_instructions(device: AttendanceDevice, values: dict) -> list[dict]:
     common = [
-        {"label": "Server / Domain", "value": values["server_host"], "copy": True},
-        {"label": "Port", "value": str(values["server_port"]), "copy": True},
+        {"label": "EduManage school domain", "value": values["server_host"], "copy": True},
+        {"label": "HTTPS port", "value": str(values["server_port"]), "copy": True},
         {"label": "Protocol", "value": "HTTPS" if values["use_https"] else "HTTP (local testing only)", "copy": True},
-        {"label": "Device code", "value": device.code, "copy": True},
+        {"label": "EduManage device code", "value": device.code, "copy": True},
     ]
+    direct = recommended_setup(device)["kind"] == "direct"
     if device.vendor == AttendanceDevice.ZKTECO:
         return common + [
-            {"label": "Push / callback URL", "value": values["event_url"], "copy": True},
-            {"label": "Server path (when requested separately)", "value": values["event_path"], "copy": True},
-            {"label": "Recommended mode", "value": "ADMS/PUSH or vendor middleware → EduManage canonical endpoint", "copy": False},
+            {"label": "EduManage event URL", "value": values["event_url"], "copy": True},
+            {"label": "Event path", "value": values["event_path"], "copy": True},
+            {
+                "label": "Connection guidance",
+                "value": (
+                    "Direct canonical HTTPS push enabled for this record"
+                    if direct
+                    else "Use ZKTeco SDK/ADMS/vendor bridge through the Edge Connector unless the exact model supports custom authenticated JSON POST"
+                ),
+                "copy": False,
+            },
         ]
     if device.vendor == AttendanceDevice.HIKVISION:
         return common + [
-            {"label": "EduManage receiver", "value": values["event_url"], "copy": True},
-            {"label": "Recommended mode", "value": "Hikvision event/API adapter or Edge Connector", "copy": False},
+            {"label": "EduManage event URL", "value": values["event_url"], "copy": True},
+            {
+                "label": "Connection guidance",
+                "value": (
+                    "Direct canonical HTTPS push enabled for this record"
+                    if direct
+                    else "Use a Hikvision event/API bridge or Edge Connector; do not paste this URL into an incompatible ISAPI event field"
+                ),
+                "copy": False,
+            },
         ]
     if device.vendor == AttendanceDevice.SUPREMA:
         return common + [
-            {"label": "EduManage receiver", "value": values["event_url"], "copy": True},
-            {"label": "Recommended mode", "value": "BioStar/G-SDK event bridge or Edge Connector", "copy": False},
+            {"label": "EduManage event URL", "value": values["event_url"], "copy": True},
+            {
+                "label": "Connection guidance",
+                "value": (
+                    "Direct canonical HTTPS push enabled for this record"
+                    if direct
+                    else "Use a BioStar/G-SDK event bridge or Edge Connector"
+                ),
+                "copy": False,
+            },
         ]
     return common + [
         {"label": "Event endpoint", "value": values["event_url"], "copy": True},
@@ -101,9 +146,8 @@ def vendor_instructions(device: AttendanceDevice, values: dict) -> list[dict]:
 
 
 def edge_config(device: AttendanceDevice, values: dict) -> dict:
-    source_type = "command_json"
     source_settings: dict = {
-        "type": source_type,
+        "type": "command_json",
         "name": f"{device.vendor.lower()}-{device.code.lower()}",
         "command": ["python", "vendor_bridge.py"],
         "timeout_seconds": 30,
