@@ -58,6 +58,13 @@ def _connection_state(device: AttendanceDevice) -> dict:
     }
 
 
+def _no_store(response):
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
+
+
 @admin_portal_required
 def device_setup(request, pk):
     device = get_object_or_404(_devices_for(request.user), pk=pk)
@@ -100,7 +107,7 @@ def device_setup(request, pk):
         f"  --data '{json.dumps(example_event(device), separators=(',', ':'))}'"
     )
 
-    return render(
+    response = render(
         request,
         "portals/admin/attendance/devices/setup.html",
         {
@@ -116,13 +123,14 @@ def device_setup(request, pk):
             "connection_choices": AttendanceDevice.CONNECTION_CHOICES,
         },
     )
+    return _no_store(response)
 
 
 @admin_portal_required
 def device_setup_status(request, pk):
     device = get_object_or_404(_devices_for(request.user), pk=pk)
     state = _connection_state(device)
-    return JsonResponse(
+    response = JsonResponse(
         {
             **state,
             "online": device.online,
@@ -132,6 +140,7 @@ def device_setup_status(request, pk):
             "last_error": device.last_error[:500],
         }
     )
+    return _no_store(response)
 
 
 @admin_portal_required
@@ -140,5 +149,4 @@ def download_edge_config(request, pk):
     values = connection_values(request, device)
     response = HttpResponse(edge_config_json(device, values), content_type="application/json")
     response["Content-Disposition"] = f'attachment; filename="edumanage-attendance-{device.code}.json"'
-    response["Cache-Control"] = "no-store"
-    return response
+    return _no_store(response)
