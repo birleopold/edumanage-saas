@@ -3,12 +3,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.public.tenants import seo_views
+from apps.public.tenants import seo_views, views as public_views
 from apps.tenant.finance import login_links
 from apps.tenant.portals import error_handlers
 from apps.tenant.users import device_portal
 
 urlpatterns = [
+    path("health/", public_views.health, name="health"),
     path("robots.txt", seo_views.robots_txt, name="tenant_robots_txt"),
     path("sitemap.xml", seo_views.sitemap_xml, name="tenant_sitemap_xml"),
     path("dj-admin/", admin.site.urls),
