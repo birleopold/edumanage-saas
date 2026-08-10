@@ -52,6 +52,7 @@ TENANT_APPS = (
     "apps.tenant.exams",
     "apps.tenant.reports",
     "apps.tenant.institutional",
+    "apps.tenant.designstudio",
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",
@@ -100,3 +101,7 @@ DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 TENANT_MODEL = "tenants.Tenant"
 TENANT_DOMAIN_MODEL = "tenants.Domain"
 AUTH_USER_MODEL = "users.User"
+
+# Avoid collisions with unrelated applications hosted on the same domain.
+CSRF_COOKIE_NAME = "edumanage_csrftoken"
+SESSION_COOKIE_NAME = "edumanage_sessionid"

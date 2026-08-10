@@ -16,6 +16,7 @@ class StudentProfileForm(forms.ModelForm):
             "email",
             "first_name",
             "last_name",
+            "photo",
             "date_of_birth",
             "district",
             "subcounty",
@@ -38,5 +39,13 @@ class StudentProfileForm(forms.ModelForm):
         if campus is not None:
             stream_qs = stream_qs.filter(class_group__campus=campus)
         self.fields["stream"].queryset = stream_qs
+        self.fields["photo"].help_text = "Portrait used on the learner's ID card and other official school documents."
+        self.fields["photo"].widget.attrs.update({"accept": "image/jpeg,image/png,image/webp"})
         if campus_queryset is not None:
             self.fields["campus"].queryset = campus_queryset
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        if photo and getattr(photo, "size", 0) > 8 * 1024 * 1024:
+            raise forms.ValidationError("Student portraits must be 8 MB or smaller.")
+        return photo

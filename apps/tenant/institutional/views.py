@@ -11,6 +11,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.tenant.designstudio.models import DocumentTemplate
+from apps.tenant.designstudio.services import render_version_pdf, resolve_template_for_student
 from apps.tenant.parents.models import ParentStudentLink
 from apps.tenant.portals.campus_permissions import get_user_campus_scope
 from apps.tenant.portals.permissions import roles_required
@@ -263,8 +265,11 @@ def transcript_download(request, student_id):
         return HttpResponseForbidden("You do not have access to this transcript.")
     permit = _ensure_document_permit(student, VerifiablePermit.TRANSCRIPT, "Academic Transcript", "TRANSCRIPT", request.user)
     verify_url = request.build_absolute_uri(reverse("institutional_verify", args=[permit.verification_token]))
-    response = FileResponse(transcript_pdf(student, verify_url), content_type="application/pdf")
+    design = resolve_template_for_student(DocumentTemplate.TRANSCRIPT, student)
+    pdf = render_version_pdf(design.active_version, student, verification_url=verify_url) if design else transcript_pdf(student, verify_url)
+    response = FileResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="transcript-{student.student_id or student.pk}.pdf"'
+    response["Cache-Control"] = "private, no-store"
     return response
 
 
@@ -275,8 +280,11 @@ def report_download(request, student_id):
         return HttpResponseForbidden("You do not have access to this report.")
     permit = _ensure_document_permit(student, VerifiablePermit.REPORT, "Learner Progress Report", "REPORT", request.user)
     verify_url = request.build_absolute_uri(reverse("institutional_verify", args=[permit.verification_token]))
-    response = FileResponse(report_pdf(student, verify_url), content_type="application/pdf")
+    design = resolve_template_for_student(DocumentTemplate.REPORT_CARD, student)
+    pdf = render_version_pdf(design.active_version, student, verification_url=verify_url) if design else report_pdf(student, verify_url)
+    response = FileResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="report-{student.student_id or student.pk}.pdf"'
+    response["Cache-Control"] = "private, no-store"
     return response
 
 
