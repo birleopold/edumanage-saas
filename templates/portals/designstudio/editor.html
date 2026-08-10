@@ -6,14 +6,14 @@
 {{ design|json_script:"design-data" }}
 {{ field_registry|json_script:"design-fields" }}
 {{ sample_values|json_script:"design-samples" }}
-<div class="ds-shell" data-design-studio data-width="{{ version.page_width_mm }}" data-height="{{ version.page_height_mm }}" data-background-url="{% if version.background %}{{ version.background.url }}{% endif %}">
+<div class="ds-shell" data-design-studio data-editable="{{ is_editable|yesno:'true,false' }}" data-width="{{ version.page_width_mm }}" data-height="{{ version.page_height_mm }}" data-background-url="{% if version.background %}{{ version.background.url }}{% endif %}">
   <header class="ds-topbar">
     <div class="ds-title-group"><a href="{% url 'designstudio:dashboard' %}" class="ds-back">← Design Studio</a><div><div class="ds-kicker">{{ template.get_document_type_display }} · {{ template.name }}</div><h1>Visual document designer</h1></div></div>
     <div class="ds-actions">
       <button type="button" class="ds-btn ds-btn-light" id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
       <button type="button" class="ds-btn ds-btn-light" id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
       <button type="button" class="ds-btn ds-btn-light" id="preview-btn"><i class="ph ph-eye"></i> Preview PDF</button>
-      <button type="button" class="ds-btn ds-btn-primary" id="save-btn"><i class="ph ph-floppy-disk"></i> Save draft</button>
+      {% if is_editable %}<button type="button" class="ds-btn ds-btn-primary" id="save-btn"><i class="ph ph-floppy-disk"></i> Save draft</button>{% else %}<span class="ds-btn ds-btn-light" aria-label="Read-only official version"><i class="ph ph-lock"></i> Read only</span>{% endif %}
     </div>
   </header>
 
@@ -23,9 +23,11 @@
       {% if version.status == 'DRAFT' %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'submit' %}">{% csrf_token %}<button class="ds-btn ds-btn-review" type="submit">Submit for approval</button></form>{% endif %}
       {% if version.status == 'IN_REVIEW' and can_approve %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'approve' %}">{% csrf_token %}<button class="ds-btn ds-btn-success" type="submit">Approve version</button></form>{% endif %}
       {% if version.status == 'APPROVED' and can_approve %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'activate' %}">{% csrf_token %}<button class="ds-btn ds-btn-success" type="submit">Activate for official use</button></form>{% endif %}
+      {% if version.status == 'ACTIVE' %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'revise' %}">{% csrf_token %}<button class="ds-btn ds-btn-review" type="submit"><i class="ph ph-copy"></i> Start new revision</button></form>{% endif %}
       {% if template.active_version_number %}<a class="ds-btn ds-btn-light" href="{% url 'designstudio:generate' template.pk %}">Issue document</a>{% endif %}
     </div>
   </div>
+  {% if not is_editable %}<div class="mx-5 mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"><strong class="text-slate-900">Protected version:</strong> this design is {{ version.get_status_display|lower }} and its layout cannot be changed. You may preview it, approve/activate it when authorised, or start a new revision from an active version.</div>{% endif %}
 
   <main class="ds-layout">
     <aside class="ds-panel ds-tools-panel" aria-label="Design elements">
@@ -37,10 +39,10 @@
     <section class="ds-stage-wrap" aria-label="Design canvas">
       <div class="ds-stage-toolbar"><div id="page-tabs" class="ds-page-tabs"></div><button type="button" class="ds-btn ds-btn-light ds-btn-small" id="add-page-btn">+ Add page</button><div class="ds-zoom"><label for="zoom-range">Zoom</label><input id="zoom-range" type="range" min="45" max="150" value="100"><span id="zoom-value">100%</span></div></div>
       <div class="ds-stage-scroll"><div class="ds-canvas" id="design-canvas" tabindex="0" aria-label="Document canvas"></div></div>
-      <div class="ds-stage-footer"><span>Page size: <input id="page-width" type="number" min="25" max="1000" step="0.1" value="{{ version.page_width_mm }}"> × <input id="page-height" type="number" min="25" max="1000" step="0.1" value="{{ version.page_height_mm }}"> mm</span><span>Arrow keys move selected item · Delete removes · Ctrl/Cmd+S saves</span></div>
+      <div class="ds-stage-footer"><span>Page size: <input id="page-width" type="number" min="25" max="1000" step="0.1" value="{{ version.page_width_mm }}"> × <input id="page-height" type="number" min="25" max="1000" step="0.1" value="{{ version.page_height_mm }}"> mm</span><span>{% if is_editable %}Arrow keys move selected item · Delete removes · Ctrl/Cmd+S saves{% else %}Official version · preview and inspect only{% endif %}</span></div>
     </section>
 
-    <aside class="ds-panel ds-properties" aria-label="Element properties"><section><h2>Properties</h2><div id="empty-properties" class="ds-empty-properties"><i class="ph ph-cursor-click"></i><p>Select an element on the canvas to edit its position, typography and data binding.</p></div><div id="property-form" hidden>
+    <aside class="ds-panel ds-properties" aria-label="Element properties"><section><h2>Properties</h2><div id="empty-properties" class="ds-empty-properties"><i class="ph ph-cursor-click"></i><p>Select an element on the canvas to {% if is_editable %}edit{% else %}inspect{% endif %} its position, typography and data binding.</p></div><div id="property-form" hidden>
       <label class="ds-label">Element type<input id="prop-type" type="text" disabled></label>
       <div class="ds-four"><label class="ds-label">X (mm)<input id="prop-x" type="number" step="0.1"></label><label class="ds-label">Y (mm)<input id="prop-y" type="number" step="0.1"></label><label class="ds-label">W (mm)<input id="prop-width" type="number" step="0.1"></label><label class="ds-label">H (mm)<input id="prop-height" type="number" step="0.1"></label></div>
       <label class="ds-label" data-prop="text">Text<textarea id="prop-text" rows="3"></textarea></label>
