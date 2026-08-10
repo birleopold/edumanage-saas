@@ -8,12 +8,23 @@ from .models import AttendanceDevice, AttendanceEvent
 
 
 MAX_BATCH_EVENTS = 500
+MAX_REQUEST_BYTES = 5 * 1024 * 1024
 
 
 def _plain_data(data):
     if hasattr(data, "dict"):
         return data.dict()
     return data
+
+
+def _request_too_large(request):
+    raw = request.META.get("CONTENT_LENGTH")
+    if not raw:
+        return False
+    try:
+        return int(raw) > MAX_REQUEST_BYTES
+    except (TypeError, ValueError):
+        return False
 
 
 def _raw_device_token(request):
@@ -64,6 +75,11 @@ class AttendanceDeviceEvents(APIView):
     permission_classes = []
 
     def post(self, request):
+        if _request_too_large(request):
+            return Response(
+                {"detail": f"Attendance device requests must be {MAX_REQUEST_BYTES // (1024 * 1024)} MB or smaller."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
         body = _plain_data(request.data)
         if not isinstance(body, dict):
             return Response({"detail": "Request body must be an object."}, status=status.HTTP_400_BAD_REQUEST)
@@ -127,6 +143,11 @@ class AttendanceDeviceHeartbeat(APIView):
     permission_classes = []
 
     def post(self, request):
+        if _request_too_large(request):
+            return Response(
+                {"detail": f"Attendance device requests must be {MAX_REQUEST_BYTES // (1024 * 1024)} MB or smaller."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
         body = _plain_data(request.data)
         if not isinstance(body, dict):
             body = {}
