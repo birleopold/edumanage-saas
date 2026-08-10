@@ -1,0 +1,62 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Design {{ template.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'designstudio/design-studio.css' %}">{% endblock %}
+{% block content %}
+{{ design|json_script:"design-data" }}
+{{ field_registry|json_script:"design-fields" }}
+{{ sample_values|json_script:"design-samples" }}
+<div class="ds-shell" data-design-studio data-width="{{ version.page_width_mm }}" data-height="{{ version.page_height_mm }}" data-background-url="{% if version.background %}{{ version.background.url }}{% endif %}">
+  <header class="ds-topbar">
+    <div class="ds-title-group"><a href="{% url 'designstudio:dashboard' %}" class="ds-back">← Design Studio</a><div><div class="ds-kicker">{{ template.get_document_type_display }} · {{ template.name }}</div><h1>Visual document designer</h1></div></div>
+    <div class="ds-actions">
+      <button type="button" class="ds-btn ds-btn-light" id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
+      <button type="button" class="ds-btn ds-btn-light" id="redo-btn" title="Redo (Ctrl+Y)">Redo</button>
+      <button type="button" class="ds-btn ds-btn-light" id="preview-btn"><i class="ph ph-eye"></i> Preview PDF</button>
+      <button type="button" class="ds-btn ds-btn-primary" id="save-btn"><i class="ph ph-floppy-disk"></i> Save draft</button>
+    </div>
+  </header>
+
+  <div class="ds-workflow">
+    <div><strong>Version {{ version.number }}</strong><span class="ds-status ds-status-{{ version.status|lower }}">{{ version.get_status_display }}</span>{% if template.active_version_number %}<span class="ds-active-note">Active production version: v{{ template.active_version_number }}</span>{% endif %}</div>
+    <div class="ds-workflow-actions">
+      {% if version.status == 'DRAFT' %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'submit' %}">{% csrf_token %}<button class="ds-btn ds-btn-review" type="submit">Submit for approval</button></form>{% endif %}
+      {% if version.status == 'IN_REVIEW' and can_approve %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'approve' %}">{% csrf_token %}<button class="ds-btn ds-btn-success" type="submit">Approve version</button></form>{% endif %}
+      {% if version.status == 'APPROVED' and can_approve %}<form method="post" action="{% url 'designstudio:version_action' version.pk 'activate' %}">{% csrf_token %}<button class="ds-btn ds-btn-success" type="submit">Activate for official use</button></form>{% endif %}
+      {% if template.active_version_number %}<a class="ds-btn ds-btn-light" href="{% url 'designstudio:generate' template.pk %}">Issue document</a>{% endif %}
+    </div>
+  </div>
+
+  <main class="ds-layout">
+    <aside class="ds-panel ds-tools-panel" aria-label="Design elements">
+      <section><h2>Elements</h2><div class="ds-tool-grid"><button type="button" data-add-element="text"><i class="ph ph-text-t"></i><span>Text</span></button><button type="button" data-add-element="rectangle"><i class="ph ph-square"></i><span>Shape</span></button><button type="button" data-add-element="line"><i class="ph ph-line-segment"></i><span>Line</span></button><button type="button" data-add-element="qr"><i class="ph ph-qr-code"></i><span>QR</span></button><button type="button" data-add-element="results_table"><i class="ph ph-table"></i><span>Results</span></button></div></section>
+      <section><h2>Live school data</h2><p class="ds-help">Click a field to add it. EduManage fills it from the selected learner when previewing or issuing.</p><div class="ds-field-list">{% regroup field_registry by category as field_groups %}{% for group in field_groups %}<details {% if forloop.first %}open{% endif %}><summary>{{ group.grouper }}</summary>{% for field in group.list %}<button type="button" class="ds-field-btn" data-add-binding="{{ field.binding|default:'' }}" data-kind="{{ field.kind }}" data-label="{{ field.label }}"><span>{{ field.label }}</span><small>{{ field.binding|default:field.kind }}</small></button>{% endfor %}</details>{% endfor %}</div></section>
+      <section><h2>Background artwork</h2><p class="ds-help">Upload a JPG or PNG designed in Publisher, Canva, Photoshop or CorelDRAW. It becomes a locked page background.</p><label class="ds-file-label"><i class="ph ph-image"></i><span>Choose background</span><input type="file" id="background-input" accept="image/png,image/jpeg,image/webp"></label><label class="ds-label">Background fit<select id="background-fit"><option value="COVER" {% if version.background_fit == 'COVER' %}selected{% endif %}>Cover</option><option value="CONTAIN" {% if version.background_fit == 'CONTAIN' %}selected{% endif %}>Contain</option><option value="STRETCH" {% if version.background_fit == 'STRETCH' %}selected{% endif %}>Stretch</option></select></label></section>
+    </aside>
+
+    <section class="ds-stage-wrap" aria-label="Design canvas">
+      <div class="ds-stage-toolbar"><div id="page-tabs" class="ds-page-tabs"></div><button type="button" class="ds-btn ds-btn-light ds-btn-small" id="add-page-btn">+ Add page</button><div class="ds-zoom"><label for="zoom-range">Zoom</label><input id="zoom-range" type="range" min="45" max="150" value="100"><span id="zoom-value">100%</span></div></div>
+      <div class="ds-stage-scroll"><div class="ds-canvas" id="design-canvas" tabindex="0" aria-label="Document canvas"></div></div>
+      <div class="ds-stage-footer"><span>Page size: <input id="page-width" type="number" min="25" max="1000" step="0.1" value="{{ version.page_width_mm }}"> × <input id="page-height" type="number" min="25" max="1000" step="0.1" value="{{ version.page_height_mm }}"> mm</span><span>Arrow keys move selected item · Delete removes · Ctrl/Cmd+S saves</span></div>
+    </section>
+
+    <aside class="ds-panel ds-properties" aria-label="Element properties"><section><h2>Properties</h2><div id="empty-properties" class="ds-empty-properties"><i class="ph ph-cursor-click"></i><p>Select an element on the canvas to edit its position, typography and data binding.</p></div><div id="property-form" hidden>
+      <label class="ds-label">Element type<input id="prop-type" type="text" disabled></label>
+      <div class="ds-four"><label class="ds-label">X (mm)<input id="prop-x" type="number" step="0.1"></label><label class="ds-label">Y (mm)<input id="prop-y" type="number" step="0.1"></label><label class="ds-label">W (mm)<input id="prop-width" type="number" step="0.1"></label><label class="ds-label">H (mm)<input id="prop-height" type="number" step="0.1"></label></div>
+      <label class="ds-label" data-prop="text">Text<textarea id="prop-text" rows="3"></textarea></label>
+      <label class="ds-label" data-prop="binding">Data binding<select id="prop-binding"><option value="">None</option>{% for field in field_registry %}{% if field.binding %}<option value="{{ field.binding }}">{{ field.label }} — {{ field.binding }}</option>{% endif %}{% endfor %}</select></label>
+      <div class="ds-two"><label class="ds-label">Prefix<input id="prop-prefix" type="text"></label><label class="ds-label">Suffix<input id="prop-suffix" type="text"></label></div>
+      <div class="ds-two"><label class="ds-label">Font<input id="prop-font-size" type="number" min="5" max="96" step="1"></label><label class="ds-label">Alignment<select id="prop-align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label></div>
+      <div class="ds-two"><label class="ds-label">Text colour<input id="prop-color" type="color"></label><label class="ds-label">Border colour<input id="prop-border-color" type="color"></label></div>
+      <label class="ds-check"><input id="prop-bold" type="checkbox"> <span>Bold text</span></label>
+      <button type="button" class="ds-btn ds-btn-danger" id="delete-element-btn"><i class="ph ph-trash"></i> Delete element</button>
+    </div></section>
+    <section><h2>Preview with real data</h2><label class="ds-label">Learner<select id="preview-student"><option value="">Choose learner</option>{% for student in students %}<option value="{{ student.pk }}">{{ student }}{% if student.student_id %} — {{ student.student_id }}{% endif %}</option>{% endfor %}</select></label><label class="ds-label">Term / semester<select id="preview-term"><option value="">No specific period</option>{% for term in terms %}<option value="{{ term.pk }}">{{ term }}</option>{% endfor %}</select></label><p class="ds-help">Preview uses live school data but does not issue or lock a document.</p></section>
+    </aside>
+  </main>
+
+  <form id="save-form" method="post" enctype="multipart/form-data" hidden>{% csrf_token %}<input type="hidden" name="version_id" value="{{ version.pk }}"><input type="hidden" name="design_json" id="design-json"><input type="hidden" name="page_width_mm" id="save-width"><input type="hidden" name="page_height_mm" id="save-height"><input type="hidden" name="background_fit" id="save-background-fit"><input type="hidden" name="notes" value=""><input type="file" name="background" id="save-background"></form>
+</div>
+<script>window.DESIGN_STUDIO_PREVIEW_URL = "{% url 'designstudio:preview_pdf' template.pk %}";</script>
+<script src="{% static 'designstudio/design-studio.js' %}"></script>
+{% endblock %}
