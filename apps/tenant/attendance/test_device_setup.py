@@ -56,6 +56,7 @@ class AttendanceDeviceSetupPageTests(TestCase):
         self.assertContains(response, self.device.code)
         self.assertContains(response, "Calculated automatically")
         self.assertContains(response, "Edge Connector recommended")
+        self.assertIn("no-store", response["Cache-Control"])
 
     def test_proprietary_vendor_requires_explicit_canonical_push_capability(self):
         self.assertEqual(recommended_setup(self.device)["kind"], "edge")
@@ -85,6 +86,7 @@ class AttendanceDeviceSetupPageTests(TestCase):
         self.assertNotEqual(self.device.token_hash, previous_hash)
         self.assertContains(response, "Copy this device key now")
         self.assertContains(response, self.device.token_prefix)
+        self.assertIn("no-store", response["Cache-Control"])
 
     def test_edge_config_download_never_contains_device_secret(self):
         response = self.client.get(
@@ -94,6 +96,7 @@ class AttendanceDeviceSetupPageTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/json")
+        self.assertIn("no-store", response["Cache-Control"])
         body = response.content.decode("utf-8")
         self.assertIn('"device_code": "MAIN-GATE-01"', body)
         self.assertIn('"device_key_env": "EDUMANAGE_ATTENDANCE_DEVICE_KEY"', body)
@@ -104,6 +107,7 @@ class AttendanceDeviceSetupPageTests(TestCase):
         status_url = reverse("admin_attendance_device_setup_status", args=[self.device.pk])
         response = self.client.get(status_url)
         self.assertEqual(response.json()["code"], "waiting")
+        self.assertIn("no-store", response["Cache-Control"])
 
         self.device.last_seen_at = timezone.now()
         self.device.save(update_fields=["last_seen_at", "updated_at"])
