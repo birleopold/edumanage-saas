@@ -10,6 +10,8 @@ from django.utils import timezone
 
 from django.contrib import messages
 
+from apps.tenant.designstudio.models import DocumentTemplate
+from apps.tenant.designstudio.services import render_version_pdf, resolve_template_for_student
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
 from apps.tenant.orgsettings.utils import log_action
@@ -170,7 +172,7 @@ def student_create(request):
     current = scoped or get_current_campus(request)
     campus_qs = _campus_queryset_for(request.user)
     if request.method == "POST":
-        form = StudentProfileForm(request.POST, campus=current, campus_queryset=campus_qs)
+        form = StudentProfileForm(request.POST, request.FILES or None, campus=current, campus_queryset=campus_qs)
         if form.is_valid():
             with transaction.atomic():
                 obj = form.save(commit=False)
@@ -288,10 +290,15 @@ def student_id_card_pdf(request, pk: int):
     if scoped is not None:
         if campus is None or not user_can_access_campus(request.user, campus):
             return HttpResponseForbidden("You cannot access this student.")
-    org = get_or_create_organization()
-    buf = generate_student_id_card_pdf(student=student, org=org)
+    design = resolve_template_for_student(DocumentTemplate.STUDENT_ID, student)
+    if design:
+        buf = render_version_pdf(design.active_version, student)
+    else:
+        org = get_or_create_organization()
+        buf = generate_student_id_card_pdf(student=student, org=org)
     response = HttpResponse(buf.read(), content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="student_id_{student.pk}.pdf"'
+    response["Cache-Control"] = "private, no-store"
     return response
 
 
@@ -345,7 +352,7 @@ def student_edit(request, pk: int):
             messages.success(request, "Password reset link sent to student's email.")
             return redirect("admin_students_edit", pk=pk)
         
-        form = StudentProfileForm(request.POST, instance=student, campus=stream_campus, campus_queryset=campus_qs)
+        form = StudentProfileForm(request.POST, request.FILES or None, instance=student, campus=stream_campus, campus_queryset=campus_qs)
         if form.is_valid():
             obj = form.save(commit=False)
             if scoped is not None and obj.campus_id != scoped.id:
