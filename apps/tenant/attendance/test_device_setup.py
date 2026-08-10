@@ -63,6 +63,17 @@ class AttendanceDeviceSetupPageTests(TestCase):
         self.device.save(update_fields=["protocol", "updated_at"])
         self.assertEqual(recommended_setup(self.device)["kind"], "direct")
 
+    def test_generic_webhook_device_defaults_to_direct_https(self):
+        generic = AttendanceDevice.objects.create(
+            name="Webhook Gate",
+            code="WEBHOOK-GATE-01",
+            campus=self.campus,
+            vendor=AttendanceDevice.GENERIC,
+            connection_mode=AttendanceDevice.PUSH,
+            identity_namespace="webhook-gate",
+        )
+        self.assertEqual(recommended_setup(generic)["kind"], "direct")
+
     def test_rotating_key_shows_new_secret_only_in_response(self):
         previous_hash = self.device.token_hash
         response = self.client.post(
