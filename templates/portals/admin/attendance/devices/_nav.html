@@ -9,3 +9,29 @@
   <a href="{% url 'admin_attendance_integration_guide' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-book-open-text" aria-hidden="true"></i> Integration guide</a>
   <a href="{% url 'admin_attendance_sessions_list' %}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-white"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Class attendance</a>
 </nav>
+{% if device %}
+<script>
+(function () {
+  var setup = document.querySelector('[data-attendance-setup]');
+  if (!setup) return;
+  var statusUrl = "{% url 'admin_attendance_device_setup_status' device.pk %}";
+  var storageKey = 'edumanage-attendance-setup-state-{{ device.pk }}';
+  async function checkConnection() {
+    try {
+      var response = await fetch(statusUrl, {headers: {'Accept': 'application/json'}, credentials: 'same-origin'});
+      if (!response.ok) return;
+      var data = await response.json();
+      var previous = sessionStorage.getItem(storageKey);
+      sessionStorage.setItem(storageKey, data.code || '');
+      if (previous && previous !== data.code && !document.getElementById('device-secret')) {
+        window.location.reload();
+      }
+    } catch (error) {
+      // Connection polling is best-effort; the setup page remains fully usable offline.
+    }
+  }
+  checkConnection();
+  window.setInterval(checkConnection, 7000);
+})();
+</script>
+{% endif %}
