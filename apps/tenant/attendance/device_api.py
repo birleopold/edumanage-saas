@@ -70,6 +70,15 @@ def authenticate_device(request, payload=None):
     return device, ""
 
 
+def _source_for_device(device: AttendanceDevice):
+    return {
+        AttendanceDevice.PUSH: AttendanceEvent.PUSH,
+        AttendanceDevice.PULL: AttendanceEvent.PULL,
+        AttendanceDevice.EDGE: AttendanceEvent.EDGE,
+        AttendanceDevice.FILE: AttendanceEvent.FILE,
+    }.get(device.connection_mode, AttendanceEvent.PUSH)
+
+
 class AttendanceDeviceEvents(APIView):
     authentication_classes = []
     permission_classes = []
@@ -98,9 +107,7 @@ class AttendanceDeviceEvents(APIView):
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
 
-        source = str(body.get("source") or AttendanceEvent.PUSH).upper()
-        if source not in dict(AttendanceEvent.SOURCE_CHOICES):
-            source = AttendanceEvent.PUSH
+        source = _source_for_device(device)
         results = []
         counts = {"processed": 0, "duplicates": 0, "unmatched": 0, "ignored": 0, "errors": 0}
         for raw_event in events:
@@ -132,8 +139,11 @@ class AttendanceDeviceEvents(APIView):
                     }
                 )
             except Exception as exc:
+                device.last_error = str(exc)[:1000]
+                device.save(update_fields=["last_error", "updated_at"])
                 counts["errors"] += 1
-                results.append({"id": None, "status": AttendanceEvent.ERROR, "error": str(exc)})
+                public_error = str(exc) if isinstance(exc, ValueError) else "Unable to process attendance event."
+                results.append({"id": None, "status": AttendanceEvent.ERROR, "error": public_error})
 
         return Response({"device": device.code, "received": len(events), **counts, "results": results})
 
