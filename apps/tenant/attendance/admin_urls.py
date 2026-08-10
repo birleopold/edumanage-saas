@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_views, device_admin_views
+from . import admin_views, device_admin_views, device_setup_views
 
 urlpatterns = [
     path("", device_admin_views.device_dashboard, name="admin_attendance_device_dashboard"),
@@ -12,6 +12,12 @@ urlpatterns = [
     ),
     path("devices/", device_admin_views.device_list, name="admin_attendance_device_list"),
     path("devices/add/", device_admin_views.device_create, name="admin_attendance_device_create"),
+    path("devices/<int:pk>/setup/", device_setup_views.device_setup, name="admin_attendance_device_setup"),
+    path(
+        "devices/<int:pk>/setup/edge-config.json",
+        device_setup_views.download_edge_config,
+        name="admin_attendance_device_edge_config",
+    ),
     path("devices/<int:pk>/", device_admin_views.device_detail, name="admin_attendance_device_detail"),
     path("devices/<int:pk>/edit/", device_admin_views.device_edit, name="admin_attendance_device_edit"),
     path("events/", device_admin_views.event_list, name="admin_attendance_device_event_list"),
