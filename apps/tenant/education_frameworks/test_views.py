@@ -169,7 +169,10 @@ class EducationFrameworkAdminViewTests(TestCase):
                 "stage": self.stages[EducationStage.PRIMARY].pk,
                 "local_name": "Primary",
                 "academic_period_type": EducationStage.PERIOD_TERM,
+                "default_assessment_mode": CampusEducationStage.ASSESSMENT_NUMERIC,
+                "report_mode": CampusEducationStage.REPORT_STANDARD,
                 "report_layout_key": "",
+                "supports_promotion_decisions": "on",
                 "is_active": "on",
             },
         )
@@ -205,7 +208,10 @@ class EducationFrameworkAdminViewTests(TestCase):
                 "stage": primary.pk,
                 "local_name": "Another Primary",
                 "academic_period_type": EducationStage.PERIOD_TERM,
+                "default_assessment_mode": CampusEducationStage.ASSESSMENT_NUMERIC,
+                "report_mode": CampusEducationStage.REPORT_STANDARD,
                 "report_layout_key": "",
+                "supports_promotion_decisions": "on",
                 "is_active": "on",
             },
         )
