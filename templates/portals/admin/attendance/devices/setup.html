@@ -1,0 +1,154 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Connect {{ device.name }}{% endblock %}
+{% block page_title %}Connect attendance machine{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_attendance_device_detail' device.pk %}" class="edu-outline-button"><i class="ph ph-arrow-left"></i> Device record</a>
+<a href="{% url 'admin_attendance_device_edit' device.pk %}" class="edu-outline-button"><i class="ph ph-sliders-horizontal"></i> Device settings</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page" data-attendance-setup>
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+
+  <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div class="max-w-3xl">
+        <span class="edu-ops-badge edu-ops-badge--blue"><i class="ph ph-plugs-connected"></i> Self-service machine setup</span>
+        <h2 class="mt-3 text-2xl font-black text-slate-950">Connect {{ device.name }} without server access</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600">EduManage has calculated the correct tenant address, secure API routes, device identity and recommended connection method. Enter the values below in the terminal/vendor software, or download the Edge Connector configuration when the hardware cannot post directly.</p>
+      </div>
+      <div class="min-w-[260px] rounded-2xl border p-4 {% if connection_state.tone == 'success' %}border-emerald-200 bg-emerald-50{% elif connection_state.tone == 'blue' %}border-blue-200 bg-blue-50{% else %}border-amber-200 bg-amber-50{% endif %}">
+        <div class="flex items-start gap-3">
+          <i class="ph {% if connection_state.tone == 'success' %}ph-check-circle text-emerald-700{% elif connection_state.tone == 'blue' %}ph-broadcast text-blue-700{% else %}ph-clock text-amber-700{% endif %} text-2xl"></i>
+          <div><strong class="block text-sm text-slate-950">{{ connection_state.title }}</strong><span class="mt-1 block text-xs leading-5 text-slate-600">{{ connection_state.detail }}</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-4" aria-label="Connection setup steps">
+    <article class="rounded-2xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">1</span><strong class="mt-3 block text-sm">Choose connection</strong><span class="mt-1 block text-xs text-slate-500">Direct, vendor API, Edge Connector or CSV.</span></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">2</span><strong class="mt-3 block text-sm">Enter server values</strong><span class="mt-1 block text-xs text-slate-500">Copy the calculated host, port and endpoint.</span></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">3</span><strong class="mt-3 block text-sm">Authenticate machine</strong><span class="mt-1 block text-xs text-slate-500">Use the device code and one-time secret.</span></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">4</span><strong class="mt-3 block text-sm">Confirm first punch</strong><span class="mt-1 block text-xs text-slate-500">This page changes to Connected automatically after sync.</span></article>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-[.36fr_1fr] xl:items-start">
+    <aside class="space-y-5">
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="font-black text-slate-950">Connection method</h3>
+        <p class="mt-1 text-xs leading-5 text-slate-500">Current recommendation: <strong>{{ setup.title }}</strong></p>
+        <p class="mt-2 text-sm leading-6 text-slate-600">{{ setup.summary }}</p>
+        <form method="post" class="mt-4 space-y-3">{% csrf_token %}
+          <input type="hidden" name="action" value="set_mode">
+          <label for="connection_mode" class="block text-xs font-black text-slate-600">Change method</label>
+          <select id="connection_mode" name="connection_mode" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+            {% for value,label in connection_choices %}<option value="{{ value }}" {% if device.connection_mode == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <button class="edu-outline-button w-full justify-center" type="submit">Apply method</button>
+        </form>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="font-black text-slate-950">Machine identity</h3>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div><dt class="text-xs text-slate-500">Vendor</dt><dd class="font-bold">{{ device.get_vendor_display }}{% if device.model_name %} · {{ device.model_name }}{% endif %}</dd></div>
+          <div><dt class="text-xs text-slate-500">Campus</dt><dd class="font-bold">{{ device.campus|default:'Central / unassigned' }}</dd></div>
+          <div><dt class="text-xs text-slate-500">Location</dt><dd class="font-bold">{{ device.location|default:'Not specified' }}</dd></div>
+          <div><dt class="text-xs text-slate-500">Timezone</dt><dd><code>{{ device.timezone_name }}</code></dd></div>
+          <div><dt class="text-xs text-slate-500">Identity namespace</dt><dd><code>{{ device.identity_namespace }}</code></dd></div>
+        </dl>
+      </section>
+    </aside>
+
+    <div class="space-y-6">
+      {% if raw_token %}
+      <section class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5">
+        <div class="flex items-start gap-3"><i class="ph ph-key text-2xl text-amber-700"></i><div class="min-w-0 flex-1"><strong class="text-amber-950">Copy this device key now</strong><p class="mt-1 text-sm text-amber-800">For security, EduManage stores only its hash and cannot reveal this exact key again.</p><div class="mt-3 flex gap-2"><code id="device-secret" class="min-w-0 flex-1 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-white">{{ raw_token }}</code><button type="button" class="edu-outline-button" data-copy-target="device-secret"><i class="ph ph-copy"></i> Copy</button></div></div></div>
+      </section>
+      {% else %}
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><h3 class="font-black text-slate-950">Device secret</h3><p class="mt-1 text-sm text-slate-600">The existing secret is hidden. Rotate it only when configuring a new machine/connector or when the previous key is lost.</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="rotate_token"><button class="edu-outline-button" type="submit" onclick="return confirm('Generate a new device key? The old key stops working immediately.');"><i class="ph ph-key"></i> Generate new key</button></form></div>
+      </section>
+      {% endif %}
+
+      <section class="edu-ops-table-shell">
+        <header class="edu-ops-table-heading"><div><h3>Values to enter on the machine</h3><p>Machine menus differ by manufacturer. Match these values to labels such as Server Address, Domain, Port, ADMS Server, Push URL, Callback URL or Server Path.</p></div><span class="edu-ops-badge edu-ops-badge--success">Calculated automatically</span></header>
+        <div class="divide-y divide-slate-100">
+          {% for item in instructions %}
+          <div class="grid gap-2 p-4 md:grid-cols-[220px_1fr_auto] md:items-center">
+            <strong class="text-xs text-slate-600">{{ item.label }}</strong>
+            <code id="setup-value-{{ forloop.counter }}" class="break-all rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-900">{{ item.value }}</code>
+            {% if item.copy %}<button type="button" class="edu-ops-button" data-copy-target="setup-value-{{ forloop.counter }}"><i class="ph ph-copy"></i> Copy</button>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="grid gap-5 lg:grid-cols-2">
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="font-black text-slate-950">EduManage API routes</h3>
+          <p class="mt-1 text-xs leading-5 text-slate-500">These are tenant-aware URLs calculated from the school domain currently being used.</p>
+          <div class="mt-4 space-y-4">
+            <div><span class="text-xs font-black text-slate-500">Attendance events</span><div class="mt-1 flex gap-2"><code id="event-url" class="min-w-0 flex-1 break-all rounded-lg bg-slate-50 p-2 text-xs">{{ values.event_url }}</code><button type="button" class="edu-ops-button" data-copy-target="event-url">Copy</button></div></div>
+            <div><span class="text-xs font-black text-slate-500">Heartbeat / online status</span><div class="mt-1 flex gap-2"><code id="heartbeat-url" class="min-w-0 flex-1 break-all rounded-lg bg-slate-50 p-2 text-xs">{{ values.heartbeat_url }}</code><button type="button" class="edu-ops-button" data-copy-target="heartbeat-url">Copy</button></div></div>
+            <div><span class="text-xs font-black text-slate-500">Remote configuration</span><div class="mt-1 flex gap-2"><code id="configuration-url" class="min-w-0 flex-1 break-all rounded-lg bg-slate-50 p-2 text-xs">{{ values.configuration_url }}</code><button type="button" class="edu-ops-button" data-copy-target="configuration-url">Copy</button></div></div>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="font-black text-slate-950">Expected authentication</h3>
+          <p class="mt-1 text-xs leading-5 text-slate-500">For webhook/middleware/Edge Connector integrations, send these headers over HTTPS.</p>
+          <pre class="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-white">X-Device-Code: {{ device.code }}
+X-Device-Key: YOUR_DEVICE_KEY
+Content-Type: application/json</pre>
+          <p class="mt-3 text-xs leading-5 text-slate-500">If the physical terminal cannot add HTTP headers or cannot send arbitrary JSON, use the Edge Connector rather than weakening device authentication.</p>
+        </article>
+      </section>
+
+      {% if setup.kind == 'edge' %}
+      <section class="rounded-2xl border border-violet-200 bg-violet-50 p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><span class="edu-ops-badge edu-ops-badge--violet">Recommended for this setup</span><h3 class="mt-3 text-lg font-black text-violet-950">Use the EduManage Edge Connector</h3><p class="mt-2 max-w-3xl text-sm leading-6 text-violet-900">Install it on a school PC or Raspberry Pi that can reach the attendance machine over the local network. It stores punches locally during internet outages and sends them automatically when connectivity returns. The VPS is never opened or edited.</p></div><a href="{% url 'admin_attendance_device_edge_config' device.pk %}" class="edu-pill-button whitespace-nowrap"><i class="ph ph-download-simple"></i> Download config</a></div>
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+          <div><strong class="text-xs text-violet-900">Generated connector configuration</strong><pre class="mt-2 max-h-80 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-white">{{ edge_config_json }}</pre></div>
+          <div><strong class="text-xs text-violet-900">Local secret</strong><p class="mt-2 text-sm leading-6 text-violet-900">On the connector computer set <code>EDUMANAGE_ATTENDANCE_DEVICE_KEY</code> to the one-time key above. The downloadable JSON intentionally does not contain the secret.</p><div class="mt-4 rounded-xl bg-white/70 p-4 text-xs text-violet-950"><strong>Vendor bridge boundary</strong><p class="mt-2 leading-5">The bridge reads the vendor SDK/API/LAN device and emits canonical events. EduManage still owns duplicate handling, attendance policy, parent notifications, staff time records and auditing.</p></div></div>
+        </div>
+      </section>
+      {% elif setup.kind == 'file' %}
+      <section class="rounded-2xl border border-blue-200 bg-blue-50 p-5"><h3 class="font-black text-blue-950">No live machine connection required</h3><p class="mt-2 text-sm leading-6 text-blue-900">Export attendance logs from the terminal to CSV/USB, then use <a class="font-black underline" href="{% url 'admin_attendance_csv_import' %}">Attendance CSV Import</a>. EduManage still applies the same identity mapping, duplicate filtering and daily reconciliation.</p></section>
+      {% endif %}
+
+      <section class="grid gap-5 lg:grid-cols-2">
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-black text-slate-950">Test payload</h3><p class="mt-1 text-xs text-slate-500">A middleware/connector can send an event shaped like this.</p><pre class="mt-3 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-white">{{ sample_event }}</pre></article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h3 class="font-black text-slate-950">Connection test command</h3><p class="mt-1 text-xs text-slate-500">For an IT technician testing a webhook-capable connection. Replace <code>YOUR_DEVICE_KEY</code>.</p><pre class="mt-3 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs text-white">{{ curl_example }}</pre></article>
+      </section>
+
+      <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <h3 class="font-black text-emerald-950">How you know setup is complete</h3>
+        <div class="mt-3 grid gap-3 md:grid-cols-3 text-sm text-emerald-950"><div class="rounded-xl bg-white/70 p-4"><i class="ph ph-broadcast text-xl"></i><strong class="mt-2 block">1. Heartbeat</strong><span class="mt-1 block text-xs">Device becomes Online.</span></div><div class="rounded-xl bg-white/70 p-4"><i class="ph ph-identification-card text-xl"></i><strong class="mt-2 block">2. Identity resolves</strong><span class="mt-1 block text-xs">Device user ID maps to a learner/staff member.</span></div><div class="rounded-xl bg-white/70 p-4"><i class="ph ph-check-circle text-xl"></i><strong class="mt-2 block">3. First punch arrives</strong><span class="mt-1 block text-xs">Status changes to Connected and receiving attendance.</span></div></div>
+      </section>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-copy-target]').forEach(function (button) {
+    button.addEventListener('click', async function () {
+      var target = document.getElementById(button.getAttribute('data-copy-target'));
+      if (!target) return;
+      var value = target.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(value);
+        var original = button.innerHTML;
+        button.innerHTML = '<i class="ph ph-check"></i> Copied';
+        setTimeout(function () { button.innerHTML = original; }, 1400);
+      } catch (error) {
+        window.prompt('Copy this value:', value);
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}
