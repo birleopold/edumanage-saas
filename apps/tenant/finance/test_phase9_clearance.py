@@ -189,11 +189,11 @@ class Phase9ClearanceServiceTests(TestCase):
 
     def test_bootstrap_is_dry_run_first_inactive_and_idempotent(self):
         preview = bootstrap_policy_templates(apply=False)
-        self.assertEqual(len(preview), 5)
+        self.assertEqual(len(preview), 9)
         self.assertEqual(ClearancePolicy.objects.count(), 0)
         bootstrap_policy_templates(apply=True)
         bootstrap_policy_templates(apply=True)
-        self.assertEqual(ClearancePolicy.objects.count(), 5)
+        self.assertEqual(ClearancePolicy.objects.count(), 9)
         self.assertFalse(ClearancePolicy.objects.filter(is_active=True).exists())
         self.assertTrue(evaluate_clearance(self.student, ClearancePolicy.ONLINE_EXAM, self.term).allowed)
 
