@@ -3,10 +3,23 @@
 {% block content %}
 <div class="space-y-6">
   <header class="rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-primary-800 p-6 text-white shadow-xl">
-    <p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-200">Education framework completion centre</p>
-    <h1 class="mt-2 text-3xl font-black">Institutional Operations</h1>
-    <p class="mt-2 max-w-3xl text-sm text-indigo-100">Configure reports, national and university result policies, candidate readiness, verifiable permits, visitation, meals, learner property and individual subject combinations.</p>
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-indigo-200">Education framework completion centre</p>
+        <h1 class="mt-2 text-3xl font-black">Institutional Operations</h1>
+        <p class="mt-2 max-w-3xl text-sm text-indigo-100">Configure reports, national and university result policies, candidate readiness, verifiable permits, visitation, meals, learner property and individual subject combinations.</p>
+      </div>
+      <a href="{% url 'designstudio:dashboard' %}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-white/70">
+        <i class="ph ph-layout text-lg" aria-hidden="true"></i> Open Design Studio
+      </a>
+    </div>
   </header>
+  <section class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5" aria-labelledby="design-studio-heading">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div><h2 id="design-studio-heading" class="font-black text-indigo-950">Official document design</h2><p class="mt-1 max-w-3xl text-sm text-indigo-800">Create school-branded student IDs, end-of-term reports, transcripts, leavers certificates and other documents using drag-and-drop layouts, uploaded artwork, approval versions and QR verification.</p></div>
+      <a href="{% url 'designstudio:template_create' %}" class="whitespace-nowrap rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-black text-white hover:bg-indigo-800">Create document design</a>
+    </div>
+  </section>
   <section aria-labelledby="institutional-summary-heading">
     <h2 id="institutional-summary-heading" class="sr-only">Institutional operations summary</h2>
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
