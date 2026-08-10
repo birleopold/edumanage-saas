@@ -1,0 +1,18 @@
+{
+  "server_url": "https://school.example.com",
+  "device_code": "MAIN-GATE-01",
+  "queue_path": "./data/attendance-edge.sqlite3",
+  "device_key_env": "EDUMANAGE_ATTENDANCE_DEVICE_KEY",
+  "poll_seconds": 5,
+  "batch_size": 100,
+  "heartbeat_seconds": 60,
+  "request_timeout_seconds": 20,
+  "sources": [
+    {
+      "type": "command_json",
+      "name": "main-gate-vendor",
+      "command": ["python", "vendor_bridge.py"],
+      "timeout_seconds": 30
+    }
+  ]
+}

@@ -136,8 +136,8 @@ def device_create(request):
             device.save(update_fields=["identity_namespace", "updated_at"])
         raw_token = device.rotate_token()
         request.session["attendance_device_token"] = {"device_id": device.id, "token": raw_token}
-        messages.success(request, "Attendance device created. Copy its device key now; it will not be shown again.")
-        return redirect("admin_attendance_device_detail", pk=device.pk)
+        messages.success(request, "Attendance device created. Continue with the calculated machine connection settings below.")
+        return redirect("admin_attendance_device_setup", pk=device.pk)
     return render(request, "portals/admin/attendance/devices/device_form.html", {"form": form, "title": "Add attendance device"})
 
 
