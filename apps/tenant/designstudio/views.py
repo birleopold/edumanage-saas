@@ -168,11 +168,12 @@ def template_duplicate(request, pk):
 @roles_required(*ADMIN_ROLES)
 def editor(request, pk):
     template = get_object_or_404(_template_queryset(request), pk=pk)
-    version = get_editable_version(template, request.user)
+    version = template.latest_version or get_editable_version(template, request.user)
+    is_editable = version.status == DocumentTemplateVersion.DRAFT
     if request.method == "POST":
         posted_version = get_object_or_404(DocumentTemplateVersion, pk=request.POST.get("version_id"), template=template)
         if posted_version.status != DocumentTemplateVersion.DRAFT:
-            messages.error(request, "That version is no longer editable. A fresh draft has been created.")
+            messages.error(request, "Official and submitted versions are immutable. Start a new revision to make changes.")
             return redirect("designstudio:editor", pk=template.pk)
         try:
             design = json.loads(request.POST.get("design_json") or "{}")
@@ -210,6 +211,7 @@ def editor(request, pk):
             "students": students,
             "terms": terms,
             "can_approve": _can_approve(request.user),
+            "is_editable": is_editable,
         },
     )
 
@@ -278,7 +280,7 @@ def version_action(request, pk, action):
     try:
         if action == "submit":
             submit_for_review(version, request.user)
-            message = "Design submitted for approval."
+            message = "Design submitted for approval. It is now read-only until approved or revised."
         elif action == "approve":
             if not _can_approve(request.user):
                 return HttpResponseForbidden("Only a school administrator or principal can approve official document designs.")
@@ -289,6 +291,11 @@ def version_action(request, pk, action):
                 return HttpResponseForbidden("Only a school administrator or principal can activate official document designs.")
             activate_version(version, request.user)
             message = f"Design v{version.number} is now active. Previous active versions were archived."
+        elif action == "revise":
+            if version.status not in {DocumentTemplateVersion.APPROVED, DocumentTemplateVersion.ACTIVE, DocumentTemplateVersion.ARCHIVED}:
+                raise ValidationError("Only an official version can be copied into a new revision.")
+            draft = get_editable_version(version.template, request.user)
+            message = f"Draft v{draft.number} created from v{version.number}."
         else:
             raise Http404
         messages.success(request, message)
