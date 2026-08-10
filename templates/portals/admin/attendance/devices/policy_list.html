@@ -1,0 +1,16 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Attendance Policies{% endblock %}
+{% block page_title %}Attendance Policies{% endblock %}
+{% block header_actions %}<a href="{% url 'admin_attendance_policy_create' %}" class="edu-pill-button"><i class="ph ph-plus"></i> Add policy</a>{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+  <section class="edu-ops-hero"><div class="edu-ops-hero__content"><span class="edu-ops-hero__eyebrow"><i class="ph ph-sliders-horizontal"></i> Attendance rules</span><h2>Let school policy interpret device punches—not the hardware vendor</h2><p>Define expected arrival/departure, grace periods, duplicate filtering, minimum presence and how EduManage should interpret devices that do not provide IN/OUT direction.</p></div></section>
+  <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Active and historical policies</h3><p>Campus-specific policies take priority over institution-wide defaults for the same person type.</p></div></header>
+    {% if policies %}<div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Policy</th><th>Scope</th><th>People</th><th>Schedule</th><th>Direction logic</th><th>Duplicate window</th><th>Notifications</th><th>Status</th><th class="text-right">Action</th></tr></thead><tbody>
+      {% for policy in policies %}<tr><td><strong>{{ policy.name }}</strong>{% if policy.is_default %}<span class="ml-2 edu-ops-badge edu-ops-badge--blue">Default</span>{% endif %}</td><td>{{ policy.campus|default:"All campuses" }}</td><td>{{ policy.get_person_type_display }}</td><td>{{ policy.expected_in|time:"H:i"|default:"—" }} → {{ policy.expected_out|time:"H:i"|default:"—" }}<span class="block text-xs text-slate-500">Late grace {{ policy.late_grace_minutes }} min</span></td><td>{{ policy.get_direction_strategy_display }}</td><td>{{ policy.duplicate_window_seconds }} sec</td><td>{% if policy.notify_parent_on_arrival %}Arrival{% endif %}{% if policy.notify_parent_on_arrival and policy.notify_parent_on_departure %} + {% endif %}{% if policy.notify_parent_on_departure %}Departure{% endif %}{% if not policy.notify_parent_on_arrival and not policy.notify_parent_on_departure %}None{% endif %}</td><td>{% if policy.is_active %}<span class="edu-ops-badge edu-ops-badge--success">Active</span>{% else %}<span class="edu-ops-badge">Inactive</span>{% endif %}</td><td><div class="edu-ops-actions"><a href="{% url 'admin_attendance_policy_edit' policy.pk %}" class="edu-ops-button">Edit</a></div></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="p-10 text-center"><strong>No device attendance policies yet.</strong><p class="mt-2 text-sm text-slate-500">Without a policy EduManage still stores and reconciles punches, but cannot calculate lateness against a school schedule.</p></div>{% endif %}
+  </section>
+</div>
+{% endblock %}

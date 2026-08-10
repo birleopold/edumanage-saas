@@ -1,0 +1,20 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Import Attendance Logs{% endblock %}
+{% block page_title %}Import Attendance Logs{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page max-w-5xl">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+  <section class="grid gap-6 xl:grid-cols-[1fr_.42fr] xl:items-start">
+    <form method="post" enctype="multipart/form-data" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">{% csrf_token %}
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-upload-simple"></i> Offline / legacy fallback</span><h2 class="mt-2 text-2xl font-black text-slate-950">Import a device CSV without changing EduManage's attendance model</h2><p class="mt-2 text-sm text-slate-600">The selected device's vendor adapter is still used, so common vendor column names are translated into the same canonical event ledger as live API events.</p>
+      <div class="mt-6 space-y-5">{% for field in form %}<div><label class="mb-2 block text-sm font-black text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}</div><button class="edu-pill-button mt-6" type="submit"><i class="ph ph-upload-simple"></i> Import logs</button>
+    </form>
+    <aside class="space-y-4">
+      <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950"><strong>Use this when</strong><ul class="mt-3 list-disc space-y-2 pl-5"><li>The machine has USB/CSV export but no cloud API.</li><li>The school internet was down and you need a controlled backfill.</li><li>A vendor SDK is temporarily unavailable.</li><li>You are migrating old attendance history into EduManage.</li></ul></section>
+      <section class="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-950"><strong>Safe exact-ID matching</strong><p class="mt-2">Auto-match is optional. EduManage only creates an automatic mapping when the device user ID identifies exactly one active student ID or exactly one active staff ID in the permitted campus. Ambiguous IDs remain unmatched for review.</p></section>
+      {% if summary %}<section class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-sm text-emerald-950"><strong>Last import result</strong><dl class="mt-3 grid grid-cols-2 gap-3"><div><dt>Rows</dt><dd class="font-black">{{ summary.rows }}</dd></div><div><dt>Processed</dt><dd class="font-black">{{ summary.processed }}</dd></div><div><dt>Duplicates</dt><dd class="font-black">{{ summary.duplicates }}</dd></div><div><dt>Unmatched</dt><dd class="font-black">{{ summary.unmatched }}</dd></div><div><dt>Ignored</dt><dd class="font-black">{{ summary.ignored }}</dd></div><div><dt>Errors</dt><dd class="font-black">{{ summary.errors }}</dd></div></dl></section>{% endif %}
+    </aside>
+  </section>
+</div>
+{% endblock %}

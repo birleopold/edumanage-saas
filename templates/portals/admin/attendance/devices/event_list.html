@@ -1,0 +1,21 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Attendance Events{% endblock %}
+{% block page_title %}Raw Attendance Events{% endblock %}
+{% block content %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+  <section class="edu-ops-hero"><div class="edu-ops-hero__content"><span class="edu-ops-hero__eyebrow"><i class="ph ph-waveform"></i> Evidence ledger</span><h2>Investigate exactly what each machine sent</h2><p>Raw device events are never replaced by the daily interpretation. Use this ledger to diagnose unknown IDs, double scans, clock problems, vendor event codes and connection failures.</p></div></section>
+  <form method="get" class="edu-ops-filter edu-ops-filter--compact">
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Person / user ID</label><input id="id_q" name="q" value="{{ q }}" placeholder="Student, staff or device user ID"></div>
+    <div class="edu-ops-field"><label for="id_device">Device</label><select id="id_device" name="device"><option value="">All devices</option>{% for device in devices %}<option value="{{ device.id }}" {% if device_id == device.id|stringformat:'s' %}selected{% endif %}>{{ device.name }}</option>{% endfor %}</select></div>
+    <div class="edu-ops-field"><label for="id_state">Processing state</label><select id="id_state" name="state"><option value="">All states</option>{% for value,label in state_choices %}<option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <button class="edu-pill-button" type="submit">Filter</button><a href="{% url 'admin_attendance_device_event_list' %}" class="edu-outline-button">Clear</a>
+  </form>
+  <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Event ledger</h3><p>{{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }} match this view.</p></div></header>
+    {% if events %}<div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Occurred</th><th>Received</th><th>Device</th><th>User ID</th><th>Resolved person</th><th>Auth</th><th>Direction</th><th>Code</th><th>Clock</th><th>Status</th></tr></thead><tbody>
+      {% for event in events %}<tr><td>{{ event.occurred_at|date:"d M Y H:i:s" }}</td><td>{{ event.received_at|date:"d M Y H:i:s" }}</td><td>{{ event.device.name }}</td><td><code>{{ event.external_person_id|default:"—" }}</code></td><td>{% if event.student_id %}Student · {{ event.student }}{% elif event.staff_id %}Staff · {{ event.staff }}{% else %}<span class="font-bold text-amber-700">Unmatched</span>{% endif %}</td><td>{{ event.get_auth_method_display }}</td><td>{{ event.get_direction_display }}{% if event.raw_direction %}<span class="block text-xs text-slate-500">Raw: {{ event.raw_direction }}</span>{% endif %}</td><td>{{ event.event_code|default:"—" }}</td><td>{% if event.server_time_used %}<span class="edu-ops-badge edu-ops-badge--warning">Server time used</span>{% elif event.clock_skew_seconds %}{{ event.clock_skew_seconds }} sec{% else %}OK{% endif %}</td><td><span class="edu-ops-badge {% if event.processing_status == 'PROCESSED' %}edu-ops-badge--success{% elif event.processing_status == 'UNMATCHED' %}edu-ops-badge--warning{% endif %}">{{ event.get_processing_status_display }}</span>{% if event.error_message %}<span class="mt-1 block max-w-xs text-xs text-rose-700">{{ event.error_message }}</span>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="p-10 text-center"><strong>No raw events match this view.</strong></div>{% endif %}
+    {% if page_obj.has_other_pages %}<div class="border-t border-slate-200 p-4">{% include "components/ui_pagination.html" with page_obj=page_obj %}</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

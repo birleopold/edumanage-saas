@@ -29,7 +29,7 @@ class AssessmentFrameworkViewTests(TestCase):
     def test_dashboard_is_available_to_full_administrator(self):
         response = self.client.get(reverse("admin_assessment_framework_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Assessment types and weighting")
+        self.assertContains(response, "Define how school assessments are classified and combined")
         self.assertContains(response, "EOT")
 
     def test_create_scheme_from_setup_ui(self):

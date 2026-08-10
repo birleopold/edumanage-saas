@@ -1,0 +1,52 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Attendance Integration Guide{% endblock %}
+{% block page_title %}Attendance Integration Guide{% endblock %}
+{% block content %}
+<div class="edu-ops-page max-w-6xl">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+  <section class="edu-ops-hero"><div class="edu-ops-hero__content"><span class="edu-ops-hero__eyebrow"><i class="ph ph-plugs-connected"></i> Vendor-neutral architecture</span><h2>One EduManage attendance model, several ways to reach it</h2><p>No school-management API can force every physical clock to speak the same protocol. EduManage solves this by keeping one canonical event contract and translating vendor protocols at the edge or server boundary.</p></div></section>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><i class="ph ph-cloud-arrow-up text-xl"></i></span><h3 class="mt-4 font-black">1. Direct push</h3><p class="mt-2 text-sm text-slate-600">Best when the device or vendor platform can POST events to HTTPS. Configure it to send to EduManage or use a small vendor-specific translator.</p></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><i class="ph ph-arrows-clockwise text-xl"></i></span><h3 class="mt-4 font-black">2. Vendor API pull</h3><p class="mt-2 text-sm text-slate-600">Use a vendor REST/gRPC/server API to fetch new logs using a cursor, normalize them, then POST the canonical events to EduManage.</p></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><i class="ph ph-desktop-tower text-xl"></i></span><h3 class="mt-4 font-black">3. Local edge connector</h3><p class="mt-2 text-sm text-slate-600">For LAN-only SDKs, run a lightweight service on a school PC/Raspberry Pi. It talks to the machine locally and securely forwards normalized events.</p></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><i class="ph ph-file-csv text-xl"></i></span><h3 class="mt-4 font-black">4. CSV fallback</h3><p class="mt-2 text-sm text-slate-600">For very old equipment, export logs and import them. EduManage still applies identity mapping, duplicate filtering and policy reconciliation.</p></article>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-[1fr_.45fr] xl:items-start">
+    <div class="space-y-6">
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Canonical event contract</h3><p>Adapters may accept many vendor field names, but this is the clean payload your own middleware should produce.</p></div></header><div class="p-5"><pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm text-white">POST /api/v1/attendance/devices/events/
+X-Device-Code: GATE-MAIN-01
+X-Device-Key: &lt;one-time generated secret&gt;
+Content-Type: application/json
+
+{
+  "event_id": "923448",
+  "person_id": "STU-0042",
+  "timestamp": "2026-08-10T07:42:18+03:00",
+  "direction": "IN",
+  "auth_method": "FACE",
+  "event_code": "ACCESS_GRANTED"
+}</pre></div></section>
+
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Batch / store-and-forward contract</h3><p>Edge connectors can queue events while offline and upload them later without losing the original punch time.</p></div></header><div class="p-5"><pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm text-white">{
+  "source": "EDGE",
+  "events": [
+    {"event_id":"1001","person_id":"27","timestamp":"2026-08-10T07:30:01+03:00"},
+    {"event_id":"1002","person_id":"27","timestamp":"2026-08-10T16:44:19+03:00"}
+  ]
+}</pre><p class="mt-3 text-sm text-slate-600">Maximum batch: 500 events. Exact event IDs are idempotent; resending the same event does not create another attendance punch.</p></div></section>
+
+      <section class="edu-ops-table-shell"><header class="edu-ops-table-heading"><div><h3>Vendor adapter strategy</h3><p>Keep vendor knowledge outside the core attendance rules.</p></div></header><div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Source</th><th>Typical integration</th><th>EduManage approach</th></tr></thead><tbody><tr><td>ZKTeco</td><td>PUSH/ADMS, vendor middleware or SDK</td><td>ZKTeco adapter accepts common PIN/Time/PunchState/VerifyMode aliases; exact firmware direction/event codes can be set in device JSON.</td></tr><tr><td>Hikvision</td><td>ISAPI/access-controller events or vendor server</td><td>Adapter accepts AccessControllerEvent/AcsEvent-style JSON and preserves major/minor event codes for diagnosis.</td></tr><tr><td>Suprema</td><td>BioStar 2 local API or G-SDK realtime/bulk event logs</td><td>Adapter maps userID, event timestamp, eventCode and TNAKey; failure-event codes can be ignored before attendance reconciliation.</td></tr><tr><td>Other / custom</td><td>Webhook, SDK, database view, serial/LAN bridge</td><td>Translate at an edge service to the canonical JSON above; no core database change is required.</td></tr></tbody></table></div></section>
+    </div>
+
+    <aside class="space-y-4">
+      <section class="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 text-sm text-emerald-950"><strong>What “vendor independent” really means</strong><p class="mt-2">EduManage owns the attendance semantics and database. A new vendor normally requires an adapter or edge connector only—not a new Student table, a new payroll model, or a new attendance workflow.</p></section>
+      <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950"><strong>Heartbeat and clock control</strong><p class="mt-2">A connector can POST <code>device_time</code> and capabilities to <code>/api/v1/attendance/devices/heartbeat/</code>. EduManage records estimated clock offset so administrators can detect a machine that is drifting.</p></section>
+      <section class="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-sm text-violet-950"><strong>Identity lifecycle</strong><p class="mt-2">The machine's user number is mapped through an identity namespace. A person can therefore move campuses, replace a card, or be enrolled on a new device without changing their EduManage student/staff primary key.</p></section>
+      <section class="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-950"><strong>Biometric privacy boundary</strong><p class="mt-2">This interface receives attendance event metadata—not fingerprint templates or face images. Biometric templates should remain on the device/vendor platform unless a separately reviewed enrollment integration is intentionally built.</p></section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700"><strong>Class attendance remains separate</strong><p class="mt-2">A gate punch proves campus presence, not lesson participation. If a vendor/middleware supplies a specific <code>offering_id</code>, the legacy compatibility endpoint may create a class-attendance entry; otherwise it only updates campus/staff presence.</p></section>
+    </aside>
+  </section>
+</div>
+{% endblock %}

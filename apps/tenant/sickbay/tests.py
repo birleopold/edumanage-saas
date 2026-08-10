@@ -30,7 +30,7 @@ class SickbayAdminTests(TestCase):
         response = self.client.get(reverse("admin_sickbay_dashboard"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Sickbay operations")
+        self.assertContains(response, "Record care clearly and never lose a follow-up")
 
     def test_admin_can_record_sickbay_visit(self):
         self.client.login(username="sickbay_admin", password="test-pass-123")

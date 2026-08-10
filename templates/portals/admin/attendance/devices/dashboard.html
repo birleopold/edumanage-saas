@@ -1,0 +1,88 @@
+{% extends 'portals/admin/base.html' %}
+
+{% block title %}Time & Attendance{% endblock %}
+{% block page_title %}Time & Attendance{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'admin_attendance_device_create' %}" class="edu-pill-button"><i class="ph ph-plus" aria-hidden="true"></i> Add device</a>
+{% endblock %}
+
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+
+  <section class="edu-ops-hero" aria-labelledby="attendance-operations-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-fingerprint" aria-hidden="true"></i> Universal attendance operations</span>
+      <h2 id="attendance-operations-heading">Control every attendance source without locking the school to one vendor</h2>
+      <p>Receive gate punches from biometric, face, RFID, QR and access-control devices; reconcile student and staff presence; preserve raw evidence; and keep class attendance independent.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_attendance_device_create' %}" class="edu-ops-primary"><i class="ph ph-plus" aria-hidden="true"></i> Connect device</a>
+      <a href="{% url 'admin_attendance_integration_guide' %}"><i class="ph ph-plugs-connected" aria-hidden="true"></i> Integration guide</a>
+    </div>
+  </section>
+
+  <section class="edu-ops-stat-grid" aria-label="Attendance integration status">
+    <article class="edu-ops-stat"><span class="edu-ops-stat__icon"><i class="ph ph-fingerprint" aria-hidden="true"></i></span><div><small>Configured devices</small><strong>{{ device_total }}</strong></div></article>
+    <article class="edu-ops-stat edu-ops-stat--sage"><span class="edu-ops-stat__icon"><i class="ph ph-wifi-high" aria-hidden="true"></i></span><div><small>Recently online</small><strong>{{ device_online }}</strong></div></article>
+    <article class="edu-ops-stat {% if unmatched_events %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-user-focus" aria-hidden="true"></i></span><div><small>Unmatched punches</small><strong>{{ unmatched_events }}</strong></div></article>
+    <article class="edu-ops-stat {% if device_offline %}edu-ops-stat--amber{% else %}edu-ops-stat--sage{% endif %}"><span class="edu-ops-stat__icon"><i class="ph ph-plug" aria-hidden="true"></i></span><div><small>Not recently seen</small><strong>{{ device_offline }}</strong></div></article>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-[1fr_.45fr] xl:items-start">
+    <div class="edu-ops-table-shell">
+      <header class="edu-ops-table-heading"><div><h3>Device fleet</h3><p>Connection health, vendor and last successful event for every attendance terminal.</p></div><a href="{% url 'admin_attendance_device_list' %}" class="edu-ops-button">Manage fleet</a></header>
+      {% if devices %}
+      <div class="overflow-x-auto">
+        <table class="edu-ops-table">
+          <thead><tr><th>Device</th><th>Vendor</th><th>Campus</th><th>Connection</th><th>Health</th><th>Last event</th><th class="text-right">Action</th></tr></thead>
+          <tbody>
+          {% for device in devices %}
+            <tr>
+              <td><strong>{{ device.name }}</strong><div class="text-xs text-slate-500">{{ device.code }}{% if device.location %} · {{ device.location }}{% endif %}</div></td>
+              <td>{{ device.get_vendor_display }}</td>
+              <td>{{ device.campus|default:"All / unassigned" }}</td>
+              <td>{{ device.get_connection_mode_display }}</td>
+              <td>{% if device.online %}<span class="edu-ops-badge edu-ops-badge--success">Online</span>{% else %}<span class="edu-ops-badge edu-ops-badge--warning">Not recently seen</span>{% endif %}</td>
+              <td>{{ device.last_event_at|date:"d M Y H:i"|default:"No events yet" }}</td>
+              <td><div class="edu-ops-actions"><a href="{% url 'admin_attendance_device_detail' device.pk %}" class="edu-ops-button edu-ops-button--primary">Open</a></div></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-8 text-center"><strong>No attendance devices are connected yet.</strong><p class="mt-2 text-sm text-slate-500">Start with a direct API device, edge connector, vendor server or CSV import.</p></div>
+      {% endif %}
+    </div>
+
+    <aside class="space-y-4">
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="font-black text-slate-950">Today · {{ today|date:"d M Y" }}</h3>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div class="rounded-xl bg-slate-50 p-3"><small class="text-slate-500">Presence records</small><strong class="mt-1 block text-xl">{{ today_records }}</strong></div>
+          <div class="rounded-xl bg-amber-50 p-3"><small class="text-amber-700">Late</small><strong class="mt-1 block text-xl">{{ today_late }}</strong></div>
+          <div class="rounded-xl bg-rose-50 p-3"><small class="text-rose-700">Absent</small><strong class="mt-1 block text-xl">{{ today_absent }}</strong></div>
+          <div class="rounded-xl bg-violet-50 p-3"><small class="text-violet-700">Partial</small><strong class="mt-1 block text-xl">{{ today_partial }}</strong></div>
+        </div>
+        <a href="{% url 'admin_attendance_daily_list' %}" class="edu-outline-button mt-4 w-full justify-center">Open daily register</a>
+      </section>
+      <section class="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
+        <strong>Important distinction</strong>
+        <p class="mt-2">Campus/gate presence does not automatically mean a learner attended every lesson. EduManage keeps device presence and teacher class attendance separate and only bridges them when a specific course offering is supplied.</p>
+      </section>
+    </aside>
+  </section>
+
+  <section class="edu-ops-table-shell">
+    <header class="edu-ops-table-heading"><div><h3>Latest device events</h3><p>Raw evidence is retained even when a punch is duplicated, unmatched or ignored.</p></div><a href="{% url 'admin_attendance_device_event_list' %}" class="edu-ops-button">View all events</a></header>
+    {% if recent_events %}
+    <div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Time</th><th>Device</th><th>User ID</th><th>Matched person</th><th>Direction</th><th>Status</th></tr></thead><tbody>
+      {% for event in recent_events %}<tr><td>{{ event.occurred_at|date:"d M H:i:s" }}</td><td>{{ event.device.name }}</td><td>{{ event.external_person_id|default:"—" }}</td><td>{% if event.student_id %}{{ event.student }}{% elif event.staff_id %}{{ event.staff }}{% else %}<span class="text-amber-700">Unmatched</span>{% endif %}</td><td>{{ event.direction }}</td><td><span class="edu-ops-badge {% if event.processing_status == 'PROCESSED' %}edu-ops-badge--success{% elif event.processing_status == 'UNMATCHED' %}edu-ops-badge--warning{% endif %}">{{ event.get_processing_status_display }}</span></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
