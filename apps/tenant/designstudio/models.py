@@ -150,7 +150,7 @@ class DocumentTemplateVersion(models.Model):
 
     @property
     def is_locked(self) -> bool:
-        return self.status in {self.APPROVED, self.ACTIVE, self.ARCHIVED}
+        return self.status in {self.IN_REVIEW, self.APPROVED, self.ACTIVE, self.ARCHIVED}
 
     def clean(self):
         width = float(self.page_width_mm or 0)
@@ -164,7 +164,7 @@ class DocumentTemplateVersion(models.Model):
     def save(self, *args, **kwargs):
         if self.pk:
             previous = type(self).objects.filter(pk=self.pk).values("status", "design", "page_width_mm", "page_height_mm", "background", "background_fit").first()
-            if previous and previous["status"] in {self.APPROVED, self.ACTIVE, self.ARCHIVED}:
+            if previous and previous["status"] in {self.IN_REVIEW, self.APPROVED, self.ACTIVE, self.ARCHIVED}:
                 protected_changed = (
                     previous["design"] != self.design
                     or previous["page_width_mm"] != self.page_width_mm
@@ -173,7 +173,7 @@ class DocumentTemplateVersion(models.Model):
                     or previous["background_fit"] != self.background_fit
                 )
                 if protected_changed:
-                    raise ValidationError("Approved, active and archived versions are immutable. Create a new draft version instead.")
+                    raise ValidationError("Submitted and official versions are immutable. Create a new draft version instead.")
         self.full_clean()
         return super().save(*args, **kwargs)
 
