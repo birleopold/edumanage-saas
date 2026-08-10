@@ -22,6 +22,7 @@ class DocumentTemplateForm(forms.ModelForm):
         if campus:
             self.fields["campus"].queryset = self.fields["campus"].queryset.filter(pk=campus.pk)
             self.fields["campus"].initial = campus
+            self.fields["campus"].required = True
         if self.instance and self.instance.pk:
             # Changing a document family after versions exist would make its history ambiguous.
             self.fields["document_type"].disabled = True
@@ -45,3 +46,9 @@ class DocumentGenerationForm(forms.Form):
         self.fields["student"].queryset = students
         for field in self.fields.values():
             field.widget.attrs["class"] = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+
+    def clean_student_photo(self):
+        photo = self.cleaned_data.get("student_photo")
+        if photo and photo.size > 8 * 1024 * 1024:
+            raise forms.ValidationError("Student portraits must be 8 MB or smaller.")
+        return photo
