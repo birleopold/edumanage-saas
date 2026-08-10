@@ -54,6 +54,23 @@ class AttendanceEdgeConnectorTests(SimpleTestCase):
             self.assertEqual(len(pending), 1)
             self.assertEqual(pending[0].payload["event_id"], "1001")
 
+    def test_edge_queue_scrubs_biometric_images_and_templates_before_sqlite(self):
+        with tempfile.TemporaryDirectory() as folder:
+            queue = DurableQueue(str(Path(folder) / "queue.sqlite3"))
+            queue.enqueue(
+                {
+                    "event_id": "bio-1",
+                    "person_id": "42",
+                    "face_image": "base64-photo-material",
+                    "nested": {"fingerprint_template": "template-bytes", "event_code": "ACCESS_GRANTED"},
+                }
+            )
+            payload = queue.pending(10)[0].payload
+            self.assertEqual(payload["event_id"], "bio-1")
+            self.assertEqual(payload["face_image"], "[REDACTED_BY_EDUMANAGE_EDGE]")
+            self.assertEqual(payload["nested"]["fingerprint_template"], "[REDACTED_BY_EDUMANAGE_EDGE]")
+            self.assertEqual(payload["nested"]["event_code"], "ACCESS_GRANTED")
+
     def test_failed_delivery_is_retained_for_retry(self):
         with tempfile.TemporaryDirectory() as folder:
             queue = DurableQueue(str(Path(folder) / "queue.sqlite3"))
