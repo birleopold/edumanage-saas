@@ -9,6 +9,7 @@ from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_or_create_organization
 from apps.tenant.users.models import Role, UserRole
 
+from .device_setup import recommended_setup
 from .models import AttendanceDevice
 
 
@@ -44,16 +45,23 @@ class AttendanceDeviceSetupPageTests(TestCase):
     def test_setup_page_calculates_tenant_endpoints(self):
         response = self.client.get(
             reverse("admin_attendance_device_setup", args=[self.device.pk]),
-            HTTP_HOST="school.example.test",
+            HTTP_HOST="example.com",
             secure=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Connect Main Gate Clock without server access")
-        self.assertContains(response, "school.example.test")
+        self.assertContains(response, "example.com")
         self.assertContains(response, "/api/v1/attendance/devices/events/")
         self.assertContains(response, "/api/v1/attendance/devices/heartbeat/")
         self.assertContains(response, self.device.code)
         self.assertContains(response, "Calculated automatically")
+        self.assertContains(response, "Edge Connector recommended")
+
+    def test_proprietary_vendor_requires_explicit_canonical_push_capability(self):
+        self.assertEqual(recommended_setup(self.device)["kind"], "edge")
+        self.device.protocol = "canonical-json"
+        self.device.save(update_fields=["protocol", "updated_at"])
+        self.assertEqual(recommended_setup(self.device)["kind"], "direct")
 
     def test_rotating_key_shows_new_secret_only_in_response(self):
         previous_hash = self.device.token_hash
@@ -70,7 +78,7 @@ class AttendanceDeviceSetupPageTests(TestCase):
     def test_edge_config_download_never_contains_device_secret(self):
         response = self.client.get(
             reverse("admin_attendance_device_edge_config", args=[self.device.pk]),
-            HTTP_HOST="school.example.test",
+            HTTP_HOST="example.com",
             secure=True,
         )
         self.assertEqual(response.status_code, 200)
