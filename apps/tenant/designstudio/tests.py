@@ -49,6 +49,14 @@ class DesignVersionLifecycleTests(TestCase):
         submit_for_review(self.version, self.user)
         self.version.refresh_from_db()
         self.assertEqual(self.version.status, DocumentTemplateVersion.IN_REVIEW)
+        self.assertTrue(self.version.is_locked)
+
+        submitted_change = dict(self.version.design)
+        submitted_change["version"] = 99
+        self.version.design = submitted_change
+        with self.assertRaises(ValidationError):
+            self.version.save()
+        self.version.refresh_from_db()
 
         approve_version(self.version, self.user)
         activate_version(self.version, self.user)
