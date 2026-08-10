@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
-Verify template URL references against Django's active URL resolver.
+Verify template URL references against every URL resolver used by EduManage.
 
-This checks the URLs that the running app can actually reverse, instead of
-guessing from selected URL files. That keeps platform routes, connector modules,
-and other included route files from being reported as false positives.
+The project serves tenant and public schemas from different URLconfs and uses
+Django namespaces for self-contained modules. This verifier mirrors Django's
+reverse-name semantics so valid ``namespace:name`` references and public-site
+routes are not reported as false positives.
 """
 import os
 import re
@@ -14,11 +15,13 @@ from pathlib import Path
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 
 import django
-from django.urls import get_resolver
+from django.conf import settings
+from django.urls import URLPattern, URLResolver, get_resolver
 
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
+PUBLIC_URLCONF = "config.public_urls"
 
 
 def find_templates():
@@ -30,9 +33,31 @@ def extract_url_references(template_path):
     return re.findall(r"{%\s*url\s+[\"']([^\"']+)[\"']", content)
 
 
+def _collect_url_names(resolver, namespace_prefix=""):
+    names = set()
+    for entry in resolver.url_patterns:
+        if isinstance(entry, URLPattern):
+            if entry.name:
+                names.add(f"{namespace_prefix}{entry.name}")
+            continue
+        if not isinstance(entry, URLResolver):
+            continue
+        child_prefix = namespace_prefix
+        if entry.namespace:
+            child_prefix = f"{namespace_prefix}{entry.namespace}:"
+        names.update(_collect_url_names(entry, child_prefix))
+    return names
+
+
 def resolver_url_names():
-    resolver = get_resolver()
-    return {name for name in resolver.reverse_dict.keys() if isinstance(name, str)}
+    """Return reverse names from tenant/local and public-schema URLconfs."""
+    urlconfs = [settings.ROOT_URLCONF]
+    if PUBLIC_URLCONF not in urlconfs:
+        urlconfs.append(PUBLIC_URLCONF)
+    names = set()
+    for urlconf in urlconfs:
+        names.update(_collect_url_names(get_resolver(urlconf)))
+    return names
 
 
 def main():
@@ -42,10 +67,10 @@ def main():
     print("ROUTE VERIFICATION REPORT")
     print("=" * 80)
 
-    print("\n1. Active Django URL Resolver:")
+    print("\n1. Active Django URL Resolvers:")
     print("-" * 80)
     url_names = resolver_url_names()
-    print(f"  URL names available: {len(url_names)}")
+    print(f"  URL names available across tenant/public URLconfs: {len(url_names)}")
 
     print("\n2. Template URL References:")
     print("-" * 80)
