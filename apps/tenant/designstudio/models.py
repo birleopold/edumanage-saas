@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from uuid import uuid4
 
@@ -152,6 +153,19 @@ class DocumentTemplateVersion(models.Model):
     def is_locked(self) -> bool:
         return self.status in {self.IN_REVIEW, self.APPROVED, self.ACTIVE, self.ARCHIVED}
 
+    def _normalize_page_dimensions(self):
+        """Coerce float/form input into exact two-decimal millimetre values.
+
+        Binary floats such as 85.6 can otherwise reach DecimalField validation as
+        85.599999..., causing a false decimal-places validation error.
+        """
+
+        try:
+            self.page_width_mm = Decimal(str(self.page_width_mm)).quantize(Decimal("0.01"))
+            self.page_height_mm = Decimal(str(self.page_height_mm)).quantize(Decimal("0.01"))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError("Page dimensions must be valid millimetre values.")
+
     def clean(self):
         width = float(self.page_width_mm or 0)
         height = float(self.page_height_mm or 0)
@@ -162,6 +176,7 @@ class DocumentTemplateVersion(models.Model):
         validate_design_document(self.design or {}, width, height)
 
     def save(self, *args, **kwargs):
+        self._normalize_page_dimensions()
         if self.pk:
             previous = type(self).objects.filter(pk=self.pk).values("status", "design", "page_width_mm", "page_height_mm", "background", "background_fit").first()
             if previous and previous["status"] in {self.IN_REVIEW, self.APPROVED, self.ACTIVE, self.ARCHIVED}:
