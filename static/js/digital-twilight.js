@@ -7,14 +7,12 @@
 
   const ATTENDANCE_MENU_ITEMS = [
     ["/admin/attendance/", "Overview", "ph-gauge"],
-    ["/admin/attendance/devices/", "Devices", "ph-fingerprint"],
-    ["/admin/attendance/devices/add/", "Add / Connect Device", "ph-plus-circle"],
+    ["/admin/attendance/sessions/", "Student Roll Call", "ph-chalkboard-teacher"],
+    ["/admin/attendance/staff/", "Staff Attendance", "ph-identification-card"],
     ["/admin/attendance/daily/", "Daily Register", "ph-calendar-check"],
-    ["/admin/attendance/events/", "Raw Events", "ph-waveform"],
-    ["/admin/attendance/policies/", "Policies", "ph-sliders-horizontal"],
-    ["/admin/attendance/import/", "Import", "ph-upload-simple"],
-    ["/admin/attendance/integration-guide/", "Setup Instructions", "ph-book-open-text"],
-    ["/admin/attendance/sessions/", "Class Attendance", "ph-chalkboard-teacher"]
+    ["/admin/attendance/policies/", "Attendance Policies", "ph-sliders-horizontal"],
+    ["/admin/attendance/devices/", "Automation & Devices", "ph-devices"],
+    ["/admin/attendance/integration-guide/", "Setup Instructions", "ph-book-open-text"]
   ];
 
   function isEditableTarget(target) {
@@ -105,7 +103,7 @@
     if (typeof media.addEventListener === "function") {
       media.addEventListener("change", onViewportChange);
     } else if (typeof media.addListener === "function") {
-      media.addListener(onViewportChange);
+      media.addListener("change", onViewportChange);
     }
 
     applyState(preferredCollapsed, false);
