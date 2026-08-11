@@ -17,6 +17,7 @@ urlpatterns = [
     path("message-ops/", include("apps.tenant.messaging.ops")),
     path("analytics-portal/", include("apps.tenant.analytics.portal_urls")),
     path("institutional/", include("apps.tenant.institutional.urls")),
+    path("design-studio/", include("apps.tenant.designstudio.urls")),
     path("activities/", include("apps.tenant.activities.portal_urls")),
     path("polls/", include("apps.tenant.polls.portal_urls")),
     path("admin/polls/", include("apps.tenant.polls.manage_urls")),

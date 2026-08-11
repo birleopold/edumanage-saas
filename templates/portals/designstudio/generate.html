@@ -1,0 +1,13 @@
+{% extends base_template %}
+{% block title %}Issue {{ template.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  <div><a href="{% url 'designstudio:dashboard' %}" class="text-sm font-black text-primary-700">← Design Studio</a><h1 class="mt-2 text-3xl font-black text-slate-950">Issue official document</h1><p class="mt-2 text-sm text-slate-500">{{ template.name }}{% if template.active_version_number %} · Active design v{{ template.active_version_number }}{% endif %}</p></div>
+  <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900"><strong>Permanent record:</strong> issuing creates a PDF snapshot tied to the exact active design version and a verification token. Later template edits cannot change the issued file.</div>
+  <form method="post" enctype="multipart/form-data" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">{% csrf_token %}
+    {% if not template.active_version_number %}<div class="mb-5 rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-900">This template has no active approved version yet. Submit, approve and activate a design before issuing.</div>{% endif %}
+    <div class="space-y-5">{% for field in form %}<div><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-black text-slate-700">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}</div>{% endfor %}</div>
+    <div class="mt-6 flex justify-end gap-3"><a href="{% url 'designstudio:editor' template.pk %}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700">Back to designer</a><button {% if not template.active_version_number %}disabled{% endif %} class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40" type="submit">Issue & lock PDF</button></div>
+  </form>
+</div>
+{% endblock %}
