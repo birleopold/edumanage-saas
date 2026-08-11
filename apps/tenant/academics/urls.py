@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from . import pathway_views, promotion_views, setup_views, views
+from . import pathway_views, promotion_views, setup_views, stream_assignment_views, views
 
 urlpatterns = [
     path("", setup_views.academics_setup, name="admin_academics_setup"),
@@ -69,6 +69,7 @@ urlpatterns = [
 
     path("streams/", views.stream_list, name="admin_stream_list"),
     path("streams/create/", views.stream_create, name="admin_stream_create"),
+    path("streams/bulk-assignment/", stream_assignment_views.bulk_stream_assignment, name="admin_stream_bulk_assignment"),
     path("streams/<int:pk>/edit/", views.stream_edit, name="admin_stream_edit"),
     path(
         "promotions/stream/",
