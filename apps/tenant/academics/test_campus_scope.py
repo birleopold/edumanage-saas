@@ -24,7 +24,10 @@ class AcademicsCampusScopeTests(TestCase):
             code="B",
         )
 
-        self.role = Role.objects.create(code=Role.CAMPUS_ADMIN, name="Campus Admin")
+        self.role, _created = Role.objects.get_or_create(
+            code=Role.CAMPUS_ADMIN,
+            defaults={"name": "Campus Admin"},
+        )
         self.user = User.objects.create_user(username="campus-a-admin", password="test-pass-123")
         UserRole.objects.create(user=self.user, role=self.role, campus=self.campus_a)
         self.client.force_login(self.user)
