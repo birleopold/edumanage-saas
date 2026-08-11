@@ -6,6 +6,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
     dependencies = [
         ("academics", "0005_subject_role_policies"),
+        ("orgsettings", "0006_merge_20260624_1447"),
         ("reports", "0001_initial"),
         ("students", "0005_studentprofile_demographics"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
