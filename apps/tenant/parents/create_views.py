@@ -9,7 +9,7 @@ from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import PasswordSetupToken, Role, User
 
 from .create_forms import ParentCreateForm
-from .models import ParentStudentLink
+from .link_services import save_guardian_link
 from .views import _generate_unique_username
 
 
@@ -36,6 +36,7 @@ def parent_create(request):
                     user = User.objects.create(
                         username=username,
                         email=parent.email or "",
+                        phone=parent.phone or "",
                         first_name=parent.first_name,
                         last_name=parent.last_name,
                     )
@@ -47,26 +48,12 @@ def parent_create(request):
                     parent.user = user
 
                 parent.save()
-
-                if is_primary:
-                    ParentStudentLink.objects.filter(student=student, is_primary=True).update(is_primary=False)
-                ParentStudentLink.objects.update_or_create(
+                save_guardian_link(
                     parent=parent,
                     student=student,
-                    defaults={"relationship": relationship, "is_primary": is_primary},
-                )
-
-                log_action(
-                    parent,
-                    action="STUDENT_LINKED",
-                    description=f"Parent linked to {student} as {relationship or 'guardian'}.",
-                    user=request.user,
-                    metadata={
-                        "student_id": student.pk,
-                        "student_number": student.student_id,
-                        "relationship": relationship,
-                        "is_primary": is_primary,
-                    },
+                    relationship=relationship,
+                    is_primary=is_primary,
+                    changed_by=request.user,
                 )
 
                 results_pin = form.cleaned_data.get("results_pin")
@@ -89,6 +76,8 @@ def parent_create(request):
                             message=(
                                 f"Hello {parent.first_name},\n\n"
                                 f"Your username: {parent.user.username}\n\n"
+                                f"You have been linked to {student.get_full_name()} "
+                                f"({student.student_id or 'student record'}).\n\n"
                                 f"Click the link below to set your password:\n{setup_url}\n\n"
                                 "This link is valid for 72 hours and can only be used once.\n\n"
                                 "If you did not request this, please contact your administrator."
