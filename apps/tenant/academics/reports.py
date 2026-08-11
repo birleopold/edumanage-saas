@@ -33,6 +33,8 @@ class ReportCard:
         self._summary = None
         self._ranking = None
         self._progress = None
+        self._term_remarks = None
+        self._term_remarks_loaded = False
 
     def _latest_teacher_comment(self, offering_id: int) -> Dict:
         """Return the latest published teacher comment for one subject.
@@ -104,6 +106,27 @@ class ReportCard:
             for result in self.get_subject_results()
             if result.get("teacher_comment")
         ]
+
+    def get_term_remarks(self) -> Dict:
+        """Return the consolidated class-teacher and school-head remarks."""
+        if self._term_remarks_loaded:
+            return self._term_remarks
+
+        from apps.tenant.reports.models import TermReportRemark
+
+        remark = (
+            TermReportRemark.objects.filter(student_id=self.student.pk, term_id=self.term.pk)
+            .select_related("updated_by")
+            .first()
+        )
+        self._term_remarks = {
+            "class_teacher_comment": remark.class_teacher_comment.strip() if remark else "",
+            "head_comment": remark.head_comment.strip() if remark else "",
+            "updated_at": remark.updated_at if remark else None,
+            "updated_by": str(remark.updated_by) if remark and remark.updated_by_id else "",
+        }
+        self._term_remarks_loaded = True
+        return self._term_remarks
 
     def get_summary(self) -> Dict:
         if self._summary is not None:
@@ -229,6 +252,7 @@ class ReportCard:
             "grading_scale": self.grading_scale.name if self.grading_scale else "N/A",
             "subjects": self.get_subject_results(),
             "teacher_comments": self.get_teacher_comments(),
+            "remarks": self.get_term_remarks(),
             "summary": self.get_summary(),
             "ranking": self.get_ranking(),
             "progress": self.get_progress(),
