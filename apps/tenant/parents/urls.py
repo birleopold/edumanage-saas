@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import create_views, registry_views, views
+from . import create_views, link_views, registry_views, views
 
 urlpatterns = [
     path("", registry_views.parent_list, name="admin_parents_list"),
@@ -10,10 +10,10 @@ urlpatterns = [
     path("<int:pk>/digest/", views.parent_digest_preview, name="admin_parents_digest"),
     path("<int:pk>/digest/send/", views.parent_digest_send, name="admin_parents_digest_send"),
     path("<int:pk>/edit/", views.parent_edit, name="admin_parents_edit"),
-    path("<int:pk>/students/add/", views.parent_add_student, name="admin_parents_add_student"),
+    path("<int:pk>/students/add/", link_views.parent_add_student, name="admin_parents_add_student"),
     path(
         "<int:pk>/students/<int:link_id>/remove/",
-        views.parent_remove_student,
+        link_views.parent_remove_student,
         name="admin_parents_remove_student",
     ),
 ]
