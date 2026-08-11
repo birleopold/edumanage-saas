@@ -1,15 +1,17 @@
 from django.urls import path
 
-from . import admin_views, device_admin_views, device_setup_views
+from . import admin_views, device_admin_views, device_setup_views, workspace_views
 
 urlpatterns = [
-    path("", device_admin_views.device_dashboard, name="admin_attendance_device_dashboard"),
+    path("", workspace_views.attendance_dashboard, name="admin_attendance_device_dashboard"),
     path("sessions/", admin_views.session_list, name="admin_attendance_sessions_list"),
     path(
         "sessions/<int:pk>/",
         admin_views.session_detail,
         name="admin_attendance_session_detail",
     ),
+    path("staff/", workspace_views.staff_attendance, name="admin_attendance_staff"),
+    path("staff/manual/", workspace_views.staff_attendance_manual, name="admin_attendance_staff_manual"),
     path("devices/", device_admin_views.device_list, name="admin_attendance_device_list"),
     path("devices/add/", device_admin_views.device_create, name="admin_attendance_device_create"),
     path("devices/<int:pk>/setup/", device_setup_views.device_setup, name="admin_attendance_device_setup"),
