@@ -4,6 +4,7 @@ from . import (
     campus_scoped_views,
     pathway_views,
     promotion_scope,
+    report_remark_views,
     setup_views,
     stream_assignment_views,
     views,
@@ -86,5 +87,6 @@ urlpatterns = [
 
     path("report-cards/<int:student_id>/<int:term_id>/", campus_scoped_views.report_card_view, name="admin_report_card_view"),
     path("terms/<int:term_id>/report-cards/<int:student_id>/", campus_scoped_views.report_card_view, name="admin_report_card"),
+    path("terms/<int:term_id>/report-cards/remarks/", report_remark_views.term_report_remarks, name="admin_term_report_remarks"),
     path("terms/<int:term_id>/report-cards/", campus_scoped_views.term_report_cards, name="admin_term_report_cards"),
 ]
