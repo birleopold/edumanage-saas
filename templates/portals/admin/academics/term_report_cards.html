@@ -3,9 +3,14 @@
 {% block title %}Report Cards - {{ term }}{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Term Report Cards</h1>
-  <p class="text-gray-600">Review learner results, ranking and printable report cards for {{ term }}</p>
+<div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Term Report Cards</h1>
+    <p class="text-gray-600">Review learner results, ranking, consolidated remarks and printable report cards for {{ term }}</p>
+  </div>
+  <a href="{% url 'admin_term_report_remarks' term.id %}" class="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 text-center font-semibold">
+    <i class="ph ph-chats-circle mr-2"></i>Manage Report Remarks
+  </a>
 </div>
 
 {% include "components/ui_toast.html" %}
