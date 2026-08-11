@@ -1,0 +1,64 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Attendance Overview{% endblock %}
+{% block page_title %}Attendance Overview{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_attendance_staff_manual' %}" class="edu-pill-button"><i class="ph ph-user-check" aria-hidden="true"></i> Record staff attendance</a>
+{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+
+  <section class="edu-ops-hero" aria-labelledby="attendance-overview-heading">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-calendar-check" aria-hidden="true"></i> Attendance for every school</span>
+      <h2 id="attendance-overview-heading">Track students and staff with or without biometric devices</h2>
+      <p>Teachers can roll-call students manually, administrators can record staff reporting and sign-out times, and schools that own attendance hardware can automate either staff, students or both. Devices are optional.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_attendance_sessions_list' %}" class="edu-ops-primary"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i> Student roll call</a>
+      <a href="{% url 'admin_attendance_staff' %}"><i class="ph ph-identification-card" aria-hidden="true"></i> Staff attendance</a>
+    </div>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-2">
+    <article class="edu-ops-table-shell">
+      <header class="edu-ops-table-heading"><div><h3>Students · {{ today|date:"d M Y" }}</h3><p>Manual classroom/lesson roll-call activity recorded today.</p></div><a href="{% url 'admin_attendance_sessions_list' %}" class="edu-ops-button">Open roll call</a></header>
+      <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-2xl bg-slate-50 p-4"><small class="text-slate-500">Active students</small><strong class="mt-1 block text-2xl">{{ active_student_total }}</strong></div>
+        <div class="rounded-2xl bg-emerald-50 p-4"><small class="text-emerald-700">Present marks</small><strong class="mt-1 block text-2xl">{{ student_present_marks }}</strong></div>
+        <div class="rounded-2xl bg-amber-50 p-4"><small class="text-amber-700">Late marks</small><strong class="mt-1 block text-2xl">{{ student_late_marks }}</strong></div>
+        <div class="rounded-2xl bg-rose-50 p-4"><small class="text-rose-700">Absent marks</small><strong class="mt-1 block text-2xl">{{ student_absent_marks }}</strong></div>
+      </div>
+      <div class="border-t border-slate-100 px-5 py-3 text-sm text-slate-600">{{ student_roll_marks }} roll-call mark{{ student_roll_marks|pluralize }} recorded today. A school can use this workflow without any attendance device.</div>
+    </article>
+
+    <article class="edu-ops-table-shell">
+      <header class="edu-ops-table-heading"><div><h3>Staff · {{ today|date:"d M Y" }}</h3><p>Reporting, sign-out and daily workplace attendance.</p></div><a href="{% url 'admin_attendance_staff' %}" class="edu-ops-button">Open staff attendance</a></header>
+      <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-2xl bg-slate-50 p-4"><small class="text-slate-500">Active staff</small><strong class="mt-1 block text-2xl">{{ active_staff_total }}</strong></div>
+        <div class="rounded-2xl bg-emerald-50 p-4"><small class="text-emerald-700">Attended</small><strong class="mt-1 block text-2xl">{{ staff_present }}</strong></div>
+        <div class="rounded-2xl bg-amber-50 p-4"><small class="text-amber-700">Late</small><strong class="mt-1 block text-2xl">{{ staff_late }}</strong></div>
+        <div class="rounded-2xl bg-rose-50 p-4"><small class="text-rose-700">Absent</small><strong class="mt-1 block text-2xl">{{ staff_absent }}</strong></div>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 text-sm text-slate-600"><span>{{ staff_recorded }} staff member{{ staff_recorded|pluralize }} have a record today · {{ staff_unrecorded }} not yet recorded.</span><a href="{% url 'admin_attendance_staff_manual' %}" class="font-bold text-primary-700">Record manually →</a></div>
+    </article>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-[1fr_.42fr] xl:items-start">
+    <div class="edu-ops-table-shell">
+      <header class="edu-ops-table-heading"><div><h3>Latest staff attendance</h3><p>Manual entries and device-generated records appear in the same daily register.</p></div><a href="{% url 'admin_attendance_staff' %}" class="edu-ops-button">Staff reports</a></header>
+      {% if recent_staff_records %}
+      <div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Staff</th><th>Status</th><th>Reported</th><th>Signed out</th><th>Time at school</th><th>Source</th></tr></thead><tbody>
+        {% for record in recent_staff_records %}<tr><td><strong>{{ record.staff.get_full_name }}</strong><span class="block text-xs text-slate-500">{{ record.staff.staff_id|default:"No staff ID" }}</span></td><td><span class="edu-ops-badge {% if record.status == 'PRESENT' %}edu-ops-badge--success{% elif record.status == 'ABSENT' %}edu-ops-badge--warning{% endif %}">{{ record.get_status_display }}</span></td><td>{{ record.first_in|date:"H:i"|default:"—" }}</td><td>{{ record.last_out|date:"H:i"|default:"—" }}</td><td>{{ record.minutes_present }} min</td><td>{% if record.manual_override %}Manual{% elif record.source_event_count %}Automated{% else %}Recorded{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="p-8 text-center"><strong>No staff attendance has been recorded today.</strong><p class="mt-2 text-sm text-slate-500">Use the manual register now, or connect a device later if the school chooses to automate staff timekeeping.</p></div>{% endif %}
+    </div>
+
+    <aside class="space-y-4">
+      <section class="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-sm text-violet-950"><strong>Devices are optional</strong><p class="mt-2">EduManage attendance works without hardware. A school may use manual attendance only, connect a machine for staff only, connect devices for students only, or automate both groups.</p><a href="{% url 'admin_attendance_device_list' %}" class="mt-3 inline-flex font-bold">Automation &amp; devices →</a></section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><strong>Attendance automation</strong><span class="edu-ops-badge {% if device_online %}edu-ops-badge--success{% endif %}">{{ device_online }}/{{ device_total }} online</span></div><p class="mt-2 text-sm text-slate-600">Optional biometric, face, RFID, QR, vendor API and edge-connector sources.</p>{% if not device_total %}<p class="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">No devices configured. Nothing is wrong — manual student and staff attendance remain fully available.</p>{% endif %}<a href="{% url 'admin_attendance_integration_guide' %}" class="edu-outline-button mt-4 w-full justify-center">Setup instructions</a></section>
+    </aside>
+  </section>
+</div>
+{% endblock %}

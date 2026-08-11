@@ -5,6 +5,16 @@
   const DESKTOP_QUERY = "(min-width: 1024px)";
   const SEARCH_INPUT_ID = "global-q";
 
+  const ATTENDANCE_MENU_ITEMS = [
+    ["/admin/attendance/", "Overview", "ph-gauge"],
+    ["/admin/attendance/sessions/", "Student Roll Call", "ph-chalkboard-teacher"],
+    ["/admin/attendance/staff/", "Staff Attendance", "ph-identification-card"],
+    ["/admin/attendance/daily/", "Daily Register", "ph-calendar-check"],
+    ["/admin/attendance/policies/", "Attendance Policies", "ph-sliders-horizontal"],
+    ["/admin/attendance/devices/", "Automation & Devices", "ph-devices"],
+    ["/admin/attendance/integration-guide/", "Setup Instructions", "ph-book-open-text"]
+  ];
+
   function isEditableTarget(target) {
     if (!target) return false;
     const tagName = target.tagName ? target.tagName.toLowerCase() : "";
@@ -93,7 +103,7 @@
     if (typeof media.addEventListener === "function") {
       media.addEventListener("change", onViewportChange);
     } else if (typeof media.addListener === "function") {
-      media.addListener(onViewportChange);
+      media.addListener("change", onViewportChange);
     }
 
     applyState(preferredCollapsed, false);
@@ -136,11 +146,78 @@
     });
   }
 
+  function attendanceItemActive(href, currentPath) {
+    if (href === "/admin/attendance/") return currentPath === href;
+    return currentPath === href || currentPath.startsWith(href);
+  }
+
+  function setupAttendanceDropdown(sidebar) {
+    if (!sidebar || sidebar.querySelector("[data-admin-attendance-menu]")) return;
+
+    const sourceLink = Array.from(sidebar.querySelectorAll("nav a")).find((link) => {
+      return link.getAttribute("href") === "/admin/attendance/sessions/" &&
+        (link.textContent || "").trim() === "Attendance";
+    });
+    if (!sourceLink || sourceLink.hidden || sourceLink.hasAttribute("hidden")) return;
+
+    const currentPath = window.location.pathname || "";
+    const attendanceActive = currentPath.startsWith("/admin/attendance/");
+
+    const wrapper = document.createElement("div");
+    wrapper.dataset.adminAttendanceMenu = "true";
+    wrapper.className = "relative";
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.id = "admin-nav-trigger-attendance";
+    trigger.setAttribute("aria-controls", "admin-nav-submenu-attendance");
+    trigger.setAttribute("aria-expanded", attendanceActive ? "true" : "false");
+    trigger.className = "group w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 " +
+      (attendanceActive ? "nav-active text-white" : "text-slate-700 nav-hover");
+    trigger.innerHTML =
+      '<div class="flex items-center"><i class="ph-fill ph-calendar-check text-lg mr-3" aria-hidden="true"></i><span>Attendance</span></div>' +
+      '<i class="ph ph-caret-down text-sm transition-transform duration-200' + (attendanceActive ? " rotate-180" : "") + '" aria-hidden="true"></i>';
+
+    const submenu = document.createElement("div");
+    submenu.id = "admin-nav-submenu-attendance";
+    submenu.setAttribute("role", "group");
+    submenu.setAttribute("aria-label", "Attendance");
+    submenu.className = "ml-4 mt-1 space-y-1 border-l-2 pl-3";
+    submenu.style.borderColor = "color-mix(in srgb, var(--org-primary) 20%, transparent)";
+    submenu.hidden = !attendanceActive;
+
+    ATTENDANCE_MENU_ITEMS.forEach(([href, label, icon]) => {
+      const link = document.createElement("a");
+      link.href = href;
+      link.className = "block px-3 py-2 text-sm rounded-lg transition-colors text-slate-600 hover:bg-slate-100";
+      link.innerHTML = '<i class="ph ' + icon + ' mr-2" aria-hidden="true"></i>' + label;
+      if (attendanceItemActive(href, currentPath)) {
+        link.classList.add("nav-active", "text-white", "font-semibold");
+        link.classList.remove("text-slate-600");
+        link.setAttribute("aria-current", "page");
+      }
+      submenu.appendChild(link);
+    });
+
+    trigger.addEventListener("click", () => {
+      const opening = submenu.hidden;
+      submenu.hidden = !opening;
+      trigger.setAttribute("aria-expanded", opening ? "true" : "false");
+      const caret = trigger.querySelector(".ph-caret-down");
+      if (caret) caret.classList.toggle("rotate-180", opening);
+    });
+
+    wrapper.appendChild(trigger);
+    wrapper.appendChild(submenu);
+    sourceLink.replaceWith(wrapper);
+  }
+
   function initialiseDigitalTwilight() {
     if (!document.body.classList.contains("role-admin")) return;
 
     const sidebar = document.getElementById("sidebar");
     if (sidebar) {
+      setupAttendanceDropdown(sidebar);
       setAccessibleNavigationState(sidebar);
       setupDesktopCollapse(sidebar);
     }

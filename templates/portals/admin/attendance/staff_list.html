@@ -1,0 +1,63 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Staff Attendance{% endblock %}
+{% block page_title %}Staff Attendance{% endblock %}
+{% block header_actions %}
+<a href="{% url 'admin_attendance_staff_manual' %}" class="edu-pill-button"><i class="ph ph-user-check" aria-hidden="true"></i> Record attendance</a>
+{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+
+  <section class="edu-ops-hero">
+    <div class="edu-ops-hero__content">
+      <span class="edu-ops-hero__eyebrow"><i class="ph ph-identification-card" aria-hidden="true"></i> Staff time &amp; attendance</span>
+      <h2>Know when staff report, sign out and how consistently they attend school</h2>
+      <p>Manual records and biometric/device records are combined into one staff attendance history. Schools can therefore start without hardware and automate later without changing reports.</p>
+    </div>
+    <div class="edu-ops-hero__actions">
+      <a href="{% url 'admin_attendance_staff_manual' %}" class="edu-ops-primary"><i class="ph ph-pencil-simple-line" aria-hidden="true"></i> Manual entry</a>
+      <a href="{% url 'admin_attendance_staff_timesheet_csv' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}"><i class="ph ph-download-simple" aria-hidden="true"></i> Export timesheet</a>
+    </div>
+  </section>
+
+  <form method="get" class="edu-ops-filter">
+    <div class="edu-ops-field"><label for="id_start">From</label><input id="id_start" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+    <div class="edu-ops-field"><label for="id_end">To</label><input id="id_end" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+    <div class="edu-ops-field edu-ops-field--search"><label for="id_q">Staff</label><input id="id_q" name="q" value="{{ q }}" placeholder="Name or staff ID"></div>
+    {% if campuses|length > 1 %}<div class="edu-ops-field"><label for="id_campus">Campus</label><select id="id_campus" name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.pk }}" {% if campus_id == campus.pk|stringformat:'s' %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select></div>{% endif %}
+    <button class="edu-pill-button" type="submit">Apply</button>
+    <a class="edu-outline-button" href="{% url 'admin_attendance_staff' %}">Reset</a>
+  </form>
+
+  <section class="edu-ops-table-shell">
+    <header class="edu-ops-table-heading"><div><h3>{{ start|date:"d M Y" }} – {{ end|date:"d M Y" }}</h3><p>Attendance rate uses the staff attendance policy working weekdays for the period, or Monday–Friday when no staff policy exists.</p></div></header>
+    {% if summaries %}
+    <div class="overflow-x-auto"><table class="edu-ops-table"><thead><tr><th>Staff member</th><th>Expected days</th><th>Days attended</th><th>Absent</th><th>Late days</th><th>Early exits</th><th>Avg. report</th><th>Avg. sign-out</th><th>Time at school</th><th>Attendance rate</th></tr></thead><tbody>
+      {% for row in summaries %}
+      <tr>
+        <td><strong>{{ row.staff.get_full_name }}</strong><span class="block text-xs text-slate-500">{{ row.staff.staff_id|default:"No staff ID" }}{% if row.staff.campus %} · {{ row.staff.campus.name }}{% endif %}</span></td>
+        <td>{{ row.expected_days }}</td>
+        <td><strong>{{ row.days_attended }}</strong><span class="block text-xs text-slate-500">{{ row.recorded_days }} recorded</span></td>
+        <td>{{ row.days_absent }}{% if row.days_excused %}<span class="block text-xs text-slate-500">{{ row.days_excused }} excused</span>{% endif %}</td>
+        <td>{{ row.days_late }}</td>
+        <td>{{ row.early_departures }}</td>
+        <td>{{ row.average_in }}</td>
+        <td>{{ row.average_out }}</td>
+        <td>{{ row.total_hours }}</td>
+        <td><span class="edu-ops-badge {% if row.attendance_rate >= 90 %}edu-ops-badge--success{% elif row.attendance_rate < 75 %}edu-ops-badge--warning{% endif %}">{{ row.attendance_rate }}%</span></td>
+      </tr>
+      {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="p-10 text-center"><strong>No active staff match this view.</strong></div>{% endif %}
+  </section>
+
+  {% if page_obj.paginator.num_pages > 1 %}<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-sm" aria-label="Staff attendance pages"><span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span><div class="flex gap-2">{% if page_obj.has_previous %}<a class="edu-outline-button" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}{% if page_obj.has_next %}<a class="edu-outline-button" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div></nav>{% endif %}
+
+  <section class="grid gap-4 md:grid-cols-3">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5"><strong>Manual-only schools</strong><p class="mt-2 text-sm text-slate-600">Record arrival and departure from the staff register or office sign-in book. No attendance machine is required.</p></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5"><strong>Staff-only devices</strong><p class="mt-2 text-sm text-slate-600">A fingerprint or face terminal can enroll only staff while students continue with teacher roll call.</p></article>
+    <article class="rounded-2xl border border-slate-200 bg-white p-5"><strong>Mixed sources</strong><p class="mt-2 text-sm text-slate-600">Manual corrections and automated punches appear in the same report with an audit trail.</p></article>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'portals/admin/base.html' %}
+{% block title %}Record Staff Attendance{% endblock %}
+{% block page_title %}Record Staff Attendance{% endblock %}
+{% block content %}
+{% include "components/ui_toast.html" %}
+<div class="edu-ops-page max-w-4xl">
+  {% include "portals/admin/attendance/devices/_nav.html" %}
+  <section class="edu-ops-hero"><div class="edu-ops-hero__content"><span class="edu-ops-hero__eyebrow"><i class="ph ph-pencil-simple-line" aria-hidden="true"></i> Manual staff register</span><h2>Record reporting and sign-out without an attendance machine</h2><p>This creates the same daily staff attendance record used by automated devices. If a device is added later, historical manual records remain valid and auditable.</p></div></section>
+
+  <form method="post" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="rounded-xl bg-rose-50 p-4 text-sm text-rose-800">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="grid gap-5 md:grid-cols-2">
+      {% for field in form %}
+      <div class="{% if field.name == 'note' or field.name == 'reason' %}md:col-span-2{% endif %}">
+        <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold text-slate-700">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="mt-1 text-xs font-bold text-rose-700">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950"><strong>Automatic status</strong><p class="mt-1">When “Calculate from reporting/sign-out times” is selected, EduManage uses the active staff attendance policy to calculate lateness, early departure and partial-day status. With no staff policy, a reporting time is treated as present.</p></div>
+    <div class="flex flex-wrap justify-end gap-3"><a href="{% url 'admin_attendance_staff' %}" class="edu-outline-button">Cancel</a><button type="submit" class="edu-pill-button"><i class="ph ph-check-circle" aria-hidden="true"></i> Save attendance</button></div>
+  </form>
+</div>
+{% endblock %}

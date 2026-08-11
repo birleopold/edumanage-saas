@@ -1,7 +1,8 @@
 from datetime import timedelta
+from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -9,7 +10,7 @@ from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_or_create_organization
 from apps.tenant.users.models import Role, UserRole
 
-from .device_setup import recommended_setup
+from .device_setup import connection_values, recommended_setup
 from .models import AttendanceDevice
 
 
@@ -57,6 +58,39 @@ class AttendanceDeviceSetupPageTests(TestCase):
         self.assertContains(response, "Calculated automatically")
         self.assertContains(response, "Edge Connector recommended")
         self.assertIn("no-store", response["Cache-Control"])
+
+    def test_connection_values_prefer_verified_primary_tenant_domain(self):
+        class PrimaryDomainManager:
+            def filter(self, **kwargs):
+                self.filters = kwargs
+                return self
+
+            def first(self):
+                return SimpleNamespace(
+                    domain="demo.schools.leosoftug.com",
+                    dns_status="VERIFIED",
+                    ssl_status="ACTIVE",
+                )
+
+        request = RequestFactory().get(
+            "/admin/attendance/devices/1/setup/",
+            HTTP_HOST="demo.edumanage.com",
+            secure=True,
+        )
+        request.tenant = SimpleNamespace(
+            schema_name="demo",
+            domains=PrimaryDomainManager(),
+        )
+
+        values = connection_values(request, self.device)
+
+        self.assertEqual(values["server_host"], "demo.schools.leosoftug.com")
+        self.assertEqual(values["base_url"], "https://demo.schools.leosoftug.com")
+        self.assertEqual(
+            values["event_url"],
+            "https://demo.schools.leosoftug.com/api/v1/attendance/devices/events/",
+        )
+        self.assertNotIn("demo.edumanage.com", values["event_url"])
 
     def test_proprietary_vendor_requires_explicit_canonical_push_capability(self):
         self.assertEqual(recommended_setup(self.device)["kind"], "edge")
