@@ -63,7 +63,8 @@ def term_report_remarks(request, term_id):
     term = get_object_or_404(AcademicTerm, pk=term_id)
     campus, can_edit_head = _campus_context(request)
     stream_id = request.GET.get("stream") if request.method == "GET" else request.POST.get("stream")
-    q = (request.GET.get("q") if request.method == "GET" else request.POST.get("q") or "").strip()
+    raw_q = request.GET.get("q") if request.method == "GET" else request.POST.get("q")
+    q = (raw_q or "").strip()
     page_number = request.GET.get("page") if request.method == "GET" else request.POST.get("page")
 
     students = StudentProfile.objects.filter(
