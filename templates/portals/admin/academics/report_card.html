@@ -1,217 +1,180 @@
 {% extends 'portals/admin/base.html' %}
 
-{% block title %}Report Card - {{ student }}{% endblock %}
+{% block title %}Report Card - {{ report_card.student.name }}{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <a href="{% url 'admin_term_report_cards' term.id %}" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
+<div class="mb-6 no-print">
+  <a href="{% url 'admin_term_report_cards' term.id %}" class="text-blue-600 hover:text-blue-700 mb-3 inline-block">
     <i class="ph ph-arrow-left mr-2"></i>Back to Report Cards
   </a>
-  <div class="flex justify-between items-start">
+  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Report Card</h1>
-      <p class="text-gray-600">{{ student }} • {{ term }}</p>
+      <h1 class="text-3xl font-bold text-gray-900">Report Card</h1>
+      <p class="text-gray-600 mt-1">{{ report_card.student.name }} • {{ report_card.term.name }}</p>
     </div>
-    <div class="flex gap-2">
-      <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-        <i class="ph ph-printer mr-2"></i>Print
-      </button>
-      <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-        <i class="ph ph-file-pdf mr-2"></i>Download PDF
-      </button>
-    </div>
+    <button type="button" onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+      <i class="ph ph-printer mr-2"></i>Print / Save PDF
+    </button>
   </div>
 </div>
 
-<!-- Print-friendly Report Card -->
-<div id="report-card" class="bg-white rounded-xl shadow-lg border border-gray-200 p-8 max-w-4xl mx-auto">
-  <!-- Header -->
-  <div class="text-center mb-8 pb-6 border-b-2 border-gray-200">
-    <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ organization.name }}</h2>
-    <p class="text-gray-600">{{ organization.address }}</p>
-    <h3 class="text-xl font-semibold text-primary-600 mt-4">STUDENT REPORT CARD</h3>
-    <p class="text-sm text-gray-500 mt-2">{{ term.academic_year }} - {{ term.name }}</p>
+<div id="report-card" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8 max-w-5xl mx-auto">
+  <div class="text-center mb-7 pb-5 border-b-2 border-gray-200">
+    {% if organization %}
+      <h2 class="text-2xl font-bold text-gray-900">{{ organization.name }}</h2>
+      {% if organization.address %}<p class="text-sm text-gray-500 mt-1">{{ organization.address }}</p>{% endif %}
+    {% endif %}
+    <h3 class="text-xl font-semibold text-blue-700 mt-3">STUDENT REPORT CARD</h3>
+    <p class="text-sm text-gray-500 mt-1">{{ report_card.term.name }} • {{ report_card.term.year }}</p>
   </div>
 
-  <!-- Student Information -->
-  <div class="grid grid-cols-2 gap-6 mb-8">
-    <div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7 text-sm">
+    <div class="rounded-lg bg-gray-50 p-4">
+      <dl class="space-y-2">
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Student</dt><dd class="text-right font-semibold text-gray-900">{{ report_card.student.name }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Student ID</dt><dd class="text-right text-gray-900">{{ report_card.student.id }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Stream</dt><dd class="text-right text-gray-900">{{ report_card.student.stream }}</dd></div>
+      </dl>
+    </div>
+    <div class="rounded-lg bg-gray-50 p-4">
+      <dl class="space-y-2">
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Campus</dt><dd class="text-right text-gray-900">{{ report_card.student.campus }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Term</dt><dd class="text-right text-gray-900">{{ report_card.term.name }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="font-medium text-gray-600">Grading scale</dt><dd class="text-right text-gray-900">{{ report_card.grading_scale }}</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="mb-7">
+    <h4 class="text-lg font-semibold text-gray-900 mb-3">Academic Performance</h4>
+    <div class="overflow-x-auto border border-gray-200 rounded-lg">
       <table class="w-full text-sm">
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Student Name:</td>
-          <td class="py-2 text-gray-900">{{ student.get_full_name }}</td>
-        </tr>
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Student ID:</td>
-          <td class="py-2 text-gray-900">{{ student.student_id }}</td>
-        </tr>
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Class/Stream:</td>
-          <td class="py-2 text-gray-900">{{ student.stream }}</td>
-        </tr>
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="py-3 px-4 text-left font-semibold text-gray-700">Subject</th>
+            <th class="py-3 px-4 text-left font-semibold text-gray-700">Teacher</th>
+            <th class="py-3 px-4 text-center font-semibold text-gray-700">Average</th>
+            <th class="py-3 px-4 text-center font-semibold text-gray-700">Grade</th>
+            <th class="py-3 px-4 text-left font-semibold text-gray-700">Remark</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for result in report_card.subjects %}
+            <tr>
+              <td class="py-3 px-4 text-gray-900">
+                <div class="font-medium">{{ result.course_name }}</div>
+                {% if result.course_code %}<div class="text-xs text-gray-500">{{ result.course_code }}</div>{% endif %}
+              </td>
+              <td class="py-3 px-4 text-gray-700">{{ result.teacher }}</td>
+              <td class="py-3 px-4 text-center font-semibold text-gray-900">
+                {% if result.score != None %}{{ result.score|floatformat:2 }}%{% else %}<span class="text-gray-400">Pending</span>{% endif %}
+              </td>
+              <td class="py-3 px-4 text-center font-semibold">{{ result.grade }}</td>
+              <td class="py-3 px-4 text-gray-600">{{ result.remark|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="py-8 px-4 text-center text-gray-500">No active subject enrollments were found for this term.</td></tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
-    <div>
-      <table class="w-full text-sm">
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Date of Birth:</td>
-          <td class="py-2 text-gray-900">{{ student.date_of_birth|date:"M d, Y" }}</td>
-        </tr>
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Admission No:</td>
-          <td class="py-2 text-gray-900">{{ student.admission_number|default:"-" }}</td>
-        </tr>
-        <tr class="border-b">
-          <td class="py-2 font-medium text-gray-700">Attendance:</td>
-          <td class="py-2 text-gray-900">{{ attendance_percentage|floatformat:1 }}%</td>
-        </tr>
-      </table>
-    </div>
   </div>
 
-  <!-- Academic Performance -->
-  <div class="mb-8">
-    <h4 class="text-lg font-semibold text-gray-900 mb-4 bg-gray-50 p-3 rounded">Academic Performance</h4>
-    <table class="w-full text-sm">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="py-2 px-4 text-left font-semibold">Subject</th>
-          <th class="py-2 px-4 text-center font-semibold">Score</th>
-          <th class="py-2 px-4 text-center font-semibold">Grade</th>
-          <th class="py-2 px-4 text-center font-semibold">Remarks</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-200">
-        {% for result in subject_results %}
-        <tr>
-          <td class="py-3 px-4 text-gray-900">{{ result.course.name }}</td>
-          <td class="py-3 px-4 text-center font-medium">{{ result.total_score }}/{{ result.max_score }}</td>
-          <td class="py-3 px-4 text-center">
-            <span class="px-2 py-1 rounded text-sm font-medium 
-              {% if result.grade == 'A' %}bg-green-100 text-green-700
-              {% elif result.grade == 'B' %}bg-blue-100 text-blue-700
-              {% elif result.grade == 'C' %}bg-yellow-100 text-yellow-700
-              {% else %}bg-red-100 text-red-700{% endif %}">
-              {{ result.grade }}
-            </span>
-          </td>
-          <td class="py-3 px-4 text-center text-gray-600 text-xs">{{ result.remark|default:"-" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-      <tfoot class="bg-gray-50 font-semibold">
-        <tr>
-          <td class="py-3 px-4">TOTAL</td>
-          <td class="py-3 px-4 text-center">{{ total_score }}/{{ total_possible }}</td>
-          <td class="py-3 px-4 text-center" colspan="2">Average: {{ average_score|floatformat:1 }}%</td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <!-- Performance Summary -->
-  <div class="grid grid-cols-3 gap-4 mb-8">
-    <div class="bg-blue-50 p-4 rounded-lg">
-      <p class="text-sm text-gray-600 mb-1">Overall GPA</p>
-      <p class="text-2xl font-bold text-blue-600">{{ gpa|floatformat:2 }}</p>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+    <div class="rounded-lg bg-blue-50 p-4">
+      <p class="text-xs uppercase tracking-wide text-gray-500">Average</p>
+      <p class="text-2xl font-bold text-blue-700 mt-1">{% if report_card.summary.average != None %}{{ report_card.summary.average|floatformat:2 }}%{% else %}-{% endif %}</p>
     </div>
-    <div class="bg-green-50 p-4 rounded-lg">
-      <p class="text-sm text-gray-600 mb-1">Class Rank</p>
-      <p class="text-2xl font-bold text-green-600">{{ rank }}/{{ total_students }}</p>
+    <div class="rounded-lg bg-green-50 p-4">
+      <p class="text-xs uppercase tracking-wide text-gray-500">Overall Grade</p>
+      <p class="text-2xl font-bold text-green-700 mt-1">{{ report_card.summary.overall_grade }}</p>
     </div>
-    <div class="bg-purple-50 p-4 rounded-lg">
-      <p class="text-sm text-gray-600 mb-1">Performance</p>
-      <p class="text-2xl font-bold text-purple-600">
-        {% if average_score >= 80 %}Excellent
-        {% elif average_score >= 70 %}Good
-        {% elif average_score >= 60 %}Satisfactory
-        {% else %}Needs Improvement{% endif %}
+    <div class="rounded-lg bg-purple-50 p-4">
+      <p class="text-xs uppercase tracking-wide text-gray-500">Class Rank</p>
+      <p class="text-2xl font-bold text-purple-700 mt-1">
+        {% if report_card.ranking.rank %}{{ report_card.ranking.rank }}/{{ report_card.ranking.total_students }}{% else %}-{% endif %}
       </p>
     </div>
-  </div>
-
-  <!-- Remarks -->
-  <div class="mb-8">
-    <h4 class="text-lg font-semibold text-gray-900 mb-3 bg-gray-50 p-3 rounded">Teacher's Remarks</h4>
-    <div class="p-4 bg-gray-50 rounded-lg min-h-24">
-      <p class="text-gray-700 text-sm">{{ class_teacher_remarks|default:"No remarks provided." }}</p>
+    <div class="rounded-lg bg-amber-50 p-4">
+      <p class="text-xs uppercase tracking-wide text-gray-500">Subjects Scored</p>
+      <p class="text-2xl font-bold text-amber-700 mt-1">{{ report_card.summary.scored_subjects }}/{{ report_card.summary.total_subjects }}</p>
     </div>
   </div>
 
-  <div class="mb-8">
-    <h4 class="text-lg font-semibold text-gray-900 mb-3 bg-gray-50 p-3 rounded">Principal's Comments</h4>
-    <div class="p-4 bg-gray-50 rounded-lg min-h-24">
-      <p class="text-gray-700 text-sm">{{ principal_remarks|default:"No comments provided." }}</p>
-    </div>
-  </div>
-
-  <!-- Grading Scale -->
-  <div class="mb-8">
-    <h4 class="text-sm font-semibold text-gray-700 mb-2">Grading Scale:</h4>
-    <div class="flex gap-4 text-xs text-gray-600">
-      <span>A: 80-100 (Excellent)</span>
-      <span>B: 70-79 (Good)</span>
-      <span>C: 60-69 (Satisfactory)</span>
-      <span>D: 50-59 (Pass)</span>
-      <span>F: Below 50 (Fail)</span>
-    </div>
-  </div>
-
-  <!-- Signatures -->
-  <div class="grid grid-cols-3 gap-8 pt-6 border-t-2 border-gray-200">
-    <div class="text-center">
-      <div class="border-t border-gray-400 pt-2 mt-16">
-        <p class="text-sm font-medium">Class Teacher</p>
-        <p class="text-xs text-gray-600">Date: _____________</p>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-7">
+    <div class="border border-gray-200 rounded-lg p-4">
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <h4 class="font-semibold text-gray-900">Term-to-Term Progress</h4>
+        <span class="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700">{{ report_card.progress.label }}</span>
       </div>
+      {% if report_card.progress.available %}
+        <p class="text-sm text-gray-600">
+          Previous: <strong>{{ report_card.progress.previous_average|floatformat:2 }}%</strong> •
+          Current: <strong>{{ report_card.progress.current_average|floatformat:2 }}%</strong>
+        </p>
+        <p class="text-sm mt-2 {% if report_card.progress.change > 0 %}text-green-700{% elif report_card.progress.change < 0 %}text-red-700{% else %}text-gray-700{% endif %}">
+          Change from {{ report_card.progress.previous_term }}:
+          <strong>{% if report_card.progress.change > 0 %}+{% endif %}{{ report_card.progress.change|floatformat:2 }} percentage points</strong>
+        </p>
+      {% else %}
+        <p class="text-sm text-gray-600">This report is the available baseline for future term-to-term progress comparison.</p>
+      {% endif %}
     </div>
-    <div class="text-center">
-      <div class="border-t border-gray-400 pt-2 mt-16">
-        <p class="text-sm font-medium">Principal</p>
-        <p class="text-xs text-gray-600">Date: _____________</p>
-      </div>
-    </div>
-    <div class="text-center">
-      <div class="border-t border-gray-400 pt-2 mt-16">
-        <p class="text-sm font-medium">Parent/Guardian</p>
-        <p class="text-xs text-gray-600">Date: _____________</p>
-      </div>
+    <div class="border border-gray-200 rounded-lg p-4">
+      <h4 class="font-semibold text-gray-900 mb-2">Performance Summary</h4>
+      <dl class="grid grid-cols-2 gap-2 text-sm">
+        <div><dt class="text-gray-500">Highest</dt><dd class="font-semibold">{% if report_card.summary.highest != None %}{{ report_card.summary.highest|floatformat:2 }}%{% else %}-{% endif %}</dd></div>
+        <div><dt class="text-gray-500">Lowest</dt><dd class="font-semibold">{% if report_card.summary.lowest != None %}{{ report_card.summary.lowest|floatformat:2 }}%{% else %}-{% endif %}</dd></div>
+        <div class="col-span-2"><dt class="text-gray-500">Overall remark</dt><dd class="font-semibold">{{ report_card.summary.overall_remark|default:"No overall remark available." }}</dd></div>
+      </dl>
     </div>
   </div>
 
-  <!-- Footer -->
-  <div class="text-center mt-8 pt-4 border-t border-gray-200">
-    <p class="text-xs text-gray-500">Generated on {{ now|date:"F d, Y" }}</p>
+  <div class="mb-7">
+    <h4 class="text-lg font-semibold text-gray-900 mb-3">Teacher Feedback</h4>
+    <div class="space-y-3">
+      {% for result in report_card.subjects %}
+        {% if result.teacher_comment %}
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div>
+                <span class="font-semibold text-gray-900">{{ result.course_name }}</span>
+                <span class="text-sm text-gray-500">• {{ result.teacher }}</span>
+              </div>
+              {% if result.teacher_comment_ai_assisted %}
+                <span class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">AI-assisted</span>
+              {% endif %}
+            </div>
+            <p class="text-sm text-gray-700 whitespace-pre-line">{{ result.teacher_comment }}</p>
+          </div>
+        {% endif %}
+      {% empty %}
+        <p class="text-sm text-gray-500">No subject feedback has been recorded.</p>
+      {% endfor %}
+      {% if not report_card.subjects %}<p class="text-sm text-gray-500">No subject feedback has been recorded.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-8 pt-7 border-t-2 border-gray-200 text-center text-sm">
+    <div><div class="border-t border-gray-400 pt-2 mt-12">Class Teacher</div></div>
+    <div><div class="border-t border-gray-400 pt-2 mt-12">Principal / Head</div></div>
+    <div><div class="border-t border-gray-400 pt-2 mt-12">Parent / Guardian</div></div>
   </div>
 </div>
 
 <style>
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  #report-card, #report-card * {
-    visibility: visible;
-  }
-  #report-card {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  .no-print {
-    display: none;
-  }
+  .no-print, aside, nav { display: none !important; }
+  body { background: white !important; }
+  #report-card { box-shadow: none !important; border: 0 !important; max-width: none !important; padding: 0 !important; }
 }
 </style>
-
 <script>
-function downloadPDF() {
-  // Implement PDF generation
-  // Could use jsPDF or send to server for PDF generation
-  if (typeof window.showToast === 'function') {
-    window.showToast('Not yet available', 'PDF download will be integrated with the document service soon.', 'info');
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('print') === '1') {
+    window.addEventListener('load', function () { window.print(); }, { once: true });
   }
-}
+})();
 </script>
 {% endblock %}
