@@ -4,20 +4,23 @@
 {% block page_title %}Class Streams{% endblock %}
 {% block breadcrumbs %}Class divisions, rooms, capacity and class-teacher setup{% endblock %}
 {% block header_actions %}
+  {% url 'admin_stream_bulk_assignment' as bulk_assignment_url %}
   {% url 'admin_stream_promotion' as stream_promotion_url %}
   {% url 'admin_stream_create' as create_stream_url %}
+  {% include "components/ui_action_link.html" with href=bulk_assignment_url label="Assign Learners" variant="secondary" icon="users-three" %}
   {% include "components/ui_action_link.html" with href=stream_promotion_url label="Stream Promotion" variant="secondary" %}
   {% include "components/ui_action_link.html" with href=create_stream_url label="Add Stream" icon="plus" %}
 {% endblock %}
 
 {% block content %}
 {% include "components/ui_toast.html" %}
+{% url 'admin_stream_bulk_assignment' as bulk_assignment_url %}
 {% url 'admin_stream_promotion' as stream_promotion_url %}
 {% url 'admin_stream_create' as create_stream_url %}
 {% url 'admin_stream_list' as stream_list_url %}
 
 <div class="space-y-7">
-  {% include "components/ui_page_hero.html" with tone="blue" eyebrow="Class organization" title="Class streams" description="Manage class divisions, room placement, capacity and assigned class teachers." primary_url=create_stream_url primary_text="Add Stream" secondary_url=stream_promotion_url secondary_text="Promote Stream" %}
+  {% include "components/ui_page_hero.html" with tone="blue" eyebrow="Class organization" title="Class streams" description="Manage class divisions, room placement, capacity and assigned class teachers." primary_url=create_stream_url primary_text="Add Stream" secondary_url=bulk_assignment_url secondary_text="Assign Learners" %}
 
   {% include "components/ui_filter_toolbar_get.html" with q=q per_page=per_page clear_url=stream_list_url placeholder="Search stream, class or room..." %}
 
@@ -61,8 +64,11 @@
                 {% endif %}
               </td>
               <td class="px-6 py-4 text-right">
-                {% url 'admin_stream_edit' stream.id as edit_url %}
-                {% include "components/ui_action_link.html" with href=edit_url label="Edit" icon="pencil-simple" %}
+                <div class="inline-flex flex-wrap justify-end gap-2">
+                  <a href="{% url 'admin_stream_bulk_assignment' %}?stream={{ stream.pk }}" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50">Assign learners</a>
+                  {% url 'admin_stream_edit' stream.id as edit_url %}
+                  {% include "components/ui_action_link.html" with href=edit_url label="Edit" icon="pencil-simple" %}
+                </div>
               </td>
             </tr>
           {% endfor %}
