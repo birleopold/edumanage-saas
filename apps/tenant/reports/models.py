@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -34,3 +35,59 @@ class ReportRun(models.Model):
 
     def __str__(self) -> str:
         return f"{self.report_type} @ {self.created_at} ({self.status})"
+
+
+class TermReportRemark(models.Model):
+    """Consolidated school remarks attached to one learner's term report."""
+
+    campus = models.ForeignKey(
+        "orgsettings.Campus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="term_report_remarks",
+    )
+    student = models.ForeignKey(
+        "students.StudentProfile",
+        on_delete=models.CASCADE,
+        related_name="term_report_remarks",
+    )
+    term = models.ForeignKey(
+        "academics.AcademicTerm",
+        on_delete=models.CASCADE,
+        related_name="student_report_remarks",
+    )
+    class_teacher_comment = models.TextField(blank=True)
+    head_comment = models.TextField(blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_term_report_remarks",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("student__last_name", "student__first_name", "student__student_id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("student", "term"),
+                name="uniq_student_term_report_remark",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.student} — {self.term}"
+
+    def clean(self):
+        super().clean()
+        if self.campus_id and self.student_id and self.student.campus_id:
+            if self.campus_id != self.student.campus_id:
+                raise ValidationError({"campus": "Report remark campus must match the learner's campus."})
+
+    def save(self, *args, **kwargs):
+        if not self.campus_id and self.student_id:
+            self.campus_id = self.student.campus_id
+        self.full_clean()
+        super().save(*args, **kwargs)
