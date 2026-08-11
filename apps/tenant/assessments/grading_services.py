@@ -80,6 +80,7 @@ def grading_profile_errors(profile: GradingProfile) -> list[str]:
         stage_id=profile.stage_id,
         level_id=profile.level_id,
         program_id=profile.program_id,
+        course_id=profile.course_id,
         academic_term_id=profile.academic_term_id,
         priority=profile.priority,
         is_active=True,
@@ -105,6 +106,7 @@ def _scope_matches(profile, offering, stage, level, program) -> bool:
         and (profile.stage_id is None or (stage and profile.stage_id == stage.pk))
         and (profile.level_id is None or (level and profile.level_id == level.pk))
         and (profile.program_id is None or (program and profile.program_id == program.pk))
+        and (profile.course_id is None or profile.course_id == offering.course_id)
         and (profile.academic_term_id is None or profile.academic_term_id == offering.term_id)
     )
 
@@ -116,6 +118,7 @@ def _specificity(profile, offering, stage, level, program) -> tuple:
             bool(profile.stage_id and stage and profile.stage_id == stage.pk),
             bool(profile.level_id and level and profile.level_id == level.pk),
             bool(profile.program_id and program and profile.program_id == program.pk),
+            bool(profile.course_id and profile.course_id == offering.course_id),
             bool(profile.academic_term_id and profile.academic_term_id == offering.term_id),
         )
     )
@@ -127,7 +130,7 @@ def resolve_grading_profile(offering) -> GradingProfile | None:
     program = offering_program(offering)
     stage = offering_stage(offering)
     candidates = GradingProfile.objects.filter(is_active=True).select_related(
-        "grading_scale", "campus", "stage", "level", "program", "academic_term"
+        "grading_scale", "campus", "stage", "level", "program", "course", "academic_term"
     ).prefetch_related("grading_scale__ranges")
     matched = [
         profile
@@ -296,7 +299,7 @@ def bootstrap_default_grading_profile(*, dry_run=False) -> dict:
 def grading_framework_readiness() -> dict:
     profiles = list(
         GradingProfile.objects.select_related(
-            "grading_scale", "campus", "stage", "level", "program", "academic_term"
+            "grading_scale", "campus", "stage", "level", "program", "course", "academic_term"
         ).prefetch_related("grading_scale__ranges")
     )
     invalid = [{"profile": profile, "errors": grading_profile_errors(profile)} for profile in profiles]
