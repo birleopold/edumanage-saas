@@ -97,6 +97,14 @@ class ReportCard:
         self._subject_results = results
         return results
 
+    def get_teacher_comments(self) -> List[Dict]:
+        """Return only subjects that have teacher-approved report feedback."""
+        return [
+            result
+            for result in self.get_subject_results()
+            if result.get("teacher_comment")
+        ]
+
     def get_summary(self) -> Dict:
         if self._summary is not None:
             return self._summary
@@ -220,6 +228,7 @@ class ReportCard:
             },
             "grading_scale": self.grading_scale.name if self.grading_scale else "N/A",
             "subjects": self.get_subject_results(),
+            "teacher_comments": self.get_teacher_comments(),
             "summary": self.get_summary(),
             "ranking": self.get_ranking(),
             "progress": self.get_progress(),
