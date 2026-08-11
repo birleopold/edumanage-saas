@@ -34,6 +34,7 @@ INSTALLED_APPS += [
     "apps.tenant.exams",
     "apps.tenant.reports",
     "apps.tenant.institutional",
+    "apps.tenant.designstudio",
     "apps.tenant.orgsettings",
     "apps.tenant.admissions",
     "apps.tenant.hr",
