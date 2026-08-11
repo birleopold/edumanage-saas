@@ -133,25 +133,22 @@
   <div class="mb-7">
     <h4 class="text-lg font-semibold text-gray-900 mb-3">Teacher Feedback</h4>
     <div class="space-y-3">
-      {% for result in report_card.subjects %}
-        {% if result.teacher_comment %}
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div>
-                <span class="font-semibold text-gray-900">{{ result.course_name }}</span>
-                <span class="text-sm text-gray-500">• {{ result.teacher }}</span>
-              </div>
-              {% if result.teacher_comment_ai_assisted %}
-                <span class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">AI-assisted</span>
-              {% endif %}
+      {% for result in report_card.teacher_comments %}
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <span class="font-semibold text-gray-900">{{ result.course_name }}</span>
+              <span class="text-sm text-gray-500">• {{ result.teacher }}</span>
             </div>
-            <p class="text-sm text-gray-700 whitespace-pre-line">{{ result.teacher_comment }}</p>
+            {% if result.teacher_comment_ai_assisted %}
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">AI-assisted</span>
+            {% endif %}
           </div>
-        {% endif %}
+          <p class="text-sm text-gray-700 whitespace-pre-line">{{ result.teacher_comment }}</p>
+        </div>
       {% empty %}
-        <p class="text-sm text-gray-500">No subject feedback has been recorded.</p>
+        <div class="border border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-500">Teacher feedback has not yet been recorded for published assessments in this term.</div>
       {% endfor %}
-      {% if not report_card.subjects %}<p class="text-sm text-gray-500">No subject feedback has been recorded.</p>{% endif %}
     </div>
   </div>
 
