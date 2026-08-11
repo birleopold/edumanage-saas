@@ -1,9 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
+
+from apps.tenant.students.models import StudentProfile
 
 from .forms import DocumentGenerationForm
-from .models import DocumentTemplate, DocumentTemplateVersion
+from .models import DocumentTemplate, DocumentTemplateVersion, IssuedDocument
 from .schema import validate_design_document
 from .services import (
     activate_version,
@@ -11,6 +14,7 @@ from .services import (
     default_design,
     get_editable_version,
     page_dimensions_for,
+    render_version_pdf,
     submit_for_review,
 )
 
@@ -80,3 +84,54 @@ class DesignVersionLifecycleTests(TestCase):
         self.assertEqual(draft.status, DocumentTemplateVersion.DRAFT)
         self.assertEqual(draft.number, 2)
         self.assertEqual(draft.design, self.version.design)
+
+    def test_student_id_pdf_renders_without_student_photo_field(self):
+        student = StudentProfile.objects.create(
+            student_id="STD-001",
+            first_name="Amina",
+            last_name="Nabirye",
+        )
+        template = DocumentTemplate.objects.create(name="Student identity", document_type=DocumentTemplate.STUDENT_ID)
+        width, height = page_dimensions_for(DocumentTemplate.STUDENT_ID)
+        version = DocumentTemplateVersion.objects.create(
+            template=template,
+            number=1,
+            design=default_design(DocumentTemplate.STUDENT_ID),
+            page_width_mm=width,
+            page_height_mm=height,
+            created_by=self.user,
+        )
+
+        pdf = render_version_pdf(version, student, verification_url="https://school.example/verify/demo")
+
+        self.assertTrue(pdf.getvalue().startswith(b"%PDF"))
+        self.assertFalse(hasattr(student, "photo"))
+
+    def test_verification_page_distinguishes_active_and_revoked_documents(self):
+        student = StudentProfile.objects.create(
+            student_id="STD-002",
+            first_name="Peter",
+            last_name="Kato",
+        )
+        issued = IssuedDocument.objects.create(
+            template=self.template,
+            version=self.version,
+            student=student,
+            reference="REPORT-2026-001",
+            data_snapshot={"student": {"full_name": student.get_full_name(), "student_id": student.student_id}},
+            issued_by=self.user,
+        )
+        url = reverse("designstudio:verify", args=[issued.verification_token])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "VALID DOCUMENT")
+        self.assertContains(response, issued.reference)
+
+        issued.status = IssuedDocument.REVOKED
+        issued.revocation_reason = "Reissued with corrected details"
+        issued.save(update_fields=["status", "revocation_reason"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "REVOKED / INVALID")
+        self.assertContains(response, "Reissued with corrected details")
