@@ -316,6 +316,14 @@ class GradingProfile(models.Model):
         blank=True,
         related_name="grading_profiles",
     )
+    course = models.ForeignKey(
+        "academics.Course",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="grading_profiles",
+        help_text="Optional subject/course override. Leave blank for a general grading rule.",
+    )
     academic_term = models.ForeignKey(
         "academics.AcademicTerm",
         on_delete=models.SET_NULL,
@@ -383,6 +391,7 @@ class GradingProfile(models.Model):
                 stage_id=self.stage_id,
                 level_id=self.level_id,
                 program_id=self.program_id,
+                course_id=self.course_id,
                 academic_term_id=self.academic_term_id,
                 priority=self.priority,
                 is_active=True,
@@ -409,6 +418,8 @@ class GradingProfile(models.Model):
             parts.append(str(self.level))
         if self.program_id:
             parts.append(str(self.program))
+        if self.course_id:
+            parts.append(str(self.course))
         if self.academic_term_id:
             parts.append(str(self.academic_term))
         return " · ".join(parts) if parts else "Institution default"
