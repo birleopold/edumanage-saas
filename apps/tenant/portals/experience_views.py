@@ -15,6 +15,7 @@ from .setup_center import school_setup_progress
 from .setup_quickstart import (
     bootstrap_uganda_standard_levels,
     sync_existing_education_structure,
+    uganda_standard_level_plan,
 )
 
 
@@ -44,10 +45,10 @@ def admin_communication_center(request):
 def admin_school_setup_guide(request):
     """One guided doorway for initial school and academic configuration."""
     progress = school_setup_progress()
+    profile = progress["education_profile"]
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
-        profile = progress["education_profile"]
 
         if action == "sync_education_structure":
             summary = sync_existing_education_structure(profile)
@@ -86,6 +87,16 @@ def admin_school_setup_guide(request):
     # enhancement. Force CSRF token creation so the injected forms remain
     # protected by Django's normal CSRF middleware.
     get_token(request)
+    uganda_level_plan = uganda_standard_level_plan(profile)
+    progress["school_setup_quickstart"] = {
+        "uganda_levels_available": bool(uganda_level_plan),
+        "uganda_level_names": [row["name"] for row in uganda_level_plan],
+        "uganda_stage_selection_required": bool(
+            progress.get("is_uganda_framework")
+            and not uganda_level_plan
+            and profile.institution_type in {"SECONDARY", "MIXED"}
+        ),
+    }
     return render(
         request,
         "portals/admin/experience/school_setup_guide.html",
