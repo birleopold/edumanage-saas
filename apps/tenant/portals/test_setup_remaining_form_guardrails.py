@@ -277,7 +277,7 @@ class AttendancePolicyGuardrailTests(RemainingSetupFormFixture):
             "early_departure_grace_minutes": 10,
             "duplicate_window_seconds": 30,
             "minimum_presence_minutes": 0,
-            "direction_strategy": AttendancePolicy.STRATEGY_FIRST_LAST,
+            "direction_strategy": AttendancePolicy.FIRST_LAST,
             "weekdays": "[0,1,2,3,4]",
             "notify_parent_on_arrival": "on",
             "notify_parent_on_departure": "on",
