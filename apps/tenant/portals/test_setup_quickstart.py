@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase, TestCase
 
-from apps.tenant.education_frameworks.models import InstitutionEducationProfile
+from apps.tenant.education_frameworks.models import EducationStage, InstitutionEducationProfile
 
 from .setup_quickstart import (
     bootstrap_uganda_standard_levels,
@@ -22,28 +22,99 @@ def _profile(institution_type, *, country="UG", framework_code="UG-NATIONAL"):
 
 
 class UgandaStandardLevelPlanTests(SimpleTestCase):
-    def test_primary_plan_contains_only_p1_to_p7(self):
+    def test_primary_plan_safely_defaults_to_p1_to_p7(self):
         profile = _profile(InstitutionEducationProfile.PRIMARY)
 
-        self.assertTrue(is_uganda_standard_level_quickstart_available(profile))
+        self.assertTrue(
+            is_uganda_standard_level_quickstart_available(
+                profile,
+                configured_stage_codes=set(),
+            )
+        )
         self.assertEqual(
-            [row["name"] for row in uganda_standard_level_plan(profile)],
+            [
+                row["name"]
+                for row in uganda_standard_level_plan(
+                    profile,
+                    configured_stage_codes=set(),
+                )
+            ],
             ["P1", "P2", "P3", "P4", "P5", "P6", "P7"],
         )
 
-    def test_secondary_plan_contains_s1_to_s6_in_order(self):
+    def test_secondary_without_explicit_stage_does_not_guess_o_or_a_level(self):
         profile = _profile(InstitutionEducationProfile.SECONDARY)
 
         self.assertEqual(
-            [row["name"] for row in uganda_standard_level_plan(profile)],
+            uganda_standard_level_plan(profile, configured_stage_codes=set()),
+            [],
+        )
+        self.assertFalse(
+            is_uganda_standard_level_quickstart_available(
+                profile,
+                configured_stage_codes=set(),
+            )
+        )
+
+    def test_secondary_lower_stage_creates_only_s1_to_s4(self):
+        profile = _profile(InstitutionEducationProfile.SECONDARY)
+
+        self.assertEqual(
+            [
+                row["name"]
+                for row in uganda_standard_level_plan(
+                    profile,
+                    configured_stage_codes={EducationStage.LOWER_SECONDARY},
+                )
+            ],
+            ["S1", "S2", "S3", "S4"],
+        )
+
+    def test_secondary_upper_stage_creates_only_s5_to_s6(self):
+        profile = _profile(InstitutionEducationProfile.SECONDARY)
+
+        self.assertEqual(
+            [
+                row["name"]
+                for row in uganda_standard_level_plan(
+                    profile,
+                    configured_stage_codes={EducationStage.UPPER_SECONDARY},
+                )
+            ],
+            ["S5", "S6"],
+        )
+
+    def test_secondary_with_both_stages_contains_s1_to_s6_in_order(self):
+        profile = _profile(InstitutionEducationProfile.SECONDARY)
+
+        self.assertEqual(
+            [
+                row["name"]
+                for row in uganda_standard_level_plan(
+                    profile,
+                    configured_stage_codes={
+                        EducationStage.LOWER_SECONDARY,
+                        EducationStage.UPPER_SECONDARY,
+                    },
+                )
+            ],
             ["S1", "S2", "S3", "S4", "S5", "S6"],
         )
 
-    def test_mixed_plan_contains_primary_then_secondary_levels(self):
+    def test_mixed_plan_only_uses_explicitly_enabled_stages(self):
         profile = _profile(InstitutionEducationProfile.MIXED)
 
         self.assertEqual(
-            [row["name"] for row in uganda_standard_level_plan(profile)],
+            [
+                row["name"]
+                for row in uganda_standard_level_plan(
+                    profile,
+                    configured_stage_codes={
+                        EducationStage.PRIMARY,
+                        EducationStage.LOWER_SECONDARY,
+                    },
+                )
+            ],
             [
                 "P1",
                 "P2",
@@ -56,15 +127,14 @@ class UgandaStandardLevelPlanTests(SimpleTestCase):
                 "S2",
                 "S3",
                 "S4",
-                "S5",
-                "S6",
             ],
         )
 
     def test_non_uganda_or_higher_education_profiles_are_not_eligible(self):
         self.assertFalse(
             is_uganda_standard_level_quickstart_available(
-                _profile(InstitutionEducationProfile.PRIMARY, country="KE")
+                _profile(InstitutionEducationProfile.PRIMARY, country="KE"),
+                configured_stage_codes=set(),
             )
         )
         self.assertFalse(
@@ -72,18 +142,21 @@ class UgandaStandardLevelPlanTests(SimpleTestCase):
                 _profile(
                     InstitutionEducationProfile.PRIMARY,
                     framework_code="INTERNATIONAL-CUSTOM",
-                )
+                ),
+                configured_stage_codes=set(),
             )
         )
         self.assertEqual(
             uganda_standard_level_plan(
-                _profile(InstitutionEducationProfile.UNIVERSITY)
+                _profile(InstitutionEducationProfile.UNIVERSITY),
+                configured_stage_codes=set(),
             ),
             [],
         )
 
 
 class UgandaStandardLevelMutationTests(TestCase):
+    @patch("apps.tenant.portals.setup_quickstart._configured_stage_codes", return_value=set())
     @patch("apps.tenant.portals.setup_quickstart.sync_existing_education_structure")
     @patch("apps.tenant.portals.setup_quickstart.Level.objects.create")
     @patch("apps.tenant.portals.setup_quickstart.Level.objects.filter")
@@ -92,6 +165,7 @@ class UgandaStandardLevelMutationTests(TestCase):
         filter_mock,
         create_mock,
         sync_mock,
+        _stage_codes_mock,
     ):
         inactive_p1 = SimpleNamespace(name="P1", is_active=False)
         filter_mock.return_value.order_by.return_value.first.side_effect = [
@@ -125,7 +199,7 @@ class UgandaStandardLevelMutationTests(TestCase):
     def test_bootstrap_rejects_ineligible_profile_before_creating_levels(self):
         profile = _profile(InstitutionEducationProfile.UNIVERSITY)
 
-        with self.assertRaisesMessage(ValueError, "Uganda standard-level quick start"):
+        with self.assertRaisesMessage(ValueError, "No safe Uganda standard-level plan"):
             bootstrap_uganda_standard_levels(profile)
 
     @patch("apps.tenant.portals.setup_quickstart.sync_framework_stage_links")
