@@ -31,11 +31,11 @@ class TeacherProfileForm(forms.ModelForm):
             "is_active",
         ]
         labels = {
-            "staff_id": "School staff ID",
+            "staff_id": "School staff ID (optional)",
         }
         help_texts = {
-            "staff_id": "Use one stable staff ID per active teacher. It helps imports, attendance and teaching assignments match the correct person.",
-            "campus": "For multi-campus institutions, choose the teacher's normal campus explicitly.",
+            "staff_id": "If the school uses staff numbers, keep one stable ID per active teacher. It helps imports, attendance and teaching assignments match the correct person.",
+            "campus": "Choose the teacher's normal campus when applicable. Leave blank only for genuinely cross-campus staff.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -48,7 +48,6 @@ class TeacherProfileForm(forms.ModelForm):
         if campus_scope is not None:
             campuses = campuses.filter(pk=campus_scope.pk)
             self.fields["campus"].initial = campus_scope
-            self.fields["campus"].required = True
         self.fields["campus"].queryset = campuses
 
         available = list(campuses[:2])
@@ -56,8 +55,6 @@ class TeacherProfileForm(forms.ModelForm):
         if campus_scope is None and len(available) == 1:
             self.default_campus = available[0]
             self.fields["campus"].initial = available[0]
-        elif campus_scope is None and len(available) > 1:
-            self.fields["campus"].required = True
 
     def clean(self):
         cleaned = super().clean()
@@ -68,15 +65,10 @@ class TeacherProfileForm(forms.ModelForm):
         if campus is not None and cleaned.get("campus") is None:
             cleaned["campus"] = campus
 
-        if is_active and not staff_id:
-            self.add_error("staff_id", "Enter a school staff ID before activating this teacher record.")
-        elif is_active and staff_id:
+        if is_active and staff_id:
             duplicate = TeacherProfile.objects.filter(is_active=True, staff_id__iexact=staff_id)
             if self.instance.pk:
                 duplicate = duplicate.exclude(pk=self.instance.pk)
             if duplicate.exists():
                 self.add_error("staff_id", "This staff ID is already used by another active teacher. Use a unique staff ID.")
-
-        if is_active and cleaned.get("campus") is None and self.fields["campus"].queryset.count() > 1:
-            self.add_error("campus", "Choose the teacher's campus. This institution has more than one active campus.")
         return cleaned
