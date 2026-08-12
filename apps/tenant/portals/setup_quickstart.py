@@ -10,8 +10,9 @@ from __future__ import annotations
 from typing import Any, Iterable
 
 from django.db import transaction
+from django.db.models import Q
 
-from apps.tenant.academics.models import Level
+from apps.tenant.academics.models import ClassGroup, Level
 from apps.tenant.education_frameworks.configuration import sync_framework_stage_links
 from apps.tenant.education_frameworks.models import (
     CampusEducationStage,
@@ -22,6 +23,7 @@ from apps.tenant.education_frameworks.services import (
     enable_mapped_stages,
     map_existing_levels,
 )
+from apps.tenant.orgsettings.models import Campus
 
 from .setup_center import _uganda_reference_for_type
 
@@ -40,6 +42,13 @@ UGANDA_STANDARD_LEVEL_ORDER = {
     "S4": 140,
     "S5": 150,
     "S6": 160,
+}
+
+SCHOOL_CLASSGROUP_QUICKSTART_TYPES = {
+    InstitutionEducationProfile.ECD,
+    InstitutionEducationProfile.PRIMARY,
+    InstitutionEducationProfile.SECONDARY,
+    InstitutionEducationProfile.MIXED,
 }
 
 
@@ -118,6 +127,106 @@ def is_uganda_standard_level_quickstart_available(
     )
 
 
+def _classgroup_candidates_for_level(campus: Campus, level: Level):
+    return ClassGroup.objects.filter(level=level).filter(
+        Q(campus=campus) | Q(campus__isnull=True)
+    )
+
+
+def _classgroup_name_conflicts(campus: Campus, level: Level):
+    return ClassGroup.objects.filter(name__iexact=level.name).filter(
+        Q(campus=campus) | Q(campus__isnull=True)
+    )
+
+
+def class_group_quickstart_plan(
+    profile: InstitutionEducationProfile,
+) -> dict[str, Any]:
+    """Plan one class group per active level only when scope is unambiguous."""
+    if profile.institution_type not in SCHOOL_CLASSGROUP_QUICKSTART_TYPES:
+        return {
+            "available": False,
+            "reason": "institution_type",
+            "message": "Higher-education and custom institutions should configure cohorts/classes explicitly.",
+            "creatable": [],
+        }
+
+    campuses = list(
+        Campus.objects.filter(
+            organization=profile.organization,
+            is_active=True,
+        ).order_by("pk")[:2]
+    )
+    if not campuses:
+        return {
+            "available": False,
+            "reason": "no_campus",
+            "message": "Add an active campus before creating class groups.",
+            "creatable": [],
+        }
+    if len(campuses) > 1:
+        return {
+            "available": False,
+            "reason": "multiple_campuses",
+            "message": "Choose classes per campus manually because this institution has multiple active campuses.",
+            "creatable": [],
+        }
+
+    campus = campuses[0]
+    levels = list(Level.objects.filter(is_active=True).order_by("order", "name"))
+    if not levels:
+        return {
+            "available": False,
+            "reason": "no_levels",
+            "message": "Create or synchronize academic levels before creating class groups.",
+            "campus": campus,
+            "creatable": [],
+        }
+
+    creatable: list[dict[str, Any]] = []
+    ready_level_names: list[str] = []
+    inactive_level_names: list[str] = []
+    conflict_level_names: list[str] = []
+
+    for level in levels:
+        existing = _classgroup_candidates_for_level(campus, level).order_by("pk").first()
+        if existing is not None:
+            if existing.is_active:
+                ready_level_names.append(level.name)
+            else:
+                inactive_level_names.append(level.name)
+            continue
+
+        name_conflict = _classgroup_name_conflicts(campus, level).order_by("pk").first()
+        if name_conflict is not None:
+            conflict_level_names.append(level.name)
+            continue
+
+        creatable.append(
+            {
+                "level": level,
+                "level_name": level.name,
+                "class_name": level.name,
+            }
+        )
+
+    return {
+        "available": bool(creatable),
+        "reason": "ready" if creatable else "nothing_to_create",
+        "message": (
+            "Create one class group for each active level that does not already have one."
+            if creatable
+            else "Every active level is already represented or needs administrator review."
+        ),
+        "campus": campus,
+        "campus_name": campus.name,
+        "creatable": creatable,
+        "ready_level_names": ready_level_names,
+        "inactive_level_names": inactive_level_names,
+        "conflict_level_names": conflict_level_names,
+    }
+
+
 @transaction.atomic
 def sync_existing_education_structure(
     profile: InstitutionEducationProfile,
@@ -185,4 +294,45 @@ def bootstrap_uganda_standard_levels(
         "created_names": created_names,
         "planned_levels": len(plan),
         "sync": sync_summary,
+    }
+
+
+@transaction.atomic
+def bootstrap_class_groups_from_levels(
+    profile: InstitutionEducationProfile,
+) -> dict[str, Any]:
+    """Create missing single-campus school class groups without changing existing ones."""
+    plan = class_group_quickstart_plan(profile)
+    if not plan.get("available"):
+        raise ValueError(plan.get("message") or "No safe class-group quick start is available.")
+
+    campus = plan["campus"]
+    created_names: list[str] = []
+    skipped_during_create: list[str] = []
+
+    for row in plan["creatable"]:
+        level = row["level"]
+        if _classgroup_candidates_for_level(campus, level).exists():
+            skipped_during_create.append(level.name)
+            continue
+        if _classgroup_name_conflicts(campus, level).exists():
+            skipped_during_create.append(level.name)
+            continue
+
+        ClassGroup.objects.create(
+            campus=campus,
+            level=level,
+            name=row["class_name"],
+            code="",
+            is_active=True,
+        )
+        created_names.append(row["class_name"])
+
+    return {
+        "campus_name": plan["campus_name"],
+        "created_count": len(created_names),
+        "created_names": created_names,
+        "skipped_during_create": skipped_during_create,
+        "inactive_preserved": plan.get("inactive_level_names", []),
+        "conflicts_preserved": plan.get("conflict_level_names", []),
     }
