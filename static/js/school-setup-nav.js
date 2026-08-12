@@ -3,6 +3,7 @@
 
   const SETUP_PATH = "/admin/school-setup/";
   const STRUCTURE_PATH = "/admin/academics/framework/";
+  const CLASSES_PATH = "/admin/academics/class-groups/";
 
   function currentPath() {
     try {
@@ -117,29 +118,40 @@
     return form;
   }
 
-  function stageSelectionNotice() {
+  function noticeCard(options) {
     const box = document.createElement("div");
     box.className = "rounded-2xl border border-amber-200 bg-amber-50 p-5";
 
     const title = document.createElement("h4");
     title.className = "font-black text-amber-950";
-    title.textContent = "Choose the school stages before creating secondary levels";
+    title.textContent = options.title;
     box.appendChild(title);
 
     const text = document.createElement("p");
     text.className = "mt-2 text-sm leading-6 text-amber-900";
-    text.textContent =
-      "EduManage will not guess whether this institution offers O-Level, A-Level, Primary, or a combination. Enable the actual campus stages first; the standard-level quick start will then create only the matching P/S levels.";
+    text.textContent = options.description;
     box.appendChild(text);
 
-    const link = document.createElement("a");
-    link.href = STRUCTURE_PATH;
-    link.className =
-      "mt-4 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-black text-amber-900 hover:bg-amber-100";
-    link.textContent = "Choose education stages";
-    box.appendChild(link);
+    if (options.href && options.label) {
+      const link = document.createElement("a");
+      link.href = options.href;
+      link.className =
+        "mt-4 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-black text-amber-900 hover:bg-amber-100";
+      link.textContent = options.label;
+      box.appendChild(link);
+    }
 
     return box;
+  }
+
+  function stageSelectionNotice() {
+    return noticeCard({
+      title: "Choose the school stages before creating secondary levels",
+      description:
+        "EduManage will not guess whether this institution offers O-Level, A-Level, Primary, or a combination. Enable the actual campus stages first; the standard-level quick start will then create only the matching P/S levels.",
+      href: STRUCTURE_PATH,
+      label: "Choose education stages",
+    });
   }
 
   function addQuickStartActions() {
@@ -187,7 +199,7 @@
           safety: "Manual administrator corrections are preserved.",
           label: "Synchronize structure",
           icon: "ph-arrows-clockwise",
-          primary: !config.uganda_levels_available,
+          primary: !config.uganda_levels_available && !config.class_groups_available,
         },
         csrfToken
       )
@@ -215,6 +227,40 @@
       );
     } else if (config.uganda_stage_selection_required) {
       grid.appendChild(stageSelectionNotice());
+    }
+
+    if (config.class_groups_available) {
+      const classLevels = Array.isArray(config.class_group_level_names)
+        ? config.class_group_level_names.join(", ")
+        : "the active levels";
+      const campusName = config.class_group_campus_name || "the active campus";
+      grid.appendChild(
+        actionForm(
+          {
+            action: "bootstrap_class_groups",
+            title: "Create missing class groups",
+            description: `At ${campusName}, create one class group for each active level that does not already have one: ${classLevels}.`,
+            safety:
+              "Existing or inactive class groups are preserved. Same-name conflicts are left for administrator review. Streams are not auto-created.",
+            label: "Create missing classes",
+            icon: "ph-users-three",
+            primary: !config.uganda_levels_available,
+            confirmMessage: `Create one missing class group per listed active level at ${campusName}? Existing, inactive, conflicting and campus-less class groups will not be overwritten.`,
+          },
+          csrfToken
+        )
+      );
+    } else if (config.class_group_reason === "multiple_campuses") {
+      grid.appendChild(
+        noticeCard({
+          title: "Classes need campus-by-campus setup",
+          description:
+            config.class_group_message ||
+            "This institution has multiple active campuses, so EduManage will not guess which levels belong at each campus.",
+          href: CLASSES_PATH,
+          label: "Manage classes",
+        })
+      );
     }
 
     section.appendChild(grid);
