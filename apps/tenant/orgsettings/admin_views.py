@@ -32,7 +32,7 @@ def organization_edit(request):
         form = OrganizationProfileForm(request.POST, request.FILES, instance=org)
         if form.is_valid():
             form.save()
-            messages.success(request, "Organization settings saved.")
+            messages.success(request, "Institution profile saved.")
             return redirect("admin_orgsettings_org")
     else:
         form = OrganizationProfileForm(instance=org)
@@ -67,7 +67,7 @@ def campus_create(request):
     org = get_or_create_organization()
 
     if request.method == "POST":
-        form = CampusForm(request.POST, request.FILES)
+        form = CampusForm(request.POST, request.FILES, organization=org)
         if form.is_valid():
             campus = form.save(commit=False)
             campus.organization = org
@@ -78,7 +78,7 @@ def campus_create(request):
             messages.success(request, "Campus created.")
             return redirect("admin_orgsettings_campuses")
     else:
-        form = CampusForm()
+        form = CampusForm(organization=org)
 
     return render(request, "portals/admin/orgsettings/campus_form.html", {"form": form, "mode": "create"})
 
@@ -89,7 +89,7 @@ def campus_edit(request, pk: int):
     campus = get_object_or_404(Campus, organization=org, pk=pk)
 
     if request.method == "POST":
-        form = CampusForm(request.POST, request.FILES, instance=campus)
+        form = CampusForm(request.POST, request.FILES, instance=campus, organization=org)
         if form.is_valid():
             updated = form.save(commit=False)
             with transaction.atomic():
@@ -99,7 +99,7 @@ def campus_edit(request, pk: int):
             messages.success(request, "Campus updated.")
             return redirect("admin_orgsettings_campuses")
     else:
-        form = CampusForm(instance=campus)
+        form = CampusForm(instance=campus, organization=org)
 
     return render(
         request,
