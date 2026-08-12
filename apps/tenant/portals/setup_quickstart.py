@@ -18,6 +18,7 @@ from apps.tenant.education_frameworks.models import (
     CampusEducationStage,
     EducationStage,
     InstitutionEducationProfile,
+    LevelStageMapping,
 )
 from apps.tenant.education_frameworks.services import (
     enable_mapped_stages,
@@ -139,10 +140,55 @@ def _classgroup_name_conflicts(campus: Campus, level: Level):
     )
 
 
+def _campus_stage_ids(
+    profile: InstitutionEducationProfile,
+    campus: Campus,
+) -> set[int]:
+    return set(
+        CampusEducationStage.objects.filter(
+            profile=profile,
+            campus=campus,
+            is_active=True,
+        ).values_list("stage_id", flat=True)
+    )
+
+
+def _mapped_level_ids_for_stages(
+    profile: InstitutionEducationProfile,
+    stage_ids: set[int],
+) -> set[int]:
+    if not stage_ids:
+        return set()
+    return set(
+        LevelStageMapping.objects.filter(
+            profile=profile,
+            stage_id__in=stage_ids,
+        ).values_list("legacy_level_id", flat=True)
+    )
+
+
+def _level_is_in_campus_scope(
+    profile: InstitutionEducationProfile,
+    campus: Campus,
+    level: Level,
+) -> bool:
+    """Re-check live level/stage/campus scope immediately before a write."""
+    if not Level.objects.filter(pk=level.pk, is_active=True).exists():
+        return False
+    stage_ids = _campus_stage_ids(profile, campus)
+    if not stage_ids:
+        return False
+    return LevelStageMapping.objects.filter(
+        profile=profile,
+        legacy_level_id=level.pk,
+        stage_id__in=stage_ids,
+    ).exists()
+
+
 def class_group_quickstart_plan(
     profile: InstitutionEducationProfile,
 ) -> dict[str, Any]:
-    """Plan one class group per active level only when scope is unambiguous."""
+    """Plan one class group per in-scope active level when scope is unambiguous."""
     if profile.institution_type not in SCHOOL_CLASSGROUP_QUICKSTART_TYPES:
         return {
             "available": False,
@@ -173,14 +219,36 @@ def class_group_quickstart_plan(
         }
 
     campus = campuses[0]
-    levels = list(Level.objects.filter(is_active=True).order_by("order", "name"))
+    stage_ids = _campus_stage_ids(profile, campus)
+    if not stage_ids:
+        return {
+            "available": False,
+            "reason": "no_enabled_stages",
+            "message": "Enable and synchronize the education stages taught at this campus before creating class groups.",
+            "campus": campus,
+            "campus_name": campus.name,
+            "creatable": [],
+        }
+
+    mapped_level_ids = _mapped_level_ids_for_stages(profile, stage_ids)
+    all_active_levels = Level.objects.filter(is_active=True)
+    levels = list(
+        all_active_levels.filter(pk__in=mapped_level_ids).order_by("order", "name")
+    )
+    out_of_scope_level_names = list(
+        all_active_levels.exclude(pk__in=mapped_level_ids)
+        .order_by("order", "name")
+        .values_list("name", flat=True)
+    )
     if not levels:
         return {
             "available": False,
-            "reason": "no_levels",
-            "message": "Create or synchronize academic levels before creating class groups.",
+            "reason": "no_mapped_levels",
+            "message": "No active levels are mapped to the education stages enabled for this campus. Synchronize the education structure first.",
             "campus": campus,
+            "campus_name": campus.name,
             "creatable": [],
+            "out_of_scope_level_names": out_of_scope_level_names,
         }
 
     creatable: list[dict[str, Any]] = []
@@ -214,9 +282,9 @@ def class_group_quickstart_plan(
         "available": bool(creatable),
         "reason": "ready" if creatable else "nothing_to_create",
         "message": (
-            "Create one class group for each active level that does not already have one."
+            "Create one class group for each in-scope active level that does not already have one."
             if creatable
-            else "Every active level is already represented or needs administrator review."
+            else "Every in-scope active level is already represented or needs administrator review."
         ),
         "campus": campus,
         "campus_name": campus.name,
@@ -224,6 +292,7 @@ def class_group_quickstart_plan(
         "ready_level_names": ready_level_names,
         "inactive_level_names": inactive_level_names,
         "conflict_level_names": conflict_level_names,
+        "out_of_scope_level_names": out_of_scope_level_names,
     }
 
 
@@ -309,9 +378,13 @@ def bootstrap_class_groups_from_levels(
     campus = plan["campus"]
     created_names: list[str] = []
     skipped_during_create: list[str] = []
+    skipped_out_of_scope: list[str] = []
 
     for row in plan["creatable"]:
         level = row["level"]
+        if not _level_is_in_campus_scope(profile, campus, level):
+            skipped_out_of_scope.append(level.name)
+            continue
         if _classgroup_candidates_for_level(campus, level).exists():
             skipped_during_create.append(level.name)
             continue
@@ -333,6 +406,8 @@ def bootstrap_class_groups_from_levels(
         "created_count": len(created_names),
         "created_names": created_names,
         "skipped_during_create": skipped_during_create,
+        "skipped_out_of_scope": skipped_out_of_scope,
         "inactive_preserved": plan.get("inactive_level_names", []),
         "conflicts_preserved": plan.get("conflict_level_names", []),
+        "out_of_scope_preserved": plan.get("out_of_scope_level_names", []),
     }
