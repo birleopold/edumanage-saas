@@ -7,8 +7,9 @@ from django.utils import timezone
 from apps.tenant.finance.models import CommunicationTemplate, WebhookRetryQueueItem
 from apps.tenant.finance.services import messaging_readiness_snapshot
 
-from .experience_services import build_school_health_score, messaging_activity_summary, school_setup_progress
+from .experience_services import build_school_health_score, messaging_activity_summary
 from .permissions import admin_portal_required
+from .setup_center import school_setup_progress
 
 
 @admin_portal_required
@@ -35,6 +36,7 @@ def admin_communication_center(request):
 
 @admin_portal_required
 def admin_school_setup_guide(request):
+    """One guided doorway for initial school and academic configuration."""
     progress = school_setup_progress()
     return render(
         request,
