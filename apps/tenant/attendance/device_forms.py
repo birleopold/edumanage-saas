@@ -1,4 +1,5 @@
 from django import forms
+from django.db import transaction
 from django.db.models import Q
 
 from apps.tenant.hr.models import StaffProfile
@@ -166,6 +167,24 @@ class AttendancePolicyForm(forms.ModelForm):
             "is_active",
             "settings",
         ]
+        labels = {
+            "name": "Policy name",
+            "campus": "Campus (optional for an institution-wide policy)",
+            "person_type": "Who this policy applies to",
+            "expected_in": "Expected arrival / reporting time (optional)",
+            "expected_out": "Expected sign-out / departure time (optional)",
+            "late_grace_minutes": "Late grace period (minutes)",
+            "early_departure_grace_minutes": "Early-departure grace period (minutes)",
+            "duplicate_window_seconds": "Ignore repeated punches within (seconds)",
+            "minimum_presence_minutes": "Minimum time counted as a full presence (minutes)",
+            "direction_strategy": "How to interpret IN / OUT punches",
+            "weekdays": "Working / school days",
+            "notify_parent_on_arrival": "Notify parent when a learner arrives",
+            "notify_parent_on_departure": "Notify parent when a learner leaves",
+            "is_default": "Use this as the default policy for this person type and campus",
+            "is_active": "This attendance policy is in use",
+            "settings": "Advanced settings (optional)",
+        }
         widgets = {
             "expected_in": forms.TimeInput(attrs={"type": "time"}),
             "expected_out": forms.TimeInput(attrs={"type": "time"}),
@@ -173,9 +192,15 @@ class AttendancePolicyForm(forms.ModelForm):
             "settings": forms.Textarea(attrs={"rows": 4}),
         }
         help_texts = {
-            "minimum_presence_minutes": "Set 0 to disable minimum-duration checks.",
-            "direction_strategy": "FIRST_LAST is safest for cheap devices that do not identify IN versus OUT.",
-            "weekdays": "Monday=0, Tuesday=1 ... Sunday=6. Leave [] for Monday-Friday.",
+            "expected_in": "For staff, this is the normal reporting time used for lateness checks. Leave blank if the school only wants presence/days attended.",
+            "expected_out": "For staff, this is the normal sign-out time used for early-departure checks. Leave blank if the school only wants presence/days attended.",
+            "minimum_presence_minutes": "Set 0 when the school does not require a minimum time on site.",
+            "direction_strategy": "FIRST_LAST is usually safest for simple/low-cost devices that do not distinguish IN from OUT.",
+            "weekdays": "Monday=0, Tuesday=1, Wednesday=2, Thursday=3, Friday=4, Saturday=5, Sunday=6. Leave [] for the normal Monday-Friday week.",
+            "notify_parent_on_arrival": "Student policies only. This is ignored for staff policies.",
+            "notify_parent_on_departure": "Student policies only. This is ignored for staff policies.",
+            "is_default": "If selected, EduManage automatically removes the Default flag from another active policy with the same person type and campus scope.",
+            "settings": "Advanced configuration. Most schools should leave this unchanged.",
         }
 
     def __init__(self, *args, campus_scope=None, **kwargs):
@@ -189,6 +214,55 @@ class AttendancePolicyForm(forms.ModelForm):
         self.fields["campus"].queryset = campuses
         for name, field in self.fields.items():
             field.widget.attrs["class"] = CHECK_CLASS if isinstance(field.widget, forms.CheckboxInput) else BASE_CLASS
+
+    def clean_weekdays(self):
+        value = self.cleaned_data.get("weekdays")
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise forms.ValidationError(
+                "Enter weekdays as a list, for example [0,1,2,3,4] for Monday-Friday."
+            )
+        normalized = []
+        for day in value:
+            if isinstance(day, bool) or not isinstance(day, int) or day < 0 or day > 6:
+                raise forms.ValidationError(
+                    "Weekdays must use whole numbers from 0 (Monday) to 6 (Sunday)."
+                )
+            if day not in normalized:
+                normalized.append(day)
+        return sorted(normalized)
+
+    def clean(self):
+        cleaned = super().clean()
+        person_type = cleaned.get("person_type")
+        is_default = bool(cleaned.get("is_default"))
+        is_active = bool(cleaned.get("is_active"))
+        if is_default and not is_active:
+            self.add_error(
+                "is_active",
+                "A default attendance policy must be active. Turn it on or remove the Default selection.",
+            )
+        if person_type == AttendancePolicy.STAFF:
+            cleaned["notify_parent_on_arrival"] = False
+            cleaned["notify_parent_on_departure"] = False
+        return cleaned
+
+    def save(self, commit=True):
+        item = super().save(commit=False)
+        if not commit:
+            return item
+        with transaction.atomic():
+            if item.is_active and item.is_default:
+                AttendancePolicy.objects.filter(
+                    is_active=True,
+                    is_default=True,
+                    person_type=item.person_type,
+                    campus_id=item.campus_id,
+                ).exclude(pk=item.pk).update(is_default=False)
+            item.save()
+            self._save_m2m()
+        return item
 
 
 class AttendanceCSVImportForm(forms.Form):
