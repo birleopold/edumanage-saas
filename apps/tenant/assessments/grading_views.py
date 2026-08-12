@@ -30,7 +30,7 @@ def grading_framework_dashboard(request):
 
     readiness = grading_framework_readiness()
     profiles = GradingProfile.objects.select_related(
-        "grading_scale", "campus", "stage", "level", "program", "academic_term"
+        "grading_scale", "campus", "stage", "level", "program", "course", "academic_term"
     ).prefetch_related("grading_scale__ranges")
     rows = [{"profile": profile, "errors": grading_profile_errors(profile)} for profile in profiles]
     return render(

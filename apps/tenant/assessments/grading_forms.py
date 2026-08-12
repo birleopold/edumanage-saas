@@ -16,6 +16,7 @@ class GradingProfileForm(forms.ModelForm):
             "stage",
             "level",
             "program",
+            "course",
             "academic_term",
             "overall_aggregation",
             "incomplete_result_policy",
@@ -29,6 +30,7 @@ class GradingProfileForm(forms.ModelForm):
         ]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
         help_texts = {
+            "course": "Optional. Choose a subject/course when this rule should override the broader grading rule only for that subject.",
             "priority": "Higher priority wins when more than one valid profile matches.",
             "is_default": "Used as a tie-breaker after priority and scope specificity.",
             "promotion_percentage": "Leave blank to disable automatic promotion or progression status.",
