@@ -232,20 +232,20 @@
     if (config.class_groups_available) {
       const classLevels = Array.isArray(config.class_group_level_names)
         ? config.class_group_level_names.join(", ")
-        : "the active levels";
+        : "the mapped in-scope levels";
       const campusName = config.class_group_campus_name || "the active campus";
       grid.appendChild(
         actionForm(
           {
             action: "bootstrap_class_groups",
             title: "Create missing class groups",
-            description: `At ${campusName}, create one class group for each active level that does not already have one: ${classLevels}.`,
+            description: `At ${campusName}, create one class group only for mapped active levels belonging to education stages enabled at this campus: ${classLevels}.`,
             safety:
-              "Existing or inactive class groups are preserved. Same-name conflicts are left for administrator review. Streams are not auto-created.",
+              "Unmapped or out-of-stage levels are excluded. Existing or inactive class groups are preserved, same-name conflicts require review, and streams are not auto-created.",
             label: "Create missing classes",
             icon: "ph-users-three",
             primary: !config.uganda_levels_available,
-            confirmMessage: `Create one missing class group per listed active level at ${campusName}? Existing, inactive, conflicting and campus-less class groups will not be overwritten.`,
+            confirmMessage: `Create one missing class group per listed in-scope level at ${campusName}? Out-of-stage, unmapped, existing, inactive, conflicting and campus-less class groups will not be overwritten.`,
           },
           csrfToken
         )
@@ -259,6 +259,20 @@
             "This institution has multiple active campuses, so EduManage will not guess which levels belong at each campus.",
           href: CLASSES_PATH,
           label: "Manage classes",
+        })
+      );
+    } else if (
+      config.class_group_reason === "no_enabled_stages" ||
+      config.class_group_reason === "no_mapped_levels"
+    ) {
+      grid.appendChild(
+        noticeCard({
+          title: "Synchronize education stages before creating classes",
+          description:
+            config.class_group_message ||
+            "Class automation is available only after levels are mapped to education stages enabled for the campus.",
+          href: STRUCTURE_PATH,
+          label: "Review education structure",
         })
       );
     }
