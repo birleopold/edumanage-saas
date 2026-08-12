@@ -1,6 +1,7 @@
 {% load static %}
 {% include "components/pwa_meta.html" %}
 {% if feature_flags %}{{ feature_flags|json_script:"edu-feature-flags" }}{% endif %}
+{% if school_setup_quickstart %}{{ school_setup_quickstart|json_script:"school-setup-quickstart-config" }}{% endif %}
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="preconnect" href="https://cdn.tailwindcss.com">
 <link rel="stylesheet" href="{% static 'css/edumanage-system.css' %}">

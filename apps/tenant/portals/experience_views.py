@@ -1,7 +1,9 @@
 """Staff-facing UX hub views (communication center, setup guide, system status)."""
 
+from django.contrib import messages
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.middleware.csrf import get_token
+from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from apps.tenant.finance.models import CommunicationTemplate, WebhookRetryQueueItem
@@ -10,6 +12,11 @@ from apps.tenant.finance.services import messaging_readiness_snapshot
 from .experience_services import build_school_health_score, messaging_activity_summary
 from .permissions import admin_portal_required
 from .setup_center import school_setup_progress
+from .setup_quickstart import (
+    bootstrap_uganda_standard_levels,
+    sync_existing_education_structure,
+    uganda_standard_level_plan,
+)
 
 
 @admin_portal_required
@@ -38,6 +45,58 @@ def admin_communication_center(request):
 def admin_school_setup_guide(request):
     """One guided doorway for initial school and academic configuration."""
     progress = school_setup_progress()
+    profile = progress["education_profile"]
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+
+        if action == "sync_education_structure":
+            summary = sync_existing_education_structure(profile)
+            mapping = summary["mapping"]
+            links = summary["framework_links"]
+            messages.success(
+                request,
+                "Education structure synchronized: "
+                f"{mapping['created']} level mapping(s) created, "
+                f"{mapping['updated']} updated, "
+                f"{summary['campus_stages_created']} campus stage(s) added and "
+                f"{links['updated']} curriculum link(s) refreshed. "
+                f"{mapping['manual_preserved']} administrator correction(s) were preserved.",
+            )
+        elif action == "bootstrap_uganda_levels":
+            try:
+                summary = bootstrap_uganda_standard_levels(profile)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                sync_summary = summary["sync"]
+                messages.success(
+                    request,
+                    "Uganda level quick start completed: "
+                    f"{summary['created_levels']} missing level(s) created, "
+                    f"{summary['existing_levels']} existing level(s) preserved and "
+                    f"{summary['inactive_preserved']} inactive record(s) left unchanged. "
+                    f"{sync_summary['campus_stages_created']} campus stage(s) were added during synchronization.",
+                )
+        else:
+            messages.warning(request, "No School Setup action was selected.")
+
+        return redirect("admin_school_setup_guide")
+
+    # This page exposes authenticated POST quick actions through progressive
+    # enhancement. Force CSRF token creation so the injected forms remain
+    # protected by Django's normal CSRF middleware.
+    get_token(request)
+    uganda_level_plan = uganda_standard_level_plan(profile)
+    progress["school_setup_quickstart"] = {
+        "uganda_levels_available": bool(uganda_level_plan),
+        "uganda_level_names": [row["name"] for row in uganda_level_plan],
+        "uganda_stage_selection_required": bool(
+            progress.get("is_uganda_framework")
+            and not uganda_level_plan
+            and profile.institution_type in {"SECONDARY", "MIXED"}
+        ),
+    }
     return render(
         request,
         "portals/admin/experience/school_setup_guide.html",
