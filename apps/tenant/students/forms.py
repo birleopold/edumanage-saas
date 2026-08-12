@@ -39,13 +39,13 @@ class StudentProfileForm(forms.ModelForm):
         ]
         labels = {
             "stream": "Class stream (optional)",
-            "student_id": "School student ID / admission number",
+            "student_id": "School student ID / admission number (optional)",
             "learner_id": "National / external learner ID (optional)",
             "nin": "NIN (optional)",
         }
         help_texts = {
             "stream": "Choose a stream if the school uses streams. Learners can also be academically placed through current subject/class enrollments.",
-            "student_id": "Use one stable school ID per active learner. EduManage uses it for imports, reports and identity matching.",
+            "student_id": "If the school uses admission numbers, keep one stable ID per active learner. It helps imports, reports and identity matching.",
             "campus": "For multi-campus institutions, choose the campus explicitly.",
         }
         widgets = {
@@ -102,11 +102,8 @@ class StudentProfileForm(forms.ModelForm):
         if campus is not None and cleaned.get("campus") is None:
             cleaned["campus"] = campus
 
-        if is_active and not student_id:
-            self.add_error("student_id", "Enter the learner's school student ID/admission number before activating the record.")
-        elif is_active and self._duplicate_active_value("student_id", student_id):
+        if is_active and student_id and self._duplicate_active_value("student_id", student_id):
             self.add_error("student_id", "This student ID is already used by another active learner. Use a unique school ID.")
-
         if is_active and nin and self._duplicate_active_value("nin", nin):
             self.add_error("nin", "This NIN is already recorded for another active learner. Check the learner record before continuing.")
         if is_active and learner_id and self._duplicate_active_value("learner_id", learner_id):
