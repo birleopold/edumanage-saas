@@ -13,7 +13,9 @@ from .experience_services import build_school_health_score, messaging_activity_s
 from .permissions import admin_portal_required
 from .setup_center import school_setup_progress
 from .setup_quickstart import (
+    bootstrap_class_groups_from_levels,
     bootstrap_uganda_standard_levels,
+    class_group_quickstart_plan,
     sync_existing_education_structure,
     uganda_standard_level_plan,
 )
@@ -78,6 +80,19 @@ def admin_school_setup_guide(request):
                     f"{summary['inactive_preserved']} inactive record(s) left unchanged. "
                     f"{sync_summary['campus_stages_created']} campus stage(s) were added during synchronization.",
                 )
+        elif action == "bootstrap_class_groups":
+            try:
+                summary = bootstrap_class_groups_from_levels(profile)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    "Class-group quick start completed for "
+                    f"{summary['campus_name']}: {summary['created_count']} class group(s) created. "
+                    f"{len(summary['inactive_preserved'])} inactive existing class group(s) and "
+                    f"{len(summary['conflicts_preserved'])} name conflict(s) were left unchanged for administrator review.",
+                )
         else:
             messages.warning(request, "No School Setup action was selected.")
 
@@ -88,6 +103,7 @@ def admin_school_setup_guide(request):
     # protected by Django's normal CSRF middleware.
     get_token(request)
     uganda_level_plan = uganda_standard_level_plan(profile)
+    class_group_plan = class_group_quickstart_plan(profile)
     progress["school_setup_quickstart"] = {
         "uganda_levels_available": bool(uganda_level_plan),
         "uganda_level_names": [row["name"] for row in uganda_level_plan],
@@ -96,6 +112,13 @@ def admin_school_setup_guide(request):
             and not uganda_level_plan
             and profile.institution_type in {"SECONDARY", "MIXED"}
         ),
+        "class_groups_available": bool(class_group_plan.get("available")),
+        "class_group_level_names": [
+            row["level_name"] for row in class_group_plan.get("creatable", [])
+        ],
+        "class_group_campus_name": class_group_plan.get("campus_name", ""),
+        "class_group_reason": class_group_plan.get("reason", ""),
+        "class_group_message": class_group_plan.get("message", ""),
     }
     return render(
         request,
