@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 from datetime import timedelta
 
@@ -92,7 +93,7 @@ class UserRole(models.Model):
 
 class PasswordSetupToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="setup_tokens")
-    token = models.CharField(max_length=64, unique=True, db_index=True)
+    token_digest = models.CharField(max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
@@ -112,9 +113,25 @@ class PasswordSetupToken(models.Model):
 
     @classmethod
     def create_for_user(cls, user: User, created_by=None, validity_hours: int = 72):
-        token = secrets.token_urlsafe(32)
+        raw_token = secrets.token_urlsafe(32)
         expires_at = timezone.now() + timedelta(hours=validity_hours)
-        return cls.objects.create(user=user, token=token, expires_at=expires_at, created_by=created_by)
+        obj = cls.objects.create(
+            user=user,
+            token_digest=cls.digest(raw_token),
+            expires_at=expires_at,
+            created_by=created_by,
+        )
+        # The bearer secret is available only to the creator and is never stored.
+        obj.raw_token = raw_token
+        return obj
+
+    @staticmethod
+    def digest(raw_token: str) -> str:
+        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def resolve(cls, raw_token: str):
+        return cls.objects.filter(token_digest=cls.digest(raw_token)).first()
 
     def is_valid(self) -> bool:
         if self.used_at is not None:

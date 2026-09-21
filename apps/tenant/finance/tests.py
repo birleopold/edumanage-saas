@@ -353,6 +353,8 @@ class FinanceReminderPhaseOneTests(TestCase):
 
     def test_integration_api_key_auth_for_message_logs_endpoint(self):
         key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Test Key")
+        message_scope = IntegrationScope.objects.get(code="messages-read")
+        IntegrationApiKeyScope.objects.create(api_key=key_obj, scope=message_scope)
         self.assertTrue(key_obj.is_active)
         self.assertIsNone(key_obj.last_used_at)
         response = self.client.get(
@@ -497,6 +499,8 @@ class FinanceReminderPhaseOneTests(TestCase):
 
     def test_webhook_deliveries_api_includes_retry_failure_summary(self):
         key_obj, raw_key = IntegrationApiKey.create_with_plaintext("Webhook Dashboard")
+        webhook_scope = IntegrationScope.objects.get(code="webhooks-read")
+        IntegrationApiKeyScope.objects.create(api_key=key_obj, scope=webhook_scope)
         endpoint = WebhookEndpoint.objects.create(
             name="Dashboard endpoint",
             target_url="https://127.0.0.1:1/unreachable",

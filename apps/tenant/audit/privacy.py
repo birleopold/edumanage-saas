@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -66,8 +67,12 @@ class PrivacyAcceptanceGuard:
                         query = urlencode({"next": request.get_full_path()})
                         return redirect(f"{_privacy_accept_path()}?{query}")
         except Exception:
-            # Fail open so a storage or route fault cannot lock every tenant user out.
-            logger.exception("Privacy acceptance guard failed open")
+            logger.exception("Privacy acceptance guard failed")
+            if getattr(settings, "PRIVACY_ACCEPTANCE_REQUIRED", False):
+                return HttpResponse(
+                    "Privacy verification is temporarily unavailable. Please try again shortly.",
+                    status=503,
+                )
         return self.get_response(request)
 
 

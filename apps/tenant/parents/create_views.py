@@ -70,7 +70,7 @@ def parent_create(request):
                 if parent.user_id and temp_password:
                     if parent.email and send_email_flag:
                         setup_token = PasswordSetupToken.create_for_user(parent.user, created_by=request.user)
-                        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.token}/")
+                        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.raw_token}/")
                         send_mail(
                             subject="Set Up Your Parent Portal Account",
                             message=(

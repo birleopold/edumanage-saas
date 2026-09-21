@@ -11,6 +11,32 @@ class FeeItemForm(forms.ModelForm):
     class Meta:
         model = FeeItem
         fields = ["code", "name", "amount", "is_active"]
+        labels = {
+            "code": "Fee code",
+            "name": "Fee name",
+            "amount": "Standard amount",
+            "is_active": "This fee item is in use",
+        }
+        help_texts = {
+            "code": "Use a short stable code such as TUITION, LUNCH or TRANSPORT. The code must be unique.",
+            "name": "Use wording administrators and parents will recognise on invoices and statements.",
+            "amount": "Enter 0 only when a zero-value fee item is intentional. Negative fee amounts are not allowed.",
+            "is_active": "Turn this off when the school should stop offering this fee item. Existing invoices are not deleted.",
+        }
+
+    def clean_code(self):
+        return (self.cleaned_data.get("code") or "").strip().upper()
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
+
+    def clean_amount(self):
+        value = self.cleaned_data.get("amount")
+        if value is not None and value < 0:
+            raise forms.ValidationError(
+                "Fee amount cannot be negative. Use a fee adjustment/discount workflow when reducing an invoice."
+            )
+        return value
 
 
 class InvoiceForm(forms.ModelForm):

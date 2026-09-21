@@ -145,10 +145,24 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        (
+            "rest_framework.throttling.AnonRateThrottle",
+            "rest_framework.throttling.UserRateThrottle",
+        )
+        if not DEBUG
+        else ()
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": config("API_ANON_RATE", default="60/minute"),
+        "user": config("API_USER_RATE", default="300/minute"),
+    },
 }
 
 AUDIT_LOG_ENABLED = config("AUDIT_LOG_ENABLED", default=True, cast=bool)
 ADMIN_2FA_REQUIRED = config("ADMIN_2FA_REQUIRED", default=False, cast=bool)
+ADMIN_2FA_CODE_TTL_SECONDS = config("ADMIN_2FA_CODE_TTL_SECONDS", default=600, cast=int)
+ADMIN_2FA_MAX_ATTEMPTS = config("ADMIN_2FA_MAX_ATTEMPTS", default=5, cast=int)
 PRIVACY_POLICY_VERSION = config("PRIVACY_POLICY_VERSION", default="1.0")
 PRIVACY_ACCEPTANCE_REQUIRED = config(
     "PRIVACY_ACCEPTANCE_REQUIRED",

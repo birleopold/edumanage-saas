@@ -383,7 +383,7 @@ def send_bulk_setup_emails(credentials: List[dict], request, admin_user: User):
         if not student.email or not setup_token:
             continue
 
-        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.token}/")
+        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.raw_token}/")
 
         try:
             send_mail(

@@ -205,7 +205,7 @@ def student_create(request):
                     if obj.email and send_email_flag:
                         setup_token = PasswordSetupToken.create_for_user(obj.user, created_by=request.user)
                         setup_url = request.build_absolute_uri(
-                            f"/users/setup/{setup_token.token}/"
+                            f"/users/setup/{setup_token.raw_token}/"
                         )
                         send_mail(
                             subject="Set Up Your Student Portal Account",
@@ -314,7 +314,7 @@ def student_edit(request, pk: int):
                 return redirect("admin_students_edit", pk=pk)
             
             setup_token = PasswordSetupToken.create_for_user(student.user, created_by=request.user)
-            setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.token}/")
+            setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.raw_token}/")
             
             send_mail(
                 subject="Reset Your Student Portal Password",

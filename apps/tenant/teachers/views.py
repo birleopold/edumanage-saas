@@ -145,7 +145,7 @@ def teacher_create(request):
                 if obj.user_id and temp_password:
                     if obj.email and send_email_flag:
                         setup_token = PasswordSetupToken.create_for_user(obj.user, created_by=request.user)
-                        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.token}/")
+                        setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.raw_token}/")
                         send_mail(
                             subject="Set Up Your Teacher Portal Account",
                             message=(
@@ -230,7 +230,7 @@ def teacher_edit(request, pk: int):
                 return redirect("admin_teachers_edit", pk=pk)
             
             setup_token = PasswordSetupToken.create_for_user(teacher.user, created_by=request.user)
-            setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.token}/")
+            setup_url = request.build_absolute_uri(f"/users/setup/{setup_token.raw_token}/")
             
             send_mail(
                 subject="Reset Your Teacher Portal Password",

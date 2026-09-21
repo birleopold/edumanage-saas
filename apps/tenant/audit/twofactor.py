@@ -1,9 +1,11 @@
-import random
+import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
+from django.utils.crypto import constant_time_compare, salted_hmac
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -38,21 +40,51 @@ def user_needs_2fa(user):
     try:
         return UserTwoFactorSetting.objects.filter(user=user, is_enabled=True).exists()
     except Exception:
+        if getattr(settings, "ADMIN_2FA_REQUIRED", False):
+            raise
         return False
 
 
+def _code_digest(code):
+    return salted_hmac("edumanage.admin-2fa", code).hexdigest()
+
+
+def _clear_code(request):
+    for key in ("two_factor_code_digest", "two_factor_code_at", "two_factor_attempts"):
+        request.session.pop(key, None)
+
+
+def _code_is_current(request, code):
+    created_raw = request.session.get("two_factor_code_at")
+    digest = request.session.get("two_factor_code_digest") or ""
+    if not created_raw or not digest:
+        return False
+    try:
+        created = timezone.datetime.fromisoformat(created_raw)
+        if timezone.is_naive(created):
+            created = timezone.make_aware(created)
+    except (TypeError, ValueError):
+        return False
+    ttl_seconds = getattr(settings, "ADMIN_2FA_CODE_TTL_SECONDS", 600)
+    if timezone.now() - created > timedelta(seconds=ttl_seconds):
+        return False
+    return constant_time_compare(digest, _code_digest(code))
+
+
 def generate_code(request):
-    code = f"{random.randint(100000, 999999)}"
-    request.session["two_factor_code"] = code
+    code = f"{secrets.randbelow(900000) + 100000:06d}"
+    request.session["two_factor_code_digest"] = _code_digest(code)
     request.session["two_factor_code_at"] = timezone.now().isoformat()
-    if request.user.email:
-        send_mail(
-            "EduManage verification code",
-            f"Your verification code is {code}.",
-            getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edumanage.local"),
-            [request.user.email],
-            fail_silently=True,
-        )
+    request.session["two_factor_attempts"] = 0
+    if not request.user.email:
+        raise ValueError("An email address is required for two-step verification.")
+    send_mail(
+        "EduManage verification code",
+        f"Your verification code is {code}.",
+        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edumanage.local"),
+        [request.user.email],
+        fail_silently=False,
+    )
     return code
 
 
@@ -73,8 +105,7 @@ def two_factor_settings(request):
         setting.is_enabled = enabled
         setting.save()
         request.session.pop("admin_2fa_verified", None)
-        request.session.pop("two_factor_code", None)
-        request.session.pop("two_factor_code_at", None)
+        _clear_code(request)
 
         if enabled:
             messages.success(request, "Verification codes are enabled. Complete one verification to finish setup.")
@@ -98,13 +129,25 @@ def verify_2fa(request):
     setting, _ = UserTwoFactorSetting.objects.get_or_create(user=request.user)
     if request.method == "POST":
         code = (request.POST.get("code") or "").strip()
-        if code and code == request.session.get("two_factor_code"):
+        attempts = int(request.session.get("two_factor_attempts", 0)) + 1
+        request.session["two_factor_attempts"] = attempts
+        max_attempts = getattr(settings, "ADMIN_2FA_MAX_ATTEMPTS", 5)
+        if attempts <= max_attempts and code and _code_is_current(request, code):
             request.session["admin_2fa_verified"] = True
+            _clear_code(request)
             setting.last_verified_at = timezone.now()
             setting.is_enabled = True
             setting.save(update_fields=["last_verified_at", "is_enabled"])
             messages.success(request, "Verification complete.")
             return redirect(portal_home_url_for(request.user))
-        messages.error(request, "Invalid verification code.")
-    generate_code(request)
+        if attempts >= max_attempts:
+            _clear_code(request)
+            messages.error(request, "Too many attempts. A new code has been sent.")
+        else:
+            messages.error(request, "Invalid or expired verification code.")
+    if not request.session.get("two_factor_code_digest"):
+        try:
+            generate_code(request)
+        except Exception:
+            messages.error(request, "We could not send a verification code. Please contact support.")
     return render(request, "portals/audit/verify_2fa.html", {"setting": setting})

@@ -4,30 +4,18 @@ import json
 
 from django.conf import settings
 from django.utils import timezone
-from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.tenant.finance import services as finance_services
-from apps.tenant.finance.models import IntegrationApiKey, OutboundMessageLog, WebhookDelivery, WebhookRetryQueueItem
-
-
-class HasIntegrationApiKey(BasePermission):
-    message = "Valid X-API-Key header is required."
-
-    def has_permission(self, request, view):
-        raw = (request.headers.get("X-API-Key") or "").strip()
-        key_obj = IntegrationApiKey.resolve_active_key(raw)
-        if not key_obj:
-            return False
-        key_obj.mark_used()
-        request.integration_api_key = key_obj
-        return True
+from apps.tenant.finance.integration_security import HasScopedIntegrationKey
+from apps.tenant.finance.models import OutboundMessageLog, WebhookDelivery, WebhookRetryQueueItem
 
 
 class IntegrationHealth(APIView):
     authentication_classes = []
-    permission_classes = [HasIntegrationApiKey]
+    permission_classes = [HasScopedIntegrationKey]
+    required_scope = "health-read"
 
     def get(self, request):
         return Response(
@@ -41,7 +29,8 @@ class IntegrationHealth(APIView):
 
 class IntegrationMessageLogs(APIView):
     authentication_classes = []
-    permission_classes = [HasIntegrationApiKey]
+    permission_classes = [HasScopedIntegrationKey]
+    required_scope = "messages-read"
 
     def get(self, request):
         limit_raw = request.GET.get("limit") or "50"
@@ -70,12 +59,11 @@ class IntegrationMessageLogs(APIView):
                     "message_type": log.message_type,
                     "channel": log.channel,
                     "status": log.status,
-                    "phone_raw": log.phone_raw,
-                    "phone_normalized": log.phone_normalized,
+                    "phone": f"***{(log.phone_normalized or log.phone_raw)[-4:]}" if (log.phone_normalized or log.phone_raw) else "",
                     "invoice_id": log.invoice_id,
                     "payment_id": log.payment_id,
                     "provider_message_id": log.provider_message_id,
-                    "error_message": log.error_message,
+                    "has_error": bool(log.error_message),
                     "created_at": log.created_at.isoformat() if log.created_at else None,
                 }
             )
@@ -84,7 +72,8 @@ class IntegrationMessageLogs(APIView):
 
 class IntegrationWebhookDeliveries(APIView):
     authentication_classes = []
-    permission_classes = [HasIntegrationApiKey]
+    permission_classes = [HasScopedIntegrationKey]
+    required_scope = "webhooks-read"
 
     def get(self, request):
         limit_raw = request.GET.get("limit") or "50"
@@ -110,7 +99,7 @@ class IntegrationWebhookDeliveries(APIView):
                     "event_type": d.event_type,
                     "status_code": d.status_code,
                     "success": d.success,
-                    "error_message": d.error_message,
+                    "has_error": bool(d.error_message),
                     "created_at": d.created_at.isoformat() if d.created_at else None,
                 }
             )

@@ -2,6 +2,7 @@ import logging
 from urllib.parse import urlencode
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import redirect
 
 from .guards import _two_factor_exempt_paths
@@ -48,8 +49,14 @@ class RequestLogMiddleware:
                         query = urlencode({"next": request.get_full_path()})
                         return redirect(f"{_privacy_accept_path()}?{query}")
         except Exception:
-            # Authentication gates fail open but leave operational evidence.
-            logger.exception("Account gate enforcement failed open")
+            logger.exception("Account gate enforcement failed")
+            if getattr(settings, "ADMIN_2FA_REQUIRED", False) or getattr(
+                settings, "PRIVACY_ACCEPTANCE_REQUIRED", False
+            ):
+                return HttpResponse(
+                    "Account verification is temporarily unavailable.",
+                    status=503,
+                )
 
         response = self.get_response(request)
         try:

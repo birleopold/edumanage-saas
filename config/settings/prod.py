@@ -4,6 +4,15 @@ from .tenants import *
 
 DEBUG = False
 ENVIRONMENT = "production"
+CACHES = {
+    "default": {
+        # A shared filesystem cache gives all Gunicorn workers consistent
+        # throttling/idempotency state without requiring an extra service.
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": config("DJANGO_CACHE_LOCATION", default="/var/tmp/edumanage-cache"),
+        "TIMEOUT": config("DJANGO_CACHE_TIMEOUT", default=300, cast=int),
+    }
+}
 EDUMANAGE_PUBLIC_IPV4 = config("EDUMANAGE_PUBLIC_IPV4", default="")
 EDUMANAGE_ORIGIN_HOST = config("EDUMANAGE_ORIGIN_HOST", default="")
 EDUMANAGE_CNAME_TARGET = config("EDUMANAGE_CNAME_TARGET", default="")

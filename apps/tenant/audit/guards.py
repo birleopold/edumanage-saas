@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
@@ -40,6 +41,10 @@ class AdminTwoFactorGuard:
             ):
                 return redirect("audit_verify_2fa")
         except Exception:
-            # Fail open and emit evidence rather than creating a platform-wide loop.
-            logger.exception("Administrator two-factor guard failed open")
+            logger.exception("Administrator two-factor guard failed")
+            if getattr(settings, "ADMIN_2FA_REQUIRED", False):
+                return HttpResponse(
+                    "Administrator verification is temporarily unavailable.",
+                    status=503,
+                )
         return self.get_response(request)

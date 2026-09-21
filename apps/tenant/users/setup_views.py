@@ -11,7 +11,10 @@ from .models import PasswordSetupToken, User
 @require_http_methods(["GET", "POST"])
 def password_setup(request, token: str):
     """Handle password setup via one-time token link."""
-    setup_token = get_object_or_404(PasswordSetupToken, token=token)
+    setup_token = get_object_or_404(
+        PasswordSetupToken,
+        token_digest=PasswordSetupToken.digest(token),
+    )
     
     if not setup_token.is_valid():
         return render(

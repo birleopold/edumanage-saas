@@ -1,10 +1,11 @@
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -24,6 +25,25 @@ from apps.tenant.students.models import StudentProfile
 from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.transport.models import StudentTransportAssignment
 from apps.tenant.users.models import MobileDevice, Role
+
+from .mobile_api_serializers import AttendanceMarkSerializer
+
+
+class HasAnyRole(BasePermission):
+    allowed_roles = frozenset()
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.roles.filter(code__in=self.allowed_roles).exists()
+        )
+
+
+class IsTeacherOrSchoolAdmin(HasAnyRole):
+    allowed_roles = frozenset(
+        {Role.TEACHER, Role.ADMIN, Role.CAMPUS_ADMIN, Role.PRINCIPAL}
+    )
 
 
 class MobileAPIView(APIView):
@@ -130,6 +150,8 @@ class MobileStudents(MobileAPIView):
 
 
 class MobileTeachers(MobileAPIView):
+    permission_classes = [IsAuthenticated, IsTeacherOrSchoolAdmin]
+
     def get(self, request):
         qs = TeacherProfile.objects.filter(is_active=True).select_related("campus")[:100]
         return Response({"teachers": [serialize_teacher(t) for t in qs]})
@@ -156,21 +178,36 @@ class MobileAttendance(MobileAPIView):
 
 
 class MobileTeacherAttendanceMark(MobileAPIView):
+    permission_classes = [IsAuthenticated, IsTeacherOrSchoolAdmin]
+
+    @transaction.atomic
     def post(self, request, offering_id: int):
         teacher = teacher_for_user(request.user)
         if not teacher:
             return Response({"detail": "Teacher profile required."}, status=status.HTTP_403_FORBIDDEN)
         offering = get_object_or_404(CourseOffering, pk=offering_id, teacher=teacher, is_active=True)
-        date_value = request.data.get("date") or timezone.now().date()
+        serializer = AttendanceMarkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        date_value = serializer.validated_data.get("date") or timezone.now().date()
         session, _ = AttendanceSession.objects.get_or_create(offering=offering, date=date_value, defaults={"taken_by": teacher})
-        saved = 0
-        for row in request.data.get("entries", []):
-            student_id = row.get("student_id")
-            if not Enrollment.objects.filter(student_id=student_id, offering=offering, status=Enrollment.ACTIVE).exists():
-                continue
+        entries = serializer.validated_data["entries"]
+        student_ids = {row["student_id"] for row in entries}
+        enrolled_ids = set(
+            Enrollment.objects.filter(
+                student_id__in=student_ids,
+                offering=offering,
+                status=Enrollment.ACTIVE,
+            ).values_list("student_id", flat=True)
+        )
+        missing = sorted(student_ids - enrolled_ids)
+        if missing:
+            from rest_framework.exceptions import ValidationError
+
+            raise ValidationError({"entries": f"Students are not actively enrolled: {missing}"})
+        for row in entries:
+            student_id = row["student_id"]
             AttendanceEntry.objects.update_or_create(session=session, student_id=student_id, defaults={"status": row.get("status") or AttendanceEntry.PRESENT, "note": row.get("note") or ""})
-            saved += 1
-        return Response({"session_id": session.id, "saved": saved})
+        return Response({"session_id": session.id, "saved": len(entries)})
 
 
 class MobileFinance(MobileAPIView):

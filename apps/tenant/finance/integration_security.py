@@ -16,7 +16,11 @@ class HasScopedIntegrationKey(BasePermission):
         if not required:
             key_obj.mark_used()
             return True
-        allowed = IntegrationApiKeyScope.objects.filter(api_key=key_obj, scope__code=required, scope__is_active=True).exists()
+        allowed = IntegrationApiKeyScope.objects.filter(
+            api_key=key_obj,
+            scope__code__in=(required, "integrations-admin"),
+            scope__is_active=True,
+        ).exists()
         if allowed:
             key_obj.mark_used()
         return allowed
