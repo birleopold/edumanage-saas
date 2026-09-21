@@ -156,7 +156,11 @@ def integrations_center(request, tab="providers"):
 def api_key_create(request):
     form = IntegrationApiKeyCreateForm(request.POST)
     if form.is_valid():
-        key, raw_key = IntegrationApiKey.create_with_plaintext(form.cleaned_data["name"])
+        key, raw_key = IntegrationApiKey.create_with_plaintext(
+            form.cleaned_data["name"],
+            expires_at=form.cleaned_data["expires_at"],
+            allowed_ip_addresses=form.cleaned_data["allowed_ip_addresses"],
+        )
         for scope in form.cleaned_data["scopes"]:
             IntegrationApiKeyScope.objects.create(api_key=key, scope=scope)
         messages.success(request, f"API key created. Copy now: {raw_key}")
@@ -172,7 +176,11 @@ def api_key_rotate(request, pk):
     scopes = list(IntegrationScope.objects.filter(api_key_links__api_key=old_key))
     old_key.is_active = False
     old_key.save(update_fields=["is_active"])
-    new_key, raw_key = IntegrationApiKey.create_with_plaintext(f"{old_key.name} rotated")
+    new_key, raw_key = IntegrationApiKey.create_with_plaintext(
+        f"{old_key.name} rotated",
+        expires_at=old_key.expires_at,
+        allowed_ip_addresses=old_key.allowed_ip_addresses,
+    )
     for scope in scopes:
         IntegrationApiKeyScope.objects.create(api_key=new_key, scope=scope)
     messages.success(request, f"Key rotated. Copy the new key now: {raw_key}")

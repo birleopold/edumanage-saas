@@ -97,7 +97,7 @@ class OutboundMessageLogAdmin(admin.ModelAdmin):
 
 @admin.register(IntegrationApiKey)
 class IntegrationApiKeyAdmin(admin.ModelAdmin):
-    list_display = ("name", "key_prefix", "is_active", "last_used_at", "created_at")
+    list_display = ("name", "key_prefix", "is_active", "expires_at", "last_used_at", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "key_prefix")
     readonly_fields = ("key_hash", "last_used_at", "created_at")

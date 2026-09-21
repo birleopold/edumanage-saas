@@ -1,3 +1,5 @@
+import ipaddress
+
 from django import forms
 
 from .models import IntegrationApiKey, IntegrationScope, WebhookEndpoint
@@ -16,6 +18,16 @@ class StyledFormMixin:
 
 class IntegrationApiKeyCreateForm(StyledFormMixin, forms.Form):
     name = forms.CharField(max_length=120)
+    expires_at = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        help_text="Optional. The key stops working automatically at this time.",
+    )
+    allowed_ip_addresses = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Optional comma-separated IPv4 or IPv6 addresses.",
+    )
     scopes = forms.ModelMultipleChoiceField(
         queryset=IntegrationScope.objects.filter(is_active=True).order_by("code"),
         required=False,
@@ -25,6 +37,22 @@ class IntegrationApiKeyCreateForm(StyledFormMixin, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["name"].widget.attrs["class"] = self.field_class
+        self.fields["expires_at"].widget.attrs["class"] = self.field_class
+        self.fields["allowed_ip_addresses"].widget.attrs["class"] = self.field_class
+
+    def clean_allowed_ip_addresses(self):
+        raw = self.cleaned_data.get("allowed_ip_addresses") or ""
+        addresses = []
+        for value in (item.strip() for item in raw.replace("\n", ",").split(",")):
+            if not value:
+                continue
+            try:
+                normalized = str(ipaddress.ip_address(value))
+            except ValueError as exc:
+                raise forms.ValidationError(f"Invalid IP address: {value}") from exc
+            if normalized not in addresses:
+                addresses.append(normalized)
+        return addresses
 
 
 class WebhookEndpointForm(StyledFormMixin, forms.ModelForm):

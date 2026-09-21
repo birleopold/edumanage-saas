@@ -207,6 +207,12 @@ class IntegrationApiKey(models.Model):
     key_prefix = models.CharField(max_length=16, db_index=True)
     key_hash = models.CharField(max_length=64, unique=True)
     is_active = models.BooleanField(default=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    allowed_ip_addresses = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Optional exact client IP allowlist. Leave empty to allow any address.",
+    )
     last_used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -221,9 +227,15 @@ class IntegrationApiKey(models.Model):
         return hashlib.sha256((raw_key or "").encode("utf-8")).hexdigest()
 
     @classmethod
-    def create_with_plaintext(cls, name: str):
+    def create_with_plaintext(cls, name: str, *, expires_at=None, allowed_ip_addresses=None):
         raw_key = secrets.token_urlsafe(32)
-        obj = cls.objects.create(name=name.strip() or "Integration Key", key_prefix=raw_key[:10], key_hash=cls.hash_key(raw_key))
+        obj = cls.objects.create(
+            name=name.strip() or "Integration Key",
+            key_prefix=raw_key[:10],
+            key_hash=cls.hash_key(raw_key),
+            expires_at=expires_at,
+            allowed_ip_addresses=list(allowed_ip_addresses or []),
+        )
         return obj, raw_key
 
     @classmethod
@@ -231,7 +243,13 @@ class IntegrationApiKey(models.Model):
         if not raw_key:
             return None
         hashed = cls.hash_key(raw_key)
-        return cls.objects.filter(key_hash=hashed, is_active=True).first()
+        return cls.objects.filter(key_hash=hashed, is_active=True).filter(
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        ).first()
+
+    def allows_ip(self, address: str) -> bool:
+        allowed = self.allowed_ip_addresses or []
+        return not allowed or address in allowed
 
     def mark_used(self):
         self.last_used_at = timezone.now()

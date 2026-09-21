@@ -46,6 +46,14 @@ class TeacherSummarySerializer(serializers.ModelSerializer):
         return str(obj.campus or "")
 
 
+class TeacherDirectorySerializer(TeacherSummarySerializer):
+    """Non-sensitive staff directory fields for peer teachers."""
+
+    class Meta(TeacherSummarySerializer.Meta):
+        fields = ("id", "staff_id", "name", "campus")
+        read_only_fields = fields
+
+
 class ParentSummarySerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
 

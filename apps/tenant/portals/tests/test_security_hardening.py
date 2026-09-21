@@ -19,8 +19,9 @@ class CampusScopeFailClosedTests(SimpleTestCase):
         self.assertIs(result, empty_queryset)
         queryset.none.assert_called_once_with()
 
-    @patch("apps.tenant.portals.campus_permissions.get_user_campus_scope", return_value=None)
-    def test_unassigned_campus_admin_cannot_access_campus(self, _scope):
+    @patch("apps.tenant.portals.campus_permissions.get_user_campus_scopes")
+    def test_unassigned_campus_admin_cannot_access_campus(self, scopes):
+        scopes.return_value.filter.return_value.exists.return_value = False
         user = SimpleNamespace(
             is_authenticated=True,
             is_superuser=False,

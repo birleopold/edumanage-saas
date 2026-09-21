@@ -31,8 +31,11 @@ from .mobile_api_serializers import (
     AttendanceMarkSerializer,
     ParentSummarySerializer,
     StudentSummarySerializer,
+    TeacherDirectorySerializer,
     TeacherSummarySerializer,
 )
+from .campus_permissions import get_accessible_campuses
+from .role_navigation import is_global_admin_user
 
 
 class HasAnyRole(BasePermission):
@@ -162,8 +165,20 @@ class MobileTeachers(MobileAPIView):
     permission_classes = [IsAuthenticated, IsTeacherOrSchoolAdmin]
 
     def get(self, request):
-        qs = TeacherProfile.objects.filter(is_active=True).select_related("campus")[:100]
-        return Response({"teachers": [serialize_teacher(t) for t in qs]})
+        qs = TeacherProfile.objects.filter(is_active=True).select_related("campus")
+        if not is_global_admin_user(request.user):
+            if request.user.has_role(Role.CAMPUS_ADMIN):
+                qs = qs.filter(campus__in=get_accessible_campuses(request.user))
+            else:
+                teacher = teacher_for_user(request.user)
+                qs = qs.filter(campus_id=teacher.campus_id) if teacher and teacher.campus_id else qs.none()
+        qs = qs[:100]
+        serializer_class = (
+            TeacherSummarySerializer
+            if is_global_admin_user(request.user) or request.user.has_role(Role.CAMPUS_ADMIN)
+            else TeacherDirectorySerializer
+        )
+        return Response({"teachers": serializer_class(qs, many=True).data})
 
 
 class MobileParents(MobileAPIView):

@@ -11,6 +11,9 @@ class HasScopedIntegrationKey(BasePermission):
         key_obj = IntegrationApiKey.resolve_active_key(raw)
         if not key_obj:
             return False
+        client_ip = (request.META.get("REMOTE_ADDR") or "").strip()
+        if not key_obj.allows_ip(client_ip):
+            return False
         request.integration_api_key = key_obj
         required = getattr(view, "required_scope", "")
         if not required:
