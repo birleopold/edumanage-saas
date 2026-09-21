@@ -12,6 +12,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.tenant.academics.models import CourseOffering, Enrollment
 from apps.tenant.announcements.models import Announcement
+from apps.tenant.announcements.services import visible_announcements_for_user
 from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
 from apps.tenant.coursework.models import Assignment, AssignmentSubmission, LearningMaterial
 from apps.tenant.coursework.services import visible_assignments_for_student, visible_materials_for_student
@@ -26,7 +27,12 @@ from apps.tenant.teachers.models import TeacherProfile
 from apps.tenant.transport.models import StudentTransportAssignment
 from apps.tenant.users.models import MobileDevice, Role
 
-from .mobile_api_serializers import AttendanceMarkSerializer
+from .mobile_api_serializers import (
+    AttendanceMarkSerializer,
+    ParentSummarySerializer,
+    StudentSummarySerializer,
+    TeacherSummarySerializer,
+)
 
 
 class HasAnyRole(BasePermission):
@@ -70,15 +76,15 @@ def profile_for_user(user):
 
 
 def serialize_student(s):
-    return {"id": s.id, "student_id": s.student_id, "name": s.get_full_name(), "email": s.email, "campus": str(s.campus or ""), "stream": str(s.stream or ""), "class_group": str(s.stream.class_group) if s.stream else ""}
+    return StudentSummarySerializer(s).data
 
 
 def serialize_teacher(t):
-    return {"id": t.id, "staff_id": t.staff_id, "name": str(t), "phone": t.phone, "email": t.email, "campus": str(t.campus or "")}
+    return TeacherSummarySerializer(t).data
 
 
 def serialize_parent(p):
-    return {"id": p.id, "name": str(p), "phone": p.phone, "email": p.email, "allow_sms_alerts": p.allow_sms_alerts, "allow_whatsapp_alerts": p.allow_whatsapp_alerts}
+    return ParentSummarySerializer(p).data
 
 
 def linked_students_for_parent(parent):
@@ -136,7 +142,10 @@ class MobileDashboard(MobileAPIView):
         if teacher:
             offerings = CourseOffering.objects.filter(teacher=teacher, is_active=True)
             data["counts"].update({"teacher_offerings": offerings.count(), "attendance_sessions": AttendanceSession.objects.filter(offering__in=offerings).count(), "exam_papers": ExamPaper.objects.filter(offering__in=offerings).count()})
-        data["announcements"] = list(Announcement.objects.filter(is_active=True).filter(Q(audience=Announcement.ALL) | Q(audience__in=user_roles(request.user))).values("id", "title", "body", "audience", "is_urgent", "created_at")[:10])
+        data["announcements"] = list(
+            visible_announcements_for_user(request.user)
+            .values("id", "title", "body", "audience", "campus_id", "is_urgent", "created_at")[:10]
+        )
         return Response(data)
 
 
@@ -249,7 +258,7 @@ class MobileCoursework(MobileAPIView):
 class MobileMessages(MobileAPIView):
     def get(self, request):
         conversations = Conversation.objects.filter(participants=request.user, is_archived=False).prefetch_related("messages")[:50]
-        announcements = Announcement.objects.filter(is_active=True).filter(Q(audience=Announcement.ALL) | Q(audience__in=user_roles(request.user)))[:50]
+        announcements = visible_announcements_for_user(request.user)[:50]
         return Response({"conversations": [{"id": c.id, "uuid": str(c.uuid), "subject": c.subject, "unread_count": c.get_unread_count(request.user), "updated_at": c.updated_at} for c in conversations], "announcements": [{"id": a.id, "title": a.title, "body": a.body, "is_urgent": a.is_urgent, "created_at": a.created_at} for a in announcements]})
 
 

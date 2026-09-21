@@ -16,6 +16,14 @@ class Announcement(models.Model):
 
     title = models.CharField(max_length=200)
     body = models.TextField()
+    campus = models.ForeignKey(
+        "orgsettings.Campus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="announcements",
+        help_text="Leave blank to publish to every campus.",
+    )
     audience = models.CharField(max_length=16, choices=AUDIENCE_CHOICES, default=ALL)
     is_active = models.BooleanField(default=True)
     is_urgent = models.BooleanField(
@@ -26,6 +34,7 @@ class Announcement(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        indexes = [models.Index(fields=["is_active", "audience", "campus"])]
 
     def __str__(self) -> str:
         return self.title

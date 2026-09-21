@@ -6,6 +6,7 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.users.models import Role
 
 from .models import Announcement
+from .services import visible_announcements_for_user
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -25,8 +26,8 @@ def announcement_list(request):
     per_page = _parse_per_page(request)
     page_number = request.GET.get("page") or 1
 
-    qs = Announcement.objects.filter(is_active=True).filter(
-        Q(audience=Announcement.ALL) | Q(audience=Announcement.TEACHERS)
+    qs = visible_announcements_for_user(
+        request.user, audiences=[Announcement.TEACHERS]
     )
 
     if q:

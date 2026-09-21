@@ -16,6 +16,7 @@ from apps.tenant.orgsettings.services import (
 
 from apps.tenant.academics.models import AcademicTerm, AcademicYear, CourseOffering, Enrollment
 from apps.tenant.announcements.models import Announcement
+from apps.tenant.announcements.services import visible_announcements_for_user
 from apps.tenant.assessments.models import AssessmentScore
 from apps.tenant.audit.models import AuditEvent, BackupJob
 from apps.tenant.attendance.models import AttendanceEntry, AttendanceSession
@@ -90,10 +91,10 @@ def _teacher_daily_workflow(teacher):
         status=Incident.OPEN,
     ).count()
     announcements = list(
-        Announcement.objects.filter(is_active=True)
-        .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.TEACHERS))
-        .order_by("-is_urgent", "-created_at")[:3]
-    )
+        visible_announcements_for_user(
+            teacher.user, audiences=[Announcement.TEACHERS]
+        ).order_by("-is_urgent", "-created_at")[:3]
+    ) if teacher.user_id else []
 
     cards = [
         {
@@ -187,10 +188,10 @@ def _parent_daily_workflow(parent_profile, links):
         assessment__is_published=True,
     ).count()
     announcements = list(
-        Announcement.objects.filter(is_active=True)
-        .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.PARENTS))
-        .order_by("-is_urgent", "-created_at")[:3]
-    )
+        visible_announcements_for_user(
+            parent_profile.user, audiences=[Announcement.PARENTS]
+        ).order_by("-is_urgent", "-created_at")[:3]
+    ) if parent_profile.user_id else []
     documents_qs = Document.objects.filter(is_active=True).filter(
         Q(audience=Document.ALL) | Q(audience=Document.PARENTS)
     )

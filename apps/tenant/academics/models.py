@@ -61,9 +61,30 @@ class AcademicYear(models.Model):
 
     class Meta:
         ordering = ("-name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("is_current",),
+                condition=models.Q(is_current=True),
+                name="academics_one_current_year",
+            )
+        ]
 
     def __str__(self) -> str:
         return self.name
+
+    def validate_constraints(self, exclude=None):
+        # AcademicYearForm clears the previous flag transactionally before save;
+        # the database constraint remains the final concurrency-safe guard.
+        try:
+            return super().validate_constraints(exclude=exclude)
+        except ValidationError as exc:
+            errors = dict(exc.message_dict) if hasattr(exc, "message_dict") else {}
+            errors["__all__"] = [
+                m for m in errors.get("__all__", []) if "academics_one_current_year" not in str(m)
+            ]
+            errors = {field: messages for field, messages in errors.items() if messages}
+            if errors:
+                raise ValidationError(errors)
 
 
 class AcademicTerm(models.Model):
@@ -86,9 +107,30 @@ class AcademicTerm(models.Model):
     class Meta:
         ordering = ("-year__name", "order")
         unique_together = ("year", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("is_current",),
+                condition=models.Q(is_current=True),
+                name="academics_one_current_term",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.year} - {self.name}"
+
+    def validate_constraints(self, exclude=None):
+        # AcademicTermForm performs the coordinated term/year switch inside one
+        # transaction; the partial unique index protects every other write path.
+        try:
+            return super().validate_constraints(exclude=exclude)
+        except ValidationError as exc:
+            errors = dict(exc.message_dict) if hasattr(exc, "message_dict") else {}
+            errors["__all__"] = [
+                m for m in errors.get("__all__", []) if "academics_one_current_term" not in str(m)
+            ]
+            errors = {field: messages for field, messages in errors.items() if messages}
+            if errors:
+                raise ValidationError(errors)
 
 
 class Level(models.Model):

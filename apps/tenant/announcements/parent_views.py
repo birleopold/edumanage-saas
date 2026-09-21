@@ -11,6 +11,7 @@ from apps.tenant.portals.permissions import role_required
 from apps.tenant.users.models import Role
 
 from .models import Announcement
+from .services import visible_announcements_for_user
 
 
 def _parse_per_page(request, default: int = 25, max_value: int = 200) -> int:
@@ -35,8 +36,10 @@ def announcement_list(request):
     campuses = campus_queryset()
     campus_id = selected_campus_id_from_request(request)
 
-    qs = Announcement.objects.filter(is_active=True).filter(
-        Q(audience=Announcement.ALL) | Q(audience=Announcement.PARENTS)
+    qs = visible_announcements_for_user(
+        request.user,
+        audiences=[Announcement.PARENTS],
+        campus_id=campus_id,
     )
 
     if q:

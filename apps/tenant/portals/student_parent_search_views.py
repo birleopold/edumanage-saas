@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.tenant.academics.models import Enrollment
 from apps.tenant.announcements.models import Announcement
+from apps.tenant.announcements.services import visible_announcements_for_user
 from apps.tenant.coursework.models import Assignment, LearningMaterial
 from apps.tenant.documents.models import Document
 from apps.tenant.finance.models import Invoice
@@ -79,8 +80,9 @@ def student_search(request):
     if len(query) >= 2:
         aq = Q(title__icontains=query) | Q(body__icontains=query)
         announcements = list(
-            Announcement.objects.filter(is_active=True)
-            .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.STUDENTS))
+            visible_announcements_for_user(
+                request.user, audiences=[Announcement.STUDENTS]
+            )
             .filter(aq)[:15]
         )
 
@@ -191,8 +193,9 @@ def parent_search(request):
 
         aq = Q(title__icontains=query) | Q(body__icontains=query)
         announcements = list(
-            Announcement.objects.filter(is_active=True)
-            .filter(Q(audience=Announcement.ALL) | Q(audience=Announcement.PARENTS))
+            visible_announcements_for_user(
+                request.user, audiences=[Announcement.PARENTS]
+            )
             .filter(aq)[:15]
         )
 

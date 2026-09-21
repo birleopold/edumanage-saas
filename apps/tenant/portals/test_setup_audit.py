@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from apps.tenant.academics.models import (
@@ -143,16 +144,10 @@ class SetupAuditFixture(TestCase):
 
 
 class CalendarValidityTests(SetupAuditFixture):
-    def test_multiple_current_years_are_not_reported_ready(self):
+    def test_multiple_current_years_are_rejected_before_audit(self):
         AcademicYear.objects.create(name="2025", is_current=True)
-        year = AcademicYear.objects.create(name="2026", is_current=True)
-        AcademicTerm.objects.create(year=year, name="Term 1", is_current=True)
-
-        result = _calendar_audit(self.profile)
-
-        self.assertIn("multiple_current_years", _codes(result))
-        self.assertFalse(result["valid"])
-        self.assertIsNone(result["metrics"]["current_year_id"])
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            AcademicYear.objects.create(name="2026", is_current=True)
 
     def test_current_term_must_belong_to_current_year(self):
         current_year = AcademicYear.objects.create(name="2026", is_current=True)

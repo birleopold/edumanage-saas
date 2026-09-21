@@ -6,6 +6,7 @@ from apps.tenant.finance.models import IntegrationApiKey, IntegrationApiKeyScope
 from apps.tenant.users.models import PasswordSetupToken, Role, User
 
 from .mobile_api_serializers import AttendanceMarkSerializer
+from .mobile_api_serializers import StudentSummarySerializer
 
 
 class PasswordSetupTokenSecurityTests(TestCase):
@@ -54,6 +55,24 @@ class MobileAuthorizationTests(TestCase):
 
         self.assertFalse(serializer.is_valid())
         self.assertIn("entries", serializer.errors)
+
+    def test_student_serializer_exposes_only_reviewed_fields(self):
+        from apps.tenant.students.models import StudentProfile
+
+        student = StudentProfile.objects.create(
+            first_name="Amina",
+            last_name="Kato",
+            email="amina@example.com",
+            nin="sensitive-nin",
+        )
+
+        payload = StudentSummarySerializer(student).data
+
+        self.assertEqual(
+            set(payload),
+            {"id", "student_id", "name", "email", "campus", "stream", "class_group"},
+        )
+        self.assertNotIn("nin", payload)
 
 
 class IntegrationScopeTests(TestCase):
