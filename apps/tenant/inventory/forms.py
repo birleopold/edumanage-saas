@@ -58,8 +58,10 @@ class AssetAssignmentForm(forms.ModelForm):
         campus_scope = kwargs.pop("campus_scope", None)
         super().__init__(*args, **kwargs)
         self.fields["assigned_to_student"].queryset = StudentProfile.objects.select_related("campus").all()
-        if campus_scope:
-            self.fields["assigned_to_student"].queryset = self.fields["assigned_to_student"].queryset.filter(campus=campus_scope)
+        if campus_scope is not None:
+            self.fields["assigned_to_student"].queryset = self.fields[
+                "assigned_to_student"
+            ].queryset.filter(campus__in=campus_scope)
 
     def clean_quantity(self):
         qty = self.cleaned_data.get("quantity")

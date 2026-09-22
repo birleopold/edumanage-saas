@@ -1,7 +1,9 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models import F
 from django.db.models import Sum
 
 
@@ -10,6 +12,7 @@ class InventoryItem(models.Model):
     name = models.CharField(max_length=200)
     unit = models.CharField(max_length=32, blank=True)
     is_active = models.BooleanField(default=True)
+    cached_stock_on_hand = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -26,6 +29,9 @@ class InventoryItem(models.Model):
         return self.name
 
     def stock_on_hand(self) -> Decimal:
+        return self.cached_stock_on_hand or Decimal("0")
+
+    def ledger_stock_on_hand(self) -> Decimal:
         totals = self.movements.aggregate(
             in_qty=Sum("quantity", filter=models.Q(movement_type=StockMovement.IN)),
             out_qty=Sum("quantity", filter=models.Q(movement_type=StockMovement.OUT)),
@@ -66,6 +72,57 @@ class StockMovement(models.Model):
 
     def __str__(self) -> str:
         return f"{self.item} {self.movement_type} {self.quantity}"
+
+    @staticmethod
+    def balance_delta(movement_type, quantity):
+        quantity = quantity or Decimal("0")
+        return -quantity if movement_type == StockMovement.OUT else quantity
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            previous = None
+            if self.pk:
+                previous = type(self).objects.filter(pk=self.pk).values(
+                    "item_id", "movement_type", "quantity"
+                ).first()
+            item_ids = {self.item_id}
+            if previous:
+                item_ids.add(previous["item_id"])
+            list(
+                InventoryItem.objects.select_for_update()
+                .filter(pk__in=item_ids)
+                .order_by("pk")
+            )
+            super().save(*args, **kwargs)
+
+            changes = {}
+            if previous:
+                changes[previous["item_id"]] = -self.balance_delta(
+                    previous["movement_type"], previous["quantity"]
+                )
+            changes[self.item_id] = changes.get(self.item_id, Decimal("0")) + self.balance_delta(
+                self.movement_type, self.quantity
+            )
+            for item_id, delta in changes.items():
+                InventoryItem.objects.filter(pk=item_id).update(
+                    cached_stock_on_hand=F("cached_stock_on_hand") + delta
+                )
+
+            resulting_balance = InventoryItem.objects.values_list(
+                "cached_stock_on_hand", flat=True
+            ).get(pk=self.item_id)
+            if self.movement_type == self.OUT and resulting_balance < 0:
+                raise ValidationError({"quantity": "Stock out quantity cannot exceed stock on hand."})
+
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            InventoryItem.objects.select_for_update().get(pk=self.item_id)
+            delta = self.balance_delta(self.movement_type, self.quantity)
+            result = super().delete(*args, **kwargs)
+            InventoryItem.objects.filter(pk=self.item_id).update(
+                cached_stock_on_hand=F("cached_stock_on_hand") - delta
+            )
+            return result
 
 
 class AssetAssignment(models.Model):

@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.tenant.portals.campus_permissions import get_user_campus_scope
+from apps.tenant.portals.campus_permissions import get_accessible_campuses
 from apps.tenant.portals.permissions import admin_portal_required
 from apps.tenant.users.models import Role
 
@@ -30,9 +30,12 @@ def _asset_assignment_queryset_for(user):
         "assigned_to_student__campus",
         "created_by",
     )
-    scoped = get_user_campus_scope(user)
-    if scoped:
-        qs = qs.filter(Q(assigned_to_student__campus=scoped) | Q(assigned_to_student__isnull=True))
+    campuses = get_accessible_campuses(user)
+    if not user.is_superuser and not user.has_role(Role.ADMIN) and not user.has_role(Role.PRINCIPAL):
+        qs = qs.filter(
+            Q(assigned_to_student__campus__in=campuses)
+            | Q(assigned_to_student__isnull=True)
+        )
     return qs
 
 
@@ -51,7 +54,7 @@ def item_list(request):
 
     items = list(page_obj.object_list)
     for it in items:
-        it._stock_on_hand = it.stock_on_hand()
+        it._stock_on_hand = it.cached_stock_on_hand
 
     return render(
         request,
@@ -161,7 +164,7 @@ def assignment_list(request):
 
 @admin_portal_required
 def assignment_create(request):
-    scoped = get_user_campus_scope(request.user)
+    scoped = get_accessible_campuses(request.user)
     if request.method == "POST":
         form = AssetAssignmentForm(request.POST, campus_scope=scoped)
         if form.is_valid():
@@ -178,7 +181,7 @@ def assignment_create(request):
 
 @admin_portal_required
 def assignment_edit(request, pk: int):
-    scoped = get_user_campus_scope(request.user)
+    scoped = get_accessible_campuses(request.user)
     obj = get_object_or_404(_asset_assignment_queryset_for(request.user), pk=pk)
 
     if request.method == "POST":

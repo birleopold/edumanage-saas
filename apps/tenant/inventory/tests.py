@@ -3,6 +3,9 @@ from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from io import StringIO
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_or_create_organization
@@ -78,6 +81,18 @@ class InventoryAssignmentCampusScopeTests(TestCase):
         self.assertIn(self.assignment.pk, assignment_ids)
         self.assertNotIn(self.hidden_assignment.pk, assignment_ids)
 
+    def test_multi_campus_admin_sees_assignments_from_every_assigned_campus(self):
+        campus_role = Role.objects.get(code=Role.CAMPUS_ADMIN)
+        UserRole.objects.create(
+            user=self.user, role=campus_role, campus=self.other_campus
+        )
+        self.client.login(username="inventory_campus_admin", password="test-pass-123")
+
+        response = self.client.get(reverse("admin_inventory_assignments_list"))
+
+        assignment_ids = {assignment.pk for assignment in response.context["assignments"]}
+        self.assertEqual(assignment_ids, {self.assignment.pk, self.hidden_assignment.pk})
+
     def test_campus_admin_cannot_create_assignment_for_other_campus_student(self):
         self.hidden_assignment.delete()
         self.client.login(username="inventory_campus_admin", password="test-pass-123")
@@ -127,3 +142,53 @@ class InventoryAssignmentCampusScopeTests(TestCase):
         self.assertEqual(move_response.status_code, 200)
         self.assignment.refresh_from_db()
         self.assertEqual(self.assignment.assigned_to_student, self.student)
+
+
+class InventoryBalanceSnapshotTests(TestCase):
+    def setUp(self):
+        self.item = InventoryItem.objects.create(name="Router", sku="RTR-1", unit="pcs")
+
+    def balance(self):
+        self.item.refresh_from_db()
+        return self.item.stock_on_hand()
+
+    def test_movement_create_update_and_delete_keep_snapshot_in_sync(self):
+        movement = StockMovement.objects.create(
+            item=self.item, movement_type=StockMovement.IN, quantity=Decimal("10")
+        )
+        self.assertEqual(self.balance(), Decimal("10"))
+
+        movement.quantity = Decimal("7")
+        movement.save()
+        self.assertEqual(self.balance(), Decimal("7"))
+
+        movement.movement_type = StockMovement.OUT
+        with self.assertRaises(ValidationError):
+            movement.save()
+        self.assertEqual(self.balance(), Decimal("7"))
+
+        movement.refresh_from_db()
+        movement.delete()
+        self.assertEqual(self.balance(), Decimal("0"))
+
+    def test_direct_stock_out_cannot_make_balance_negative(self):
+        with self.assertRaises(ValidationError):
+            StockMovement.objects.create(
+                item=self.item,
+                movement_type=StockMovement.OUT,
+                quantity=Decimal("1"),
+            )
+        self.assertFalse(StockMovement.objects.exists())
+        self.assertEqual(self.balance(), Decimal("0"))
+
+    def test_reconciliation_command_detects_and_repairs_drift(self):
+        StockMovement.objects.create(
+            item=self.item, movement_type=StockMovement.IN, quantity=Decimal("4")
+        )
+        InventoryItem.objects.filter(pk=self.item.pk).update(cached_stock_on_hand=Decimal("99"))
+
+        with self.assertRaisesMessage(Exception, "inventory balance mismatch"):
+            call_command("reconcile_inventory_balances", stdout=StringIO())
+
+        call_command("reconcile_inventory_balances", fix=True, stdout=StringIO())
+        self.assertEqual(self.balance(), Decimal("4"))
