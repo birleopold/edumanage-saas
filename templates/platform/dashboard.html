@@ -37,10 +37,17 @@
     </article>
   </section>
 
-  {% if pending_count or suspended_count or unverified_domain_count %}
+  <section class="platform-summary-grid platform-summary-grid--6" aria-label="Owner risk summary">
+    <article class="platform-stat {% if schema_missing_count %}platform-stat--red{% else %}platform-stat--green{% endif %}"><span class="platform-stat__icon"><i class="ph ph-database" aria-hidden="true"></i></span><div class="platform-stat__body"><span class="platform-stat__label">Missing schemas</span><strong class="platform-stat__value">{{ schema_missing_count }}</strong><span class="platform-stat__detail">Active schools without PostgreSQL schema</span></div></article>
+    <article class="platform-stat {% if past_due_subscription_count %}platform-stat--red{% else %}platform-stat--green{% endif %}"><span class="platform-stat__icon"><i class="ph ph-warning" aria-hidden="true"></i></span><div class="platform-stat__body"><span class="platform-stat__label">Past due</span><strong class="platform-stat__value">{{ past_due_subscription_count }}</strong><span class="platform-stat__detail">Subscriptions needing billing action</span></div></article>
+    <article class="platform-stat {% if overdue_invoice_count %}platform-stat--red{% else %}platform-stat--green{% endif %}"><span class="platform-stat__icon"><i class="ph ph-receipt" aria-hidden="true"></i></span><div class="platform-stat__body"><span class="platform-stat__label">Overdue invoices</span><strong class="platform-stat__value">{{ overdue_invoice_count }}</strong><span class="platform-stat__detail">Platform subscription invoices</span></div></article>
+    <article class="platform-stat platform-stat--amber"><span class="platform-stat__icon"><i class="ph ph-calendar-dots" aria-hidden="true"></i></span><div class="platform-stat__body"><span class="platform-stat__label">Billing due ≤7d</span><strong class="platform-stat__value">{{ billing_due_soon_count }}</strong><span class="platform-stat__detail">Renewals approaching</span></div></article>
+  </section>
+
+  {% if pending_count or suspended_count or unverified_domain_count or schema_missing_count or past_due_subscription_count or overdue_invoice_count %}
   <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" aria-label="Platform attention">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex gap-3"><i class="ph ph-warning-circle mt-0.5 text-xl text-amber-700" aria-hidden="true"></i><div><strong class="font-black">Platform attention is required</strong><p class="mt-0.5 font-semibold text-amber-800">{{ pending_count }} pending school{{ pending_count|pluralize }}, {{ suspended_count }} suspended and {{ unverified_domain_count }} domain{{ unverified_domain_count|pluralize }} awaiting verification.</p></div></div>
+      <div class="flex gap-3"><i class="ph ph-warning-circle mt-0.5 text-xl text-amber-700" aria-hidden="true"></i><div><strong class="font-black">Platform attention is required</strong><p class="mt-0.5 font-semibold text-amber-800">{{ pending_count }} pending, {{ suspended_count }} suspended, {{ unverified_domain_count }} unverified domain{{ unverified_domain_count|pluralize }}, {{ schema_missing_count }} missing schema{{ schema_missing_count|pluralize }}, {{ past_due_subscription_count }} past-due subscription{{ past_due_subscription_count|pluralize }} and {{ overdue_invoice_count }} overdue invoice{{ overdue_invoice_count|pluralize }}.</p></div></div>
       <a href="{% url 'platform_tenant_list' %}" class="platform-button">Review schools</a>
     </div>
   </section>
