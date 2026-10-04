@@ -29,7 +29,7 @@ class Command(BaseCommand):
                 "DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy",
                 "python verify_routes.py",
                 "python manage.py test",
-                "npm audit --omit=dev",
+                "pip-audit -r requirements.txt",
             ],
         }
 
@@ -69,8 +69,8 @@ class Command(BaseCommand):
             self._restore_drill_check(),
             {
                 "name": "External health/status monitoring",
-                "status": "pass",
-                "detail": "Monitor plan documents /health/ and /status/?format=json probes.",
+                "status": "manual",
+                "detail": "Repository documents the probes; verify an external monitor is actually configured.",
             },
             {
                 "name": "Nightly PostgreSQL backup schedule",
@@ -82,6 +82,9 @@ class Command(BaseCommand):
             checks.extend(
                 [
                     self._setting_check("DEBUG", False, "DEBUG disabled"),
+                    self._setting_check("ADMIN_2FA_REQUIRED", True, "Administrative 2FA required"),
+                    self._setting_check("AUDIT_LOG_ENABLED", True, "Audit logging enabled"),
+                    self._setting_check("SESSION_COOKIE_AGE", lambda value: int(value or 0) <= 86400, "Session lifetime at most 24 hours"),
                     self._setting_check("SESSION_COOKIE_SECURE", True, "Secure session cookies"),
                     self._setting_check("CSRF_COOKIE_SECURE", True, "Secure CSRF cookies"),
                     self._setting_check("SECURE_SSL_REDIRECT", True, "SSL redirect"),
