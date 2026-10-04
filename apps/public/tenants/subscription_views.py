@@ -34,7 +34,7 @@ def _subscription_context(subscription: TenantSubscription):
             {"label": "Students", "used": usage.get("students"), "limit": plan.max_students, "percent": usage_percent(usage.get("students"), plan.max_students)},
             {"label": "Staff", "used": usage.get("staff"), "limit": plan.max_staff, "percent": usage_percent(usage.get("staff"), plan.max_staff)},
             {"label": "Campuses", "used": usage.get("campuses"), "limit": plan.max_campuses, "percent": usage_percent(usage.get("campuses"), plan.max_campuses)},
-            {"label": "Storage MB", "used": None, "limit": plan.max_storage_mb, "percent": None},
+            {"label": "Storage MB", "used": usage.get("storage_mb"), "limit": plan.max_storage_mb, "percent": usage_percent(usage.get("storage_mb"), plan.max_storage_mb)},
         ],
         "invoices": subscription.invoices.all()[:20],
     }
