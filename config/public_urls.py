@@ -20,6 +20,7 @@ urlpatterns = [
     path("privacy/", seo_views.marketing_page, {"page_key": "privacy"}, name="marketing_privacy"),
     path("terms/", seo_views.marketing_page, {"page_key": "terms"}, name="marketing_terms"),
     path("health/", views.health, name="health"),
+    path("_internal/caddy/allow-domain", views.caddy_domain_permission, name="caddy_domain_permission"),
     path("auth/google/callback/", google_auth.google_login_callback, name="google_oauth_central_callback"),
     path("status/", public_views.public_status, name="public_status"),
     path("manifest.webmanifest", manifest, name="pwa_manifest"),
