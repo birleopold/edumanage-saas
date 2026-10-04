@@ -1,6 +1,7 @@
 import secrets
 
 from django.contrib import messages
+from apps.public.tenants.quota import quota_allows
 from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -122,6 +123,11 @@ def bulk_import_students(request):
                 return redirect("admin_students_bulk_import")
 
             rows = import_rows_from_serializable(blob["rows"])
+            valid_to_add = sum(1 for row in rows if row.is_valid())
+            allowed, quota_message = quota_allows("students", valid_to_add)
+            if not allowed:
+                messages.error(request, quota_message)
+                return redirect("admin_students_bulk_import")
             create_users = bool(blob.get("create_users"))
             send_emails = bool(blob.get("send_emails"))
 

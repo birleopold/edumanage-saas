@@ -1,4 +1,5 @@
 from django.contrib import messages
+from apps.public.tenants.quota import quota_allows
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
@@ -64,6 +65,11 @@ def campus_list(request):
 
 @role_required(Role.ADMIN)
 def campus_create(request):
+    if request.method == "POST":
+        allowed, quota_message = quota_allows("campuses")
+        if not allowed:
+            messages.error(request, quota_message)
+            return redirect(request.path)
     org = get_or_create_organization()
 
     if request.method == "POST":
