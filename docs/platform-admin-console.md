@@ -48,3 +48,17 @@ The tenant and its primary custom domain are created together. The platform owne
 ## Suggested verification before merge
 
 Run Django checks and the public tenant tests using tenant settings, then smoke-test platform routes and tenant availability behavior in a tenant-aware PostgreSQL environment. Local execution was not performed in the ChatGPT tool environment.
+
+
+## Client-owned / already registered domains
+
+Platform staff do not need SSH or VPS access to onboard a school that already owns a domain.
+
+1. Open the school in Platform Console and add the hostname the school wants to use.
+2. For a root/apex domain, give the domain administrator the A-record target displayed by EduManage. For a portal/www subdomain, prefer the displayed CNAME target.
+3. The domain administrator makes the change at their registrar/DNS provider (for example Cloudflare, cPanel, GoDaddy or their local registrar). They should remove conflicting A/AAAA/CNAME records for the same hostname.
+4. Wait for public DNS propagation, then click **Check DNS & HTTPS** in EduManage.
+5. EduManage resolves the hostname and only marks DNS verified when it points to the configured EduManage origin. It also performs an HTTPS request and reports SSL active only when a valid certificate is being served.
+6. Do not hand over the custom-domain login URL until both DNS and HTTPS are green.
+
+The application does not require staff to edit Nginx or log into the VPS. Production infrastructure must provide automatic TLS for registered custom domains. For a dynamic SaaS domain fleet, use a reverse proxy/TLS layer capable of on-demand certificate issuance restricted by an allow/ask endpoint backed by the EduManage Domain table. Never enable unrestricted on-demand certificate issuance.
