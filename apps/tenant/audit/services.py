@@ -3,7 +3,7 @@ from django.utils import timezone
 from .models import AuditEvent, ExportPermission, LoginHistory, SuspiciousLoginAlert
 
 
-SENSITIVE_KEYS = {"password", "token", "secret", "client_secret", "access_token", "key_hash", "api_key"}
+SENSITIVE_KEYS = {"password", "passwd", "token", "secret", "client_secret", "access_token", "refresh_token", "id_token", "authorization", "key_hash", "api_key", "code"}
 
 
 def client_ip(request):
@@ -17,10 +17,15 @@ def user_agent(request):
     return request.META.get("HTTP_USER_AGENT", "")[:1000]
 
 
+def _is_sensitive_key(key):
+    normalized = str(key or "").lower().replace("-", "_")
+    return normalized in SENSITIVE_KEYS or any(part in normalized for part in ("password", "secret", "token", "authorization", "api_key"))
+
+
 def safe_params(querydict):
     data = {}
     for key, value in querydict.items():
-        data[key] = "***" if key.lower() in SENSITIVE_KEYS else value
+        data[key] = "***" if _is_sensitive_key(key) else value
     return data
 
 
