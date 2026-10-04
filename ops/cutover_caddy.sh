@@ -32,12 +32,6 @@ if ! command -v caddy >/dev/null; then
 fi
 mkdir -p /etc/caddy
 cp /srv/edumanage/app/ops/Caddyfile /etc/caddy/Caddyfile
-if [ ! -f /etc/caddy/edumanage.env ]; then echo 'CADDY_ACME_EMAIL=leopoldbirungi@gmail.com' >/etc/caddy/edumanage.env; chmod 600 /etc/caddy/edumanage.env; fi
-mkdir -p /etc/systemd/system/caddy.service.d
-cat >/etc/systemd/system/caddy.service.d/edumanage-env.conf <<'EOF'
-[Service]
-EnvironmentFile=/etc/caddy/edumanage.env
-EOF
 systemctl stop caddy 2>/dev/null || true
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile || { echo "Caddy config invalid; no cutover performed."; exit 1; }
 
