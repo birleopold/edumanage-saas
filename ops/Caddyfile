@@ -1,8 +1,7 @@
 {
-	debug
 	email leopoldbirungi@gmail.com
 	on_demand_tls {
-		ask http://127.0.0.1:18081/_internal/caddy/allow-domain
+		ask http://127.0.0.1:18082/_internal/caddy/allow-domain
 	}
 }
 
