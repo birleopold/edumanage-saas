@@ -29,8 +29,7 @@ class RequestLogMiddleware:
                     request.path.startswith(path) for path in _two_factor_exempt_paths()
                 )
                 if (
-                    request.path.startswith("/admin/")
-                    and not two_factor_exempt
+                    not two_factor_exempt
                     and user_needs_2fa(user)
                     and not request.session.get("admin_2fa_verified")
                 ):
