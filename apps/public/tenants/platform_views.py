@@ -19,7 +19,7 @@ from .subscription_services import create_subscription_for_tenant
 
 
 PLATFORM_PAGE_SIZE = 25
-PLATFORM_CNAME_TARGET = "edumanage.com"
+PLATFORM_CNAME_TARGET = "edumanage.leosoftug.com"
 PLATFORM_A_RECORD_TARGET = "YOUR_EDUMANAGE_SERVER_IP"
 TENANT_LOGIN_PATH = "/login/"
 TENANT_SETUP_GUIDE_PATH = "/admin/school-setup/"
