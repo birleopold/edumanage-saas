@@ -8,6 +8,9 @@ cp -a /etc/nginx "$BACKUP/nginx"
 echo "$BACKUP" >/srv/edumanage/.last-caddy-backup
 
 echo "Backup: $BACKUP"
+echo "Validating repository Caddyfile before touching Nginx..."
+caddy validate --config /srv/edumanage/app/ops/Caddyfile --adapter caddyfile || { echo "Repository Caddyfile invalid; no Nginx changes made."; exit 1; }
+
 echo "Installing internal Nginx edge..."
 cp /srv/edumanage/app/ops/nginx-edumanage-internal.conf /etc/nginx/sites-available/edumanage-internal
 rm -f /etc/nginx/sites-enabled/edumanage /etc/nginx/sites-enabled/hotspot /etc/nginx/sites-enabled/signalsolid /etc/nginx/sites-enabled/leosoftug.com
