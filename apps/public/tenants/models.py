@@ -327,3 +327,20 @@ class PlatformBackupRecord(models.Model):
 
     def __str__(self):
         return f"{self.backup_scope} {self.status} {self.occurred_at:%Y-%m-%d}"
+
+
+class PlatformStaffAccess(models.Model):
+    OWNER = "OWNER"
+    SUPPORT = "SUPPORT"
+    ONBOARDING = "ONBOARDING"
+    BILLING = "BILLING"
+    ROLE_CHOICES = ((OWNER, "Owner"), (SUPPORT, "Support"), (ONBOARDING, "Onboarding"), (BILLING, "Billing"))
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="platform_staff_access")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} · {self.role}"
