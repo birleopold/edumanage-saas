@@ -5,7 +5,7 @@ This checklist should be completed before onboarding real school clients.
 ## Recommended priority order
 
 1. **Production PostgreSQL tenant setup**
-   - Use `config.settings.tenants` in production.
+   - Use `config.settings.prod` in production. This imports the tenant settings and adds the production security hardening.
    - Configure `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`.
    - Run shared/public migrations first.
    - Run tenant migrations for every tenant schema.
