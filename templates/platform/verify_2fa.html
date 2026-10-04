@@ -1,0 +1,17 @@
+{% extends "platform/base.html" %}
+{% block title %}Verify access{% endblock %}
+{% block page_title %}Platform verification{% endblock %}
+{% block breadcrumbs %}A second factor is required before SaaS owner controls are available{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl">
+  <section class="platform-panel">
+    <header class="platform-panel__header"><div><h2>Enter verification code</h2><p>A short-lived code was sent to the email address on your platform superuser account.</p></div></header>
+    <form method="post" class="space-y-4 p-5">
+      {% csrf_token %}
+      <label class="block text-sm font-bold text-slate-700" for="id_code">Verification code</label>
+      <input id="id_code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required class="block w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-lg font-black tracking-[0.3em]">
+      <button class="platform-button platform-button--primary w-full justify-center" type="submit">Verify Platform access</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
