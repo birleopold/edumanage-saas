@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -14,10 +15,16 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        end = timezone.localdate()
-        start = end - timedelta(days=30)
-        run = execute_overview_csv_run(triggered_by=None, start=start, end=end, campus_id=None)
-        if run.status == ReportRun.STATUS_SUCCESS:
-            self.stdout.write(self.style.SUCCESS(f"Report run #{run.pk} OK → {run.file_path}"))
-        else:
-            self.stderr.write(self.style.ERROR(run.detail or "Failed"))
+        lock_key = "edumanage:scheduled-reports"
+        if not cache.add(lock_key, "1", timeout=1800):
+            self.stdout.write(self.style.WARNING("Scheduled reports already running.")); return
+        try:
+            end = timezone.localdate()
+            start = end - timedelta(days=30)
+            run = execute_overview_csv_run(triggered_by=None, start=start, end=end, campus_id=None)
+            if run.status == ReportRun.STATUS_SUCCESS:
+                self.stdout.write(self.style.SUCCESS(f"Report run #{run.pk} OK → {run.file_path}"))
+            else:
+                self.stderr.write(self.style.ERROR(run.detail or "Failed"))
+        finally:
+            cache.delete(lock_key)
