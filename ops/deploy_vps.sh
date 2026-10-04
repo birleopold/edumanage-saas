@@ -9,7 +9,7 @@ PROJECT_DIR="${PROJECT_DIR:-/home/admin/edumanage-saas}"
 BRANCH="${BRANCH:-main}"
 SERVICE_NAME="${SERVICE_NAME:-edumanage-gunicorn.service}"
 HEALTH_URL="${HEALTH_URL:-}"
-SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings.tenants}"
+SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings.prod}"
 VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 LOCK_FILE="${LOCK_FILE:-/tmp/edumanage-deploy.lock}"
 
