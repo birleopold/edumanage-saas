@@ -39,6 +39,17 @@
     </article>
   </section>
 
+  <section class="platform-panel">
+    <header class="platform-panel__header"><div><h2>Operational health</h2><p>Support diagnostics visible to platform staff without VPS access.</p></div><span class="platform-badge {% if operational_health.ready_count == operational_health.total %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{{ operational_health.ready_count }}/{{ operational_health.total }} green</span></header>
+    <div class="grid gap-3 p-4 md:grid-cols-4">
+      <div><strong>Schema</strong><p>{% if operational_health.schema_ready %}Ready{% else %}Missing{% endif %}</p></div>
+      <div><strong>Primary domain</strong><p>{% if operational_health.primary_domain_ready %}DNS + HTTPS ready{% else %}Needs attention{% endif %}</p></div>
+      <div><strong>Subscription</strong><p>{% if operational_health.subscription_ready %}Usable{% else %}Blocked{% endif %}</p></div>
+      <div><strong>Usage diagnostics</strong><p>{% if operational_health.usage_available %}Available{% else %}Unavailable{% endif %}</p></div>
+    </div>
+    <div class="border-t border-slate-100 p-4 text-sm font-semibold text-slate-600">Students: {{ platform_usage.students|default:"—" }} · Staff: {{ platform_usage.staff|default:"—" }} · Campuses: {{ platform_usage.campuses|default:"—" }}</div>
+  </section>
+
   <section class="platform-record-layout platform-record-layout--tenant">
     <div class="platform-panel">
       <header class="platform-panel__header"><div><h2>Owner handoff</h2><p>First-login identity, secure access address and school setup path.</p></div><span class="platform-badge {% if onboarding_handoff.ready %}platform-badge--success{% else %}platform-badge--warning{% endif %}">{% if onboarding_handoff.ready %}Ready{% else %}Needs attention{% endif %}</span></header>
