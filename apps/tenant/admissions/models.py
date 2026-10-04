@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from pathlib import Path
 
 from django.conf import settings
 from django.db import connection, models
@@ -10,7 +11,8 @@ def applicant_document_upload_to(instance, filename: str) -> str:
     schema = getattr(connection, "schema_name", "public") or "public"
     applicant_ref = getattr(instance.applicant, "application_reference", "") or f"applicant-{instance.applicant_id or 'new'}"
     safe_ref = str(applicant_ref).replace("/", "-").replace(" ", "-")
-    return f"{schema}/admissions/{safe_ref}/{filename}"
+    extension = Path(filename or "").suffix.lower()
+    return f"{schema}/admissions/{safe_ref}/{uuid.uuid4().hex}{extension}"
 
 
 class Applicant(models.Model):
