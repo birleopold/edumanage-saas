@@ -113,6 +113,14 @@ class Payment(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice", "method", "mobile_network", "reference"],
+                condition=models.Q(method="MOBILE") & ~models.Q(reference=""),
+                name="finance_unique_mobile_payment_reference",
+            )
+        ]
+        indexes = [models.Index(fields=["invoice", "reference"])]
 
     def __str__(self) -> str:
         return f"{self.invoice} payment {self.amount}"
@@ -152,6 +160,13 @@ class MobilePaymentRequest(models.Model):
     class Meta:
         ordering = ("-created_at",)
         indexes = [models.Index(fields=["invoice", "status"]), models.Index(fields=["provider_reference"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["network", "provider_reference"],
+                condition=~models.Q(provider_reference=""),
+                name="finance_unique_provider_request_reference",
+            )
+        ]
 
     def __str__(self):
         return f"Mobile payment request {self.id} - {self.amount}"

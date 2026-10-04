@@ -591,10 +591,61 @@ def _record_webhook_retry_audit(item, status: str, payload: dict | None = None, 
     )
 
 
+def _process_locked_webhook_retry_items(items, *, base_delay: int) -> dict:
+    from .models import WebhookDelivery
+
+    processed = sent = failed = deactivated = 0
+    details = []
+    for item in items:
+        processed += 1
+        effective_max_attempts = min(max(1, int(item.max_attempts or 1)), _webhook_retry_limit())
+        if item.max_attempts != effective_max_attempts:
+            item.max_attempts = effective_max_attempts
+        result = _deliver_webhook(item.endpoint, item.event_type, item.payload)
+        WebhookDelivery.objects.create(endpoint=item.endpoint, event_type=item.event_type, payload=item.payload, status_code=result["status_code"], success=result["success"], response_body=result["response_body"], error_message=result["error_message"])
+        item.attempt_count += 1
+        item.last_error_message = result["error_message"] or ""
+        item.last_status_code = result["status_code"]
+        if result["success"]:
+            item.is_active = False
+            sent += 1
+            deactivated += 1
+            details.append({"item_id": item.pk, "status": "sent"})
+            _record_webhook_retry_audit(item, "sent", {"attempt_count": item.attempt_count})
+        else:
+            failed += 1
+            if item.attempt_count >= effective_max_attempts:
+                item.is_active = False
+                deactivated += 1
+                details.append({"item_id": item.pk, "status": "failed_terminal"})
+                _record_webhook_retry_audit(item, "terminal", {"attempt_count": item.attempt_count, "max_attempts": effective_max_attempts}, result["error_message"])
+            else:
+                delay = base_delay * (2 ** max(item.attempt_count - 1, 0))
+                item.next_attempt_at = timezone.now() + timedelta(seconds=delay)
+                details.append({"item_id": item.pk, "status": "rescheduled", "delay_seconds": delay})
+                _record_webhook_retry_audit(item, "rescheduled", {"attempt_count": item.attempt_count, "delay_seconds": delay}, result["error_message"])
+        item.save(update_fields=["attempt_count", "max_attempts", "next_attempt_at", "is_active", "last_error_message", "last_status_code", "updated_at"])
+    return {"processed": processed, "sent": sent, "failed": failed, "deactivated": deactivated, "dry_run": False, "details": details}
+
+
 def process_webhook_retry_queue(*, limit: int = 100, dry_run: bool = False) -> dict:
     from .models import WebhookDelivery, WebhookRetryQueueItem
 
-    items = list(WebhookRetryQueueItem.objects.select_related("endpoint").filter(is_active=True, next_attempt_at__lte=timezone.now()).order_by("next_attempt_at", "id")[: max(1, min(int(limit or 100), 1000))])
+    batch_limit = max(1, min(int(limit or 100), 1000))
+    if dry_run:
+        items = list(WebhookRetryQueueItem.objects.select_related("endpoint").filter(is_active=True, next_attempt_at__lte=timezone.now()).order_by("next_attempt_at", "id")[:batch_limit])
+    else:
+        # Lock due rows so overlapping timer/worker executions cannot deliver the
+        # same webhook retry concurrently. PostgreSQL skips rows held by another worker.
+        with transaction.atomic():
+            items = list(
+                WebhookRetryQueueItem.objects.select_for_update(skip_locked=True)
+                .select_related("endpoint")
+                .filter(is_active=True, next_attempt_at__lte=timezone.now())
+                .order_by("next_attempt_at", "id")[:batch_limit]
+            )
+            # Process while row locks are held; delivery is bounded by the configured timeout.
+            return _process_locked_webhook_retry_items(items, base_delay=int(getattr(settings, "WEBHOOK_RETRY_BASE_SECONDS", 30) or 30))
     processed = sent = failed = deactivated = 0
     details = []
     base_delay = int(getattr(settings, "WEBHOOK_RETRY_BASE_SECONDS", 30) or 30)
