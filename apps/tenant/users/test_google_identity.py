@@ -36,3 +36,39 @@ class GoogleIdentityTests(TestCase):
         with override_settings(GOOGLE_OAUTH_ENABLED=False):
             response = self.client.get(reverse("google_oauth_start"), HTTP_HOST=self.domain.domain)
         self.assertRedirects(response, reverse("login"))
+
+
+    def test_oauth_transaction_is_bound_to_originating_tenant_and_domain(self):
+        other = Tenant.objects.create(schema_name="google_other", name="Other School", status="active")
+        other_domain = Domain.objects.create(domain="other-google.example.com", tenant=other, is_primary=True)
+        self.client.get(reverse("google_oauth_start"), HTTP_HOST=self.domain.domain)
+        tx = GoogleOAuthTransaction.objects.get()
+        self.assertEqual(tx.tenant_id, self.tenant.id)
+        self.assertEqual(tx.return_domain_id, self.domain.id)
+        self.assertNotEqual(tx.tenant_id, other.id)
+        self.assertNotEqual(tx.return_domain_id, other_domain.id)
+
+    def test_suspended_tenant_cannot_start_google(self):
+        self.tenant.status = "suspended"
+        self.tenant.save(update_fields=["status"])
+        response = self.client.get(reverse("google_oauth_start"), HTTP_HOST=self.domain.domain)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(GoogleOAuthTransaction.objects.count(), 0)
+
+    def test_expired_transaction_reports_invalid_state(self):
+        import hashlib
+        from django.utils import timezone
+        raw_state = "expired-state"
+        GoogleOAuthTransaction.objects.create(
+            state_digest=hashlib.sha256(raw_state.encode()).hexdigest(),
+            tenant=self.tenant,
+            return_domain=self.domain,
+            expires_at=timezone.now() - timezone.timedelta(seconds=1),
+        )
+        response = self.client.get(
+            reverse("google_oauth_central_callback"),
+            {"state": raw_state},
+            HTTP_HOST="edumanage.leosoftug.com",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("google_auth=invalid_state", response.url)
