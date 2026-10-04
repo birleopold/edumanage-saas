@@ -110,6 +110,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "admin_home"
 
+GOOGLE_OAUTH_ENABLED = config("GOOGLE_OAUTH_ENABLED", default=False, cast=bool)
+GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = config("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+
 SUPPORT_CONTACT_EMAIL = config("SUPPORT_CONTACT_EMAIL", default="")
 
 # Public marketing and search-engine configuration. Verification and analytics
