@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import connection, models
+from django.utils import timezone
 from django_tenants.models import DomainMixin, TenantMixin
 
 
@@ -264,3 +265,34 @@ class PlatformAuditEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} {self.actor or '-'} {self.object_label or self.tenant or '-'}"
+
+class GoogleOAuthTransaction(models.Model):
+    state_digest = models.CharField(max_length=64, unique=True, db_index=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="google_oauth_transactions")
+    return_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at", "used_at"])]
+
+    def is_valid(self):
+        return self.used_at is None and timezone.now() < self.expires_at
+
+
+class GoogleLoginHandoff(models.Model):
+    token_digest = models.CharField(max_length=64, unique=True, db_index=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="google_login_handoffs")
+    return_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, related_name="+")
+    google_subject = models.CharField(max_length=255)
+    verified_email = models.EmailField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at", "used_at"])]
+
+    def is_valid(self):
+        return self.used_at is None and timezone.now() < self.expires_at
