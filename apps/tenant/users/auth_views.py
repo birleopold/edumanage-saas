@@ -4,6 +4,8 @@ Enhanced authentication views with better UX and login audit tracking.
 
 import logging
 
+from django.conf import settings
+from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -34,6 +36,31 @@ from .forms import (
 
 
 logger = logging.getLogger("edumanage.security")
+
+
+def _login_rate_key(request, username):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    remote = (forwarded.split(",", 1)[0].strip() if forwarded else request.META.get("REMOTE_ADDR", "")) or "unknown"
+    identity = (username or "").strip().lower()[:150]
+    import hashlib
+    return "login-fail:" + hashlib.sha256(f"{remote}|{identity}".encode()).hexdigest()
+
+
+def _login_failure_count(request, username):
+    return int(cache.get(_login_rate_key(request, username), 0) or 0)
+
+
+def _record_login_failure(request, username):
+    key = _login_rate_key(request, username)
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, timeout=getattr(settings, "LOGIN_FAILURE_WINDOW_SECONDS", 900))
+    cache.touch(key, timeout=getattr(settings, "LOGIN_FAILURE_WINDOW_SECONDS", 900))
+
+
+def _clear_login_failures(request, username):
+    cache.delete(_login_rate_key(request, username))
 
 _AUDIT_DISABLED_NOTICE = "Audit is turned off for this school."
 
@@ -146,7 +173,16 @@ class CustomLoginView(LoginView):
     template_name = "auth/login.html"
     redirect_authenticated_user = True
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "POST":
+            username = request.POST.get("username") or request.POST.get("email") or ""
+            if _login_failure_count(request, username) >= getattr(settings, "LOGIN_FAILURE_LIMIT", 8):
+                logger.warning("Login rate limit triggered")
+                return render(request, self.template_name, {"form": self.get_form(), "login_rate_limited": True}, status=429)
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
+        _clear_login_failures(self.request, form.cleaned_data.get("username") or "")
         remember_me = form.cleaned_data.get("remember_me")
         if not remember_me:
             self.request.session.set_expiry(0)
@@ -163,6 +199,7 @@ class CustomLoginView(LoginView):
 
     def form_invalid(self, form):
         username = self.request.POST.get("username") or self.request.POST.get("email") or ""
+        _record_login_failure(self.request, username)
         _audit_login(
             self.request,
             username=username,
