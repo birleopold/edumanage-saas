@@ -1,5 +1,9 @@
 from urllib.parse import urlencode
 
+import hashlib
+
+from django.conf import settings
+from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -35,6 +39,12 @@ def platform_access_denied(request):
     return redirect(_platform_login_redirect())
 
 
+def _platform_login_key(request, username):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    remote = (forwarded.split(",", 1)[0].strip() if forwarded else request.META.get("REMOTE_ADDR", "")) or "unknown"
+    return "platform-login-fail:" + hashlib.sha256(f"{remote}|{(username or '').strip().lower()[:150]}".encode()).hexdigest()
+
+
 def platform_login(request):
     """Public platform login view.
 
@@ -48,15 +58,29 @@ def platform_login(request):
         messages.error(request, "This account is not allowed to access the Platform Console.")
         return redirect(_platform_login_redirect())
 
+    username = request.POST.get("username", "") if request.method == "POST" else ""
+    rate_key = _platform_login_key(request, username)
+    if request.method == "POST" and int(cache.get(rate_key, 0) or 0) >= getattr(settings, "LOGIN_FAILURE_LIMIT", 8):
+        form = AuthenticationForm(request, data=None)
+        form.add_error(None, "Too many failed login attempts. Please try again later.")
+        return render(request, "platform/login.html", {"form": form, "next": ""}, status=429)
+
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
         if not user.is_superuser:
             messages.error(request, "This account is not allowed to access the Platform Console.")
         else:
+            cache.delete(rate_key)
             login(request, user)
             messages.success(request, "Welcome to the Platform Console.")
             return redirect(_safe_platform_next_url(request))
+    elif request.method == "POST":
+        try:
+            cache.incr(rate_key)
+        except ValueError:
+            cache.set(rate_key, 1, timeout=getattr(settings, "LOGIN_FAILURE_WINDOW_SECONDS", 900))
+        cache.touch(rate_key, timeout=getattr(settings, "LOGIN_FAILURE_WINDOW_SECONDS", 900))
 
     next_url = request.GET.get("next", "")
     if next_url.startswith(reverse("platform_admin_login")):
