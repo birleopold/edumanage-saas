@@ -11,10 +11,11 @@ from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
 
 from .models import PlatformTwoFactorSetting
+from .platform_permissions import platform_role
 
 
 def platform_2fa_required(user):
-    return bool(getattr(user, "is_authenticated", False) and user.is_superuser and getattr(settings, "PLATFORM_2FA_REQUIRED", True))
+    return bool(getattr(user, "is_authenticated", False) and platform_role(user) and getattr(settings, "PLATFORM_2FA_REQUIRED", True))
 
 
 def _digest(code):
@@ -60,8 +61,8 @@ def _valid(request, code):
 
 @login_required
 def platform_verify_2fa(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("Platform verification is restricted to superusers.")
+    if not platform_role(request.user):
+        return HttpResponseForbidden("Platform verification is restricted to assigned Platform staff.")
     setting, _ = PlatformTwoFactorSetting.objects.get_or_create(user=request.user)
     if request.method == "POST":
         attempts = int(request.session.get("platform_2fa_attempts", 0)) + 1
