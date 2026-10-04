@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import deployment_readiness, platform_auth_views, platform_twofactor, platform_views, subscription_views, wizard_views
+from . import deployment_readiness, platform_auth_views, platform_staff_views, platform_twofactor, platform_views, subscription_views, wizard_views
 
 urlpatterns = [
     path("login/", platform_auth_views.platform_login, name="platform_admin_login"),
@@ -11,6 +11,8 @@ urlpatterns = [
     path("access-denied/", platform_auth_views.platform_access_denied, name="landing_page"),
     path("logout/", platform_views.platform_logout, name="platform_admin_logout"),
     path("", platform_views.dashboard, name="platform_dashboard"),
+    path("staff/", platform_staff_views.staff_list, name="platform_staff"),
+    path("staff/<int:pk>/disable/", platform_staff_views.staff_disable, name="platform_staff_disable"),
     path("activity/", platform_views.platform_activity, name="platform_activity"),
     path("deployment-readiness/", deployment_readiness.deployment_readiness, name="platform_deployment_readiness"),
     path("subscriptions/", subscription_views.subscription_dashboard, name="platform_subscription_dashboard"),
