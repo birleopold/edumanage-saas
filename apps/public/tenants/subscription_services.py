@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
+
+from django.conf import settings
 
 from django.db import transaction
 from django.utils import timezone
@@ -116,13 +119,19 @@ def sync_subscription_to_tenant_status(subscription: TenantSubscription):
 
 def subscription_usage(subscription: TenantSubscription) -> dict:
     tenant = subscription.tenant
-    usage = {"students": None, "staff": None, "campuses": None, "tenant_schema_used": False}
+    usage = {"students": None, "staff": None, "campuses": None, "storage_mb": None, "tenant_schema_used": False}
     try:
         with tenant_data_context(tenant) as schema_used:
             from apps.tenant.orgsettings.models import Campus
             from apps.tenant.students.models import StudentProfile
             from apps.tenant.teachers.models import TeacherProfile
             usage.update({"students": StudentProfile.objects.filter(is_active=True).count(), "staff": TeacherProfile.objects.filter(is_active=True).count(), "campuses": Campus.objects.filter(is_active=True).count(), "tenant_schema_used": schema_used})
+        tenant_media = Path(settings.MEDIA_ROOT) / tenant.schema_name
+        if tenant_media.exists():
+            total_bytes = sum(p.stat().st_size for p in tenant_media.rglob("*") if p.is_file())
+            usage["storage_mb"] = round(total_bytes / (1024 * 1024), 2)
+        else:
+            usage["storage_mb"] = 0
     except Exception:
         usage["error"] = "Usage counts unavailable in this environment."
     return usage
