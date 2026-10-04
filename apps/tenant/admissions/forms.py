@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from django import forms
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.tenant.academics.models import Stream
@@ -260,6 +264,17 @@ class PublicTrackingForm(forms.Form):
     contact = forms.CharField(max_length=120, required=False, help_text="Optional phone or email used during application.")
 
 
+def validate_admission_document(upload):
+    max_bytes = getattr(settings, "ADMISSION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024)
+    allowed_extensions = set(getattr(settings, "ADMISSION_UPLOAD_ALLOWED_EXTENSIONS", (".pdf", ".jpg", ".jpeg", ".png", ".webp")))
+    extension = Path(upload.name or "").suffix.lower()
+    if extension not in allowed_extensions:
+        raise ValidationError("Supporting documents must be PDF or an approved image type.")
+    if upload.size > max_bytes:
+        raise ValidationError(f"Supporting document is too large. Maximum size is {max_bytes // (1024 * 1024)} MB.")
+    return upload
+
+
 class PublicApplicantForm(forms.ModelForm):
     supporting_document = forms.FileField(required=False)
     document_title = forms.CharField(required=False, max_length=120, initial="Supporting document")
@@ -326,6 +341,10 @@ class PublicApplicantForm(forms.ModelForm):
         if not email and not phone:
             raise forms.ValidationError("Please provide at least a phone number or email address for follow-up.")
         return cleaned
+
+    def clean_supporting_document(self):
+        upload = self.cleaned_data.get("supporting_document")
+        return validate_admission_document(upload) if upload else upload
 
     def custom_responses(self):
         data = {}
