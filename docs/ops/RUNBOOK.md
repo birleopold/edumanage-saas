@@ -21,7 +21,7 @@ Plain-language checks and commands for day-two operations. Paths are from the re
 ## Bulk student import
 
 - CSV flow is **preview then confirm**: upload runs validation and shows rows; **Confirm import** applies rows from server-side cache. If confirm fails with an expired token, re-run preview.
-- **Cache**: `CACHES` defaults to in-memory per process. For multi-worker production, switch to Redis or another shared cache so preview tokens are visible to all workers.
+- **Cache**: local development uses in-memory cache. Production defaults to a shared file cache so preview tokens, throttles and idempotency state are consistent across Gunicorn workers on one VPS. For multi-host/application-node deployments, set `DJANGO_CACHE_BACKEND`/`DJANGO_CACHE_LOCATION` to a truly shared cache such as Redis.
 - **Automated tests (Django 5+)**: for `multipart/form-data` views, put the uploaded file on the same `data` dict as other fields, for example `post(url, {"action": "preview", "import_file": uploaded})`.
 
 ## Tenant database and migrations
@@ -84,6 +84,12 @@ Plain-language checks and commands for day-two operations. Paths are from the re
 
 For detailed product UX status, see `docs/UX_PROFESSIONAL_ROADMAP.md`.
 
+## Production authentication baseline
+
+- Production refuses to start unless administrative 2FA and audit logging are enabled.
+- Production session lifetime defaults to 12 hours and must not exceed 24 hours.
+- Keep API throttling enabled and review authentication failure logs for repeated abuse.
+
 ## Release gates
 
 Run these before merging or deploying:
@@ -95,7 +101,7 @@ python manage.py check
 DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy
 python verify_routes.py
 python manage.py test
-npm audit --omit=dev
+pip-audit -r requirements.txt
 ```
 
 Production must use `config.settings.prod`. It enables HTTPS-oriented settings such as secure cookies, SSL redirect, HSTS, frame protection, content-type sniffing protection, and a same-origin referrer policy. If SSL redirect or HSTS is terminated outside Django, keep the proxy configuration documented with the release notes.
