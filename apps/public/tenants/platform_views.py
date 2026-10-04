@@ -15,6 +15,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import DomainForm, TenantForm, TenantStatusForm
+from .dns_targets import get_dns_targets
+from .domain_readiness import inspect_domain
 from .models import Domain, PlatformAuditEvent, SubscriptionInvoice, Tenant, TenantSubscription
 from .subscription_services import create_subscription_for_tenant
 
@@ -151,12 +153,13 @@ def _tenant_onboarding_handoff(tenant, domains, subscription):
 
 
 def _domain_dns_instructions(domain):
+    targets = get_dns_targets()
     if domain.type == Domain.SUBDOMAIN:
-        return {"summary": "Point this EduManage subdomain to the platform host.", "records": [{"type": "CNAME", "host": domain.domain, "value": PLATFORM_CNAME_TARGET}], "example": "schoolname.edumanage.com"}
+        return {"summary": "Point this EduManage subdomain to the platform host.", "records": [{"type": "CNAME", "host": domain.domain, "value": targets["cname_target"]}], "example": "schoolname.schools.leosoftug.com"}
     return {
-        "summary": "Point the custom school domain to EduManage using A/CNAME records.",
-        "records": [{"type": "A", "host": "@", "value": PLATFORM_A_RECORD_TARGET}, {"type": "CNAME", "host": "www", "value": PLATFORM_CNAME_TARGET}],
-        "example": "schoolname.ac.ug",
+        "summary": "At the domain provider, point the school hostname to EduManage. Use A for a root/apex domain and CNAME for a portal or www hostname.",
+        "records": [{"type": "A", "host": "@", "value": targets["a_record_target"]}, {"type": "CNAME", "host": "www", "value": targets["cname_target"]}],
+        "example": "schoolname.ac.ug", "a_record_ready": targets["a_record_ready"], "a_record_source": targets["a_record_source"],
     }
 
 
@@ -423,29 +426,22 @@ def domain_mark_primary(request, pk):
 @require_POST
 def domain_verify(request, pk):
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
-    action = request.POST.get("action")
     before = {"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")}
-    now = timezone.now()
-    audit_action = PlatformAuditEvent.DOMAIN_UPDATED
-    if action == "dns_verified":
-        domain.dns_status = Domain.DNS_VERIFIED
-        domain.verified_at = domain.verified_at or now
-        audit_action = PlatformAuditEvent.DOMAIN_VERIFIED
-    elif action == "dns_failed":
-        domain.dns_status = Domain.DNS_FAILED
-    elif action == "ssl_active":
-        domain.ssl_status = Domain.SSL_ACTIVE
-        audit_action = PlatformAuditEvent.DOMAIN_SSL_UPDATED
-    elif action == "ssl_failed":
-        domain.ssl_status = Domain.SSL_FAILED
-        audit_action = PlatformAuditEvent.DOMAIN_SSL_UPDATED
+    result = inspect_domain(domain)
+    domain.last_checked_at = result["checked_at"]
+    domain.dns_status = Domain.DNS_VERIFIED if result["dns_ok"] else Domain.DNS_FAILED
+    domain.ssl_status = Domain.SSL_ACTIVE if result["https_ok"] else (Domain.SSL_FAILED if result["dns_ok"] else Domain.SSL_PENDING)
+    if result["dns_ok"]:
+        domain.verified_at = domain.verified_at or result["checked_at"]
+    domain.dns_notes = "Resolved: " + (", ".join(result["resolved_ips"]) or "none") + "; expected A: " + (result["expected_ip"] or "not configured") + "; expected CNAME: " + result["expected_cname"]
+    domain.save(update_fields=["dns_status", "ssl_status", "verified_at", "last_checked_at", "dns_notes"])
+    _record_platform_event(request, PlatformAuditEvent.DOMAIN_VERIFIED if result["dns_ok"] else PlatformAuditEvent.DOMAIN_UPDATED, tenant=domain.tenant, domain=domain, object_label=domain.domain, before=before, after={"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")}, metadata={"resolved_ips": result["resolved_ips"], "https_ok": result["https_ok"]})
+    if result["dns_ok"] and result["https_ok"]:
+        messages.success(request, "Domain is correctly pointed to EduManage and HTTPS is active.")
+    elif result["dns_ok"]:
+        messages.warning(request, "DNS is correct, but HTTPS is not active yet. Certificate automation must finish before handoff.")
     else:
-        messages.error(request, "Choose a valid verification action.")
-        return redirect("platform_tenant_detail", pk=domain.tenant.pk)
-    domain.last_checked_at = now
-    domain.save(update_fields=["dns_status", "ssl_status", "verified_at", "last_checked_at"])
-    _record_platform_event(request, audit_action, tenant=domain.tenant, domain=domain, object_label=domain.domain, before=before, after={"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")})
-    messages.success(request, "Domain verification status updated.")
+        messages.error(request, "Domain does not yet resolve to EduManage. Review the DNS records shown below.")
     return redirect("platform_tenant_detail", pk=domain.tenant.pk)
 
 
