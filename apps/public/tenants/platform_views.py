@@ -14,7 +14,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import DomainForm, TenantForm, TenantStatusForm
-from .models import Domain, PlatformAuditEvent, Tenant
+from .models import Domain, PlatformAuditEvent, SubscriptionInvoice, Tenant, TenantSubscription
 from .subscription_services import create_subscription_for_tenant
 
 
@@ -222,6 +222,12 @@ def dashboard(request):
     recent_platform_events = PlatformAuditEvent.objects.select_related("actor", "tenant", "domain")[:8]
     verified_domain_count = Domain.objects.filter(Q(verified_at__isnull=False) | Q(dns_status=Domain.DNS_VERIFIED)).distinct().count()
     domain_count = Domain.objects.count()
+    schema_missing_count = sum(1 for tenant in Tenant.objects.filter(status="active") if _schema_status(tenant.schema_name).get("exists") is False)
+    subscriptions = TenantSubscription.objects.all()
+    overdue_invoice_count = SubscriptionInvoice.objects.filter(status=SubscriptionInvoice.OVERDUE).count()
+    due_soon = timezone.localdate() + timezone.timedelta(days=7)
+    billing_due_soon_count = subscriptions.filter(next_billing_date__isnull=False, next_billing_date__lte=due_soon).exclude(status__in=[TenantSubscription.CANCELLED, TenantSubscription.EXPIRED]).count()
+    past_due_subscription_count = subscriptions.filter(status=TenantSubscription.PAST_DUE).count()
     return render(
         request,
         "platform/dashboard.html",
@@ -234,6 +240,10 @@ def dashboard(request):
             "verified_domain_count": verified_domain_count,
             "unverified_domain_count": max(0, domain_count - verified_domain_count),
             "ssl_active_domain_count": Domain.objects.filter(ssl_status=Domain.SSL_ACTIVE).count(),
+            "schema_missing_count": schema_missing_count,
+            "overdue_invoice_count": overdue_invoice_count,
+            "billing_due_soon_count": billing_due_soon_count,
+            "past_due_subscription_count": past_due_subscription_count,
             "tenants": tenants,
             "domains": domains,
             "recent_platform_events": recent_platform_events,
