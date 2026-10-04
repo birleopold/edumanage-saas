@@ -52,5 +52,12 @@ class StudentProfile(models.Model):
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.user_id:
+            from .services import sync_student_user_identity
+
+            sync_student_user_identity(self)
+
     def __str__(self) -> str:
         return f"{self.last_name} {self.first_name}".strip()
