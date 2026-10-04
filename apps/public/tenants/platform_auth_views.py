@@ -73,8 +73,10 @@ def platform_login(request):
         else:
             cache.delete(rate_key)
             login(request, user)
-            messages.success(request, "Welcome to the Platform Console.")
-            return redirect(_safe_platform_next_url(request))
+            request.session.pop("platform_2fa_verified", None)
+            request.session["platform_2fa_next"] = _safe_platform_next_url(request)
+            messages.info(request, "Complete Platform verification to continue.")
+            return redirect("platform_verify_2fa")
     elif request.method == "POST":
         try:
             cache.incr(rate_key)
