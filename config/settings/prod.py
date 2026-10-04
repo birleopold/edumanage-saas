@@ -90,6 +90,9 @@ _require(CSRF_TRUSTED_ORIGINS, "At least one trusted HTTPS origin is required fo
 _require(bool(DATABASES["default"].get("PASSWORD")), "POSTGRES_PASSWORD is required in production.")
 _require(ADMIN_2FA_REQUIRED is True, "ADMIN_2FA_REQUIRED must be true in production.")
 _require(AUDIT_LOG_ENABLED is True, "AUDIT_LOG_ENABLED must be true in production.")
+if GOOGLE_OAUTH_ENABLED:
+    _require(bool(GOOGLE_OAUTH_CLIENT_ID), "GOOGLE_OAUTH_CLIENT_ID is required when Google sign-in is enabled.")
+    _require(bool(GOOGLE_OAUTH_CLIENT_SECRET), "GOOGLE_OAUTH_CLIENT_SECRET is required when Google sign-in is enabled.")
 _require(SESSION_COOKIE_AGE <= 86400, "DJANGO_SESSION_COOKIE_AGE must not exceed 24 hours in production.")
 _require(MOBILE_MONEY_DRY_RUN_ENABLED is False, "MOBILE_MONEY_DRY_RUN_ENABLED must be false in production.")
 _require(WEBHOOK_ALLOW_PRIVATE_TARGETS is False, "WEBHOOK_ALLOW_PRIVATE_TARGETS must be false in production.")
