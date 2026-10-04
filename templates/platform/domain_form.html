@@ -41,6 +41,16 @@
         <p>Schema: <code class="font-mono font-bold text-slate-800">{{ tenant.schema_name }}</code></p>
       </div>
       <div class="platform-onboarding__aside-section">
+        <h3>Existing / client-owned domain guide</h3>
+        <p>The school keeps ownership of its domain. Ask the person who manages its DNS (registrar, Cloudflare, cPanel, etc.) to add the records shown on the school page after you save this hostname. Platform staff do not need VPS or SSH access.</p>
+        <ol class="platform-check-list mt-3">
+          <li><i class="ph ph-number-circle-one"></i><span>Enter only the hostname the school will use, such as <code>portal.school.ac.ug</code> or <code>school.ac.ug</code>.</span></li>
+          <li><i class="ph ph-number-circle-two"></i><span>Save it, then copy the generated A/CNAME values to the domain owner.</span></li>
+          <li><i class="ph ph-number-circle-three"></i><span>After they update DNS, use <strong>Check DNS & HTTPS</strong> on the school page. Do not manually mark it verified.</span></li>
+          <li><i class="ph ph-number-circle-four"></i><span>Hand over the login URL only when DNS is verified and SSL/HTTPS is active.</span></li>
+        </ol>
+      </div>
+      <div class="platform-onboarding__aside-section">
         <h3>After saving</h3>
         <ul class="platform-check-list">
           <li><i class="ph ph-check-circle" aria-hidden="true"></i><span>Review the generated DNS records.</span></li>
