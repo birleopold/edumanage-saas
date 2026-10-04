@@ -1,10 +1,14 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.db import connection, models
 
 
 def document_upload_to(instance, filename: str) -> str:
     schema = getattr(connection, "schema_name", "public") or "public"
-    return f"{schema}/documents/{filename}"
+    extension = Path(filename or "").suffix.lower()
+    return f"{schema}/documents/{uuid.uuid4().hex}{extension}"
 
 
 class Document(models.Model):
