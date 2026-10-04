@@ -1,4 +1,5 @@
 from django.contrib import messages
+from apps.public.tenants.quota import quota_allows
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.db import transaction
@@ -110,6 +111,11 @@ def teacher_list(request):
 
 @admin_portal_required
 def teacher_create(request):
+    if request.method == "POST":
+        allowed, quota_message = quota_allows("staff")
+        if not allowed:
+            messages.error(request, quota_message)
+            return redirect(request.path)
     scoped = get_user_campus_scope(request.user)
     current = scoped or get_current_campus(request)
     campus_qs = _campus_queryset_for(request.user)
