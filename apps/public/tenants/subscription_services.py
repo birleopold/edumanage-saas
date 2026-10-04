@@ -109,9 +109,8 @@ def sync_subscription_to_tenant_status(subscription: TenantSubscription):
     if subscription.status == TenantSubscription.SUSPENDED and tenant.status != "suspended":
         tenant.status = "suspended"
         tenant.save(update_fields=["status"])
-    elif subscription.status in {TenantSubscription.TRIALING, TenantSubscription.ACTIVE} and tenant.status == "suspended":
-        tenant.status = "active"
-        tenant.save(update_fields=["status"])
+    # Billing may suspend access, but it must not silently undo a platform
+    # operator suspension/archive. Reactivation is an explicit owner action.
 
 
 def subscription_usage(subscription: TenantSubscription) -> dict:
