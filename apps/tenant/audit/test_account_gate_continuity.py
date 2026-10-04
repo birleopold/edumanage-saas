@@ -108,3 +108,34 @@ class PrivacyAndTwoFactorContinuityTests(TestCase):
             reverse("audit_verify_2fa"),
             fetch_redirect_response=False,
         )
+
+
+    @patch("apps.tenant.audit.guards.user_needs_2fa", return_value=True)
+    def test_two_factor_guard_blocks_profile_and_settings_before_verification(self, _needs_2fa):
+        middleware = AdminTwoFactorGuard(lambda _request: HttpResponse("ok"))
+        for path in ("/profile/", reverse("audit_two_factor_settings"), "/devices/"):
+            request = self.factory.get(path)
+            request.user = self.principal
+            request.session = {}
+            response = middleware(request)
+            self.assertEqual(response.status_code, 302, path)
+            self.assertEqual(response.url, reverse("audit_verify_2fa"), path)
+
+    @patch("apps.tenant.audit.request_log.user_needs_2fa", return_value=True)
+    def test_request_log_gate_blocks_non_admin_paths_before_verification(self, _needs_2fa):
+        middleware = RequestLogMiddleware(lambda _request: HttpResponse("ok"))
+        request = self.factory.get("/profile/")
+        request.user = self.principal
+        request.session = {}
+        response = middleware(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("audit_verify_2fa"))
+
+    @patch("apps.tenant.audit.guards.user_needs_2fa", return_value=True)
+    def test_verified_session_can_access_profile(self, _needs_2fa):
+        middleware = AdminTwoFactorGuard(lambda _request: HttpResponse("ok"))
+        request = self.factory.get("/profile/")
+        request.user = self.principal
+        request.session = {"admin_2fa_verified": True}
+        response = middleware(request)
+        self.assertEqual(response.status_code, 200)
