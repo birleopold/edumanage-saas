@@ -1,4 +1,6 @@
 from functools import wraps
+import hashlib
+import json
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -81,7 +83,12 @@ def _client_ip(request):
 
 
 def _record_platform_event(request, action, *, tenant=None, domain=None, object_label="", before=None, after=None, metadata=None):
+    previous = PlatformAuditEvent.objects.order_by("-id").first()
+    previous_hash = previous.event_hash if previous else ""
+    payload = {"action": action, "actor_id": getattr(getattr(request, "user", None), "id", None), "tenant_id": getattr(tenant, "id", None), "domain_id": getattr(domain, "id", None), "object_label": object_label, "before": before or {}, "after": after or {}, "metadata": metadata or {}, "previous_hash": previous_hash}
+    event_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
     return PlatformAuditEvent.objects.create(
+        previous_hash=previous_hash, event_hash=event_hash,
         actor=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
         tenant=tenant,
         domain=domain,
