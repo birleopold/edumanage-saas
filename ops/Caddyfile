@@ -1,33 +1,17 @@
 {
-    email {$CADDY_ACME_EMAIL}
-    on_demand_tls {
-        ask http://127.0.0.1:18081/_internal/caddy/allow-domain
-    }
+ email {$CADDY_ACME_EMAIL}
+ on_demand_tls {
+  ask http://127.0.0.1:18081/_internal/caddy/allow-domain
+ }
 }
-
-# Existing production applications: Caddy owns public TLS; Nginx preserves app routing.
-edumanage.leosoftug.com, schools.leosoftug.com {
-    reverse_proxy 127.0.0.1:18081
+edumanage.leosoftug.com, schools.leosoftug.com, hotspotcloud.net, www.hotspotcloud.net, signalsolid.com, www.signalsolid.com, leosoftug.com, www.leosoftug.com {
+ reverse_proxy 127.0.0.1:18081
 }
-
 *.schools.leosoftug.com {
-    tls {
-        on_demand
-    }
-    reverse_proxy 127.0.0.1:18081
+ tls { on_demand }
+ reverse_proxy 127.0.0.1:18081
 }
-
-hotspotcloud.net, www.hotspotcloud.net,
-signalsolid.com, www.signalsolid.com,
-leosoftug.com, www.leosoftug.com {
-    reverse_proxy 127.0.0.1:18081
-}
-
-# Arbitrary client-owned EduManage domains. Issuance is fail-closed through
-# the public-schema Domain/Tenant permission endpoint above.
 https:// {
-    tls {
-        on_demand
-    }
-    reverse_proxy 127.0.0.1:18081
+ tls { on_demand }
+ reverse_proxy 127.0.0.1:18081
 }
