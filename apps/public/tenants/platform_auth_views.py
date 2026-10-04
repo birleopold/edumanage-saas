@@ -11,6 +11,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from .platform_permissions import platform_role
+
 
 def _safe_platform_next_url(request):
     """Return a safe post-login target without allowing login-to-login loops."""
@@ -52,7 +54,9 @@ def platform_login(request):
     redirected back to the login page repeatedly with nested next parameters.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser:
+        if platform_role(request.user):
+            if not request.session.get("platform_2fa_verified"):
+                return redirect("platform_verify_2fa")
             return redirect(_safe_platform_next_url(request))
         logout(request)
         messages.error(request, "This account is not allowed to access the Platform Console.")
