@@ -3,7 +3,7 @@ from django.urls import include, path
 from apps.public.tenants import seo_views, views
 from apps.tenant.portals import error_handlers, public_views
 from apps.tenant.users import google_auth
-from apps.tenant.portals.pwa import manifest, push_readiness, service_worker
+from apps.tenant.portals.pwa import manifest, service_worker
 
 urlpatterns = [
     path("robots.txt", seo_views.robots_txt, name="robots_txt"),
@@ -25,7 +25,7 @@ urlpatterns = [
     path("status/", public_views.public_status, name="public_status"),
     path("manifest.webmanifest", manifest, name="pwa_manifest"),
     path("service-worker.js", service_worker, name="pwa_service_worker"),
-    path("pwa/push-readiness/", push_readiness, name="pwa_push_readiness"),
+    path("pwa/push-readiness/", views.public_pwa_readiness, name="pwa_push_readiness"),
     path("platform/", include("apps.public.tenants.platform_urls")),
     path("system-unavailable/", error_handlers.system_unavailable, name="system_unavailable"),
     path("tenant-suspended/", error_handlers.tenant_suspended, name="tenant_suspended"),
