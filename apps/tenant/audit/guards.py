@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 def _two_factor_exempt_paths() -> tuple[str, ...]:
     return (
         reverse("audit_verify_2fa"),
-        reverse("audit_two_factor_settings"),
         reverse("logout"),
         f"/{settings.STATIC_URL.lstrip('/')}",
         f"/{settings.MEDIA_URL.lstrip('/')}",
@@ -22,7 +21,7 @@ def _two_factor_exempt_paths() -> tuple[str, ...]:
 
 
 class AdminTwoFactorGuard:
-    """Protect administrator-shell routes without redirecting the OTP page to itself."""
+    """Require administrator 2FA across the entire authenticated tenant surface."""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -34,7 +33,6 @@ class AdminTwoFactorGuard:
             if (
                 user
                 and user.is_authenticated
-                and request.path.startswith("/admin/")
                 and not is_exempt
                 and user_needs_2fa(user)
                 and not request.session.get("admin_2fa_verified")
