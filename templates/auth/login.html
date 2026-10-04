@@ -62,6 +62,13 @@
           </div>
         {% endif %}
 
+        {% if GOOGLE_OAUTH_ENABLED %}
+          <a href="{% url 'google_oauth_start' %}" class="mb-5 flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-slate-200 bg-white px-6 py-3 font-black text-slate-800 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-200">
+            <span aria-hidden="true" class="text-lg font-black">G</span><span>Continue with Google</span>
+          </a>
+          <div class="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-400"><span class="h-px flex-1 bg-slate-200"></span><span>or use school credentials</span><span class="h-px flex-1 bg-slate-200"></span></div>
+        {% endif %}
+
         <form method="post" novalidate class="space-y-5">
           {% csrf_token %}
           {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
