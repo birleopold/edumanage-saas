@@ -4,12 +4,17 @@ from .tenants import *
 
 DEBUG = False
 ENVIRONMENT = "production"
+
+# File-based cache is safe for a single VPS and shared by all Gunicorn workers.
+# Multi-host deployments must opt into a truly shared cache such as Redis.
+CACHE_BACKEND = config("DJANGO_CACHE_BACKEND", default="django.core.cache.backends.filebased.FileBasedCache")
+CACHE_LOCATION = config("DJANGO_CACHE_LOCATION", default="/var/tmp/edumanage-cache")
 CACHES = {
     "default": {
         # A shared filesystem cache gives all Gunicorn workers consistent
         # throttling/idempotency state without requiring an extra service.
-        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": config("DJANGO_CACHE_LOCATION", default="/var/tmp/edumanage-cache"),
+        "BACKEND": CACHE_BACKEND,
+        "LOCATION": CACHE_LOCATION,
         "TIMEOUT": config("DJANGO_CACHE_TIMEOUT", default=300, cast=int),
     }
 }
@@ -30,6 +35,7 @@ SESSION_COOKIE_NAME = config("DJANGO_SESSION_COOKIE_NAME", default="edumanage_se
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_AGE = config("DJANGO_SESSION_COOKIE_AGE", default=43200, cast=int)
 CSRF_COOKIE_NAME = config("DJANGO_CSRF_COOKIE_NAME", default="edumanage_csrftoken")
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
@@ -82,6 +88,9 @@ _require(bool(SECRET_KEY) and SECRET_KEY != "unsafe-dev-key" and len(SECRET_KEY)
 _require(ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS, "DJANGO_ALLOWED_HOSTS must list explicit production hosts.")
 _require(CSRF_TRUSTED_ORIGINS, "At least one trusted HTTPS origin is required for production forms.")
 _require(bool(DATABASES["default"].get("PASSWORD")), "POSTGRES_PASSWORD is required in production.")
+_require(ADMIN_2FA_REQUIRED is True, "ADMIN_2FA_REQUIRED must be true in production.")
+_require(AUDIT_LOG_ENABLED is True, "AUDIT_LOG_ENABLED must be true in production.")
+_require(SESSION_COOKIE_AGE <= 86400, "DJANGO_SESSION_COOKIE_AGE must not exceed 24 hours in production.")
 _require(MOBILE_MONEY_DRY_RUN_ENABLED is False, "MOBILE_MONEY_DRY_RUN_ENABLED must be false in production.")
 _require(WEBHOOK_ALLOW_PRIVATE_TARGETS is False, "WEBHOOK_ALLOW_PRIVATE_TARGETS must be false in production.")
 _require(WEBHOOK_ALLOW_HTTP is False, "WEBHOOK_ALLOW_HTTP must be false in production.")
