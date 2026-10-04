@@ -165,3 +165,26 @@ class MobileDevice(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} {self.platform} {self.device_id or self.id}"
+
+
+class FederatedIdentity(models.Model):
+    GOOGLE = "GOOGLE"
+    PROVIDER_CHOICES = ((GOOGLE, "Google"),)
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="federated_identities")
+    provider = models.CharField(max_length=16, choices=PROVIDER_CHOICES)
+    subject = models.CharField(max_length=255)
+    email = models.EmailField()
+    email_verified = models.BooleanField(default=False)
+    linked_at = models.DateTimeField(auto_now_add=True)
+    last_login_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "subject"], name="users_unique_federated_subject"),
+            models.UniqueConstraint(fields=["user", "provider"], name="users_unique_provider_per_user"),
+        ]
+        indexes = [models.Index(fields=["provider", "email"])]
+
+    def __str__(self):
+        return f"{self.provider}:{self.email}"
