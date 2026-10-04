@@ -26,3 +26,19 @@ def caddy_domain_permission(request):
     if not allowed:
         return HttpResponse(status=404)
     return HttpResponse("allowed", content_type="text/plain", status=200)
+
+
+def public_pwa_readiness(request):
+    """Public/platform host PWA status without querying tenant-only push tables."""
+    return JsonResponse({
+        "service_worker": True,
+        "push_api_ready": False,
+        "vapid_public_key_configured": False,
+        "vapid_public_key": "",
+        "subscription_storage_ready": False,
+        "active_subscriptions": 0,
+        "subscribe_url": "",
+        "unsubscribe_url": "",
+        "private_page_caching": False,
+        "message": "Platform PWA shell is available. School push subscriptions are tenant-scoped.",
+    })
