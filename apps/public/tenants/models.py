@@ -296,3 +296,13 @@ class GoogleLoginHandoff(models.Model):
 
     def is_valid(self):
         return self.used_at is None and timezone.now() < self.expires_at
+
+
+class PlatformTwoFactorSetting(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="platform_two_factor")
+    is_enabled = models.BooleanField(default=True)
+    last_verified_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Platform 2FA for {self.user}"
