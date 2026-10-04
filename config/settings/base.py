@@ -59,6 +59,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.tenant.orgsettings.context_processors.orgsettings",
+                "apps.tenant.users.context_processors.google_auth",
             ],
         },
     }
