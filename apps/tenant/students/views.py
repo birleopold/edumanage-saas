@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from django.contrib import messages
+from apps.public.tenants.quota import quota_allows
 
 from apps.tenant.orgsettings.models import Campus
 from apps.tenant.orgsettings.services import get_current_campus, get_or_create_organization
@@ -166,6 +167,11 @@ def student_export_csv(request):
 
 @admin_portal_required
 def student_create(request):
+    if request.method == "POST":
+        allowed, quota_message = quota_allows("students")
+        if not allowed:
+            messages.error(request, quota_message)
+            return redirect(request.path)
     scoped = get_user_campus_scope(request.user)
     current = scoped or get_current_campus(request)
     campus_qs = _campus_queryset_for(request.user)
