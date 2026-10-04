@@ -20,7 +20,7 @@ class PlatformFormSecurityMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        is_platform_request = request.path.startswith(self.PLATFORM_PREFIX)
+        is_platform_request = request.path.startswith(self.PLATFORM_PREFIX) or request.path.startswith("/dj-admin/")
 
         if is_platform_request and request.method in self.SAFE_METHODS:
             get_token(request)
