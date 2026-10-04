@@ -4,8 +4,8 @@ APP=/srv/edumanage/app
 VENV=/srv/edumanage/venv
 BACKUP_DIR=/srv/edumanage/backups/postgresql
 
-readarray -t DBV < <("$VENV/bin/python" "$APP/manage.py" shell --settings=config.settings.prod -c 'from django.conf import settings; d=settings.DATABASES["default"]; print(d["HOST"]); print(d["PORT"]); print(d["USER"]); print(d["PASSWORD"])' 2>/dev/null)
-HOST="${DBV[0]:-127.0.0.1}"; PORT="${DBV[1]:-5432}"; APP_USER="${DBV[2]:-postgres}"; PGPASSWORD="${DBV[3]:-}"
+DB_JSON=$("$VENV/bin/python" "$APP/manage.py" shell --settings=config.settings.prod -c 'import json; from django.conf import settings; d=settings.DATABASES["default"]; print(json.dumps({"host":d["HOST"],"port":d["PORT"],"user":d["USER"],"password":d["PASSWORD"]}))' 2>/dev/null | tail -1)
+eval "$("$VENV/bin/python" -c 'import json,shlex,sys; d=json.loads(sys.argv[1]); print("HOST="+shlex.quote(str(d["host"] or "127.0.0.1"))); print("PORT="+shlex.quote(str(d["port"] or "5432"))); print("APP_USER="+shlex.quote(str(d["user"]))); print("PGPASSWORD="+shlex.quote(str(d["password"])))' "$DB_JSON")"
 export PGPASSWORD
 LATEST=$(find "$BACKUP_DIR" -type f -name '*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
 [ -n "$LATEST" ] || { echo "No backup found"; exit 1; }
