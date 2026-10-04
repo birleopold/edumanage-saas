@@ -370,14 +370,23 @@ def tenant_status_update(request, pk):
     form = TenantStatusForm(request.POST)
     if form.is_valid():
         before_status = tenant.status
-        tenant.status = form.cleaned_data["status"]
+        requested_status = form.cleaned_data["status"]
+        subscription = getattr(tenant, "subscription", None)
+        if requested_status == "active" and subscription is not None and not subscription.is_usable:
+            messages.error(request, "This school cannot be reactivated while its subscription is not active or trialing. Resolve the subscription first.")
+            return redirect("platform_tenant_detail", pk=tenant.pk)
+        tenant.status = requested_status
         tenant.save(update_fields=["status"])
         action = PlatformAuditEvent.TENANT_STATUS_CHANGED
         if tenant.status == "suspended":
             action = PlatformAuditEvent.TENANT_SUSPENDED
-        elif before_status == "suspended" and tenant.status == "active":
+        elif before_status in {"suspended", "archived"} and tenant.status == "active":
             action = PlatformAuditEvent.TENANT_REACTIVATED
-        _record_platform_event(request, action, tenant=tenant, object_label=tenant.name, before={"status": before_status}, after={"status": tenant.status})
+        _record_platform_event(
+            request, action, tenant=tenant, object_label=tenant.name,
+            before={"status": before_status}, after={"status": tenant.status},
+            metadata={"reason": (form.cleaned_data.get("reason") or "").strip()},
+        )
         messages.success(request, f"Tenant status updated to {tenant.status}.")
     else:
         messages.error(request, "Choose a valid tenant status.")
@@ -461,6 +470,9 @@ def domain_verify(request, pk):
 def domain_delete(request, pk):
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     tenant = domain.tenant
+    if domain.is_primary and not tenant.domains.exclude(pk=domain.pk).exists():
+        messages.error(request, "You cannot remove the school's only primary domain. Add and verify a replacement domain first.")
+        return redirect("platform_tenant_detail", pk=tenant.pk)
     before = {"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary}
     _record_platform_event(request, PlatformAuditEvent.DOMAIN_UPDATED, tenant=tenant, domain=domain, object_label=domain.domain, before=before, after={"deleted": True})
     domain.delete()
