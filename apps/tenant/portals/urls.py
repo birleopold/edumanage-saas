@@ -30,7 +30,7 @@ urlpatterns = [
     path("login/", custom_auth_views.CustomLoginView.as_view(), name="login"),
     path("logout/", custom_auth_views.logout_view, name="logout"),
     path("auth/google/start/", google_auth.google_login_start, name="google_oauth_start"),
-    path("auth/google/callback/", google_auth.google_login_callback, name="google_oauth_callback"),
+    path("auth/google/complete/", google_auth.google_login_complete, name="google_oauth_complete"),
     path("password-reset/", custom_auth_views.CustomPasswordResetView.as_view(), name="password_reset"),
     path("password-reset/done/", auth_views.PasswordResetDoneView.as_view(template_name="auth/password_reset_done.html"), name="password_reset_done"),
     path("password-reset/<uidb64>/<token>/", custom_auth_views.CustomPasswordResetConfirmView.as_view(), name="password_reset_confirm"),
