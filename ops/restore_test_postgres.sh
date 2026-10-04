@@ -3,12 +3,13 @@ set -u
 APP=/srv/edumanage/app
 VENV=/srv/edumanage/venv
 BACKUP_DIR=/srv/edumanage/backups/postgresql
-set -a; . "$APP/.env"; set +a
-HOST="${POSTGRES_HOST:-127.0.0.1}"; PORT="${POSTGRES_PORT:-5432}"; USER="${POSTGRES_USER:-postgres}"
+
+readarray -t DBV < <("$VENV/bin/python" "$APP/manage.py" shell --settings=config.settings.prod -c 'from django.conf import settings; d=settings.DATABASES["default"]; print(d["HOST"]); print(d["PORT"]); print(d["USER"]); print(d["PASSWORD"])' 2>/dev/null)
+HOST="${DBV[0]:-127.0.0.1}"; PORT="${DBV[1]:-5432}"; USER="${DBV[2]:-postgres}"; PGPASSWORD="${DBV[3]:-}"
+export PGPASSWORD
 LATEST=$(find "$BACKUP_DIR" -type f -name '*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
 [ -n "$LATEST" ] || { echo "No backup found"; exit 1; }
 TEST_DB="edumanage_restore_test_$(date -u +%Y%m%d%H%M%S)"
-export PGPASSWORD="${POSTGRES_PASSWORD:-}"
 cleanup(){ dropdb -h "$HOST" -p "$PORT" -U "$USER" --if-exists "$TEST_DB" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 createdb -h "$HOST" -p "$PORT" -U "$USER" "$TEST_DB" || exit 1
