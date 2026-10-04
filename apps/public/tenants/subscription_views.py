@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from .models import PlatformAuditEvent, SubscriptionInvoice, SubscriptionPlan, Tenant, TenantSubscription
 from .platform_views import _record_platform_event, platform_admin_required
+from .platform_permissions import platform_can
 from .subscription_forms import SubscriptionInvoiceForm, SubscriptionPaymentForm, TenantSubscriptionForm
 from .subscription_services import create_subscription_for_tenant, create_subscription_invoice, ensure_default_plans, subscription_usage, sync_subscription_to_tenant_status, usage_percent
 
@@ -100,6 +101,8 @@ def subscription_dashboard(request):
 
 @platform_admin_required
 def tenant_subscription_detail(request, tenant_id):
+    if not platform_can(request.user, "billing"):
+        return redirect("platform_access_denied")
     tenant = get_object_or_404(Tenant, pk=tenant_id)
     subscription = getattr(tenant, "subscription", None)
     if subscription is None:
@@ -147,6 +150,8 @@ def tenant_subscription_detail(request, tenant_id):
 @platform_admin_required
 @require_POST
 def subscription_create_invoice(request, tenant_id):
+    if not platform_can(request.user, "billing"):
+        return redirect("platform_access_denied")
     tenant = get_object_or_404(Tenant, pk=tenant_id)
     subscription = getattr(tenant, "subscription", None) or create_subscription_for_tenant(tenant)
     form = SubscriptionInvoiceForm(request.POST)
@@ -168,6 +173,8 @@ def subscription_create_invoice(request, tenant_id):
 @platform_admin_required
 @require_POST
 def subscription_mark_paid(request, invoice_id):
+    if not platform_can(request.user, "billing"):
+        return redirect("platform_access_denied")
     invoice = get_object_or_404(SubscriptionInvoice.objects.select_related("subscription", "subscription__tenant"), pk=invoice_id)
     form = SubscriptionPaymentForm(request.POST)
     tenant = invoice.subscription.tenant
