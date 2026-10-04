@@ -1,33 +1,39 @@
 # Google sign-in
 
-EduManage supports Google as a federated identity provider for existing school accounts.
+EduManage uses one central Google OAuth callback for every school tenant.
 
-## Security model
+## Google Cloud
 
-Google proves identity only. EduManage remains authoritative for the tenant, user record, roles, campus scope, account status and permissions. A Google identity never creates or grants a school role.
+Create one OAuth 2.0 Web application client.
 
-A first Google sign-in is accepted only when Google supplies a verified email and exactly one active user in the current tenant has that email. The Google immutable subject identifier is then stored in that tenant schema. Future sign-ins use the subject link.
+Authorized JavaScript origins are not required for the server-side flow.
 
-No Google access token or refresh token is persisted because EduManage does not need access to Google APIs for authentication.
+Register exactly this Authorized redirect URI:
 
-Password login remains available as a recovery/fallback path.
+    https://edumanage.leosoftug.com/auth/google/callback/
 
-## Google Cloud configuration
+Do not register every school subdomain and do not use wildcard redirect URIs.
 
-Create an OAuth 2.0 Web application client and register the callback URL for each school domain that will use Google sign-in:
+## Flow
 
-    https://<school-domain>/auth/google/callback/
+1. A user starts Google sign-in from a registered tenant domain.
+2. EduManage creates a cryptographically random, expiring transaction in the public schema tied to that tenant and registered return domain.
+3. Google always returns to the central callback.
+4. The callback validates and consumes the OAuth state, exchanges the authorization code and verifies Google's ID token.
+5. EduManage creates a separate two-minute, one-use handoff token tied to the same tenant/domain.
+6. The browser returns to the tenant's /auth/google/complete/ endpoint.
+7. Tenant middleware selects the tenant schema; the handoff is consumed only when hostname and schema both match.
+8. Google identity is matched to an existing active EduManage user. Google never grants roles or creates school membership.
 
-Set these only in the server environment:
+OAuth state and handoff tokens are stored only as SHA-256 digests. Access and refresh tokens are not persisted.
+
+## Environment
 
     GOOGLE_OAUTH_ENABLED=True
     GOOGLE_OAUTH_CLIENT_ID=<client id>
-    GOOGLE_OAUTH_CLIENT_SECRET=<client secret>
+    GOOGLE_OAUTH_CLIENT_SECRET=<secret>
+    GOOGLE_OAUTH_REDIRECT_URI=https://edumanage.leosoftug.com/auth/google/callback/
+    GOOGLE_OAUTH_TRANSACTION_MINUTES=10
+    GOOGLE_OAUTH_HANDOFF_MINUTES=2
 
-Never commit the client secret.
-
-Because Google requires exact redirect URI matching, every production tenant hostname used for OAuth must be registered with the Google OAuth client. If operating many arbitrary custom domains, use a dedicated central identity domain/proxy in a later architecture rather than trying to register unbounded redirects.
-
-## Account creation policy
-
-Google does not create students, parents, teachers or administrators. School accounts must be provisioned by EduManage first. This prevents a personal Google account from self-assigning a role or entering the wrong school.
+Password login remains available.

@@ -114,6 +114,9 @@ LOGIN_REDIRECT_URL = "admin_home"
 GOOGLE_OAUTH_ENABLED = config("GOOGLE_OAUTH_ENABLED", default=False, cast=bool)
 GOOGLE_OAUTH_CLIENT_ID = config("GOOGLE_OAUTH_CLIENT_ID", default="")
 GOOGLE_OAUTH_CLIENT_SECRET = config("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+GOOGLE_OAUTH_REDIRECT_URI = config("GOOGLE_OAUTH_REDIRECT_URI", default="https://edumanage.leosoftug.com/auth/google/callback/")
+GOOGLE_OAUTH_TRANSACTION_MINUTES = config("GOOGLE_OAUTH_TRANSACTION_MINUTES", default=10, cast=int)
+GOOGLE_OAUTH_HANDOFF_MINUTES = config("GOOGLE_OAUTH_HANDOFF_MINUTES", default=2, cast=int)
 
 SUPPORT_CONTACT_EMAIL = config("SUPPORT_CONTACT_EMAIL", default="")
 

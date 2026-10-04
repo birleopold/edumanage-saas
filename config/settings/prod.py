@@ -93,6 +93,7 @@ _require(AUDIT_LOG_ENABLED is True, "AUDIT_LOG_ENABLED must be true in productio
 if GOOGLE_OAUTH_ENABLED:
     _require(bool(GOOGLE_OAUTH_CLIENT_ID), "GOOGLE_OAUTH_CLIENT_ID is required when Google sign-in is enabled.")
     _require(bool(GOOGLE_OAUTH_CLIENT_SECRET), "GOOGLE_OAUTH_CLIENT_SECRET is required when Google sign-in is enabled.")
+    _require(GOOGLE_OAUTH_REDIRECT_URI.startswith("https://"), "GOOGLE_OAUTH_REDIRECT_URI must use HTTPS.")
 _require(SESSION_COOKIE_AGE <= 86400, "DJANGO_SESSION_COOKIE_AGE must not exceed 24 hours in production.")
 _require(MOBILE_MONEY_DRY_RUN_ENABLED is False, "MOBILE_MONEY_DRY_RUN_ENABLED must be false in production.")
 _require(WEBHOOK_ALLOW_PRIVATE_TARGETS is False, "WEBHOOK_ALLOW_PRIVATE_TARGETS must be false in production.")
