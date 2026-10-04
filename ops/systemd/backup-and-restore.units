@@ -1,12 +1,17 @@
-# edumanage-backup.service
+# Install each section into the matching /etc/systemd/system file.
+
+# /etc/systemd/system/edumanage-backup.service
 [Unit]
 Description=EduManage PostgreSQL backup
+After=postgresql.service
 [Service]
 Type=oneshot
 User=admin
-ExecStart=/srv/edumanage/app/ops/backup_postgres.sh
+Group=admin
+WorkingDirectory=/srv/edumanage/app
+ExecStart=/bin/bash /srv/edumanage/app/ops/backup_postgres.sh
 
-# edumanage-backup.timer
+# /etc/systemd/system/edumanage-backup.timer
 [Unit]
 Description=Nightly EduManage PostgreSQL backup
 [Timer]
@@ -16,17 +21,19 @@ RandomizedDelaySec=900
 [Install]
 WantedBy=timers.target
 
-# edumanage-restore-test.service
+# /etc/systemd/system/edumanage-restore-test.service
 [Unit]
-Description=EduManage PostgreSQL restore test
+Description=EduManage PostgreSQL restore verification
+After=postgresql.service
 [Service]
 Type=oneshot
-User=admin
-ExecStart=/srv/edumanage/app/ops/restore_test_postgres.sh
+User=root
+WorkingDirectory=/srv/edumanage/app
+ExecStart=/bin/bash /srv/edumanage/app/ops/restore_test_postgres.sh
 
-# edumanage-restore-test.timer
+# /etc/systemd/system/edumanage-restore-test.timer
 [Unit]
-Description=Weekly EduManage PostgreSQL restore test
+Description=Weekly EduManage PostgreSQL restore verification
 [Timer]
 OnCalendar=Sun *-*-* 03:30:00
 Persistent=true
