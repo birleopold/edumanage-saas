@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import include, path
 
 from apps.public.tenants import seo_views, views
@@ -27,6 +28,7 @@ urlpatterns = [
     path("service-worker.js", service_worker, name="pwa_service_worker"),
     path("pwa/push-readiness/", views.public_pwa_readiness, name="pwa_push_readiness"),
     path("platform/", include("apps.public.tenants.platform_urls")),
+    path("dj-admin/", admin.site.urls),
     path("system-unavailable/", error_handlers.system_unavailable, name="system_unavailable"),
     path("tenant-suspended/", error_handlers.tenant_suspended, name="tenant_suspended"),
     path("invalid-domain/", error_handlers.invalid_domain, name="invalid_domain"),

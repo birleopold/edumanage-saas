@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "apps.public.tenants.platform_security.PlatformFormSecurityMiddleware",
     "apps.public.tenants.seo_middleware.SearchIndexControlMiddleware",
     *MIDDLEWARE,
+    "apps.public.tenants.platform_admin_guard.PlatformDjangoAdminGuard",
     "apps.tenant.orgsettings.feature_gate.FeatureGateMiddleware",
 ]
 
