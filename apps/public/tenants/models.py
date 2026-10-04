@@ -8,6 +8,7 @@ class Tenant(TenantMixin):
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=32, default="active")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_internal = models.BooleanField(default=False, db_index=True, help_text="Internal/demo tenants are excluded from customer billing automation.")
 
     auto_create_schema = True
 

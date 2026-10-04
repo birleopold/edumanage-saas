@@ -20,9 +20,9 @@ class Command(BaseCommand):
             return
         try:
             today = timezone.localdate()
-            overdue = SubscriptionInvoice.objects.filter(status=SubscriptionInvoice.OPEN, due_on__lt=today).exclude(subscription__tenant__schema_name="public")
-            expired_trials = TenantSubscription.objects.filter(status=TenantSubscription.TRIALING, trial_end__lt=today).exclude(tenant__schema_name="public")
-            due_subscriptions = TenantSubscription.objects.filter(status=TenantSubscription.ACTIVE, next_billing_date__lt=today).exclude(tenant__schema_name="public").exclude(payment_status__in=[TenantSubscription.PAYMENT_PAID, TenantSubscription.PAYMENT_WAIVED])
+            overdue = SubscriptionInvoice.objects.filter(status=SubscriptionInvoice.OPEN, due_on__lt=today).exclude(subscription__tenant__is_internal=True)
+            expired_trials = TenantSubscription.objects.filter(status=TenantSubscription.TRIALING, trial_end__lt=today).exclude(tenant__is_internal=True)
+            due_subscriptions = TenantSubscription.objects.filter(status=TenantSubscription.ACTIVE, next_billing_date__lt=today).exclude(tenant__is_internal=True).exclude(payment_status__in=[TenantSubscription.PAYMENT_PAID, TenantSubscription.PAYMENT_WAIVED])
             self.stdout.write(f"overdue_invoices={overdue.count()} expired_trials={expired_trials.count()} past_due={due_subscriptions.count()}")
             if options["dry_run"]:
                 return
@@ -30,7 +30,7 @@ class Command(BaseCommand):
                 overdue.update(status=SubscriptionInvoice.OVERDUE)
                 expired_trials.update(status=TenantSubscription.EXPIRED)
                 due_subscriptions.update(status=TenantSubscription.PAST_DUE)
-            for subscription in TenantSubscription.objects.filter(status__in=[TenantSubscription.EXPIRED, TenantSubscription.SUSPENDED]).exclude(tenant__schema_name="public"):
+            for subscription in TenantSubscription.objects.filter(status__in=[TenantSubscription.EXPIRED, TenantSubscription.SUSPENDED]).exclude(tenant__is_internal=True):
                 sync_subscription_to_tenant_status(subscription)
         finally:
             cache.delete(lock_key)
