@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.core.management.base import BaseCommand
 
 from apps.tenant.parents.digest import send_all_parent_digests
@@ -16,7 +17,11 @@ class Command(BaseCommand):
         parser.add_argument("--include-inactive", action="store_true", help="Include inactive parent profiles.")
 
     def handle(self, *args, **options):
-        result = send_all_parent_digests(
+        lock_key = "edumanage:parent-digests"
+        if not cache.add(lock_key, "1", timeout=3600):
+            self.stdout.write(self.style.WARNING("Parent digests already running.")); return
+        try:
+            result = send_all_parent_digests(
             include_push=not options["no_push"],
             include_email=options["email"],
             include_whatsapp=options["whatsapp"],
@@ -25,10 +30,12 @@ class Command(BaseCommand):
             use_parent_preferences=not options["ignore_parent_preferences"],
             active_only=not options["include_inactive"],
         )
-        self.stdout.write(
-            self.style.SUCCESS(
+            self.stdout.write(
+                self.style.SUCCESS(
                 f"Parent digests complete: {result['sent']} sent, {result['skipped']} skipped, "
                 f"{result['duplicates']} duplicate(s), {result['push_sent']} PWA alert(s), "
                 f"{result['email_sent']} email(s), {result['whatsapp_sent']} WhatsApp message(s)."
+                )
             )
-        )
+        finally:
+            cache.delete(lock_key)
