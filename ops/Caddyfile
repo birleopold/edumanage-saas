@@ -13,13 +13,6 @@ schools.leosoftug.com {
 	reverse_proxy 127.0.0.1:18081
 }
 
-*.schools.leosoftug.com {
-	tls {
-		on_demand
-	}
-	reverse_proxy 127.0.0.1:18081
-}
-
 hotspotcloud.net {
 	reverse_proxy 127.0.0.1:18081
 }
