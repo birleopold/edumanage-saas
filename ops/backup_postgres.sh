@@ -5,8 +5,8 @@ VENV=/srv/edumanage/venv
 BACKUP_DIR=/srv/edumanage/backups/postgresql
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 
-readarray -t DBV < <("$VENV/bin/python" "$APP/manage.py" shell --settings=config.settings.prod -c 'from django.conf import settings; d=settings.DATABASES["default"]; print(d["NAME"]); print(d["HOST"]); print(d["PORT"]); print(d["USER"]); print(d["PASSWORD"])' 2>/dev/null)
-DB="${DBV[0]:-}"; HOST="${DBV[1]:-127.0.0.1}"; PORT="${DBV[2]:-5432}"; USER="${DBV[3]:-postgres}"; PGPASSWORD="${DBV[4]:-}"
+DB_JSON=$("$VENV/bin/python" "$APP/manage.py" shell --settings=config.settings.prod -c 'import json; from django.conf import settings; d=settings.DATABASES["default"]; print(json.dumps({"name":d["NAME"],"host":d["HOST"],"port":d["PORT"],"user":d["USER"],"password":d["PASSWORD"]}))' 2>/dev/null | tail -1)
+eval "$("$VENV/bin/python" -c 'import json,shlex,sys; d=json.loads(sys.argv[1]); print("DB="+shlex.quote(str(d["name"]))); print("HOST="+shlex.quote(str(d["host"] or "127.0.0.1"))); print("PORT="+shlex.quote(str(d["port"] or "5432"))); print("USER="+shlex.quote(str(d["user"]))); print("PGPASSWORD="+shlex.quote(str(d["password"])))' "$DB_JSON")"
 export PGPASSWORD
 FILE="$BACKUP_DIR/${DB}_${STAMP}.dump"
 
