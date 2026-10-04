@@ -22,7 +22,10 @@ if ! command -v caddy >/dev/null; then
  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' -o /etc/apt/sources.list.d/caddy-stable.list
  chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg
  chmod o+r /etc/apt/sources.list.d/caddy-stable.list
+ systemctl mask caddy.service 2>/dev/null || true
  apt-get update && apt-get install -y caddy
+ systemctl unmask caddy.service 2>/dev/null || true
+ systemctl stop caddy 2>/dev/null || true
 fi
 mkdir -p /etc/caddy
 cp /srv/edumanage/app/ops/Caddyfile /etc/caddy/Caddyfile
@@ -32,6 +35,7 @@ cat >/etc/systemd/system/caddy.service.d/edumanage-env.conf <<'EOF'
 [Service]
 EnvironmentFile=/etc/caddy/edumanage.env
 EOF
+systemctl stop caddy 2>/dev/null || true
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile || { echo "Caddy config invalid; no cutover performed."; exit 1; }
 
 echo "Cutting over..."
