@@ -6,7 +6,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from .invoicing import invoice_amounts
@@ -70,6 +70,7 @@ def _record_replay_event(provider, reference, provider_status, payload, existing
 
 @transaction.atomic
 def initiate_collection(*, invoice, amount, phone_number, network, requested_by=None):
+    invoice = type(invoice).objects.select_for_update().get(pk=invoice.pk)
     amounts = invoice_amounts(invoice)
     amount = Decimal(str(amount or amounts.balance))
     if amount <= 0:
@@ -159,7 +160,13 @@ def process_gateway_callback(provider, payload):
                 DuplicatePaymentAlert.objects.get_or_create(payment=duplicate, duplicate_of=duplicate, reason=f"Gateway callback duplicate: {reference}")
                 event.error_message = "Duplicate payment detected."
             else:
-                payment = Payment.objects.create(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference=reference, received_at=timezone.localdate())
+                try:
+                    payment = Payment.objects.create(invoice=payment_request.invoice, amount=payment_request.amount, method=Payment.MOBILE, mobile_network=payment_request.network, reference=reference, received_at=timezone.localdate())
+                except IntegrityError:
+                    payment = _matching_mobile_payment(payment_request, reference)
+                    if payment is None:
+                        raise
+                    event.error_message = "Concurrent duplicate callback matched existing payment."
                 payment_request.created_payment = payment
                 try:
                     from .services import send_payment_receipt_for_payment
