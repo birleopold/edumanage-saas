@@ -1,6 +1,7 @@
 from functools import wraps
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -41,6 +42,8 @@ def platform_admin_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if request.user.is_authenticated and request.user.is_superuser:
+            if getattr(settings, "PLATFORM_2FA_REQUIRED", True) and not request.session.get("platform_2fa_verified"):
+                return redirect("platform_verify_2fa")
             return view_func(request, *args, **kwargs)
         if request.user.is_authenticated:
             messages.error(request, "Only platform superusers can access the SaaS management console.")
