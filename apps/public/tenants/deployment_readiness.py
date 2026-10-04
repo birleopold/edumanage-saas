@@ -17,7 +17,7 @@ PRIORITY_SECTIONS = [
         "icon": "ph-database",
         "why": "Nothing should go to real clients until tenant schemas are running on PostgreSQL and migrations are repeatable.",
         "checks": [
-            "Use config.settings.tenants in production.",
+            "Use config.settings.prod in production.",
             "Set POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST and POSTGRES_PORT.",
             "Run shared migrations before tenant migrations.",
             "Confirm each active tenant has a PostgreSQL schema.",
@@ -46,7 +46,7 @@ PRIORITY_SECTIONS = [
         "why": "Schools must resolve to the right tenant using subdomains or verified custom domains.",
         "checks": [
             "Primary platform domain points to the app server/load balancer.",
-            "Wildcard/subdomain routing is configured for schoolname.edumanage.com style domains.",
+            "Wildcard/subdomain routing is configured for schoolname.schools.leosoftug.com style domains.",
             "Custom domains have A/CNAME DNS instructions documented.",
             "Domain verification flow is tested before onboarding real schools.",
             "Invalid domains show the friendly invalid-domain page.",
