@@ -1,32 +1,33 @@
 {
     email {$CADDY_ACME_EMAIL}
     on_demand_tls {
-        ask http://127.0.0.1:8080/_internal/caddy/allow-domain
+        ask http://127.0.0.1:18081/_internal/caddy/allow-domain
     }
 }
 
-# Main platform domain: normal managed certificate.
-edumanage.leosoftug.com {
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:8080
+# Existing production applications: Caddy owns public TLS; Nginx preserves app routing.
+edumanage.leosoftug.com, schools.leosoftug.com {
+    reverse_proxy 127.0.0.1:18081
 }
 
-# EduManage-managed school subdomains use the existing wildcard DNS pattern.
-# Caddy obtains certificates as each registered hostname is first used.
-https://*.schools.leosoftug.com {
+*.schools.leosoftug.com {
     tls {
         on_demand
     }
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:8080
+    reverse_proxy 127.0.0.1:18081
 }
 
-# Client-owned custom domains. The empty HTTPS address accepts arbitrary SNI,
-# but certificate issuance is restricted by the global ask endpoint above.
+hotspotcloud.net, www.hotspotcloud.net,
+signalsolid.com, www.signalsolid.com,
+leosoftug.com, www.leosoftug.com {
+    reverse_proxy 127.0.0.1:18081
+}
+
+# Arbitrary client-owned EduManage domains. Issuance is fail-closed through
+# the public-schema Domain/Tenant permission endpoint above.
 https:// {
     tls {
         on_demand
     }
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:8080
+    reverse_proxy 127.0.0.1:18081
 }

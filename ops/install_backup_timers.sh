@@ -1,6 +1,6 @@
-# Install each section into the matching /etc/systemd/system file.
-
-# /etc/systemd/system/edumanage-backup.service
+#!/usr/bin/env bash
+set -u
+cat >/etc/systemd/system/edumanage-backup.service <<'EOF'
 [Unit]
 Description=EduManage PostgreSQL backup
 After=postgresql.service
@@ -10,8 +10,8 @@ User=admin
 Group=admin
 WorkingDirectory=/srv/edumanage/app
 ExecStart=/bin/bash /srv/edumanage/app/ops/backup_postgres.sh
-
-# /etc/systemd/system/edumanage-backup.timer
+EOF
+cat >/etc/systemd/system/edumanage-backup.timer <<'EOF'
 [Unit]
 Description=Nightly EduManage PostgreSQL backup
 [Timer]
@@ -20,8 +20,8 @@ Persistent=true
 RandomizedDelaySec=900
 [Install]
 WantedBy=timers.target
-
-# /etc/systemd/system/edumanage-restore-test.service
+EOF
+cat >/etc/systemd/system/edumanage-restore-test.service <<'EOF'
 [Unit]
 Description=EduManage PostgreSQL restore verification
 After=postgresql.service
@@ -30,8 +30,8 @@ Type=oneshot
 User=root
 WorkingDirectory=/srv/edumanage/app
 ExecStart=/bin/bash /srv/edumanage/app/ops/restore_test_postgres.sh
-
-# /etc/systemd/system/edumanage-restore-test.timer
+EOF
+cat >/etc/systemd/system/edumanage-restore-test.timer <<'EOF'
 [Unit]
 Description=Weekly EduManage PostgreSQL restore verification
 [Timer]
@@ -40,3 +40,7 @@ Persistent=true
 RandomizedDelaySec=900
 [Install]
 WantedBy=timers.target
+EOF
+systemctl daemon-reload
+systemctl enable --now edumanage-backup.timer edumanage-restore-test.timer
+systemctl list-timers --all | grep -E 'edumanage-(backup|restore-test)' || true
