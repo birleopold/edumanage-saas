@@ -306,3 +306,24 @@ class PlatformTwoFactorSetting(models.Model):
 
     def __str__(self):
         return f"Platform 2FA for {self.user}"
+
+
+class PlatformBackupRecord(models.Model):
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    RESTORE_TESTED = "RESTORE_TESTED"
+    STATUS_CHOICES = ((SUCCESS, "Success"), (FAILED, "Failed"), (RESTORE_TESTED, "Restore tested"))
+
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES)
+    backup_scope = models.CharField(max_length=120, default="postgresql")
+    location_label = models.CharField(max_length=255, blank=True)
+    checksum = models.CharField(max_length=128, blank=True)
+    notes = models.TextField(blank=True)
+    occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-occurred_at",)
+
+    def __str__(self):
+        return f"{self.backup_scope} {self.status} {self.occurred_at:%Y-%m-%d}"

@@ -18,7 +18,7 @@ from .forms import DomainForm, TenantForm, TenantStatusForm
 from .dns_targets import get_dns_targets
 from .domain_readiness import inspect_domain
 from .models import Domain, PlatformAuditEvent, SubscriptionInvoice, Tenant, TenantSubscription
-from .subscription_services import create_subscription_for_tenant
+from .subscription_services import create_subscription_for_tenant, subscription_usage
 
 
 PLATFORM_PAGE_SIZE = 25
@@ -333,7 +333,18 @@ def tenant_detail(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     domains = list(tenant.domains.order_by("-is_primary", "domain"))
     subscription = getattr(tenant, "subscription", None) or create_subscription_for_tenant(tenant)
-    return render(request, "platform/tenant_detail.html", {"tenant": tenant, "domains": domains, "domain_management": _domain_management_rows(domains), "status_form": TenantStatusForm(initial={"status": tenant.status}), "schema_status": _schema_status(tenant.schema_name), "subscription": subscription, "onboarding_handoff": _tenant_onboarding_handoff(tenant, domains, subscription)})
+    schema_status = _schema_status(tenant.schema_name)
+    usage = subscription_usage(subscription)
+    recent_activity = PlatformAuditEvent.objects.filter(tenant=tenant).select_related("actor", "domain")[:10]
+    health = {
+        "schema_ready": schema_status.get("exists") is not False,
+        "primary_domain_ready": bool(domains and next((d for d in domains if d.is_primary and d.is_verified and d.is_ssl_active), None)),
+        "subscription_ready": subscription.is_usable,
+        "usage_available": not bool(usage.get("error")),
+    }
+    health["ready_count"] = sum(1 for value in health.values() if value is True)
+    health["total"] = 4
+    return render(request, "platform/tenant_detail.html", {"tenant": tenant, "domains": domains, "domain_management": _domain_management_rows(domains), "status_form": TenantStatusForm(initial={"status": tenant.status}), "schema_status": schema_status, "subscription": subscription, "onboarding_handoff": _tenant_onboarding_handoff(tenant, domains, subscription), "platform_usage": usage, "recent_tenant_activity": recent_activity, "operational_health": health})
 
 
 @platform_admin_required
