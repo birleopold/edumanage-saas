@@ -2,6 +2,8 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 
+from .models import Domain
+
 
 def health(request):
     return JsonResponse(
