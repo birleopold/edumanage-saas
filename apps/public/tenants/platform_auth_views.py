@@ -68,7 +68,7 @@ def platform_login(request):
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
-        if not user.is_superuser:
+        if not platform_role(user):
             messages.error(request, "This account is not allowed to access the Platform Console.")
         else:
             cache.delete(rate_key)

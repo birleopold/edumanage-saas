@@ -18,6 +18,7 @@ from .forms import DomainForm, TenantForm, TenantStatusForm
 from .dns_targets import get_dns_targets
 from .domain_readiness import inspect_domain
 from .models import Domain, PlatformAuditEvent, SubscriptionInvoice, Tenant, TenantSubscription
+from .platform_permissions import platform_can, platform_role
 from .subscription_services import create_subscription_for_tenant, subscription_usage
 
 
@@ -43,12 +44,12 @@ def _safe_next_url(request):
 def platform_admin_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_superuser:
+        if request.user.is_authenticated and platform_role(request.user):
             if getattr(settings, "PLATFORM_2FA_REQUIRED", True) and not request.session.get("platform_2fa_verified"):
                 return redirect("platform_verify_2fa")
             return view_func(request, *args, **kwargs)
         if request.user.is_authenticated:
-            messages.error(request, "Only platform superusers can access the SaaS management console.")
+            messages.error(request, "This account is not assigned an active Platform Console role.")
             return redirect("landing_page")
         return redirect(_login_redirect_url(request))
 
@@ -306,6 +307,8 @@ def tenant_list(request):
 
 @platform_admin_required
 def tenant_create(request):
+    if not platform_can(request.user, "onboarding"):
+        return redirect("platform_access_denied")
     if request.method == "POST":
         form = TenantForm(request.POST)
         if form.is_valid():
@@ -366,6 +369,8 @@ def tenant_edit(request, pk):
 @platform_admin_required
 @require_POST
 def tenant_status_update(request, pk):
+    if not platform_can(request.user, "lifecycle"):
+        return redirect("platform_access_denied")
     tenant = get_object_or_404(Tenant, pk=pk)
     form = TenantStatusForm(request.POST)
     if form.is_valid():
@@ -395,6 +400,8 @@ def tenant_status_update(request, pk):
 
 @platform_admin_required
 def domain_create(request, tenant_id):
+    if not platform_can(request.user, "domains"):
+        return redirect("platform_access_denied")
     tenant = get_object_or_404(Tenant, pk=tenant_id)
     if request.method == "POST":
         form = DomainForm(request.POST)
@@ -414,6 +421,8 @@ def domain_create(request, tenant_id):
 
 @platform_admin_required
 def domain_edit(request, pk):
+    if not platform_can(request.user, "domains"):
+        return redirect("platform_access_denied")
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     if request.method == "POST":
         before = {"domain": domain.domain, "type": domain.type, "is_primary": domain.is_primary, "dns_status": domain.dns_status, "ssl_status": domain.ssl_status}
@@ -433,6 +442,8 @@ def domain_edit(request, pk):
 @platform_admin_required
 @require_POST
 def domain_mark_primary(request, pk):
+    if not platform_can(request.user, "domains"):
+        return redirect("platform_access_denied")
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     Domain.objects.filter(tenant=domain.tenant).update(is_primary=False)
     domain.is_primary = True
@@ -445,6 +456,8 @@ def domain_mark_primary(request, pk):
 @platform_admin_required
 @require_POST
 def domain_verify(request, pk):
+    if not platform_can(request.user, "domains"):
+        return redirect("platform_access_denied")
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     before = {"dns_status": domain.dns_status, "ssl_status": domain.ssl_status, "verified_at": str(domain.verified_at or "")}
     result = inspect_domain(domain)
@@ -468,6 +481,8 @@ def domain_verify(request, pk):
 @platform_admin_required
 @require_POST
 def domain_delete(request, pk):
+    if not platform_can(request.user, "domains"):
+        return redirect("platform_access_denied")
     domain = get_object_or_404(Domain.objects.select_related("tenant"), pk=pk)
     tenant = domain.tenant
     if domain.is_primary and not tenant.domains.exclude(pk=domain.pk).exists():
