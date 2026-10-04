@@ -102,6 +102,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+DOCUMENT_UPLOAD_MAX_BYTES = config("DOCUMENT_UPLOAD_MAX_BYTES", default=10 * 1024 * 1024, cast=int)
+ADMISSION_UPLOAD_MAX_BYTES = config("ADMISSION_UPLOAD_MAX_BYTES", default=10 * 1024 * 1024, cast=int)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
