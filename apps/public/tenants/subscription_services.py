@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import transaction
 from django.utils import timezone
 
 from .models import SubscriptionInvoice, SubscriptionPlan, TenantSubscription
@@ -136,5 +137,10 @@ def usage_percent(used, limit):
 def create_subscription_invoice(subscription: TenantSubscription, *, issued_on=None, due_on=None, notes="") -> SubscriptionInvoice:
     issued_on = issued_on or timezone.localdate()
     due_on = due_on or subscription.next_billing_date
-    invoice_number = f"SUB-{subscription.tenant_id}-{issued_on.strftime('%Y%m%d')}-{SubscriptionInvoice.objects.filter(subscription=subscription).count() + 1}"
-    return SubscriptionInvoice.objects.create(subscription=subscription, invoice_number=invoice_number, amount=subscription.amount, currency=subscription.currency, status=SubscriptionInvoice.OPEN, issued_on=issued_on, due_on=due_on, notes=notes)
+    # Serialize invoice numbering per subscription; count()+1 without a lock can
+    # generate the same unique invoice number under concurrent staff requests.
+    with transaction.atomic():
+        locked = TenantSubscription.objects.select_for_update().get(pk=subscription.pk)
+        sequence = SubscriptionInvoice.objects.filter(subscription=locked).count() + 1
+        invoice_number = f"SUB-{locked.tenant_id}-{issued_on.strftime('%Y%m%d')}-{sequence}"
+        return SubscriptionInvoice.objects.create(subscription=locked, invoice_number=invoice_number, amount=locked.amount, currency=locked.currency, status=SubscriptionInvoice.OPEN, issued_on=issued_on, due_on=due_on, notes=notes)
