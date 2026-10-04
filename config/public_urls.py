@@ -1,7 +1,7 @@
 from django.urls import include, path
 
 from apps.public.tenants import seo_views, views
-from apps.tenant.portals import error_handlers
+from apps.tenant.portals import error_handlers, public_views
 from apps.tenant.portals.pwa import manifest, push_readiness, service_worker
 
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     path("privacy/", seo_views.marketing_page, {"page_key": "privacy"}, name="marketing_privacy"),
     path("terms/", seo_views.marketing_page, {"page_key": "terms"}, name="marketing_terms"),
     path("health/", views.health, name="health"),
+    path("status/", public_views.public_status, name="public_status"),
     path("manifest.webmanifest", manifest, name="pwa_manifest"),
     path("service-worker.js", service_worker, name="pwa_service_worker"),
     path("pwa/push-readiness/", push_readiness, name="pwa_push_readiness"),

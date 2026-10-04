@@ -94,3 +94,35 @@ class StudentCampusScopeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.student.refresh_from_db()
         self.assertEqual(self.student.campus, self.campus)
+
+
+class StudentIdentitySyncTests(TestCase):
+    def test_student_save_keeps_linked_login_identity_in_sync(self):
+        user = User.objects.create_user(
+            username="identity-student",
+            password="test-pass-123",
+            first_name="Old",
+            last_name="Name",
+            email="old@example.com",
+        )
+        student = StudentProfile.objects.create(
+            user=user,
+            first_name="Correct",
+            last_name="Student",
+            email="correct@example.com",
+            student_id="SYNC-1",
+        )
+
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "Correct")
+        self.assertEqual(user.last_name, "Student")
+        self.assertEqual(user.email, "correct@example.com")
+
+        student.first_name = "Updated"
+        student.email = "updated@example.com"
+        student.save()
+
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "Updated")
+        self.assertEqual(user.last_name, "Student")
+        self.assertEqual(user.email, "updated@example.com")
