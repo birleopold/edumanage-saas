@@ -1,0 +1,35 @@
+# edumanage-backup.service
+[Unit]
+Description=EduManage PostgreSQL backup
+[Service]
+Type=oneshot
+User=admin
+ExecStart=/srv/edumanage/app/ops/backup_postgres.sh
+
+# edumanage-backup.timer
+[Unit]
+Description=Nightly EduManage PostgreSQL backup
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+RandomizedDelaySec=900
+[Install]
+WantedBy=timers.target
+
+# edumanage-restore-test.service
+[Unit]
+Description=EduManage PostgreSQL restore test
+[Service]
+Type=oneshot
+User=admin
+ExecStart=/srv/edumanage/app/ops/restore_test_postgres.sh
+
+# edumanage-restore-test.timer
+[Unit]
+Description=Weekly EduManage PostgreSQL restore test
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=900
+[Install]
+WantedBy=timers.target
