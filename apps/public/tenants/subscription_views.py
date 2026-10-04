@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -171,18 +172,24 @@ def subscription_mark_paid(request, invoice_id):
     form = SubscriptionPaymentForm(request.POST)
     tenant = invoice.subscription.tenant
     if form.is_valid():
-        invoice.status = SubscriptionInvoice.PAID
-        invoice.paid_on = timezone.localdate()
-        invoice.payment_reference = form.cleaned_data["payment_reference"]
-        invoice.notes = form.cleaned_data.get("notes", "")
-        invoice.save(update_fields=["status", "paid_on", "payment_reference", "notes", "updated_at"])
-        subscription = invoice.subscription
-        subscription.payment_status = TenantSubscription.PAYMENT_PAID
-        subscription.payment_reference = invoice.payment_reference
-        if subscription.status in {TenantSubscription.PAST_DUE, TenantSubscription.SUSPENDED, TenantSubscription.TRIALING}:
-            subscription.status = TenantSubscription.ACTIVE
-        subscription.save(update_fields=["payment_status", "payment_reference", "status", "updated_at"])
-        sync_subscription_to_tenant_status(subscription)
+        with transaction.atomic():
+            invoice = SubscriptionInvoice.objects.select_for_update().select_related("subscription", "subscription__tenant").get(pk=invoice.pk)
+            if invoice.status == SubscriptionInvoice.PAID:
+                messages.info(request, f"{invoice.invoice_number} is already recorded as paid.")
+                return redirect("platform_tenant_subscription", tenant_id=tenant.pk)
+            invoice.status = SubscriptionInvoice.PAID
+            invoice.paid_on = timezone.localdate()
+            invoice.payment_reference = form.cleaned_data["payment_reference"]
+            invoice.notes = form.cleaned_data.get("notes", "")
+            invoice.save(update_fields=["status", "paid_on", "payment_reference", "notes", "updated_at"])
+            subscription = TenantSubscription.objects.select_for_update().get(pk=invoice.subscription_id)
+            subscription.payment_status = TenantSubscription.PAYMENT_PAID
+            subscription.payment_reference = invoice.payment_reference
+            if subscription.status in {TenantSubscription.PAST_DUE, TenantSubscription.TRIALING}:
+                subscription.status = TenantSubscription.ACTIVE
+            subscription.save(update_fields=["payment_status", "payment_reference", "status", "updated_at"])
+            # A paid invoice must not silently reactivate an operator-suspended school.
+            sync_subscription_to_tenant_status(subscription)
         _record_platform_event(
             request,
             PlatformAuditEvent.SUBSCRIPTION_PAYMENT_RECORDED,
